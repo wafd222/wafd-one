@@ -1,0 +1,1 @@
+recursive-include wafd_one *.json *.py *.js *.css *.html *.md

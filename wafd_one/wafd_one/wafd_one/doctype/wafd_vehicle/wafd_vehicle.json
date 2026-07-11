@@ -1,0 +1,58 @@
+{
+  "doctype": "DocType",
+  "name": "WAFD Vehicle",
+  "module": "WAFD ONE",
+  "custom": 0,
+  "autoname": "field:vehicle_name",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "vehicle_name",
+      "label": "اسم المركبة / Vehicle Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "vehicle_type",
+      "label": "النوع / Type",
+      "fieldtype": "Select",
+      "options": "شاحنة مبردة\\nشاحنة توريد",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "license_plate",
+      "label": "رقم اللوحة / Plate No",
+      "fieldtype": "Data",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "الحالة / Status",
+      "fieldtype": "Select",
+      "options": "متاحة\\nفي مهمة\\nصيانة\\nموقوفة",
+      "default": "متاحة",
+      "in_list_view": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 0
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ],
+  "title_field": "vehicle_name"
+}

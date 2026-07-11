@@ -1,0 +1,61 @@
+{
+  "doctype": "DocType",
+  "name": "WAFD Driver",
+  "module": "WAFD ONE",
+  "custom": 0,
+  "autoname": "field:driver_name",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "driver_name",
+      "label": "اسم السائق / Driver Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "mobile_no",
+      "label": "الجوال / Mobile",
+      "fieldtype": "Data",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "license_no",
+      "label": "رقم الرخصة / License No",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "default_vehicle",
+      "label": "المركبة / Vehicle",
+      "fieldtype": "Link",
+      "options": "WAFD Vehicle"
+    },
+    {
+      "fieldname": "status",
+      "label": "الحالة / Status",
+      "fieldtype": "Select",
+      "options": "متاح\\nفي مهمة\\nإجازة\\nموقوف",
+      "default": "متاح",
+      "in_list_view": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 0
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ],
+  "title_field": "driver_name"
+}

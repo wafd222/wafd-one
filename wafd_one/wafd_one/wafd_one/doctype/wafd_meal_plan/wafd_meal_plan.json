@@ -1,0 +1,73 @@
+{
+  "doctype": "DocType",
+  "name": "WAFD Meal Plan",
+  "module": "WAFD ONE",
+  "custom": 0,
+  "autoname": "format:MP-.YYYY.-.#####",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "project",
+      "label": "المشروع / Project",
+      "fieldtype": "Link",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "hotel",
+      "label": "الفندق / Hotel",
+      "fieldtype": "Link",
+      "options": "WAFD Hotel",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "service_date",
+      "label": "التاريخ / Date",
+      "fieldtype": "Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "meal_type",
+      "label": "نوع الوجبة / Meal Type",
+      "fieldtype": "Select",
+      "options": "إفطار\\nغداء\\nعشاء\\nسناك\\nكوفي بريك\\nإفطار صائم",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "planned_qty",
+      "label": "الكمية / Qty",
+      "fieldtype": "Int",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "الحالة / Status",
+      "fieldtype": "Select",
+      "options": "مخطط\\nقيد الإنتاج\\nجاهز\\nمحمل\\nتم التسليم\\nملغي",
+      "default": "مخطط",
+      "in_list_view": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 0
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

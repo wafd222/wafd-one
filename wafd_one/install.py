@@ -24,16 +24,8 @@ def after_install():
         if existing:
             created[name] = existing
             continue
-        parent = created.get(parent_name) if parent_name else frappe.db.get_value(
-            "Warehouse", {"warehouse_name": "All Warehouses", "company": company}
-        )
-        doc = frappe.get_doc({
-            "doctype": "Warehouse",
-            "warehouse_name": name,
-            "company": company,
-            "is_group": is_group,
-            "parent_warehouse": parent,
-        })
+        parent = created.get(parent_name) if parent_name else frappe.db.get_value("Warehouse", {"warehouse_name": "All Warehouses", "company": company})
+        doc = frappe.get_doc({"doctype":"Warehouse","warehouse_name":name,"company":company,"is_group":is_group,"parent_warehouse":parent})
         doc.insert(ignore_permissions=True)
         created[name] = doc.name
     frappe.db.commit()

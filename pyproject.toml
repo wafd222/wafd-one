@@ -1,8 +1,8 @@
 [project]
 name = "wafd_one"
 version = "0.1.0"
-description = "WAFD ONE catering operations app"
-authors = [{name = "Wafd Almadinah"}]
+description = "WAFD ONE catering and delivery operations app"
+authors = [{ name = "Wafd Almadinah", email = "wafd.almadinah@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = []
 

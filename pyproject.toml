@@ -1,6 +1,6 @@
 [project]
 name = "wafd_one"
-version = "0.1.0"
+version = "0.1.1"
 description = "WAFD ONE catering operations for ERPNext v16"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,4 +15,3 @@ build-backend = "flit_core.buildapi"
 
 [tool.bench.frappe-dependencies]
 frappe = ">=16.0.0-dev,<17.0.0"
-erpnext = ">=16.0.0-dev,<17.0.0"

@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdCateringProject(Document):
+class WAFDCateringProject(Document):
     pass

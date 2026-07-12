@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdDeliveryProof(Document):
+class WAFDDeliveryProof(Document):
     pass

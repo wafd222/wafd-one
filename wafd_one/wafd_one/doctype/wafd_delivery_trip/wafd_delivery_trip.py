@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdDeliveryTrip(Document):
+class WAFDDeliveryTrip(Document):
     pass

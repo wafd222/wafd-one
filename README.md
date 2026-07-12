@@ -17,3 +17,6 @@ Custom Frappe Framework v16 application for Wafd Almadinah catering operations.
 
 ## Cloud installation
 Add the repository to a Frappe Framework v16 private bench, deploy the app, then install **WAFD ONE** on the site.
+
+
+Version 0.3.0 adds the WAFD ONE public workspace and operational shortcuts.

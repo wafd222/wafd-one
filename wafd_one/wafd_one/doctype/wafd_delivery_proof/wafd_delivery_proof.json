@@ -1,0 +1,129 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:POD-.YYYY.-.#####",
+  "creation": "2026-07-12 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "delivery_trip",
+    "delivered_qty",
+    "receiver_name",
+    "delivery_time",
+    "gps_location",
+    "before_loading_photo",
+    "arrival_photo",
+    "after_delivery_photo",
+    "receiver_signature",
+    "delivery_status",
+    "remarks"
+  ],
+  "fields": [
+    {
+      "fieldname": "delivery_trip",
+      "fieldtype": "Link",
+      "label": "رحلة التوصيل / Delivery Trip",
+      "options": "WAFD Delivery Trip",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "delivered_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المسلمة / Delivered Qty",
+      "reqd": 1
+    },
+    {
+      "fieldname": "receiver_name",
+      "fieldtype": "Data",
+      "label": "اسم المستلم / Receiver Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "delivery_time",
+      "fieldtype": "Datetime",
+      "label": "وقت التسليم / Delivery Time",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "gps_location",
+      "fieldtype": "Geolocation",
+      "label": "الموقع GPS"
+    },
+    {
+      "fieldname": "before_loading_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة قبل التحميل / Before Loading"
+    },
+    {
+      "fieldname": "arrival_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة الوصول / Arrival Photo"
+    },
+    {
+      "fieldname": "after_delivery_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة بعد التسليم / After Delivery"
+    },
+    {
+      "fieldname": "receiver_signature",
+      "fieldtype": "Signature",
+      "label": "توقيع المستلم / Signature"
+    },
+    {
+      "fieldname": "delivery_status",
+      "fieldtype": "Select",
+      "label": "حالة التسليم / Status",
+      "options": "تم\nناقص\nمرفوض\nمتأخر",
+      "default": "تم",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "remarks",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Remarks"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-07-12 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Delivery Proof",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1,
+      "submit": 1,
+      "cancel": 1
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1,
+      "submit": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

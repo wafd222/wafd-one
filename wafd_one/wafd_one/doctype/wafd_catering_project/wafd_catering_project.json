@@ -1,0 +1,104 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:project_name",
+  "creation": "2026-07-12 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "project_name",
+    "mission",
+    "start_date",
+    "end_date",
+    "beneficiary_count",
+    "contract_value",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "project_name",
+      "fieldtype": "Data",
+      "label": "اسم المشروع / Project Name",
+      "reqd": 1,
+      "in_list_view": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "mission",
+      "fieldtype": "Link",
+      "label": "البعثة / Mission",
+      "options": "WAFD Mission",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "تاريخ البداية / Start Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "تاريخ النهاية / End Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "beneficiary_count",
+      "fieldtype": "Int",
+      "label": "عدد المستفيدين / Beneficiaries"
+    },
+    {
+      "fieldname": "contract_value",
+      "fieldtype": "Currency",
+      "label": "قيمة العقد / Contract Value"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مخطط\nنشط\nمكتمل\nمعلق\nملغي",
+      "default": "مخطط",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-12 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Catering Project",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "project_name"
+}

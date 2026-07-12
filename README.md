@@ -1,3 +1,7 @@
 # WAFD ONE
 
-تطبيق مخصص لـ ERPNext/Frappe v16 لإدارة الإعاشة والمشاريع والتوصيل.
+Custom Frappe/ERPNext v16 application for Wafd Almadinah catering operations.
+
+## Compatibility
+- Frappe Framework v16
+- ERPNext v16

@@ -14,18 +14,38 @@ WAREHOUSES = [
     ("ثلاجة الخضار والفواكه", 0, "المطبخ المركزي"),
 ]
 
+
 def after_install():
     company = frappe.db.get_value("Company", {"company_name": "Wafd Almadinah"})
     if not company:
         return
+
     created = {}
-    for name, is_group, parent_name in WAREHOUSES:
-        existing = frappe.db.get_value("Warehouse", {"warehouse_name": name, "company": company})
+    for warehouse_name, is_group, parent_label in WAREHOUSES:
+        existing = frappe.db.get_value(
+            "Warehouse", {"warehouse_name": warehouse_name, "company": company}
+        )
         if existing:
-            created[name] = existing
+            created[warehouse_name] = existing
             continue
-        parent = created.get(parent_name) if parent_name else frappe.db.get_value("Warehouse", {"warehouse_name": "All Warehouses", "company": company})
-        doc = frappe.get_doc({"doctype":"Warehouse","warehouse_name":name,"company":company,"is_group":is_group,"parent_warehouse":parent})
+
+        if parent_label:
+            parent_warehouse = created.get(parent_label) or frappe.db.get_value(
+                "Warehouse", {"warehouse_name": parent_label, "company": company}
+            )
+        else:
+            parent_warehouse = frappe.db.get_value(
+                "Warehouse", {"warehouse_name": "All Warehouses", "company": company}
+            )
+
+        doc = frappe.get_doc({
+            "doctype": "Warehouse",
+            "warehouse_name": warehouse_name,
+            "company": company,
+            "is_group": is_group,
+            "parent_warehouse": parent_warehouse,
+        })
         doc.insert(ignore_permissions=True)
-        created[name] = doc.name
+        created[warehouse_name] = doc.name
+
     frappe.db.commit()

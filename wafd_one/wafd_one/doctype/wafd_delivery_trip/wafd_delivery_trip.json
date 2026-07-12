@@ -1,0 +1,123 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:TRIP-.YYYY.-.#####",
+  "creation": "2026-07-12 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "meal_plan",
+    "project",
+    "hotel",
+    "vehicle",
+    "driver",
+    "loaded_qty",
+    "trip_date",
+    "gps_location",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "meal_plan",
+      "fieldtype": "Link",
+      "label": "خطة الوجبة / Meal Plan",
+      "options": "WAFD Meal Plan",
+      "reqd": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "vehicle",
+      "fieldtype": "Link",
+      "label": "الشاحنة / Vehicle",
+      "options": "WAFD Vehicle",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "driver",
+      "fieldtype": "Link",
+      "label": "السائق / Driver",
+      "options": "WAFD Driver",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "loaded_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المحملة / Loaded Qty"
+    },
+    {
+      "fieldname": "trip_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الرحلة / Trip Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "gps_location",
+      "fieldtype": "Geolocation",
+      "label": "الموقع GPS"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مجدولة\nقيد التحميل\nفي الطريق\nوصلت\nتم التسليم\nمتأخرة\nملغاة",
+      "default": "مجدولة",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-12 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Delivery Trip",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "Projects Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

@@ -35,10 +35,12 @@ def _workspace_definition():
 def ensure_workspace():
     data = _workspace_definition()
 
-    # Frappe v16 requires Workspace.type. Older exported workspace JSON files
-    # may not contain it, so normalize the document before insert/update.
-    data.setdefault("type", "Workspace")
-    data.setdefault("app", "wafd_one")
+    # Frappe v16 requires Workspace.type to contain a real value.
+    # Exported workspace JSON may contain an empty string, so do not use
+    # setdefault here; assign the value explicitly.
+    data["type"] = "Workspace"
+    if not data.get("app"):
+        data["app"] = "wafd_one"
 
     name = data["name"]
     if frappe.db.exists("Workspace", name):

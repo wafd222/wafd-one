@@ -142,13 +142,12 @@ def ensure_default_app():
             "WAFD ONE Administrator Default App Setup",
         )
 
-
 def apply_setup():
     ensure_roles()
 
-    # Workspace links may refer to DocTypes that are not yet available.
-    # A Workspace error must not break the entire site migration.
-    safely_ensure_workspace()
+    # Workspace setup is temporarily disabled until all DocTypes
+    # are successfully synchronized on Frappe Cloud.
+    # safely_ensure_workspace()
 
     ensure_default_app()
     frappe.clear_cache()

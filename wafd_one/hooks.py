@@ -4,3 +4,7 @@ app_publisher = "Wafd Almadinah"
 app_description = "Catering, projects, fleet and proof-of-delivery operations"
 app_email = "wafd.almadinah@gmail.com"
 app_license = "proprietary"
+
+after_install = "wafd_one.setup.after_install"
+
+after_migrate = "wafd_one.setup.after_migrate"

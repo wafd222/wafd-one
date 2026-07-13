@@ -12,7 +12,7 @@
   "is_hidden": 0,
   "label": "WAFD ONE",
   "links": [],
-  "modified": "2026-07-13 00:00:00.000000",
+  "modified": "2026-07-13 14:30:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD ONE",
@@ -21,74 +21,113 @@
   "parent_page": "",
   "public": 1,
   "quick_lists": [],
-  "roles": [],
+  "roles": [
+    {
+      "role": "System Manager"
+    },
+    {
+      "role": "WAFD Operations Manager"
+    },
+    {
+      "role": "WAFD Project Manager"
+    },
+    {
+      "role": "WAFD Production Supervisor"
+    },
+    {
+      "role": "WAFD Quality Inspector"
+    },
+    {
+      "role": "WAFD Delivery Supervisor"
+    },
+    {
+      "role": "WAFD Finance User"
+    },
+    {
+      "role": "WAFD Storekeeper"
+    }
+  ],
   "sequence_id": 1.0,
   "shortcuts": [
     {
-      "color": "Grey",
+      "color": "Blue",
       "doc_view": "List",
       "label": "المشاريع",
       "link_to": "WAFD Catering Project",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Cyan",
       "doc_view": "List",
       "label": "البعثات",
       "link_to": "WAFD Mission",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Cyan",
       "doc_view": "List",
       "label": "الفنادق",
       "link_to": "WAFD Hotel",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "العقود",
+      "link_to": "WAFD Contract",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
       "doc_view": "List",
       "label": "خطط الوجبات",
       "link_to": "WAFD Meal Plan",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Green",
       "doc_view": "List",
-      "label": "الإنتاج",
+      "label": "الوصفات",
+      "link_to": "WAFD Recipe",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
+      "doc_view": "List",
+      "label": "دفعات الإنتاج",
       "link_to": "WAFD Production Batch",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Purple",
       "doc_view": "List",
-      "label": "الجودة",
+      "label": "فحص الجودة",
       "link_to": "WAFD Quality Inspection",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Orange",
       "doc_view": "List",
-      "label": "التحميل",
+      "label": "سجلات التحميل",
       "link_to": "WAFD Loading Record",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Orange",
       "doc_view": "List",
       "label": "رحلات التوصيل",
       "link_to": "WAFD Delivery Trip",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Orange",
       "doc_view": "List",
-      "label": "إثبات التسليم",
+      "label": "إثباتات التسليم",
       "link_to": "WAFD Delivery Proof",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Red",
       "doc_view": "List",
       "label": "الشكاوى",
       "link_to": "WAFD Complaint",
@@ -97,40 +136,61 @@
     {
       "color": "Grey",
       "doc_view": "List",
+      "label": "السائقون",
+      "link_to": "WAFD Driver",
+      "type": "DocType"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "المركبات",
+      "link_to": "WAFD Vehicle",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
       "label": "الموردون",
       "link_to": "WAFD Supplier",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Yellow",
       "doc_view": "List",
-      "label": "المشتريات",
+      "label": "أوامر الشراء",
       "link_to": "WAFD Purchase Order",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Yellow",
       "doc_view": "List",
-      "label": "المخزون",
+      "label": "المستودعات",
+      "link_to": "WAFD Warehouse",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "label": "حركة المخزون",
       "link_to": "WAFD Stock Movement",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Blue",
       "doc_view": "List",
-      "label": "التكاليف",
+      "label": "تكاليف المشاريع",
       "link_to": "WAFD Project Cost",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Blue",
       "doc_view": "List",
-      "label": "الإيرادات",
+      "label": "إيرادات المشاريع",
       "link_to": "WAFD Project Revenue",
       "type": "DocType"
     },
     {
-      "color": "Grey",
+      "color": "Blue",
       "doc_view": "List",
       "label": "الفواتير",
       "link_to": "WAFD Invoice",

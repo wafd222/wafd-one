@@ -1,4 +1,4 @@
-# WAFD ONE v1.0.0
+# WAFD ONE v1.1.0
 
 نظام متكامل لإدارة خدمات الإعاشة على Frappe Framework v16.
 

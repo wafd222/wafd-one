@@ -1,22 +1,17 @@
-# WAFD ONE
+# WAFD ONE v0.4.0
 
-Custom Frappe Framework v16 application for Wafd Almadinah catering operations.
+نظام تشغيلي لخدمات الإعاشة على Frappe Framework v16.
 
-## Compatibility
-- Frappe Framework v16
-- Does not require ERPNext
+## دورة التشغيل
+المشروع ← الخطة اليومية ← الإنتاج ← فحص الجودة ← التحميل ← رحلة التوصيل ← إثبات التسليم.
 
-## Included modules
-- Missions
-- Hotels
-- Catering projects
-- Meal plans
-- Vehicles and drivers
-- Delivery trips
-- Proof of delivery
+## الوحدات
+- البعثات والفنادق والمشاريع
+- خطط الوجبات اليومية
+- الإنتاج والجودة والتحميل
+- المركبات والسائقون والتوصيل
+- إثبات التسليم بالصور والموقع والتوقيع
+- الشكاوى وتكاليف المشاريع والربحية
 
-## Cloud installation
-Add the repository to a Frappe Framework v16 private bench, deploy the app, then install **WAFD ONE** on the site.
-
-
-Version 0.3.0 adds the WAFD ONE public workspace and operational shortcuts.
+## النشر
+بعد رفع الملفات إلى فرع `main` في GitHub، نفّذ Deploy/Migrate من Frappe Cloud.

@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "hotel",
+    "guest_count",
+    "contact_person",
+    "mobile_no",
+    "service_notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "guest_count",
+      "fieldtype": "Int",
+      "label": "عدد النزلاء / Guest Count",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "contact_person",
+      "fieldtype": "Data",
+      "label": "مسؤول الفندق / Contact Person"
+    },
+    {
+      "fieldname": "mobile_no",
+      "fieldtype": "Data",
+      "label": "الجوال / Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "service_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات الخدمة / Service Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Project Hotel",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0,
+  "istable": 1
+}

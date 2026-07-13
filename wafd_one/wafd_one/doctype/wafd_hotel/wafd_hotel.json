@@ -1,19 +1,35 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "field:hotel_name",
-  "creation": "2026-07-12 00:00:00.000000",
+  "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "hotel_information_section",
     "hotel_name",
     "mission",
+    "guest_count",
+    "classification_column",
+    "classification",
+    "status",
+    "location_section",
     "map_url",
+    "gps_location",
+    "address",
+    "contact_section",
     "contact_person",
     "mobile_no",
-    "guest_count"
+    "email",
+    "delivery_section",
+    "delivery_entrance",
+    "delivery_notes"
   ],
   "fields": [
+    {
+      "fieldname": "hotel_information_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات الفندق / Hotel Information"
+    },
     {
       "fieldname": "hotel_name",
       "fieldtype": "Data",
@@ -27,12 +43,59 @@
       "fieldtype": "Link",
       "label": "البعثة / Mission",
       "options": "WAFD Mission",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "guest_count",
+      "fieldtype": "Int",
+      "label": "عدد النزلاء / Guest Count",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "classification_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "classification",
+      "fieldtype": "Select",
+      "label": "التصنيف / Classification",
+      "options": "بدون تصنيف\nنجمة واحدة\nنجمتان\n3 نجوم\n4 نجوم\n5 نجوم",
+      "default": "بدون تصنيف"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط\nغير نشط",
+      "default": "نشط",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "location_section",
+      "fieldtype": "Section Break",
+      "label": "الموقع / Location"
     },
     {
       "fieldname": "map_url",
       "fieldtype": "Data",
-      "label": "رابط الخرائط / Map URL"
+      "label": "رابط الخرائط / Map URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "gps_location",
+      "fieldtype": "Geolocation",
+      "label": "الموقع GPS / GPS Location"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "العنوان / Address"
+    },
+    {
+      "fieldname": "contact_section",
+      "fieldtype": "Section Break",
+      "label": "مسؤول الفندق / Hotel Contact"
     },
     {
       "fieldname": "contact_person",
@@ -42,22 +105,38 @@
     {
       "fieldname": "mobile_no",
       "fieldtype": "Data",
-      "label": "الجوال / Mobile"
+      "label": "الجوال / Mobile",
+      "options": "Phone"
     },
     {
-      "fieldname": "guest_count",
-      "fieldtype": "Int",
-      "label": "عدد النزلاء / Guest Count"
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "label": "البريد / Email",
+      "options": "Email"
+    },
+    {
+      "fieldname": "delivery_section",
+      "fieldtype": "Section Break",
+      "label": "تعليمات التوصيل / Delivery Instructions"
+    },
+    {
+      "fieldname": "delivery_entrance",
+      "fieldtype": "Data",
+      "label": "مدخل التوصيل / Delivery Entrance"
+    },
+    {
+      "fieldname": "delivery_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات التوصيل / Delivery Notes"
     }
   ],
   "index_web_pages_for_search": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-12 00:00:00.000000",
+  "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Hotel",
-  "naming_rule": "By fieldname",
   "owner": "Administrator",
   "permissions": [
     {
@@ -77,5 +156,9 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "title_field": "hotel_name"
+  "istable": 0,
+  "autoname": "field:hotel_name",
+  "naming_rule": "By fieldname",
+  "title_field": "hotel_name",
+  "search_fields": "hotel_name,mission,contact_person"
 }

@@ -1,0 +1,184 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "complaint_section",
+    "project",
+    "hotel",
+    "meal_plan",
+    "complaint_column",
+    "complaint_date",
+    "category",
+    "priority",
+    "status",
+    "details_section",
+    "reported_by",
+    "contact_mobile",
+    "description",
+    "evidence",
+    "resolution_section",
+    "assigned_to",
+    "root_cause",
+    "corrective_action",
+    "closed_at",
+    "customer_rating"
+  ],
+  "fields": [
+    {
+      "fieldname": "complaint_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات الشكوى / Complaint Information"
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "meal_plan",
+      "fieldtype": "Link",
+      "label": "خطة الوجبة / Meal Plan",
+      "options": "WAFD Meal Plan"
+    },
+    {
+      "fieldname": "complaint_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "complaint_date",
+      "fieldtype": "Datetime",
+      "label": "تاريخ الشكوى / Complaint Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "category",
+      "fieldtype": "Select",
+      "label": "التصنيف / Category",
+      "options": "جودة الطعام\nكمية ناقصة\nتأخير\nتغليف\nسلوك موظف\nنظافة\nأخرى",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "priority",
+      "fieldtype": "Select",
+      "label": "الأولوية / Priority",
+      "options": "منخفضة\nمتوسطة\nعالية\nحرجة",
+      "default": "متوسطة",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مفتوحة\nقيد المعالجة\nبانتظار العميل\nمغلقة\nملغاة",
+      "default": "مفتوحة",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "details_section",
+      "fieldtype": "Section Break",
+      "label": "تفاصيل الشكوى / Complaint Details"
+    },
+    {
+      "fieldname": "reported_by",
+      "fieldtype": "Data",
+      "label": "مقدم الشكوى / Reported By"
+    },
+    {
+      "fieldname": "contact_mobile",
+      "fieldtype": "Data",
+      "label": "الجوال / Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Text Editor",
+      "label": "وصف الشكوى / Description",
+      "reqd": 1
+    },
+    {
+      "fieldname": "evidence",
+      "fieldtype": "Attach Image",
+      "label": "صورة مرفقة / Evidence"
+    },
+    {
+      "fieldname": "resolution_section",
+      "fieldtype": "Section Break",
+      "label": "المعالجة / Resolution"
+    },
+    {
+      "fieldname": "assigned_to",
+      "fieldtype": "Link",
+      "label": "مسندة إلى / Assigned To",
+      "options": "User"
+    },
+    {
+      "fieldname": "root_cause",
+      "fieldtype": "Small Text",
+      "label": "السبب الجذري / Root Cause"
+    },
+    {
+      "fieldname": "corrective_action",
+      "fieldtype": "Text Editor",
+      "label": "الإجراء التصحيحي / Corrective Action"
+    },
+    {
+      "fieldname": "closed_at",
+      "fieldtype": "Datetime",
+      "label": "تاريخ الإغلاق / Closed At"
+    },
+    {
+      "fieldname": "customer_rating",
+      "fieldtype": "Rating",
+      "label": "تقييم العميل / Customer Rating"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Complaint",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "istable": 0,
+  "autoname": "format:CMP-.YYYY.-.#####",
+  "naming_rule": "Expression",
+  "search_fields": "project,hotel,category,reported_by,status"
+}

@@ -1,28 +1,53 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "format:TRIP-.YYYY.-.#####",
-  "creation": "2026-07-12 00:00:00.000000",
+  "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "trip_section",
+    "loading_record",
     "meal_plan",
     "project",
     "hotel",
+    "schedule_column",
+    "trip_date",
+    "scheduled_departure",
+    "required_arrival",
+    "status",
+    "fleet_section",
     "vehicle",
     "driver",
     "loaded_qty",
-    "trip_date",
+    "tracking_column",
+    "actual_departure",
+    "arrival_time",
     "gps_location",
-    "status"
+    "contact_mobile",
+    "evidence_section",
+    "departure_photo",
+    "remarks"
   ],
   "fields": [
+    {
+      "fieldname": "trip_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات الرحلة / Trip Information"
+    },
+    {
+      "fieldname": "loading_record",
+      "fieldtype": "Link",
+      "label": "سجل التحميل / Loading Record",
+      "options": "WAFD Loading Record"
+    },
     {
       "fieldname": "meal_plan",
       "fieldtype": "Link",
       "label": "خطة الوجبة / Meal Plan",
       "options": "WAFD Meal Plan",
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
     },
     {
       "fieldname": "project",
@@ -30,7 +55,9 @@
       "label": "المشروع / Project",
       "options": "WAFD Catering Project",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "fetch_from": "meal_plan.project",
+      "read_only": 1
     },
     {
       "fieldname": "hotel",
@@ -38,12 +65,50 @@
       "label": "الفندق / Hotel",
       "options": "WAFD Hotel",
       "reqd": 1,
+      "in_list_view": 1,
+      "fetch_from": "meal_plan.hotel",
+      "read_only": 1
+    },
+    {
+      "fieldname": "schedule_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "trip_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الرحلة / Trip Date",
+      "reqd": 1,
       "in_list_view": 1
+    },
+    {
+      "fieldname": "scheduled_departure",
+      "fieldtype": "Datetime",
+      "label": "المغادرة المجدولة / Scheduled Departure"
+    },
+    {
+      "fieldname": "required_arrival",
+      "fieldtype": "Datetime",
+      "label": "الوصول المطلوب / Required Arrival"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مجدولة\nقيد التحميل\nجاهزة للمغادرة\nفي الطريق\nوصلت\nتم التسليم\nمتأخرة\nملغاة",
+      "default": "مجدولة",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "fleet_section",
+      "fieldtype": "Section Break",
+      "label": "الأسطول / Fleet"
     },
     {
       "fieldname": "vehicle",
       "fieldtype": "Link",
-      "label": "الشاحنة / Vehicle",
+      "label": "المركبة / Vehicle",
       "options": "WAFD Vehicle",
       "reqd": 1,
       "in_list_view": 1
@@ -59,37 +124,64 @@
     {
       "fieldname": "loaded_qty",
       "fieldtype": "Int",
-      "label": "الكمية المحملة / Loaded Qty"
+      "label": "الكمية المحملة / Loaded Qty",
+      "reqd": 1,
+      "non_negative": 1
     },
     {
-      "fieldname": "trip_date",
-      "fieldtype": "Date",
-      "label": "تاريخ الرحلة / Trip Date",
-      "reqd": 1,
-      "in_list_view": 1
+      "fieldname": "tracking_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "actual_departure",
+      "fieldtype": "Datetime",
+      "label": "المغادرة الفعلية / Actual Departure"
+    },
+    {
+      "fieldname": "arrival_time",
+      "fieldtype": "Datetime",
+      "label": "وقت الوصول / Arrival Time"
     },
     {
       "fieldname": "gps_location",
       "fieldtype": "Geolocation",
-      "label": "الموقع GPS"
+      "label": "الموقع الحالي / Current GPS"
     },
     {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "مجدولة\nقيد التحميل\nفي الطريق\nوصلت\nتم التسليم\nمتأخرة\nملغاة",
-      "default": "مجدولة",
-      "in_list_view": 1
+      "fieldname": "contact_mobile",
+      "fieldtype": "Data",
+      "label": "جوال السائق / Driver Mobile",
+      "fetch_from": "driver.mobile_no",
+      "read_only": 1
+    },
+    {
+      "fieldname": "evidence_section",
+      "fieldtype": "Section Break",
+      "label": "المرفقات / Evidence"
+    },
+    {
+      "fieldname": "departure_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة المغادرة / Departure Photo"
+    },
+    {
+      "fieldname": "remarks",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات الرحلة / Trip Remarks"
     }
   ],
   "index_web_pages_for_search": 0,
   "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-12 00:00:00.000000",
+  "links": [
+    {
+      "link_doctype": "WAFD Delivery Proof",
+      "link_fieldname": "delivery_trip"
+    }
+  ],
+  "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Delivery Trip",
-  "naming_rule": "Expression",
   "owner": "Administrator",
   "permissions": [
     {
@@ -108,5 +200,9 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 1
+  "track_changes": 1,
+  "istable": 0,
+  "autoname": "format:TRIP-.YYYY.-.#####",
+  "naming_rule": "Expression",
+  "search_fields": "meal_plan,project,hotel,vehicle,driver,trip_date"
 }

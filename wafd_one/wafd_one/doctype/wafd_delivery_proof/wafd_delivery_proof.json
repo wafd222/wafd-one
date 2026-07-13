@@ -1,43 +1,67 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "format:POD-.YYYY.-.#####",
-  "creation": "2026-07-12 00:00:00.000000",
+  "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "proof_section",
     "delivery_trip",
-    "delivered_qty",
-    "receiver_name",
+    "project",
+    "hotel",
+    "delivery_column",
     "delivery_time",
+    "delivered_qty",
+    "delivery_status",
+    "receiver_section",
+    "receiver_name",
+    "receiver_mobile",
+    "receiver_id",
+    "receiver_signature",
+    "location_section",
     "gps_location",
-    "before_loading_photo",
     "arrival_photo",
     "after_delivery_photo",
-    "receiver_signature",
-    "delivery_status",
+    "document_section",
+    "delivery_note_no",
     "remarks"
   ],
   "fields": [
+    {
+      "fieldname": "proof_section",
+      "fieldtype": "Section Break",
+      "label": "إثبات التسليم / Proof of Delivery"
+    },
     {
       "fieldname": "delivery_trip",
       "fieldtype": "Link",
       "label": "رحلة التوصيل / Delivery Trip",
       "options": "WAFD Delivery Trip",
       "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "fetch_from": "delivery_trip.project",
+      "read_only": 1,
       "in_list_view": 1
     },
     {
-      "fieldname": "delivered_qty",
-      "fieldtype": "Int",
-      "label": "الكمية المسلمة / Delivered Qty",
-      "reqd": 1
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "fetch_from": "delivery_trip.hotel",
+      "read_only": 1,
+      "in_list_view": 1
     },
     {
-      "fieldname": "receiver_name",
-      "fieldtype": "Data",
-      "label": "اسم المستلم / Receiver Name",
-      "reqd": 1
+      "fieldname": "delivery_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "delivery_time",
@@ -47,14 +71,60 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "delivered_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المسلمة / Delivered Qty",
+      "reqd": 1,
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "delivery_status",
+      "fieldtype": "Select",
+      "label": "حالة التسليم / Status",
+      "options": "تم بالكامل\nتم جزئيًا\nناقص\nمرفوض\nمتأخر",
+      "default": "تم بالكامل",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "receiver_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات المستلم / Receiver Information"
+    },
+    {
+      "fieldname": "receiver_name",
+      "fieldtype": "Data",
+      "label": "اسم المستلم / Receiver Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "receiver_mobile",
+      "fieldtype": "Data",
+      "label": "جوال المستلم / Receiver Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "receiver_id",
+      "fieldtype": "Data",
+      "label": "رقم الهوية / Receiver ID"
+    },
+    {
+      "fieldname": "receiver_signature",
+      "fieldtype": "Signature",
+      "label": "توقيع المستلم / Signature",
+      "reqd": 1
+    },
+    {
+      "fieldname": "location_section",
+      "fieldtype": "Section Break",
+      "label": "الموقع والصور / Location and Photos"
+    },
+    {
       "fieldname": "gps_location",
       "fieldtype": "Geolocation",
       "label": "الموقع GPS"
-    },
-    {
-      "fieldname": "before_loading_photo",
-      "fieldtype": "Attach Image",
-      "label": "صورة قبل التحميل / Before Loading"
     },
     {
       "fieldname": "arrival_photo",
@@ -67,17 +137,14 @@
       "label": "صورة بعد التسليم / After Delivery"
     },
     {
-      "fieldname": "receiver_signature",
-      "fieldtype": "Signature",
-      "label": "توقيع المستلم / Signature"
+      "fieldname": "document_section",
+      "fieldtype": "Section Break",
+      "label": "المستند / Document"
     },
     {
-      "fieldname": "delivery_status",
-      "fieldtype": "Select",
-      "label": "حالة التسليم / Status",
-      "options": "تم\nناقص\nمرفوض\nمتأخر",
-      "default": "تم",
-      "in_list_view": 1
+      "fieldname": "delivery_note_no",
+      "fieldtype": "Data",
+      "label": "رقم سند التسليم / Delivery Note No"
     },
     {
       "fieldname": "remarks",
@@ -88,11 +155,10 @@
   "index_web_pages_for_search": 0,
   "is_submittable": 1,
   "links": [],
-  "modified": "2026-07-12 00:00:00.000000",
+  "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Delivery Proof",
-  "naming_rule": "Expression",
   "owner": "Administrator",
   "permissions": [
     {
@@ -107,11 +173,16 @@
       "report": 1,
       "share": 1,
       "submit": 1,
-      "cancel": 1
+      "cancel": 1,
+      "amend": 1
     }
   ],
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 1
+  "track_changes": 1,
+  "istable": 0,
+  "autoname": "format:POD-.YYYY.-.#####",
+  "naming_rule": "Expression",
+  "search_fields": "delivery_trip,project,hotel,receiver_name,delivery_note_no"
 }

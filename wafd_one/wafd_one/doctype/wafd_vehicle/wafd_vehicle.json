@@ -1,17 +1,30 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "field:vehicle_name",
-  "creation": "2026-07-12 00:00:00.000000",
+  "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "vehicle_section",
     "vehicle_name",
     "vehicle_type",
     "license_plate",
-    "status"
+    "status_column",
+    "status",
+    "capacity",
+    "refrigerated",
+    "documents_section",
+    "registration_expiry",
+    "insurance_expiry",
+    "inspection_expiry",
+    "notes"
   ],
   "fields": [
+    {
+      "fieldname": "vehicle_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات المركبة / Vehicle Information"
+    },
     {
       "fieldname": "vehicle_name",
       "fieldtype": "Data",
@@ -24,7 +37,7 @@
       "fieldname": "vehicle_type",
       "fieldtype": "Select",
       "label": "النوع / Type",
-      "options": "شاحنة مبردة\nشاحنة توريد",
+      "options": "شاحنة مبردة\nشاحنة مجمدة\nشاحنة توريد\nدينا\nسيارة إشراف",
       "reqd": 1,
       "in_list_view": 1
     },
@@ -32,7 +45,13 @@
       "fieldname": "license_plate",
       "fieldtype": "Data",
       "label": "رقم اللوحة / Plate No",
-      "in_list_view": 1
+      "reqd": 1,
+      "in_list_view": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "status_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "status",
@@ -40,17 +59,54 @@
       "label": "الحالة / Status",
       "options": "متاحة\nفي مهمة\nصيانة\nموقوفة",
       "default": "متاحة",
-      "in_list_view": 1
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "capacity",
+      "fieldtype": "Int",
+      "label": "السعة بالوجبات / Meal Capacity",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "refrigerated",
+      "fieldtype": "Check",
+      "label": "مبردة / Refrigerated"
+    },
+    {
+      "fieldname": "documents_section",
+      "fieldtype": "Section Break",
+      "label": "المستندات / Documents"
+    },
+    {
+      "fieldname": "registration_expiry",
+      "fieldtype": "Date",
+      "label": "انتهاء الاستمارة / Registration Expiry"
+    },
+    {
+      "fieldname": "insurance_expiry",
+      "fieldtype": "Date",
+      "label": "انتهاء التأمين / Insurance Expiry"
+    },
+    {
+      "fieldname": "inspection_expiry",
+      "fieldtype": "Date",
+      "label": "انتهاء الفحص / Inspection Expiry"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
     }
   ],
   "index_web_pages_for_search": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-12 00:00:00.000000",
+  "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Vehicle",
-  "naming_rule": "By fieldname",
   "owner": "Administrator",
   "permissions": [
     {
@@ -70,5 +126,9 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "title_field": "vehicle_name"
+  "istable": 0,
+  "autoname": "field:vehicle_name",
+  "naming_rule": "By fieldname",
+  "title_field": "vehicle_name",
+  "search_fields": "vehicle_name,license_plate,vehicle_type"
 }

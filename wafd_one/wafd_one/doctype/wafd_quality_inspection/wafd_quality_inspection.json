@@ -1,0 +1,202 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "inspection_section",
+    "production_batch",
+    "meal_plan",
+    "project",
+    "inspection_column",
+    "inspection_time",
+    "inspector",
+    "result",
+    "checks_section",
+    "temperature",
+    "appearance_ok",
+    "taste_ok",
+    "packaging_ok",
+    "labeling_ok",
+    "quantity_column",
+    "inspected_qty",
+    "approved_qty",
+    "rejected_qty",
+    "evidence_section",
+    "inspection_photo",
+    "corrective_action",
+    "remarks"
+  ],
+  "fields": [
+    {
+      "fieldname": "inspection_section",
+      "fieldtype": "Section Break",
+      "label": "فحص الجودة / Quality Inspection"
+    },
+    {
+      "fieldname": "production_batch",
+      "fieldtype": "Link",
+      "label": "دفعة الإنتاج / Production Batch",
+      "options": "WAFD Production Batch",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "meal_plan",
+      "fieldtype": "Link",
+      "label": "خطة الوجبة / Meal Plan",
+      "options": "WAFD Meal Plan",
+      "reqd": 1,
+      "fetch_from": "production_batch.meal_plan",
+      "read_only": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "fetch_from": "production_batch.project",
+      "read_only": 1
+    },
+    {
+      "fieldname": "inspection_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "inspection_time",
+      "fieldtype": "Datetime",
+      "label": "وقت الفحص / Inspection Time",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "inspector",
+      "fieldtype": "Link",
+      "label": "مسؤول الجودة / Inspector",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "result",
+      "fieldtype": "Select",
+      "label": "النتيجة / Result",
+      "options": "قيد الفحص\nمقبول\nمقبول بملاحظة\nمرفوض",
+      "default": "قيد الفحص",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "checks_section",
+      "fieldtype": "Section Break",
+      "label": "بنود الفحص / Inspection Checks"
+    },
+    {
+      "fieldname": "temperature",
+      "fieldtype": "Float",
+      "label": "درجة الحرارة °C / Temperature"
+    },
+    {
+      "fieldname": "appearance_ok",
+      "fieldtype": "Check",
+      "label": "المظهر مطابق / Appearance OK",
+      "default": 1
+    },
+    {
+      "fieldname": "taste_ok",
+      "fieldtype": "Check",
+      "label": "الطعم مطابق / Taste OK",
+      "default": 1
+    },
+    {
+      "fieldname": "packaging_ok",
+      "fieldtype": "Check",
+      "label": "التغليف مطابق / Packaging OK",
+      "default": 1
+    },
+    {
+      "fieldname": "labeling_ok",
+      "fieldtype": "Check",
+      "label": "الملصق مطابق / Labeling OK",
+      "default": 1
+    },
+    {
+      "fieldname": "quantity_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "inspected_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المفحوصة / Inspected Qty",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "approved_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المعتمدة / Approved Qty",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "rejected_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المرفوضة / Rejected Qty",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "evidence_section",
+      "fieldtype": "Section Break",
+      "label": "المرفقات / Evidence"
+    },
+    {
+      "fieldname": "inspection_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة الفحص / Inspection Photo"
+    },
+    {
+      "fieldname": "corrective_action",
+      "fieldtype": "Small Text",
+      "label": "الإجراء التصحيحي / Corrective Action"
+    },
+    {
+      "fieldname": "remarks",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Remarks"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Quality Inspection",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "istable": 0,
+  "autoname": "format:QC-.YYYY.-.#####",
+  "naming_rule": "Expression",
+  "search_fields": "production_batch,meal_plan,project,result"
+}

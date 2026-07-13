@@ -1,26 +1,47 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "format:MP-.YYYY.-.#####",
-  "creation": "2026-07-12 00:00:00.000000",
+  "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "plan_section",
     "project",
     "hotel",
     "service_date",
+    "meal_column",
     "meal_type",
     "planned_qty",
-    "status"
+    "status",
+    "menu_section",
+    "menu_name",
+    "menu_description",
+    "packaging_type",
+    "timing_column",
+    "required_delivery_time",
+    "production_start_time",
+    "loading_time",
+    "quantities_section",
+    "produced_qty",
+    "approved_qty",
+    "loaded_qty",
+    "delivered_qty",
+    "notes"
   ],
   "fields": [
+    {
+      "fieldname": "plan_section",
+      "fieldtype": "Section Break",
+      "label": "الخطة اليومية / Daily Meal Plan"
+    },
     {
       "fieldname": "project",
       "fieldtype": "Link",
       "label": "المشروع / Project",
       "options": "WAFD Catering Project",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "in_standard_filter": 1
     },
     {
       "fieldname": "hotel",
@@ -28,46 +49,152 @@
       "label": "الفندق / Hotel",
       "options": "WAFD Hotel",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "in_standard_filter": 1
     },
     {
       "fieldname": "service_date",
       "fieldtype": "Date",
       "label": "التاريخ / Date",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "meal_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "meal_type",
       "fieldtype": "Select",
       "label": "نوع الوجبة / Meal Type",
-      "options": "إفطار\nغداء\nعشاء\nسناك\nكوفي بريك\nإفطار صائم",
+      "options": "إفطار\nغداء\nعشاء\nسناك\nكوفي بريك\nإفطار صائم\nوجبة ترحيبية",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "in_standard_filter": 1
     },
     {
       "fieldname": "planned_qty",
       "fieldtype": "Int",
-      "label": "الكمية / Qty",
-      "reqd": 1
+      "label": "الكمية المخططة / Planned Qty",
+      "reqd": 1,
+      "non_negative": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "الحالة / Status",
-      "options": "مخطط\nقيد الإنتاج\nجاهز\nمحمل\nتم التسليم\nملغي",
+      "options": "مخطط\nمعتمد\nقيد الإنتاج\nجاهز\nمحمل\nتم التسليم\nملغي",
       "default": "مخطط",
-      "in_list_view": 1
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "menu_section",
+      "fieldtype": "Section Break",
+      "label": "تفاصيل الوجبة / Meal Details"
+    },
+    {
+      "fieldname": "menu_name",
+      "fieldtype": "Data",
+      "label": "اسم القائمة / Menu Name"
+    },
+    {
+      "fieldname": "menu_description",
+      "fieldtype": "Text Editor",
+      "label": "مكونات الوجبة / Meal Components"
+    },
+    {
+      "fieldname": "packaging_type",
+      "fieldtype": "Select",
+      "label": "نوع التغليف / Packaging",
+      "options": "علبة فردية\nبوفيه\nأكياس\nصواني\nأخرى",
+      "default": "علبة فردية"
+    },
+    {
+      "fieldname": "timing_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "required_delivery_time",
+      "fieldtype": "Time",
+      "label": "وقت التسليم المطلوب / Required Delivery Time"
+    },
+    {
+      "fieldname": "production_start_time",
+      "fieldtype": "Time",
+      "label": "بدء الإنتاج / Production Start"
+    },
+    {
+      "fieldname": "loading_time",
+      "fieldtype": "Time",
+      "label": "وقت التحميل / Loading Time"
+    },
+    {
+      "fieldname": "quantities_section",
+      "fieldtype": "Section Break",
+      "label": "كميات التنفيذ / Execution Quantities"
+    },
+    {
+      "fieldname": "produced_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المنتجة / Produced Qty",
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "approved_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المعتمدة / Approved Qty",
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "loaded_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المحملة / Loaded Qty",
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "delivered_qty",
+      "fieldtype": "Int",
+      "label": "الكمية المسلمة / Delivered Qty",
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
     }
   ],
   "index_web_pages_for_search": 0,
   "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-12 00:00:00.000000",
+  "links": [
+    {
+      "link_doctype": "WAFD Production Batch",
+      "link_fieldname": "meal_plan"
+    },
+    {
+      "link_doctype": "WAFD Quality Inspection",
+      "link_fieldname": "meal_plan"
+    },
+    {
+      "link_doctype": "WAFD Loading Record",
+      "link_fieldname": "meal_plan"
+    },
+    {
+      "link_doctype": "WAFD Delivery Trip",
+      "link_fieldname": "meal_plan"
+    }
+  ],
+  "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Meal Plan",
-  "naming_rule": "Expression",
   "owner": "Administrator",
   "permissions": [
     {
@@ -86,5 +213,9 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 1
+  "track_changes": 1,
+  "istable": 0,
+  "autoname": "format:MP-.YYYY.-.#####",
+  "naming_rule": "Expression",
+  "search_fields": "project,hotel,service_date,meal_type"
 }

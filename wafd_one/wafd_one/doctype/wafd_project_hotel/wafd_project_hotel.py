@@ -1,4 +1,4 @@
 from frappe.model.document import Document
 
-class WAFDMission(Document):
+class WAFDProjectHotel(Document):
     pass

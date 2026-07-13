@@ -1,0 +1,102 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:ingredient_name",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "ingredient_name",
+    "item_code",
+    "category",
+    "uom",
+    "standard_cost",
+    "minimum_stock",
+    "default_supplier",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "ingredient_name",
+      "fieldtype": "Data",
+      "label": "اسم الصنف / Ingredient Name",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Data",
+      "label": "رمز الصنف / Item Code",
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "category",
+      "fieldtype": "Select",
+      "label": "التصنيف / Category",
+      "options": "لحوم / Meat\nدواجن / Poultry\nأرز وحبوب / Rice & Grains\nخضار / Vegetables\nألبان / Dairy\nمشروبات / Beverages\nتغليف / Packaging\nأخرى / Other"
+    },
+    {
+      "fieldname": "uom",
+      "fieldtype": "Select",
+      "label": "وحدة القياس / UOM",
+      "options": "كجم / Kg\nجرام / Gram\nلتر / Liter\nمل / ML\nحبة / Piece\nكرتون / Carton\nصندوق / Box",
+      "reqd": 1
+    },
+    {
+      "fieldname": "standard_cost",
+      "fieldtype": "Currency",
+      "label": "التكلفة القياسية / Standard Cost",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "minimum_stock",
+      "fieldtype": "Float",
+      "label": "الحد الأدنى / Minimum Stock",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "default_supplier",
+      "fieldtype": "Link",
+      "label": "المورد الافتراضي / Default Supplier",
+      "options": "WAFD Supplier"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Ingredient",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "ingredient_name"
+}

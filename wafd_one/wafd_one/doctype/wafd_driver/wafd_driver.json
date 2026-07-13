@@ -1,81 +1,42 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "field:driver_name",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "driver_section",
     "driver_name",
-    "mobile_no",
-    "national_id",
-    "status_column",
-    "status",
-    "default_vehicle",
-    "license_section",
-    "license_no",
+    "mobile",
+    "id_number",
+    "license_number",
     "license_expiry",
-    "license_copy",
-    "notes"
+    "status"
   ],
   "fields": [
-    {
-      "fieldname": "driver_section",
-      "fieldtype": "Section Break",
-      "label": "بيانات السائق / Driver Information"
-    },
     {
       "fieldname": "driver_name",
       "fieldtype": "Data",
       "label": "اسم السائق / Driver Name",
       "reqd": 1,
-      "in_list_view": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "mobile_no",
-      "fieldtype": "Data",
-      "label": "الجوال / Mobile",
-      "options": "Phone",
-      "reqd": 1,
       "in_list_view": 1
     },
     {
-      "fieldname": "national_id",
+      "fieldname": "mobile",
       "fieldtype": "Data",
-      "label": "رقم الهوية / National ID",
-      "unique": 1
+      "label": "الجوال / Mobile",
+      "options": "Phone",
+      "reqd": 1
     },
     {
-      "fieldname": "status_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "متاح\nفي مهمة\nإجازة\nموقوف",
-      "default": "متاح",
-      "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "default_vehicle",
-      "fieldtype": "Link",
-      "label": "المركبة الافتراضية / Default Vehicle",
-      "options": "WAFD Vehicle"
-    },
-    {
-      "fieldname": "license_section",
-      "fieldtype": "Section Break",
-      "label": "رخصة القيادة / Driving License"
-    },
-    {
-      "fieldname": "license_no",
+      "fieldname": "id_number",
       "fieldtype": "Data",
-      "label": "رقم الرخصة / License No",
-      "unique": 1
+      "label": "رقم الهوية / ID Number"
+    },
+    {
+      "fieldname": "license_number",
+      "fieldtype": "Data",
+      "label": "رقم الرخصة / License Number"
     },
     {
       "fieldname": "license_expiry",
@@ -83,17 +44,16 @@
       "label": "انتهاء الرخصة / License Expiry"
     },
     {
-      "fieldname": "license_copy",
-      "fieldtype": "Attach",
-      "label": "صورة الرخصة / License Copy"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "متاح / Available\nفي مهمة / On Trip\nإجازة / Leave\nغير نشط / Inactive",
+      "default": "متاح / Available",
+      "in_list_view": 1
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 0,
   "is_submittable": 0,
   "links": [],
   "modified": "2026-07-13 00:00:00.000000",
@@ -119,9 +79,5 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "istable": 0,
-  "autoname": "field:driver_name",
-  "naming_rule": "By fieldname",
-  "title_field": "driver_name",
-  "search_fields": "driver_name,mobile_no,national_id,license_no"
+  "title_field": "driver_name"
 }

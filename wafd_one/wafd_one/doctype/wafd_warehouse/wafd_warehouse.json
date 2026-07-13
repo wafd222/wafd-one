@@ -1,0 +1,79 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:warehouse_name",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "warehouse_name",
+    "warehouse_type",
+    "location",
+    "manager",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "warehouse_name",
+      "fieldtype": "Data",
+      "label": "اسم المستودع / Warehouse Name",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "warehouse_type",
+      "fieldtype": "Select",
+      "label": "نوع المستودع / Warehouse Type",
+      "options": "جاف / Dry\nمبرد / Chilled\nمجمد / Frozen\nتغليف / Packaging\nجاهز / Finished Goods",
+      "reqd": 1
+    },
+    {
+      "fieldname": "location",
+      "fieldtype": "Data",
+      "label": "الموقع / Location"
+    },
+    {
+      "fieldname": "manager",
+      "fieldtype": "Link",
+      "label": "المسؤول / Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Warehouse",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "warehouse_name"
+}

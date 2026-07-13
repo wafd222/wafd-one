@@ -1,35 +1,32 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "format:WAFD-PRODUCTION-BATCH-{#####}",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "production_section",
-    "meal_plan",
     "project",
-    "hotel",
-    "batch_column",
+    "meal_plan",
     "batch_date",
-    "shift",
-    "status",
-    "quantities_section",
-    "planned_qty",
-    "produced_qty",
-    "waste_qty",
-    "management_column",
-    "production_supervisor",
+    "planned_quantity",
+    "produced_quantity",
+    "rejected_quantity",
     "kitchen",
-    "started_at",
-    "completed_at",
-    "notes_section",
+    "production_supervisor",
+    "start_time",
+    "end_time",
+    "status",
     "notes"
   ],
   "fields": [
     {
-      "fieldname": "production_section",
-      "fieldtype": "Section Break",
-      "label": "بيانات الإنتاج / Production Information"
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "meal_plan",
@@ -37,30 +34,7 @@
       "label": "خطة الوجبة / Meal Plan",
       "options": "WAFD Meal Plan",
       "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "المشروع / Project",
-      "options": "WAFD Catering Project",
-      "reqd": 1,
-      "in_list_view": 1,
-      "fetch_from": "meal_plan.project",
-      "read_only": 1
-    },
-    {
-      "fieldname": "hotel",
-      "fieldtype": "Link",
-      "label": "الفندق / Hotel",
-      "options": "WAFD Hotel",
-      "fetch_from": "meal_plan.hotel",
-      "read_only": 1
-    },
-    {
-      "fieldname": "batch_column",
-      "fieldtype": "Column Break"
+      "in_list_view": 1
     },
     {
       "fieldname": "batch_date",
@@ -70,57 +44,23 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "shift",
-      "fieldtype": "Select",
-      "label": "الوردية / Shift",
-      "options": "صباحية\nمسائية\nليلية",
-      "default": "صباحية"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "مسودة\nقيد الإنتاج\nمكتمل\nموقوف\nملغي",
-      "default": "مسودة",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "quantities_section",
-      "fieldtype": "Section Break",
-      "label": "الكميات / Quantities"
-    },
-    {
-      "fieldname": "planned_qty",
+      "fieldname": "planned_quantity",
       "fieldtype": "Int",
       "label": "الكمية المخططة / Planned Qty",
-      "fetch_from": "meal_plan.planned_qty",
-      "read_only": 1,
+      "reqd": 1,
       "non_negative": 1
     },
     {
-      "fieldname": "produced_qty",
+      "fieldname": "produced_quantity",
       "fieldtype": "Int",
       "label": "الكمية المنتجة / Produced Qty",
-      "reqd": 1,
-      "non_negative": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "waste_qty",
-      "fieldtype": "Int",
-      "label": "الهدر / Waste Qty",
       "non_negative": 1
     },
     {
-      "fieldname": "management_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "production_supervisor",
-      "fieldtype": "Link",
-      "label": "مشرف الإنتاج / Production Supervisor",
-      "options": "User"
+      "fieldname": "rejected_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المرفوضة / Rejected Qty",
+      "non_negative": 1
     },
     {
       "fieldname": "kitchen",
@@ -128,34 +68,39 @@
       "label": "المطبخ / Kitchen"
     },
     {
-      "fieldname": "started_at",
-      "fieldtype": "Datetime",
-      "label": "وقت البدء / Started At"
+      "fieldname": "production_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف الإنتاج / Supervisor",
+      "options": "User"
     },
     {
-      "fieldname": "completed_at",
+      "fieldname": "start_time",
       "fieldtype": "Datetime",
-      "label": "وقت الانتهاء / Completed At"
+      "label": "بداية الإنتاج / Start"
     },
     {
-      "fieldname": "notes_section",
-      "fieldtype": "Section Break",
-      "label": "ملاحظات / Notes"
+      "fieldname": "end_time",
+      "fieldtype": "Datetime",
+      "label": "نهاية الإنتاج / End"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مخطط / Planned\nقيد الإنتاج / In Production\nمكتمل / Completed\nموقوف / Stopped",
+      "default": "مخطط / Planned",
+      "in_list_view": 1
     },
     {
       "fieldname": "notes",
       "fieldtype": "Small Text",
-      "label": "ملاحظات الإنتاج / Production Notes"
+      "label": "ملاحظات / Notes"
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 0,
   "is_submittable": 0,
-  "links": [
-    {
-      "link_doctype": "WAFD Quality Inspection",
-      "link_fieldname": "production_batch"
-    }
-  ],
+  "links": [],
   "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
@@ -178,9 +123,5 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 1,
-  "istable": 0,
-  "autoname": "format:PROD-.YYYY.-.#####",
-  "naming_rule": "Expression",
-  "search_fields": "meal_plan,project,hotel,batch_date"
+  "track_changes": 1
 }

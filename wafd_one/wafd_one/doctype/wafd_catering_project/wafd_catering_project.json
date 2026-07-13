@@ -1,53 +1,36 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "field:project_name",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "project_information_section",
     "project_name",
     "project_code",
     "mission",
-    "status_column",
+    "project_type",
     "status",
     "start_date",
     "end_date",
-    "contract_section",
     "beneficiary_count",
+    "hotels",
     "contract_value",
     "currency",
-    "financial_column",
-    "estimated_cost",
-    "actual_cost",
-    "expected_profit",
-    "actual_profit",
-    "hotels_section",
-    "hotels",
-    "management_section",
     "project_manager",
     "operations_manager",
     "delivery_supervisor",
-    "contact_column",
-    "contact_person",
-    "contact_mobile",
-    "contact_email",
-    "statistics_section",
     "total_meals",
-    "completed_meals",
+    "delivered_meals",
     "remaining_meals",
-    "statistics_column",
     "progress_percent",
-    "number_of_hotels",
-    "notes_section",
-    "project_notes"
+    "estimated_cost",
+    "actual_cost",
+    "revenue",
+    "profit",
+    "notes"
   ],
   "fields": [
-    {
-      "fieldname": "project_information_section",
-      "fieldtype": "Section Break",
-      "label": "معلومات المشروع / Project Information"
-    },
     {
       "fieldname": "project_name",
       "fieldtype": "Data",
@@ -69,22 +52,23 @@
       "label": "البعثة / Mission",
       "options": "WAFD Mission",
       "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_list_view": 1
     },
     {
-      "fieldname": "status_column",
-      "fieldtype": "Column Break"
+      "fieldname": "project_type",
+      "fieldtype": "Select",
+      "label": "نوع المشروع / Project Type",
+      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nفعاليات / Events\nأخرى / Other",
+      "reqd": 1
     },
     {
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "الحالة / Status",
-      "options": "مسودة\nتخطيط\nنشط\nمعلق\nمكتمل\nملغي",
-      "default": "مسودة",
+      "options": "مسودة / Draft\nتخطيط / Planning\nنشط / Active\nمعلق / On Hold\nمكتمل / Completed\nملغي / Cancelled",
+      "default": "مسودة / Draft",
       "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_list_view": 1
     },
     {
       "fieldname": "start_date",
@@ -97,19 +81,19 @@
       "fieldname": "end_date",
       "fieldtype": "Date",
       "label": "تاريخ النهاية / End Date",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "contract_section",
-      "fieldtype": "Section Break",
-      "label": "العقد والأعداد / Contract and Quantities"
+      "reqd": 1
     },
     {
       "fieldname": "beneficiary_count",
       "fieldtype": "Int",
       "label": "عدد المستفيدين / Beneficiaries",
       "non_negative": 1
+    },
+    {
+      "fieldname": "hotels",
+      "fieldtype": "Table",
+      "label": "الفنادق / Hotels",
+      "options": "WAFD Project Hotel"
     },
     {
       "fieldname": "contract_value",
@@ -119,55 +103,10 @@
     },
     {
       "fieldname": "currency",
-      "fieldtype": "Link",
+      "fieldtype": "Select",
       "label": "العملة / Currency",
-      "options": "Currency",
+      "options": "SAR\nUSD",
       "default": "SAR"
-    },
-    {
-      "fieldname": "financial_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "estimated_cost",
-      "fieldtype": "Currency",
-      "label": "التكلفة التقديرية / Estimated Cost",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "actual_cost",
-      "fieldtype": "Currency",
-      "label": "التكلفة الفعلية / Actual Cost",
-      "read_only": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "expected_profit",
-      "fieldtype": "Currency",
-      "label": "الربح المتوقع / Expected Profit",
-      "read_only": 1
-    },
-    {
-      "fieldname": "actual_profit",
-      "fieldtype": "Currency",
-      "label": "الربح الفعلي / Actual Profit",
-      "read_only": 1
-    },
-    {
-      "fieldname": "hotels_section",
-      "fieldtype": "Section Break",
-      "label": "فنادق المشروع / Project Hotels"
-    },
-    {
-      "fieldname": "hotels",
-      "fieldtype": "Table",
-      "label": "الفنادق / Hotels",
-      "options": "WAFD Project Hotel"
-    },
-    {
-      "fieldname": "management_section",
-      "fieldtype": "Section Break",
-      "label": "إدارة المشروع / Project Management"
     },
     {
       "fieldname": "project_manager",
@@ -188,55 +127,22 @@
       "options": "User"
     },
     {
-      "fieldname": "contact_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "contact_person",
-      "fieldtype": "Data",
-      "label": "مسؤول العميل / Client Contact"
-    },
-    {
-      "fieldname": "contact_mobile",
-      "fieldtype": "Data",
-      "label": "الجوال / Mobile",
-      "options": "Phone"
-    },
-    {
-      "fieldname": "contact_email",
-      "fieldtype": "Data",
-      "label": "البريد / Email",
-      "options": "Email"
-    },
-    {
-      "fieldname": "statistics_section",
-      "fieldtype": "Section Break",
-      "label": "إحصائيات التنفيذ / Execution Statistics"
-    },
-    {
       "fieldname": "total_meals",
       "fieldtype": "Int",
       "label": "إجمالي الوجبات / Total Meals",
-      "read_only": 1,
-      "non_negative": 1
+      "read_only": 1
     },
     {
-      "fieldname": "completed_meals",
+      "fieldname": "delivered_meals",
       "fieldtype": "Int",
       "label": "الوجبات المسلمة / Delivered Meals",
-      "read_only": 1,
-      "non_negative": 1
+      "read_only": 1
     },
     {
       "fieldname": "remaining_meals",
       "fieldtype": "Int",
       "label": "الوجبات المتبقية / Remaining Meals",
-      "read_only": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "statistics_column",
-      "fieldtype": "Column Break"
+      "read_only": 1
     },
     {
       "fieldname": "progress_percent",
@@ -245,23 +151,37 @@
       "read_only": 1
     },
     {
-      "fieldname": "number_of_hotels",
-      "fieldtype": "Int",
-      "label": "عدد الفنادق / Number of Hotels",
+      "fieldname": "estimated_cost",
+      "fieldtype": "Currency",
+      "label": "التكلفة التقديرية / Estimated Cost",
       "read_only": 1
     },
     {
-      "fieldname": "notes_section",
-      "fieldtype": "Section Break",
-      "label": "ملاحظات / Notes"
+      "fieldname": "actual_cost",
+      "fieldtype": "Currency",
+      "label": "التكلفة الفعلية / Actual Cost",
+      "read_only": 1
     },
     {
-      "fieldname": "project_notes",
+      "fieldname": "revenue",
+      "fieldtype": "Currency",
+      "label": "الإيراد / Revenue",
+      "read_only": 1
+    },
+    {
+      "fieldname": "profit",
+      "fieldtype": "Currency",
+      "label": "الربح / Profit",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notes",
       "fieldtype": "Small Text",
-      "label": "ملاحظات المشروع / Project Notes"
+      "label": "ملاحظات / Notes"
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 0,
   "is_submittable": 0,
   "links": [
     {
@@ -269,15 +189,7 @@
       "link_fieldname": "project"
     },
     {
-      "link_doctype": "WAFD Production Batch",
-      "link_fieldname": "project"
-    },
-    {
       "link_doctype": "WAFD Delivery Trip",
-      "link_fieldname": "project"
-    },
-    {
-      "link_doctype": "WAFD Complaint",
       "link_fieldname": "project"
     },
     {
@@ -308,9 +220,5 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "istable": 0,
-  "autoname": "field:project_name",
-  "naming_rule": "By fieldname",
-  "title_field": "project_name",
-  "search_fields": "project_name,project_code,mission"
+  "title_field": "project_name"
 }

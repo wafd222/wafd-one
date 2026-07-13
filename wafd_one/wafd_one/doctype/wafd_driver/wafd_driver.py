@@ -1,4 +1,5 @@
 from frappe.model.document import Document
 
-class WAFDDriver(Document):
+
+class WafdDriver(Document):
     pass

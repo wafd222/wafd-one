@@ -1,58 +1,57 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "format:WAFD-PROJECT-COST-{#####}",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "cost_section",
     "project",
-    "expense_date",
+    "cost_date",
     "cost_category",
-    "amount_column",
-    "amount",
-    "supplier",
-    "reference_no",
-    "details_section",
     "description",
+    "supplier",
+    "amount",
+    "tax_included",
     "attachment",
     "approved_by",
     "status"
   ],
   "fields": [
     {
-      "fieldname": "cost_section",
-      "fieldtype": "Section Break",
-      "label": "تكلفة المشروع / Project Cost"
-    },
-    {
       "fieldname": "project",
       "fieldtype": "Link",
       "label": "المشروع / Project",
       "options": "WAFD Catering Project",
       "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_list_view": 1
     },
     {
-      "fieldname": "expense_date",
+      "fieldname": "cost_date",
       "fieldtype": "Date",
-      "label": "تاريخ المصروف / Expense Date",
+      "label": "التاريخ / Date",
       "reqd": 1,
       "in_list_view": 1
     },
     {
       "fieldname": "cost_category",
       "fieldtype": "Select",
-      "label": "فئة التكلفة / Cost Category",
-      "options": "مواد غذائية\nرواتب وأجور\nعمالة مؤقتة\nغاز ووقود\nنقل وتوصيل\nتغليف\nأدوات ومعدات\nإيجار\nصيانة\nمصاريف يومية\nأخرى",
+      "label": "التصنيف / Category",
+      "options": "مواد غذائية / Food Materials\nرواتب / Salaries\nعمالة / Labor\nنقل / Transport\nغاز / Gas\nتغليف / Packaging\nأدوات / Tools\nإيجار / Rent\nصيانة / Maintenance\nمصروفات يومية / Daily Expenses\nأخرى / Other",
       "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_list_view": 1
     },
     {
-      "fieldname": "amount_column",
-      "fieldtype": "Column Break"
+      "fieldname": "description",
+      "fieldtype": "Data",
+      "label": "البيان / Description",
+      "reqd": 1
+    },
+    {
+      "fieldname": "supplier",
+      "fieldtype": "Link",
+      "label": "المورد / Supplier",
+      "options": "WAFD Supplier"
     },
     {
       "fieldname": "amount",
@@ -63,25 +62,10 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "supplier",
-      "fieldtype": "Data",
-      "label": "المورد / Supplier"
-    },
-    {
-      "fieldname": "reference_no",
-      "fieldtype": "Data",
-      "label": "رقم المرجع / Reference No"
-    },
-    {
-      "fieldname": "details_section",
-      "fieldtype": "Section Break",
-      "label": "تفاصيل / Details"
-    },
-    {
-      "fieldname": "description",
-      "fieldtype": "Small Text",
-      "label": "البيان / Description",
-      "reqd": 1
+      "fieldname": "tax_included",
+      "fieldtype": "Check",
+      "label": "شامل الضريبة / VAT Included",
+      "default": 1
     },
     {
       "fieldname": "attachment",
@@ -98,14 +82,14 @@
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "الحالة / Status",
-      "options": "مسودة\nمعتمد\nملغي",
-      "default": "مسودة",
-      "reqd": 1,
+      "options": "مسودة / Draft\nمعتمد / Approved\nمدفوع / Paid\nملغي / Cancelled",
+      "default": "مسودة / Draft",
       "in_list_view": 1
     }
   ],
   "index_web_pages_for_search": 0,
-  "is_submittable": 1,
+  "istable": 0,
+  "is_submittable": 0,
   "links": [],
   "modified": "2026-07-13 00:00:00.000000",
   "modified_by": "Administrator",
@@ -123,18 +107,11 @@
       "export": 1,
       "print": 1,
       "report": 1,
-      "share": 1,
-      "submit": 1,
-      "cancel": 1,
-      "amend": 1
+      "share": 1
     }
   ],
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 1,
-  "istable": 0,
-  "autoname": "format:COST-.YYYY.-.#####",
-  "naming_rule": "Expression",
-  "search_fields": "project,cost_category,supplier,reference_no"
+  "track_changes": 1
 }

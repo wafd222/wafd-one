@@ -1,15 +1,15 @@
 {
   "actions": [],
-  "allow_rename": 1,
+  "allow_rename": 0,
+  "autoname": "hash",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
     "hotel",
     "guest_count",
-    "contact_person",
-    "mobile_no",
-    "service_notes"
+    "rooms_count",
+    "notes"
   ],
   "fields": [
     {
@@ -23,28 +23,23 @@
     {
       "fieldname": "guest_count",
       "fieldtype": "Int",
-      "label": "عدد النزلاء / Guest Count",
-      "non_negative": 1,
-      "in_list_view": 1
+      "label": "عدد النزلاء / Guests",
+      "non_negative": 1
     },
     {
-      "fieldname": "contact_person",
-      "fieldtype": "Data",
-      "label": "مسؤول الفندق / Contact Person"
+      "fieldname": "rooms_count",
+      "fieldtype": "Int",
+      "label": "عدد الغرف / Rooms",
+      "non_negative": 1
     },
     {
-      "fieldname": "mobile_no",
-      "fieldtype": "Data",
-      "label": "الجوال / Mobile",
-      "options": "Phone"
-    },
-    {
-      "fieldname": "service_notes",
+      "fieldname": "notes",
       "fieldtype": "Small Text",
-      "label": "ملاحظات الخدمة / Service Notes"
+      "label": "ملاحظات / Notes"
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 1,
   "is_submittable": 0,
   "links": [],
   "modified": "2026-07-13 00:00:00.000000",
@@ -56,6 +51,5 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 0,
-  "istable": 1
+  "track_changes": 0
 }

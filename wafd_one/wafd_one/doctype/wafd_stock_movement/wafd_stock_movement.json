@@ -1,0 +1,119 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:WAFD-STOCK-MOVEMENT-{#####}",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "movement_type",
+    "posting_date",
+    "project",
+    "source_warehouse",
+    "target_warehouse",
+    "reference_type",
+    "reference_name",
+    "items",
+    "total_amount",
+    "status",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "movement_type",
+      "fieldtype": "Select",
+      "label": "نوع الحركة / Movement Type",
+      "options": "استلام / Receipt\nصرف / Issue\nتحويل / Transfer\nتسوية / Adjustment\nهالك / Waste",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "posting_date",
+      "fieldtype": "Datetime",
+      "label": "تاريخ الحركة / Posting Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project"
+    },
+    {
+      "fieldname": "source_warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع المصدر / Source Warehouse",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "target_warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع المستهدف / Target Warehouse",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "reference_type",
+      "fieldtype": "Data",
+      "label": "نوع المرجع / Reference Type"
+    },
+    {
+      "fieldname": "reference_name",
+      "fieldtype": "Dynamic Link",
+      "label": "المرجع / Reference",
+      "options": "reference_type"
+    },
+    {
+      "fieldname": "items",
+      "fieldtype": "Table",
+      "label": "الأصناف / Items",
+      "options": "WAFD Stock Movement Item"
+    },
+    {
+      "fieldname": "total_amount",
+      "fieldtype": "Currency",
+      "label": "إجمالي القيمة / Total Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nمرحلة / Posted\nملغاة / Cancelled",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Stock Movement",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

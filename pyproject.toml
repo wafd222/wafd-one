@@ -1,12 +1,10 @@
 [project]
 name = "wafd_one"
-version = "0.4.0"
-description = "WAFD ONE catering operations for Frappe Framework v16"
+version = "1.0.0"
+description = "WAFD ONE integrated catering operations management for Frappe Framework v16"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [
-  { name = "Wafd Almadinah", email = "wafd.almadinah@gmail.com" }
-]
+authors = [{ name = "Wafd Almadinah", email = "wafd.almadinah@gmail.com" }]
 dependencies = []
 
 [build-system]

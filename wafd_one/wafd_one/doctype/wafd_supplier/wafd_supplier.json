@@ -1,0 +1,103 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:supplier_name",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "supplier_name",
+    "category",
+    "tax_number",
+    "contact_person",
+    "mobile",
+    "email",
+    "address",
+    "payment_terms",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "supplier_name",
+      "fieldtype": "Data",
+      "label": "اسم المورد / Supplier Name",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "category",
+      "fieldtype": "Select",
+      "label": "التصنيف / Category",
+      "options": "مواد غذائية / Food\nتغليف / Packaging\nمعدات / Equipment\nخدمات / Services\nأخرى / Other"
+    },
+    {
+      "fieldname": "tax_number",
+      "fieldtype": "Data",
+      "label": "الرقم الضريبي / Tax Number"
+    },
+    {
+      "fieldname": "contact_person",
+      "fieldtype": "Data",
+      "label": "مسؤول التواصل / Contact Person"
+    },
+    {
+      "fieldname": "mobile",
+      "fieldtype": "Data",
+      "label": "الجوال / Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "label": "البريد / Email",
+      "options": "Email"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "العنوان / Address"
+    },
+    {
+      "fieldname": "payment_terms",
+      "fieldtype": "Data",
+      "label": "شروط السداد / Payment Terms"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nموقوف / Suspended",
+      "default": "نشط / Active",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Supplier",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "supplier_name"
+}

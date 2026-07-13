@@ -1,35 +1,24 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "field:hotel_name",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "hotel_information_section",
     "hotel_name",
-    "mission",
-    "guest_count",
-    "classification_column",
-    "classification",
-    "status",
-    "location_section",
-    "map_url",
-    "gps_location",
+    "city",
+    "district",
     "address",
-    "contact_section",
+    "latitude",
+    "longitude",
     "contact_person",
-    "mobile_no",
+    "mobile",
     "email",
-    "delivery_section",
-    "delivery_entrance",
-    "delivery_notes"
+    "capacity",
+    "status"
   ],
   "fields": [
-    {
-      "fieldname": "hotel_information_section",
-      "fieldtype": "Section Break",
-      "label": "بيانات الفندق / Hotel Information"
-    },
     {
       "fieldname": "hotel_name",
       "fieldtype": "Data",
@@ -39,53 +28,15 @@
       "unique": 1
     },
     {
-      "fieldname": "mission",
-      "fieldtype": "Link",
-      "label": "البعثة / Mission",
-      "options": "WAFD Mission",
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "guest_count",
-      "fieldtype": "Int",
-      "label": "عدد النزلاء / Guest Count",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "classification_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "classification",
-      "fieldtype": "Select",
-      "label": "التصنيف / Classification",
-      "options": "بدون تصنيف\nنجمة واحدة\nنجمتان\n3 نجوم\n4 نجوم\n5 نجوم",
-      "default": "بدون تصنيف"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "نشط\nغير نشط",
-      "default": "نشط",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "location_section",
-      "fieldtype": "Section Break",
-      "label": "الموقع / Location"
-    },
-    {
-      "fieldname": "map_url",
+      "fieldname": "city",
       "fieldtype": "Data",
-      "label": "رابط الخرائط / Map URL",
-      "options": "URL"
+      "label": "المدينة / City",
+      "default": "المدينة المنورة"
     },
     {
-      "fieldname": "gps_location",
-      "fieldtype": "Geolocation",
-      "label": "الموقع GPS / GPS Location"
+      "fieldname": "district",
+      "fieldtype": "Data",
+      "label": "الحي / District"
     },
     {
       "fieldname": "address",
@@ -93,9 +44,14 @@
       "label": "العنوان / Address"
     },
     {
-      "fieldname": "contact_section",
-      "fieldtype": "Section Break",
-      "label": "مسؤول الفندق / Hotel Contact"
+      "fieldname": "latitude",
+      "fieldtype": "Float",
+      "label": "خط العرض / Latitude"
+    },
+    {
+      "fieldname": "longitude",
+      "fieldtype": "Float",
+      "label": "خط الطول / Longitude"
     },
     {
       "fieldname": "contact_person",
@@ -103,7 +59,7 @@
       "label": "مسؤول الفندق / Contact Person"
     },
     {
-      "fieldname": "mobile_no",
+      "fieldname": "mobile",
       "fieldtype": "Data",
       "label": "الجوال / Mobile",
       "options": "Phone"
@@ -111,26 +67,26 @@
     {
       "fieldname": "email",
       "fieldtype": "Data",
-      "label": "البريد / Email",
+      "label": "البريد الإلكتروني / Email",
       "options": "Email"
     },
     {
-      "fieldname": "delivery_section",
-      "fieldtype": "Section Break",
-      "label": "تعليمات التوصيل / Delivery Instructions"
+      "fieldname": "capacity",
+      "fieldtype": "Int",
+      "label": "الطاقة الاستيعابية / Capacity",
+      "non_negative": 1
     },
     {
-      "fieldname": "delivery_entrance",
-      "fieldtype": "Data",
-      "label": "مدخل التوصيل / Delivery Entrance"
-    },
-    {
-      "fieldname": "delivery_notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات التوصيل / Delivery Notes"
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 0,
   "is_submittable": 0,
   "links": [],
   "modified": "2026-07-13 00:00:00.000000",
@@ -156,9 +112,5 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "istable": 0,
-  "autoname": "field:hotel_name",
-  "naming_rule": "By fieldname",
-  "title_field": "hotel_name",
-  "search_fields": "hotel_name,mission,contact_person"
+  "title_field": "hotel_name"
 }

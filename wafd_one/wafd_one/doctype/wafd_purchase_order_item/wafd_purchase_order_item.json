@@ -1,0 +1,71 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "hash",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "ingredient",
+    "quantity",
+    "uom",
+    "rate",
+    "amount",
+    "received_quantity"
+  ],
+  "fields": [
+    {
+      "fieldname": "ingredient",
+      "fieldtype": "Link",
+      "label": "الصنف / Ingredient",
+      "options": "WAFD Ingredient",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "quantity",
+      "fieldtype": "Float",
+      "label": "الكمية / Quantity",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "uom",
+      "fieldtype": "Data",
+      "label": "الوحدة / UOM"
+    },
+    {
+      "fieldname": "rate",
+      "fieldtype": "Currency",
+      "label": "السعر / Rate",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "الإجمالي / Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "received_quantity",
+      "fieldtype": "Float",
+      "label": "الكمية المستلمة / Received Qty",
+      "non_negative": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Purchase Order Item",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0
+}

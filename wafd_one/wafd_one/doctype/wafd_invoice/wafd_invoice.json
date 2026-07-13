@@ -1,0 +1,127 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:WAFD-INVOICE-{#####}",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "project",
+    "invoice_date",
+    "due_date",
+    "description",
+    "subtotal",
+    "tax_rate",
+    "tax_amount",
+    "grand_total",
+    "paid_amount",
+    "balance",
+    "status",
+    "attachment"
+  ],
+  "fields": [
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "invoice_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الفاتورة / Invoice Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "due_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الاستحقاق / Due Date"
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Small Text",
+      "label": "البيان / Description"
+    },
+    {
+      "fieldname": "subtotal",
+      "fieldtype": "Currency",
+      "label": "قبل الضريبة / Subtotal",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "tax_rate",
+      "fieldtype": "Percent",
+      "label": "نسبة الضريبة / Tax Rate",
+      "default": 15
+    },
+    {
+      "fieldname": "tax_amount",
+      "fieldtype": "Currency",
+      "label": "الضريبة / Tax Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "grand_total",
+      "fieldtype": "Currency",
+      "label": "الإجمالي / Grand Total",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "paid_amount",
+      "fieldtype": "Currency",
+      "label": "المبلغ المحصل / Paid Amount",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "balance",
+      "fieldtype": "Currency",
+      "label": "الرصيد / Balance",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nمرسلة / Sent\nمدفوعة جزئياً / Partially Paid\nمدفوعة / Paid\nمتأخرة / Overdue\nملغاة / Cancelled",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "attachment",
+      "fieldtype": "Attach",
+      "label": "نسخة الفاتورة / Invoice File"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Invoice",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

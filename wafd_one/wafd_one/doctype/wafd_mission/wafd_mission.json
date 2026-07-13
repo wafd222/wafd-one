@@ -1,31 +1,20 @@
 {
   "actions": [],
   "allow_rename": 1,
+  "autoname": "field:mission_name",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
-    "mission_information_section",
     "mission_name",
-    "customer_name",
     "country",
-    "language_column",
-    "default_language",
-    "status",
-    "contact_section",
     "contact_person",
-    "mobile_no",
+    "mobile",
     "email",
     "address",
-    "notes_section",
-    "notes"
+    "status"
   ],
   "fields": [
-    {
-      "fieldname": "mission_information_section",
-      "fieldtype": "Section Break",
-      "label": "بيانات البعثة / Mission Information"
-    },
     {
       "fieldname": "mission_name",
       "fieldtype": "Data",
@@ -35,43 +24,10 @@
       "unique": 1
     },
     {
-      "fieldname": "customer_name",
-      "fieldtype": "Data",
-      "label": "اسم العميل / Customer Name",
-      "in_list_view": 1
-    },
-    {
       "fieldname": "country",
-      "fieldtype": "Link",
+      "fieldtype": "Data",
       "label": "الدولة / Country",
-      "options": "Country",
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "language_column",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "default_language",
-      "fieldtype": "Select",
-      "label": "اللغة / Language",
-      "options": "العربية\nEnglish\nहिन्दी\nاردو\nBahasa Indonesia\nOʻzbekcha\nFrançais\nHausa",
-      "default": "العربية"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "نشطة\nغير نشطة",
-      "default": "نشطة",
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "contact_section",
-      "fieldtype": "Section Break",
-      "label": "بيانات التواصل / Contact Information"
+      "in_list_view": 1
     },
     {
       "fieldname": "contact_person",
@@ -79,7 +35,7 @@
       "label": "مسؤول التواصل / Contact Person"
     },
     {
-      "fieldname": "mobile_no",
+      "fieldname": "mobile",
       "fieldtype": "Data",
       "label": "الجوال / Mobile",
       "options": "Phone"
@@ -87,7 +43,7 @@
     {
       "fieldname": "email",
       "fieldtype": "Data",
-      "label": "البريد / Email",
+      "label": "البريد الإلكتروني / Email",
       "options": "Email"
     },
     {
@@ -96,17 +52,16 @@
       "label": "العنوان / Address"
     },
     {
-      "fieldname": "notes_section",
-      "fieldtype": "Section Break",
-      "label": "ملاحظات / Notes"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات البعثة / Mission Notes"
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
     }
   ],
   "index_web_pages_for_search": 0,
+  "istable": 0,
   "is_submittable": 0,
   "links": [],
   "modified": "2026-07-13 00:00:00.000000",
@@ -132,9 +87,5 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "istable": 0,
-  "autoname": "field:mission_name",
-  "naming_rule": "By fieldname",
-  "title_field": "mission_name",
-  "search_fields": "mission_name,customer_name,country"
+  "title_field": "mission_name"
 }

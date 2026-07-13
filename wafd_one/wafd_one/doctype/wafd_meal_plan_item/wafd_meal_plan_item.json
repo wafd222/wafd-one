@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "hash",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "meal_name",
+    "category",
+    "quantity_per_meal",
+    "uom",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "meal_name",
+      "fieldtype": "Data",
+      "label": "اسم الوجبة / Meal Name",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "category",
+      "fieldtype": "Select",
+      "label": "الفئة / Category",
+      "options": "رئيسي / Main\nمقبلات / Appetizer\nسلطة / Salad\nحلى / Dessert\nمشروب / Beverage\nإضافات / Extras"
+    },
+    {
+      "fieldname": "quantity_per_meal",
+      "fieldtype": "Float",
+      "label": "الكمية لكل وجبة / Qty per Meal",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "uom",
+      "fieldtype": "Data",
+      "label": "الوحدة / UOM"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Data",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Meal Plan Item",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0
+}

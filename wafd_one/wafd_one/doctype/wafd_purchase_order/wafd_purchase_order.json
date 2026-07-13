@@ -1,0 +1,127 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:WAFD-PURCHASE-ORDER-{#####}",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "supplier",
+    "project",
+    "order_date",
+    "expected_date",
+    "warehouse",
+    "items",
+    "subtotal",
+    "tax_rate",
+    "tax_amount",
+    "grand_total",
+    "status",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "supplier",
+      "fieldtype": "Link",
+      "label": "المورد / Supplier",
+      "options": "WAFD Supplier",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project"
+    },
+    {
+      "fieldname": "order_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الطلب / Order Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "expected_date",
+      "fieldtype": "Date",
+      "label": "تاريخ التوريد المتوقع / Expected Date"
+    },
+    {
+      "fieldname": "warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع / Warehouse",
+      "options": "WAFD Warehouse",
+      "reqd": 1
+    },
+    {
+      "fieldname": "items",
+      "fieldtype": "Table",
+      "label": "الأصناف / Items",
+      "options": "WAFD Purchase Order Item"
+    },
+    {
+      "fieldname": "subtotal",
+      "fieldtype": "Currency",
+      "label": "الإجمالي قبل الضريبة / Subtotal",
+      "read_only": 1
+    },
+    {
+      "fieldname": "tax_rate",
+      "fieldtype": "Percent",
+      "label": "نسبة الضريبة / Tax Rate",
+      "default": 15
+    },
+    {
+      "fieldname": "tax_amount",
+      "fieldtype": "Currency",
+      "label": "الضريبة / Tax Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "grand_total",
+      "fieldtype": "Currency",
+      "label": "الإجمالي شامل الضريبة / Grand Total",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nمعتمد / Approved\nمرسل / Sent\nمستلم جزئياً / Partially Received\nمستلم / Received\nملغي / Cancelled",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Purchase Order",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

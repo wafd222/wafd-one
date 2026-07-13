@@ -1,0 +1,112 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:contract_title",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "contract_title",
+    "project",
+    "contract_number",
+    "signing_date",
+    "start_date",
+    "end_date",
+    "contract_value",
+    "payment_terms",
+    "attachment",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "contract_title",
+      "fieldtype": "Data",
+      "label": "عنوان العقد / Contract Title",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "contract_number",
+      "fieldtype": "Data",
+      "label": "رقم العقد / Contract Number",
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "signing_date",
+      "fieldtype": "Date",
+      "label": "تاريخ التوقيع / Signing Date"
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "تاريخ البداية / Start Date"
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "تاريخ النهاية / End Date"
+    },
+    {
+      "fieldname": "contract_value",
+      "fieldtype": "Currency",
+      "label": "قيمة العقد / Contract Value",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "payment_terms",
+      "fieldtype": "Small Text",
+      "label": "شروط السداد / Payment Terms"
+    },
+    {
+      "fieldname": "attachment",
+      "fieldtype": "Attach",
+      "label": "ملف العقد / Contract File"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nساري / Active\nمنتهي / Expired\nملغي / Cancelled",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Contract",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "contract_title"
+}

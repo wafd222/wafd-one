@@ -495,5 +495,7 @@
       "type": "DocType"
     }
   ],
-  "title": "WAFD ONE"
+  "title": "WAFD ONE",
+  "type": "Workspace",
+  "app": "wafd_one"
 }

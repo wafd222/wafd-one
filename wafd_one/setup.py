@@ -34,11 +34,17 @@ def _workspace_definition():
 
 def ensure_workspace():
     data = _workspace_definition()
+
+    # Frappe v16 requires Workspace.type. Older exported workspace JSON files
+    # may not contain it, so normalize the document before insert/update.
+    data.setdefault("type", "Workspace")
+    data.setdefault("app", "wafd_one")
+
     name = data["name"]
     if frappe.db.exists("Workspace", name):
         doc = frappe.get_doc("Workspace", name)
         for field in (
-            "title", "label", "module", "icon", "sequence_id", "public",
+            "title", "label", "module", "app", "type", "icon", "sequence_id", "public",
             "is_hidden", "hide_custom", "content", "parent_page", "for_user",
         ):
             if field in data:

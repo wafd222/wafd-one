@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — المرحلة الأولى\",\"level\":2,\"col\":12}},{\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة مشاريع الإعاشة والعملاء والفنادق والعقود وخطط الوجبات والوصفات والمكونات.\",\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3}},{\"type\":\"header\",\"data\":{\"text\":\"تخطيط الوجبات والتكلفة\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":4}}]",
+  "content": "[{\"id\":\"wafd_title_01\",\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — المرحلة الأولى\",\"level\":2,\"col\":12}},{\"id\":\"wafd_intro_01\",\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة مشاريع الإعاشة والعملاء والفنادق والعقود وخطط الوجبات والوصفات والمكونات.\",\"col\":12}},{\"id\":\"wafd_head_projects\",\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12}},{\"id\":\"wafd_short_project\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"id\":\"wafd_short_mission\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3}},{\"id\":\"wafd_short_hotel\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3}},{\"id\":\"wafd_short_contract\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3}},{\"id\":\"wafd_spacer_01\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"wafd_head_meals\",\"type\":\"header\",\"data\":{\"text\":\"تخطيط الوجبات والتكلفة\",\"level\":4,\"col\":12}},{\"id\":\"wafd_short_mealplan\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":4}},{\"id\":\"wafd_short_recipe\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":4}},{\"id\":\"wafd_short_ingredient\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":4}},{\"id\":\"wafd_spacer_02\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"wafd_head_cards\",\"type\":\"header\",\"data\":{\"text\":\"جميع سجلات المرحلة الأولى\",\"level\":4,\"col\":12}},{\"id\":\"wafd_card_projects\",\"type\":\"card\",\"data\":{\"card_name\":\"إدارة المشاريع والعملاء\",\"col\":6}},{\"id\":\"wafd_card_meals\",\"type\":\"card\",\"data\":{\"card_name\":\"تخطيط الوجبات والتكلفة\",\"col\":6}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -174,5 +174,11 @@
   ],
   "title": "WAFD ONE",
   "app": "wafd_one",
-  "type": "Workspace"
+  "type": "Workspace",
+  "restrict_to_domain": "",
+  "is_default": 0,
+  "extends": "",
+  "pin_to_top": 0,
+  "pin_to_bottom": 0,
+  "disable_user_customization": 0
 }

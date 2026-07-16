@@ -174,6 +174,24 @@ def _validate_workspace_record(workspace):
             + ", ".join(missing_blocks)
         )
 
+    # Frappe v16 identifies each workspace widget by a stable block ID.
+    # Without IDs, headings can render while shortcuts are silently omitted.
+    blocks_without_id = [row.get("type", "unknown") for row in blocks if not row.get("id")]
+    if blocks_without_id:
+        frappe.throw(
+            "WAFD ONE workspace contains blocks without v16 IDs: "
+            + ", ".join(blocks_without_id)
+        )
+
+    card_names = {
+        row.get("data", {}).get("card_name")
+        for row in blocks
+        if row.get("type") == "card"
+    }
+    required_cards = {"إدارة المشاريع والعملاء", "تخطيط الوجبات والتكلفة"}
+    if not required_cards.issubset(card_names):
+        frappe.throw("WAFD ONE workspace card blocks are incomplete.")
+
 
 def rebuild_workspace_from_source():
     missing = [

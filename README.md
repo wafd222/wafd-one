@@ -19,7 +19,3 @@
 ## التثبيت السحابي
 
 أضف المستودع إلى Bench يعمل بـ Frappe v16، ثبّت التطبيق على الموقع، ثم نفّذ التحديث. يقوم التطبيق بمزامنة مساحة WAFD ONE تلقائيًا بعد كل migration.
-
-
-## Version 2.7.0
-Workspace shortcut repair for upgraded Frappe Cloud sites.

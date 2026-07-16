@@ -120,50 +120,59 @@
       "doc_view": "List",
       "label": "المشاريع",
       "link_to": "WAFD Catering Project",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Cyan",
       "doc_view": "List",
       "label": "البعثات والعملاء",
       "link_to": "WAFD Mission",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Cyan",
       "doc_view": "List",
       "label": "الفنادق",
       "link_to": "WAFD Hotel",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Orange",
       "doc_view": "List",
       "label": "العقود",
       "link_to": "WAFD Contract",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Green",
       "doc_view": "List",
       "label": "خطط الوجبات",
       "link_to": "WAFD Meal Plan",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Green",
       "doc_view": "List",
       "label": "الوصفات",
       "link_to": "WAFD Recipe",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     },
     {
       "color": "Green",
       "doc_view": "List",
       "label": "مكونات الأغذية",
       "link_to": "WAFD Ingredient",
-      "type": "DocType"
+      "type": "DocType",
+      "restrict_to_domain": ""
     }
   ],
-  "title": "WAFD ONE"
+  "title": "WAFD ONE",
+  "app": "wafd_one",
+  "type": "Workspace"
 }

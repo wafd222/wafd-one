@@ -262,7 +262,12 @@ def after_install():
 
 
 def after_migrate():
-    # Normal migrations sync metadata automatically. The v2.6 patch repairs
-    # older sites once; this hook then keeps workspace/access settings current.
-    apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=False)
+    # Frappe v16 can incorrectly remove valid custom-app DocTypes during
+    # remove_orphan_doctypes. Reload WAFD ONE metadata before rebuilding
+    # the workspace so the migration can recover safely.
+    apply_setup(
+        force_rebuild=True,
+        assign_manager_access=True,
+        sync_doctypes=True,
+    )
     frappe.clear_cache()

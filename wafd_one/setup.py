@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from pathlib import Path
+
 import frappe
 
 
@@ -12,23 +16,50 @@ ROLES = (
     "WAFD Storekeeper",
 )
 
-# Child tables and independent masters first; linked parent documents last.
-PHASE_ONE_DOCTYPE_FILES = (
+# Child tables first, then masters, then transactional documents.
+DOCTYPE_FILES = (
+    "wafd_meal_plan_item",
     "wafd_project_hotel",
     "wafd_project_service",
+    "wafd_purchase_order_item",
     "wafd_recipe_item",
-    "wafd_meal_plan_item",
+    "wafd_stock_movement_item",
     "wafd_mission",
     "wafd_hotel",
     "wafd_ingredient",
+    "wafd_supplier",
+    "wafd_vehicle",
+    "wafd_driver",
+    "wafd_warehouse",
     "wafd_recipe",
     "wafd_contract",
     "wafd_catering_project",
     "wafd_meal_plan",
+    "wafd_production_batch",
+    "wafd_quality_inspection",
+    "wafd_loading_record",
+    "wafd_delivery_trip",
+    "wafd_delivery_proof",
+    "wafd_complaint",
+    "wafd_purchase_order",
+    "wafd_stock_movement",
+    "wafd_project_cost",
+    "wafd_project_revenue",
+    "wafd_invoice",
+)
+
+WORKSPACE_LINKS = (
+    "WAFD Catering Project",
+    "WAFD Mission",
+    "WAFD Hotel",
+    "WAFD Contract",
+    "WAFD Meal Plan",
+    "WAFD Recipe",
+    "WAFD Ingredient",
 )
 
 
-def ensure_roles():
+def ensure_roles() -> None:
     for role_name in ROLES:
         if not frappe.db.exists("Role", role_name):
             frappe.get_doc(
@@ -40,7 +71,19 @@ def ensure_roles():
             ).insert(ignore_permissions=True)
 
 
-def ensure_system_manager_access():
+def sync_doctypes() -> None:
+    """Reload every WAFD ONE DocType from the repository into the site database."""
+    for doctype_file in DOCTYPE_FILES:
+        frappe.reload_doc(
+            "wafd_one",
+            "doctype",
+            doctype_file,
+            force=True,
+            reset_permissions=True,
+        )
+
+
+def ensure_system_manager_access() -> None:
     users = frappe.get_all(
         "Has Role",
         filters={"role": "System Manager", "parenttype": "User"},
@@ -57,61 +100,46 @@ def ensure_system_manager_access():
             user.save()
 
 
-def reload_workspace():
-    """Load the standard Workspace through Frappe's metadata loader.
-
-    This is safer than manually inserting a Workspace document and guarantees
-    that child rows and link validation follow the framework's normal sync path.
-    """
-    required = (
-        "WAFD Catering Project",
-        "WAFD Mission",
-        "WAFD Hotel",
-        "WAFD Contract",
-        "WAFD Meal Plan",
-        "WAFD Recipe",
-        "WAFD Ingredient",
-    )
-    missing = [name for name in required if not frappe.db.exists("DocType", name)]
+def reload_workspace() -> bool:
+    missing = [name for name in WORKSPACE_LINKS if not frappe.db.exists("DocType", name)]
     if missing:
-        frappe.log_error(
-            title="WAFD ONE workspace deferred",
-            message=f"Missing DocTypes: {', '.join(missing)}",
+        frappe.throw(
+            "WAFD ONE metadata sync incomplete. Missing DocTypes: " + ", ".join(missing)
         )
-        return False
 
     frappe.reload_doc("wafd_one", "workspace", "wafd_one", force=True)
     return True
 
 
-def ensure_default_app():
-    try:
-        settings = frappe.get_single("System Settings")
-        if settings.meta.has_field("default_app"):
-            settings.default_app = "wafd_one"
-            settings.flags.ignore_permissions = True
-            settings.flags.ignore_version = True
-            settings.save()
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "WAFD ONE default app setup")
+def ensure_default_app() -> None:
+    settings = frappe.get_single("System Settings")
+    if settings.meta.has_field("default_app") and settings.default_app != "wafd_one":
+        settings.default_app = "wafd_one"
+        settings.flags.ignore_permissions = True
+        settings.flags.ignore_version = True
+        settings.save()
 
 
-def before_migrate():
-    # Roles referenced by DocType permissions must exist before model sync.
+def apply_setup(force_rebuild: bool = False, assign_manager_access: bool = True) -> None:
+    """Backward-compatible setup entry point used by older installed patches."""
     ensure_roles()
-
-
-def after_install():
-    ensure_roles()
+    sync_doctypes()
     reload_workspace()
-    ensure_system_manager_access()
+    if assign_manager_access:
+        ensure_system_manager_access()
     ensure_default_app()
     frappe.clear_cache()
 
 
-def after_migrate():
+def before_migrate() -> None:
+    # Permission rows in DocType JSON files reference these roles.
     ensure_roles()
-    reload_workspace()
-    ensure_system_manager_access()
-    ensure_default_app()
-    frappe.clear_cache()
+
+
+def after_install() -> None:
+    apply_setup(force_rebuild=True, assign_manager_access=True)
+
+
+def after_migrate() -> None:
+    # Also runs on sites where an older patch was already marked as executed.
+    apply_setup(force_rebuild=True, assign_manager_access=True)

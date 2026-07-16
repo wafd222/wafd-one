@@ -1,63 +1,51 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "format:WAFD-PROJ-{#####}",
+  "autoname": "naming_series:",
   "creation": "2026-07-13 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
     "project_identity_section",
+    "naming_series",
     "project_name",
     "project_code",
-    "column_identity",
     "mission",
     "contract",
     "project_type",
     "status",
-    "dates_section",
+    "schedule_section",
     "start_date",
     "end_date",
     "duration_days",
-    "column_beneficiaries",
     "beneficiary_count",
-    "hotel_guest_total",
+    "management_section",
+    "project_manager",
+    "operations_manager",
+    "delivery_supervisor",
     "hotels_section",
     "hotels",
     "services_section",
     "services",
-    "meal_summary_section",
+    "financial_section",
+    "currency",
+    "contract_value",
+    "estimated_revenue",
+    "estimated_cost",
+    "actual_cost",
+    "revenue",
+    "profit",
+    "profit_margin_percent",
+    "progress_section",
     "total_meals",
     "delivered_meals",
     "remaining_meals",
-    "column_progress",
     "progress_percent",
-    "meals_per_beneficiary",
-    "management_section",
-    "project_manager",
-    "operations_manager",
-    "column_management",
-    "delivery_supervisor",
-    "finance_user",
-    "finance_section",
-    "currency",
-    "contract_value",
-    "estimated_cost",
-    "estimated_profit",
-    "estimated_margin_percent",
-    "column_actuals",
-    "revenue",
-    "actual_cost",
-    "profit",
-    "profit_margin_percent",
-    "cost_per_meal",
     "approvals_section",
-    "project_manager_approval",
-    "operations_approval",
-    "finance_approval",
-    "column_approval",
-    "general_manager_approval",
-    "approved_by",
-    "approved_on",
+    "project_manager_approved",
+    "operations_approved",
+    "finance_approved",
+    "general_manager_approved",
     "notes_section",
     "notes"
   ],
@@ -65,7 +53,16 @@
     {
       "fieldname": "project_identity_section",
       "fieldtype": "Section Break",
-      "label": "بيانات المشروع / Project Identity"
+      "label": "بيانات المشروع / Project Information"
+    },
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "سلسلة الترقيم / Naming Series",
+      "options": "WAFD-PROJ-.#####",
+      "default": "WAFD-PROJ-.#####",
+      "reqd": 1,
+      "hidden": 1
     },
     {
       "fieldname": "project_name",
@@ -81,11 +78,6 @@
       "read_only": 1,
       "unique": 1,
       "in_list_view": 1
-    },
-    {
-      "fieldname": "column_identity",
-      "fieldtype": "Column Break",
-      "label": ""
     },
     {
       "fieldname": "mission",
@@ -105,20 +97,20 @@
       "fieldname": "project_type",
       "fieldtype": "Select",
       "label": "نوع المشروع / Project Type",
-      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nإفطار صائم / Iftar Saem\nفعاليات / Events\nأخرى / Other",
+      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nفعاليات / Events\nأخرى / Other",
       "reqd": 1
     },
     {
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "الحالة / Status",
-      "options": "مسودة / Draft\nتخطيط / Planning\nبانتظار الاعتماد / Pending Approval\nمعتمد / Approved\nنشط / Active\nمعلق / On Hold\nمكتمل / Completed\nملغي / Cancelled",
+      "options": "مسودة / Draft\nتخطيط / Planning\nنشط / Active\nمعلق / On Hold\nمكتمل / Completed\nملغي / Cancelled",
       "default": "مسودة / Draft",
       "reqd": 1,
       "in_list_view": 1
     },
     {
-      "fieldname": "dates_section",
+      "fieldname": "schedule_section",
       "fieldtype": "Section Break",
       "label": "المدة والمستفيدون / Schedule and Beneficiaries"
     },
@@ -142,21 +134,33 @@
       "read_only": 1
     },
     {
-      "fieldname": "column_beneficiaries",
-      "fieldtype": "Column Break",
-      "label": ""
-    },
-    {
       "fieldname": "beneficiary_count",
       "fieldtype": "Int",
       "label": "عدد المستفيدين / Beneficiaries",
       "non_negative": 1
     },
     {
-      "fieldname": "hotel_guest_total",
-      "fieldtype": "Int",
-      "label": "إجمالي نزلاء الفنادق / Hotel Guest Total",
-      "read_only": 1
+      "fieldname": "management_section",
+      "fieldtype": "Section Break",
+      "label": "فريق الإدارة / Management Team"
+    },
+    {
+      "fieldname": "project_manager",
+      "fieldtype": "Link",
+      "label": "مدير المشروع / Project Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "operations_manager",
+      "fieldtype": "Link",
+      "label": "مدير العمليات / Operations Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "delivery_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف التوصيل / Delivery Supervisor",
+      "options": "User"
     },
     {
       "fieldname": "hotels_section",
@@ -181,84 +185,9 @@
       "options": "WAFD Project Service"
     },
     {
-      "fieldname": "meal_summary_section",
+      "fieldname": "financial_section",
       "fieldtype": "Section Break",
-      "label": "ملخص الوجبات / Meal Summary"
-    },
-    {
-      "fieldname": "total_meals",
-      "fieldtype": "Int",
-      "label": "إجمالي الوجبات المخططة / Planned Meals",
-      "read_only": 1
-    },
-    {
-      "fieldname": "delivered_meals",
-      "fieldtype": "Int",
-      "label": "الوجبات المسلمة / Delivered Meals",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "remaining_meals",
-      "fieldtype": "Int",
-      "label": "الوجبات المتبقية / Remaining Meals",
-      "read_only": 1
-    },
-    {
-      "fieldname": "column_progress",
-      "fieldtype": "Column Break",
-      "label": ""
-    },
-    {
-      "fieldname": "progress_percent",
-      "fieldtype": "Percent",
-      "label": "نسبة الإنجاز / Progress",
-      "read_only": 1
-    },
-    {
-      "fieldname": "meals_per_beneficiary",
-      "fieldtype": "Float",
-      "label": "وجبات لكل مستفيد / Meals per Beneficiary",
-      "read_only": 1,
-      "precision": "2"
-    },
-    {
-      "fieldname": "management_section",
-      "fieldtype": "Section Break",
-      "label": "فريق الإدارة / Management Team"
-    },
-    {
-      "fieldname": "project_manager",
-      "fieldtype": "Link",
-      "label": "مدير المشروع / Project Manager",
-      "options": "User"
-    },
-    {
-      "fieldname": "operations_manager",
-      "fieldtype": "Link",
-      "label": "مدير العمليات / Operations Manager",
-      "options": "User"
-    },
-    {
-      "fieldname": "column_management",
-      "fieldtype": "Column Break",
-      "label": ""
-    },
-    {
-      "fieldname": "delivery_supervisor",
-      "fieldtype": "Link",
-      "label": "مشرف التوصيل / Delivery Supervisor",
-      "options": "User"
-    },
-    {
-      "fieldname": "finance_user",
-      "fieldtype": "Link",
-      "label": "مسؤول المالية / Finance User",
-      "options": "User"
-    },
-    {
-      "fieldname": "finance_section",
-      "fieldtype": "Section Break",
-      "label": "المالية والربحية / Finance and Profitability"
+      "label": "الملخص المالي / Financial Summary"
     },
     {
       "fieldname": "currency",
@@ -274,39 +203,28 @@
       "non_negative": 1
     },
     {
+      "fieldname": "estimated_revenue",
+      "fieldtype": "Currency",
+      "label": "الإيراد التقديري / Estimated Revenue",
+      "read_only": 1
+    },
+    {
       "fieldname": "estimated_cost",
       "fieldtype": "Currency",
       "label": "التكلفة التقديرية / Estimated Cost",
       "non_negative": 1
     },
     {
-      "fieldname": "estimated_profit",
+      "fieldname": "actual_cost",
       "fieldtype": "Currency",
-      "label": "الربح المتوقع / Estimated Profit",
+      "label": "التكلفة الفعلية / Actual Cost",
       "read_only": 1
-    },
-    {
-      "fieldname": "estimated_margin_percent",
-      "fieldtype": "Percent",
-      "label": "هامش الربح المتوقع / Estimated Margin",
-      "read_only": 1
-    },
-    {
-      "fieldname": "column_actuals",
-      "fieldtype": "Column Break",
-      "label": ""
     },
     {
       "fieldname": "revenue",
       "fieldtype": "Currency",
       "label": "الإيراد الفعلي / Actual Revenue",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "actual_cost",
-      "fieldtype": "Currency",
-      "label": "التكلفة الفعلية / Actual Cost",
-      "non_negative": 1
+      "read_only": 1
     },
     {
       "fieldname": "profit",
@@ -317,13 +235,36 @@
     {
       "fieldname": "profit_margin_percent",
       "fieldtype": "Percent",
-      "label": "هامش الربح الفعلي / Actual Margin",
+      "label": "هامش الربح / Profit Margin",
       "read_only": 1
     },
     {
-      "fieldname": "cost_per_meal",
-      "fieldtype": "Currency",
-      "label": "تكلفة الوجبة / Cost per Meal",
+      "fieldname": "progress_section",
+      "fieldtype": "Section Break",
+      "label": "التنفيذ والإنجاز / Execution and Progress"
+    },
+    {
+      "fieldname": "total_meals",
+      "fieldtype": "Int",
+      "label": "إجمالي الوجبات / Total Meals",
+      "read_only": 1
+    },
+    {
+      "fieldname": "delivered_meals",
+      "fieldtype": "Int",
+      "label": "الوجبات المسلمة / Delivered Meals",
+      "read_only": 1
+    },
+    {
+      "fieldname": "remaining_meals",
+      "fieldtype": "Int",
+      "label": "الوجبات المتبقية / Remaining Meals",
+      "read_only": 1
+    },
+    {
+      "fieldname": "progress_percent",
+      "fieldtype": "Percent",
+      "label": "نسبة الإنجاز / Progress",
       "read_only": 1
     },
     {
@@ -332,46 +273,28 @@
       "label": "الاعتمادات / Approvals"
     },
     {
-      "fieldname": "project_manager_approval",
+      "fieldname": "project_manager_approved",
       "fieldtype": "Check",
       "label": "اعتماد مدير المشروع / Project Manager Approval",
       "default": 0
     },
     {
-      "fieldname": "operations_approval",
+      "fieldname": "operations_approved",
       "fieldtype": "Check",
-      "label": "اعتماد مدير العمليات / Operations Approval",
+      "label": "اعتماد العمليات / Operations Approval",
       "default": 0
     },
     {
-      "fieldname": "finance_approval",
+      "fieldname": "finance_approved",
       "fieldtype": "Check",
       "label": "اعتماد المالية / Finance Approval",
       "default": 0
     },
     {
-      "fieldname": "column_approval",
-      "fieldtype": "Column Break",
-      "label": ""
-    },
-    {
-      "fieldname": "general_manager_approval",
+      "fieldname": "general_manager_approved",
       "fieldtype": "Check",
       "label": "اعتماد المدير العام / General Manager Approval",
       "default": 0
-    },
-    {
-      "fieldname": "approved_by",
-      "fieldtype": "Link",
-      "label": "اعتمد بواسطة / Approved By",
-      "options": "User",
-      "read_only": 1
-    },
-    {
-      "fieldname": "approved_on",
-      "fieldtype": "Datetime",
-      "label": "تاريخ الاعتماد / Approved On",
-      "read_only": 1
     },
     {
       "fieldname": "notes_section",
@@ -389,10 +312,6 @@
   "is_submittable": 0,
   "links": [
     {
-      "link_doctype": "WAFD Contract",
-      "link_fieldname": "project"
-    },
-    {
       "link_doctype": "WAFD Meal Plan",
       "link_fieldname": "project"
     },
@@ -403,13 +322,9 @@
     {
       "link_doctype": "WAFD Project Cost",
       "link_fieldname": "project"
-    },
-    {
-      "link_doctype": "WAFD Project Revenue",
-      "link_fieldname": "project"
     }
   ],
-  "modified": "2026-07-16 08:00:00.000000",
+  "modified": "2026-07-16 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Catering Project",
@@ -432,7 +347,6 @@
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1,
       "email": 1,
       "export": 1,
       "print": 1,
@@ -454,28 +368,17 @@
       "role": "WAFD Finance User",
       "read": 1,
       "write": 1,
+      "create": 1,
       "email": 1,
       "export": 1,
       "print": 1,
-      "report": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "print": 1,
-      "report": 1
-    },
-    {
-      "role": "WAFD Production Supervisor",
-      "read": 1,
-      "print": 1,
-      "report": 1
+      "report": 1,
+      "share": 1
     }
   ],
   "sort_field": "creation",
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "title_field": "project_name",
-  "search_fields": "project_code, mission, status"
+  "title_field": "project_name"
 }

@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — مركز إدارة عمليات الإعاشة\",\"level\":2,\"col\":12}},{\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة موحدة للمشاريع والبعثات والفنادق وخطط الوجبات والإنتاج والجودة والتحميل والتوصيل والمخزون والمالية.\",\"col\":12}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"الوصول السريع\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"دفعات الإنتاج\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"فحص الجودة\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"رحلات التوصيل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إثباتات التسليم\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"أوامر الشراء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفواتير\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"التخطيط والإنتاج والجودة\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"دفعات الإنتاج\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"فحص الجودة\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"التحميل والتوزيع والأسطول\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"سجلات التحميل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"رحلات التوصيل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إثباتات التسليم\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الشكاوى\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"السائقون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المركبات\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"المشتريات والمخزون\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الموردون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"أوامر الشراء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المستودعات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"حركة المخزون\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"المالية والربحية\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"تكاليف المشاريع\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إيرادات المشاريع\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفواتير\",\"col\":4}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"الأقسام\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"إدارة المشاريع والعملاء\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"التخطيط والإنتاج والجودة\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"التحميل والتوزيع\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"الأسطول\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"المشتريات والمخزون\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"المالية والربحية\",\"col\":4}}]",
+  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — مركز إدارة عمليات الإعاشة\",\"level\":2,\"col\":12}},{\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة المشاريع والعملاء والوجبات والإنتاج والجودة والتوصيل والمخزون والمالية.\",\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3}},{\"type\":\"header\",\"data\":{\"text\":\"التخطيط والإنتاج والجودة\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"دفعات الإنتاج\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"فحص الجودة\",\"col\":3}},{\"type\":\"header\",\"data\":{\"text\":\"التحميل والتوزيع والأسطول\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"سجلات التحميل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"رحلات التوصيل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إثباتات التسليم\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الشكاوى\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"السائقون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المركبات\",\"col\":3}},{\"type\":\"header\",\"data\":{\"text\":\"المشتريات والمخزون والمالية\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الموردون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"أوامر الشراء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المستودعات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"حركة المخزون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"تكاليف المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إيرادات المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفواتير\",\"col\":3}}]",
   "creation": "2026-07-13 00:00:00.000000",
   "custom_blocks": [],
   "docstatus": 0,
@@ -303,7 +303,7 @@
       "type": "Link"
     }
   ],
-  "modified": "2026-07-13 16:30:00.000000",
+  "modified": "2026-07-16 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD ONE",
@@ -312,32 +312,7 @@
   "parent_page": "",
   "public": 1,
   "quick_lists": [],
-  "roles": [
-    {
-      "role": "System Manager"
-    },
-    {
-      "role": "WAFD Operations Manager"
-    },
-    {
-      "role": "WAFD Project Manager"
-    },
-    {
-      "role": "WAFD Production Supervisor"
-    },
-    {
-      "role": "WAFD Quality Inspector"
-    },
-    {
-      "role": "WAFD Delivery Supervisor"
-    },
-    {
-      "role": "WAFD Finance User"
-    },
-    {
-      "role": "WAFD Storekeeper"
-    }
-  ],
+  "roles": [],
   "sequence_id": 1.0,
   "shortcuts": [
     {

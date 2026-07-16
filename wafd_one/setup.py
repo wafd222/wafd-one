@@ -23,8 +23,31 @@ def _workspace_definition():
         return json.load(source)
 
 
+def _workspace_links_are_ready(data):
+    """Return True only when every DocType referenced by the workspace exists.
+
+    Workspace rows validate their Link To values on insert. During pre-model-sync
+    patches those DocTypes may not exist yet, so workspace creation must be
+    deferred until after the schema sync has completed.
+    """
+    referenced = set()
+    for row in data.get("shortcuts", []):
+        if row.get("type") == "DocType" and row.get("link_to"):
+            referenced.add(row["link_to"])
+    for row in data.get("links", []):
+        if row.get("type") == "Link" and row.get("link_type") == "DocType" and row.get("link_to"):
+            referenced.add(row["link_to"])
+    return all(frappe.db.exists("DocType", doctype) for doctype in referenced)
+
+
 def ensure_workspace(force_rebuild=False):
     data = _workspace_definition()
+    if not _workspace_links_are_ready(data):
+        frappe.log_error(
+            "Workspace rebuild deferred until all linked WAFD ONE DocTypes are synchronized.",
+            "WAFD ONE workspace setup deferred",
+        )
+        return False
     data.update({"type": "Workspace", "app": "wafd_one", "public": 1, "is_hidden": 0, "hide_custom": 0, "roles": []})
     name = data["name"]
     if force_rebuild and frappe.db.exists("Workspace", name):
@@ -49,6 +72,7 @@ def ensure_workspace(force_rebuild=False):
         doc.flags.ignore_permissions = True
         doc.flags.ignore_version = True
         doc.insert()
+    return True
 
 
 def ensure_default_app():

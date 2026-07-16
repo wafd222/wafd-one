@@ -1,2 +1,1 @@
 wafd_one.patches.v2_1.sync_workspace_and_default_app
-wafd_one.patches.v2_3.rebuild_workspace_and_phase_one

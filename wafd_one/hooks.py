@@ -17,6 +17,9 @@ add_to_apps_screen = [
     }
 ]
 
+# Keep migration hooks intentionally small. Frappe performs the normal DocType
+# model sync first; WAFD ONE only prepares roles before sync and refreshes the
+# standard workspace after sync has completed.
 after_install = "wafd_one.setup.after_install"
 before_migrate = "wafd_one.setup.before_migrate"
 after_migrate = "wafd_one.setup.after_migrate"

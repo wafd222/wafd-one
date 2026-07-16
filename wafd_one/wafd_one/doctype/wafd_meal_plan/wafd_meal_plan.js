@@ -1,4 +1,18 @@
 frappe.ui.form.on("WAFD Meal Plan", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+        frm.add_custom_button(__("Create Production Batch"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_meal_plan.wafd_meal_plan.create_production_batch",
+                args: { meal_plan_name: frm.doc.name },
+                freeze: true,
+                freeze_message: __("Creating production batch..."),
+                callback(r) {
+                    if (r.message) frappe.set_route("Form", "WAFD Production Batch", r.message.name);
+                }
+            });
+        }, __("Operations"));
+    },
     setup(frm) {
         frm.set_query("hotel", () => ({ filters: frm.doc.project ? { mission: frm.doc.__onload?.mission } : {} }));
     },

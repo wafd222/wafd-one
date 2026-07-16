@@ -20,3 +20,26 @@ class WafdMealPlan(Document):
             return
         cost = frappe.db.get_value("WAFD Recipe", self.recipe, "cost_per_portion")
         self.estimated_unit_cost = flt(cost)
+
+
+@frappe.whitelist()
+def create_production_batch(meal_plan_name):
+    meal_plan = frappe.get_doc("WAFD Meal Plan", meal_plan_name)
+    meal_plan.check_permission("write")
+    existing = frappe.db.get_value("WAFD Production Batch", {"meal_plan": meal_plan.name}, "name")
+    if existing:
+        return {"name": existing, "created": False}
+    if not meal_plan.recipe:
+        frappe.throw("حدد وصفة في خطة الوجبة أولاً / Select a recipe in the meal plan first")
+    batch = frappe.get_doc({
+        "doctype": "WAFD Production Batch",
+        "project": meal_plan.project,
+        "meal_plan": meal_plan.name,
+        "recipe": meal_plan.recipe,
+        "batch_date": meal_plan.service_date,
+        "planned_quantity": meal_plan.quantity,
+        "status": "مخطط / Planned",
+    })
+    batch.insert()
+    meal_plan.db_set("status", "معتمد / Approved", update_modified=False)
+    return {"name": batch.name, "created": True}

@@ -1,0 +1,105 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "hash",
+  "creation": "2026-07-16 08:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "service_type",
+    "hotel",
+    "start_date",
+    "end_date",
+    "meals_per_day",
+    "service_days",
+    "total_meals",
+    "unit_price",
+    "total_value",
+    "menu_reference",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "service_type",
+      "fieldtype": "Select",
+      "label": "نوع الخدمة / Service Type",
+      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar Saem\nسحور / Suhoor\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة ترحيبية / Welcome Meal\nخدمة خاصة / Special Service",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "تاريخ البداية / Start Date"
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "تاريخ النهاية / End Date"
+    },
+    {
+      "fieldname": "meals_per_day",
+      "fieldtype": "Int",
+      "label": "الكمية اليومية / Daily Quantity",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "service_days",
+      "fieldtype": "Int",
+      "label": "عدد الأيام / Service Days",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "total_meals",
+      "fieldtype": "Int",
+      "label": "إجمالي الوجبات / Total Meals",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "unit_price",
+      "fieldtype": "Currency",
+      "label": "سعر الوحدة / Unit Price",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "total_value",
+      "fieldtype": "Currency",
+      "label": "القيمة الإجمالية / Total Value",
+      "read_only": 1
+    },
+    {
+      "fieldname": "menu_reference",
+      "fieldtype": "Link",
+      "label": "خطة الوجبات / Meal Plan",
+      "options": "WAFD Meal Plan"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-16 08:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Project Service",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0
+}

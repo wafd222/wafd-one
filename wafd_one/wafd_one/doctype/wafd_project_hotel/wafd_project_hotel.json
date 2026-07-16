@@ -9,6 +9,11 @@
     "hotel",
     "guest_count",
     "rooms_count",
+    "meals_per_day",
+    "service_start_date",
+    "service_end_date",
+    "hotel_supervisor",
+    "delivery_location",
     "notes"
   ],
   "fields": [
@@ -24,13 +29,41 @@
       "fieldname": "guest_count",
       "fieldtype": "Int",
       "label": "عدد النزلاء / Guests",
-      "non_negative": 1
+      "non_negative": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "rooms_count",
       "fieldtype": "Int",
       "label": "عدد الغرف / Rooms",
       "non_negative": 1
+    },
+    {
+      "fieldname": "meals_per_day",
+      "fieldtype": "Int",
+      "label": "الوجبات اليومية / Meals per Day",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "service_start_date",
+      "fieldtype": "Date",
+      "label": "بداية الخدمة / Service Start"
+    },
+    {
+      "fieldname": "service_end_date",
+      "fieldtype": "Date",
+      "label": "نهاية الخدمة / Service End"
+    },
+    {
+      "fieldname": "hotel_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف الفندق / Hotel Supervisor",
+      "options": "User"
+    },
+    {
+      "fieldname": "delivery_location",
+      "fieldtype": "Small Text",
+      "label": "موقع التسليم / Delivery Location"
     },
     {
       "fieldname": "notes",
@@ -42,7 +75,7 @@
   "istable": 1,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 00:00:00.000000",
+  "modified": "2026-07-16 08:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Project Hotel",

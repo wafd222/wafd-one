@@ -27,14 +27,7 @@ def ensure_roles():
 
 
 def _workspace_definition():
-    path = (
-        Path(__file__).resolve().parent
-        / "wafd_one"
-        / "workspace"
-        / "wafd_one"
-        / "wafd_one.json"
-    )
-
+    path = Path(__file__).resolve().parent / "wafd_one" / "workspace" / "wafd_one" / "wafd_one.json"
     with path.open(encoding="utf-8") as source:
         return json.load(source)
 
@@ -43,53 +36,32 @@ def ensure_workspace():
     data = _workspace_definition()
 
     # Frappe v16 requires Workspace.type to contain a real value.
+    # Exported workspace JSON may contain an empty string, so do not use
+    # setdefault here; assign the value explicitly.
     data["type"] = "Workspace"
-
     if not data.get("app"):
         data["app"] = "wafd_one"
 
     name = data["name"]
-
     if frappe.db.exists("Workspace", name):
         doc = frappe.get_doc("Workspace", name)
-
         for field in (
-            "title",
-            "label",
-            "module",
-            "app",
-            "type",
-            "icon",
-            "sequence_id",
-            "public",
-            "is_hidden",
-            "hide_custom",
-            "content",
-            "parent_page",
-            "for_user",
+            "title", "label", "module", "app", "type", "icon", "sequence_id", "public",
+            "is_hidden", "hide_custom", "content", "parent_page", "for_user",
         ):
             if field in data:
                 doc.set(field, data[field])
-
         for table_field in (
-            "shortcuts",
-            "links",
-            "roles",
-            "charts",
-            "number_cards",
-            "quick_lists",
-            "custom_blocks",
+            "shortcuts", "links", "roles", "charts", "number_cards",
+            "quick_lists", "custom_blocks",
         ):
             if doc.meta.has_field(table_field):
                 doc.set(table_field, [])
-
                 for row in data.get(table_field, []):
                     doc.append(table_field, row)
-
         doc.flags.ignore_permissions = True
         doc.flags.ignore_version = True
         doc.save()
-
     else:
         doc = frappe.get_doc(data)
         doc.flags.ignore_permissions = True
@@ -97,58 +69,36 @@ def ensure_workspace():
         doc.insert()
 
 
-def safely_ensure_workspace():
-    """Do not allow Workspace errors to stop installation or migration."""
-    try:
-        ensure_workspace()
-    except Exception:
-        frappe.log_error(
-            frappe.get_traceback(),
-            "WAFD ONE Workspace Setup",
-        )
-
-
 def ensure_default_app():
-    """Route system users directly to WAFD ONE after login."""
+    """Route system users directly to WAFD ONE after login.
 
+    The field exists in Frappe v16. Guard all writes for compatibility.
+    """
     try:
         system_settings = frappe.get_single("System Settings")
-
         if system_settings.meta.has_field("default_app"):
             system_settings.default_app = "wafd_one"
             system_settings.flags.ignore_permissions = True
             system_settings.flags.ignore_version = True
             system_settings.save()
-
     except Exception:
-        frappe.log_error(
-            frappe.get_traceback(),
-            "WAFD ONE Default App Setup",
-        )
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE default app setup")
 
     try:
         if frappe.db.exists("User", "Administrator"):
             user = frappe.get_doc("User", "Administrator")
-
             if user.meta.has_field("default_app"):
                 user.default_app = "wafd_one"
                 user.flags.ignore_permissions = True
                 user.flags.ignore_version = True
                 user.save()
-
     except Exception:
-        frappe.log_error(
-            frappe.get_traceback(),
-            "WAFD ONE Administrator Default App Setup",
-        )
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE Administrator default app setup")
+
 
 def apply_setup():
     ensure_roles()
-
-    # Workspace setup is temporarily disabled until all DocTypes
-    # are successfully synchronized on Frappe Cloud.
-    # safely_ensure_workspace()
-
+    ensure_workspace()
     ensure_default_app()
     frappe.clear_cache()
 

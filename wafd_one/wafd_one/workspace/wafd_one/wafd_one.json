@@ -1,6 +1,7 @@
 {
   "charts": [],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE\",\"level\":2,\"col\":12}},{\"type\":\"paragraph\",\"data\":{\"text\":\"نظام إدارة عمليات الإعاشة والمشاريع والإنتاج والجودة والمخزون والتوصيل والمالية.\",\"col\":12}}]",
+  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — مركز إدارة عمليات الإعاشة\",\"level\":2,\"col\":12}},{\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة موحدة للمشاريع والبعثات والفنادق وخطط الوجبات والإنتاج والجودة والتحميل والتوصيل والمخزون والمالية.\",\"col\":12}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"الوصول السريع\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"دفعات الإنتاج\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"فحص الجودة\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"رحلات التوصيل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إثباتات التسليم\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"أوامر الشراء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفواتير\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"التخطيط والإنتاج والجودة\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"خطط الوجبات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"دفعات الإنتاج\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"فحص الجودة\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"التحميل والتوزيع والأسطول\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"سجلات التحميل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"رحلات التوصيل\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إثباتات التسليم\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الشكاوى\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"السائقون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المركبات\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"المشتريات والمخزون\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الموردون\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"أوامر الشراء\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المستودعات\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"حركة المخزون\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"المالية والربحية\",\"level\":4,\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"تكاليف المشاريع\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إيرادات المشاريع\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفواتير\",\"col\":4}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"الأقسام\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"إدارة المشاريع والعملاء\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"التخطيط والإنتاج والجودة\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"التحميل والتوزيع\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"الأسطول\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"المشتريات والمخزون\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"المالية والربحية\",\"col\":4}}]",
+  "creation": "2026-07-13 00:00:00.000000",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -10,16 +11,490 @@
   "idx": 0,
   "is_hidden": 0,
   "label": "WAFD ONE",
-  "links": [],
+  "links": [
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "إدارة المشاريع والعملاء",
+      "link_count": 4,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "المشاريع",
+      "link_count": 0,
+      "link_to": "WAFD Catering Project",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "البعثات والعملاء",
+      "link_count": 0,
+      "link_to": "WAFD Mission",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الفنادق",
+      "link_count": 0,
+      "link_to": "WAFD Hotel",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "العقود",
+      "link_count": 0,
+      "link_to": "WAFD Contract",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "التخطيط والإنتاج والجودة",
+      "link_count": 5,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "خطط الوجبات",
+      "link_count": 0,
+      "link_to": "WAFD Meal Plan",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الوصفات",
+      "link_count": 0,
+      "link_to": "WAFD Recipe",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "مكونات الأغذية",
+      "link_count": 0,
+      "link_to": "WAFD Ingredient",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "دفعات الإنتاج",
+      "link_count": 0,
+      "link_to": "WAFD Production Batch",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "فحص الجودة",
+      "link_count": 0,
+      "link_to": "WAFD Quality Inspection",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "التحميل والتوزيع",
+      "link_count": 4,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "سجلات التحميل",
+      "link_count": 0,
+      "link_to": "WAFD Loading Record",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "رحلات التوصيل",
+      "link_count": 0,
+      "link_to": "WAFD Delivery Trip",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "إثباتات التسليم",
+      "link_count": 0,
+      "link_to": "WAFD Delivery Proof",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الشكاوى",
+      "link_count": 0,
+      "link_to": "WAFD Complaint",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الأسطول",
+      "link_count": 2,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "السائقون",
+      "link_count": 0,
+      "link_to": "WAFD Driver",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "المركبات",
+      "link_count": 0,
+      "link_to": "WAFD Vehicle",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "المشتريات والمخزون",
+      "link_count": 4,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الموردون",
+      "link_count": 0,
+      "link_to": "WAFD Supplier",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "أوامر الشراء",
+      "link_count": 0,
+      "link_to": "WAFD Purchase Order",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "المستودعات",
+      "link_count": 0,
+      "link_to": "WAFD Warehouse",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "حركة المخزون",
+      "link_count": 0,
+      "link_to": "WAFD Stock Movement",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "المالية والربحية",
+      "link_count": 3,
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "تكاليف المشاريع",
+      "link_count": 0,
+      "link_to": "WAFD Project Cost",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "إيرادات المشاريع",
+      "link_count": 0,
+      "link_to": "WAFD Project Revenue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "dependencies": "",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "الفواتير",
+      "link_count": 0,
+      "link_to": "WAFD Invoice",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    }
+  ],
+  "modified": "2026-07-13 16:30:00.000000",
+  "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD ONE",
   "number_cards": [],
+  "owner": "Administrator",
   "parent_page": "",
   "public": 1,
   "quick_lists": [],
-  "roles": [],
+  "roles": [
+    {
+      "role": "System Manager"
+    },
+    {
+      "role": "WAFD Operations Manager"
+    },
+    {
+      "role": "WAFD Project Manager"
+    },
+    {
+      "role": "WAFD Production Supervisor"
+    },
+    {
+      "role": "WAFD Quality Inspector"
+    },
+    {
+      "role": "WAFD Delivery Supervisor"
+    },
+    {
+      "role": "WAFD Finance User"
+    },
+    {
+      "role": "WAFD Storekeeper"
+    }
+  ],
   "sequence_id": 1.0,
-  "shortcuts": [],
+  "shortcuts": [
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "label": "المشاريع",
+      "link_to": "WAFD Catering Project",
+      "type": "DocType"
+    },
+    {
+      "color": "Cyan",
+      "doc_view": "List",
+      "label": "البعثات والعملاء",
+      "link_to": "WAFD Mission",
+      "type": "DocType"
+    },
+    {
+      "color": "Cyan",
+      "doc_view": "List",
+      "label": "الفنادق",
+      "link_to": "WAFD Hotel",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "العقود",
+      "link_to": "WAFD Contract",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
+      "doc_view": "List",
+      "label": "خطط الوجبات",
+      "link_to": "WAFD Meal Plan",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
+      "doc_view": "List",
+      "label": "الوصفات",
+      "link_to": "WAFD Recipe",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
+      "doc_view": "List",
+      "label": "مكونات الأغذية",
+      "link_to": "WAFD Ingredient",
+      "type": "DocType"
+    },
+    {
+      "color": "Green",
+      "doc_view": "List",
+      "label": "دفعات الإنتاج",
+      "link_to": "WAFD Production Batch",
+      "type": "DocType"
+    },
+    {
+      "color": "Purple",
+      "doc_view": "List",
+      "label": "فحص الجودة",
+      "link_to": "WAFD Quality Inspection",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "سجلات التحميل",
+      "link_to": "WAFD Loading Record",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "رحلات التوصيل",
+      "link_to": "WAFD Delivery Trip",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "إثباتات التسليم",
+      "link_to": "WAFD Delivery Proof",
+      "type": "DocType"
+    },
+    {
+      "color": "Red",
+      "doc_view": "List",
+      "label": "الشكاوى",
+      "link_to": "WAFD Complaint",
+      "type": "DocType"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "السائقون",
+      "link_to": "WAFD Driver",
+      "type": "DocType"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "المركبات",
+      "link_to": "WAFD Vehicle",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "label": "الموردون",
+      "link_to": "WAFD Supplier",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "label": "أوامر الشراء",
+      "link_to": "WAFD Purchase Order",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "label": "المستودعات",
+      "link_to": "WAFD Warehouse",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "label": "حركة المخزون",
+      "link_to": "WAFD Stock Movement",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "label": "تكاليف المشاريع",
+      "link_to": "WAFD Project Cost",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "label": "إيرادات المشاريع",
+      "link_to": "WAFD Project Revenue",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "label": "الفواتير",
+      "link_to": "WAFD Invoice",
+      "type": "DocType"
+    }
+  ],
   "title": "WAFD ONE",
   "type": "Workspace",
   "app": "wafd_one"

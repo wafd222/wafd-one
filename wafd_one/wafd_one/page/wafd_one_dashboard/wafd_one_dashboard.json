@@ -1,0 +1,9 @@
+{
+  "doctype": "Page",
+  "name": "wafd-one-dashboard",
+  "page_name": "wafd-one-dashboard",
+  "title": "WAFD ONE",
+  "module": "WAFD ONE",
+  "standard": "Yes",
+  "icon": "organization"
+}

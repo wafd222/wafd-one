@@ -1,4 +1,4 @@
 [post_model_sync]
 wafd_one.patches.v2_6.sync_all_wafd_metadata
 wafd_one.patches.v2_8.rebuild_workspace_from_source
-wafd_one.patches.v2_9.rebuild_workspace_with_v16_block_ids
+wafd_one.patches.v3_0.install_stable_dashboard

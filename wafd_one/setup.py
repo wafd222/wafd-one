@@ -162,13 +162,6 @@ def _validate_workspace_record(workspace):
     import json
 
     blocks = json.loads(workspace.content or "[]")
-    missing_ids = [index for index, block in enumerate(blocks) if not block.get("id")]
-    if missing_ids:
-        frappe.throw(
-            "WAFD ONE workspace contains blocks without Frappe v16 IDs: "
-            + ", ".join(map(str, missing_ids))
-        )
-
     block_names = {
         row.get("data", {}).get("shortcut_name")
         for row in blocks

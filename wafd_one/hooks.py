@@ -12,7 +12,7 @@ add_to_apps_screen = [
         "name": "wafd_one",
         "logo": "/assets/wafd_one/images/wafd-one-logo.svg",
         "title": "WAFD ONE",
-        "route": "/desk/wafd-one",
+        "route": "/app/wafd-one-dashboard",
         "has_permission": "wafd_one.api.check_app_permission",
     }
 ]
@@ -20,3 +20,6 @@ add_to_apps_screen = [
 after_install = "wafd_one.setup.after_install"
 before_migrate = "wafd_one.setup.before_migrate"
 after_migrate = "wafd_one.setup.after_migrate"
+
+page_js = {"wafd-one-dashboard": "public/js/wafd_one_dashboard.js"}
+app_include_css = ["/assets/wafd_one/css/wafd_one_dashboard.css"]

@@ -1,21 +1,49 @@
 frappe.ui.form.on("WAFD Catering Project", {
     refresh(frm) {
         if (frm.is_new()) return;
-        frm.add_custom_button(__("Generate Meal Plans"), () => {
+
+        frm.add_custom_button(__("Generate Operation Plan"), () => {
             frappe.confirm(
-                __("Generate daily meal plans from project services and hotels?"),
+                __("Create meal plans, production batches and delivery trips for this project?"),
                 () => frappe.call({
-                    method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",
+                    method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_operation_plan",
                     args: { project_name: frm.doc.name },
                     freeze: true,
-                    freeze_message: __("Generating meal plans..."),
+                    freeze_message: __("Generating operation plan..."),
                     callback(r) {
                         const result = r.message || {};
-                        frappe.msgprint(__("Created {0} meal plans; skipped {1} existing plans.", [result.created || 0, result.skipped || 0]));
+                        const totals = result.totals || {};
+                        const warnings = (result.warnings || []).map(x => `<li>${frappe.utils.escape_html(x)}</li>`).join("");
+                        frappe.msgprint({
+                            title: __("Operation Plan Created"),
+                            indicator: warnings ? "orange" : "green",
+                            message: `
+                                <p>${__("Meal plans: {0} created, {1} existing.", [result.meal_plans_created || 0, result.meal_plans_skipped || 0])}</p>
+                                <p>${__("Production batches: {0} created, {1} existing.", [result.batches_created || 0, result.batches_skipped || 0])}</p>
+                                <p>${__("Delivery trips: {0} created, {1} existing.", [result.trips_created || 0, result.trips_skipped || 0])}</p>
+                                <p><b>${__("Current totals")}</b>: ${totals.meal_plans || 0} / ${totals.production_batches || 0} / ${totals.delivery_trips || 0}</p>
+                                ${warnings ? `<hr><ul>${warnings}</ul>` : ""}
+                            `
+                        });
+                        frm.reload_doc();
                     }
                 })
             );
         }, __("Operations"));
+
+        frm.add_custom_button(__("Generate Meal Plans"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",
+                args: { project_name: frm.doc.name },
+                freeze: true,
+                freeze_message: __("Generating meal plans..."),
+                callback(r) {
+                    const result = r.message || {};
+                    frappe.msgprint(__("Created {0} meal plans; skipped {1} existing plans.", [result.created || 0, result.skipped || 0]));
+                }
+            });
+        }, __("Operations"));
+
         frm.add_custom_button(__("Meal Plan"), () => frappe.new_doc("WAFD Meal Plan", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Delivery Trip"), () => frappe.new_doc("WAFD Delivery Trip", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Cost"), () => frappe.new_doc("WAFD Project Cost", { project: frm.doc.name }), __("Create"));

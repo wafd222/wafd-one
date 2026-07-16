@@ -7,6 +7,7 @@
   "engine": "InnoDB",
   "field_order": [
     "project",
+    "source_service_row",
     "hotel",
     "service_date",
     "meal_type",
@@ -19,6 +20,8 @@
     "estimated_unit_cost",
     "total_value",
     "estimated_cost",
+    "estimated_profit",
+    "estimated_margin_percent",
     "status",
     "notes"
   ],
@@ -120,13 +123,32 @@
       "fieldname": "notes",
       "fieldtype": "Small Text",
       "label": "ملاحظات / Notes"
+    },
+    {
+      "fieldname": "source_service_row",
+      "fieldtype": "Data",
+      "label": "مرجع خدمة المشروع / Project Service Reference",
+      "hidden": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "estimated_profit",
+      "fieldtype": "Currency",
+      "label": "الربح التقديري / Estimated Profit",
+      "read_only": 1
+    },
+    {
+      "fieldname": "estimated_margin_percent",
+      "fieldtype": "Percent",
+      "label": "هامش الربح التقديري / Estimated Margin",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-16 18:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Meal Plan",

@@ -8,6 +8,8 @@
   "field_order": [
     "service_type",
     "meal_name",
+    "recipe",
+    "service_time",
     "service_days",
     "beneficiaries",
     "meals_per_person_per_day",
@@ -29,6 +31,18 @@
       "fieldname": "meal_name",
       "fieldtype": "Data",
       "label": "اسم الوجبة / Meal Name",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "service_time",
+      "fieldtype": "Time",
+      "label": "وقت الخدمة / Service Time"
+    },
+    {
+      "fieldname": "recipe",
+      "fieldtype": "Link",
+      "label": "الوصفة / Recipe",
+      "options": "WAFD Recipe",
       "in_list_view": 1
     },
     {
@@ -82,7 +96,7 @@
   "istable": 1,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-16 12:00:00.000000",
+  "modified": "2026-07-16 18:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Project Service",

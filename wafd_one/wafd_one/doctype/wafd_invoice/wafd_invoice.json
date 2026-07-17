@@ -10,6 +10,8 @@
     "invoice_date",
     "due_date",
     "description",
+    "billing_basis",
+    "items",
     "subtotal",
     "tax_rate",
     "tax_amount",
@@ -44,6 +46,20 @@
       "fieldname": "description",
       "fieldtype": "Small Text",
       "label": "البيان / Description"
+    },
+    {
+      "fieldname": "billing_basis",
+      "fieldtype": "Select",
+      "label": "أساس الفوترة / Billing Basis",
+      "options": "الكميات المسلمة / Delivered Quantities\nقيمة العقد / Contract Value\nيدوي / Manual",
+      "default": "الكميات المسلمة / Delivered Quantities",
+      "reqd": 1
+    },
+    {
+      "fieldname": "items",
+      "fieldtype": "Table",
+      "label": "بنود الفاتورة / Invoice Items",
+      "options": "WAFD Invoice Item"
     },
     {
       "fieldname": "subtotal",

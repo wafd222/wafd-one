@@ -94,3 +94,5 @@ function recalculate(frm, cdt, cdn) {
     frappe.model.set_value(cdt, cdn, "total_meals", total);
     frappe.model.set_value(cdt, cdn, "estimated_revenue", total * flt(row.unit_price));
 }
+
+frappe.ui.form.on("WAFD Catering Project", {refresh(frm){if(!frm.is_new()){frm.add_custom_button(__("إنشاء فاتورة من التسليم"),()=>{frappe.call({method:"wafd_one.finance.create_invoice_from_deliveries",args:{project_name:frm.doc.name},freeze:true,callback:r=>{if(r.message) frappe.set_route("Form","WAFD Invoice",r.message);}});},__("المالية"));frm.add_custom_button(__("تحديث الربحية"),()=>frappe.call({method:"wafd_one.finance.refresh_project_financials",args:{project_name:frm.doc.name},callback:()=>frm.reload_doc()}),__("المالية"));}}});

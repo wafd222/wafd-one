@@ -8,8 +8,10 @@ class WafdDeliveryProof(Document):
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip, ["project","meal_plan","hotel","quantity","status"], as_dict=True)
         if not trip: frappe.throw("رحلة التوصيل غير موجودة / Delivery trip not found")
         if trip.status == "ملغية / Cancelled": frappe.throw("لا يمكن إثبات تسليم رحلة ملغية / Cannot confirm a cancelled trip")
-        self.project, self.meal_plan, self.hotel, self.delivered_quantity = trip.project, trip.meal_plan, trip.hotel, cint(trip.quantity)
+        self.project, self.meal_plan, self.hotel = trip.project, trip.meal_plan, trip.hotel
+        self.delivered_quantity = cint(self.received_quantity)
         received, rejected = cint(self.received_quantity), cint(self.rejected_quantity)
+        self.delivered_quantity = received
         if min(received, rejected) < 0: frappe.throw("الكميات لا يمكن أن تكون سالبة / Quantities cannot be negative")
         if received + rejected != cint(trip.quantity): frappe.throw("المستلم والمرفوض يجب أن يساويا كمية الرحلة / Received plus rejected must equal trip quantity")
         if self.status == "مقبول بالكامل / Fully Accepted" and rejected: frappe.throw("لا يمكن وجود كمية مرفوضة مع قبول كامل / Fully accepted delivery cannot include rejected quantity")

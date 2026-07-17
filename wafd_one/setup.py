@@ -15,6 +15,8 @@ ROLES = (
 # Ordered to load child tables and independent masters before linked parents.
 ALL_DOCTYPE_FILES = (
     "wafd_meal_plan_item",
+    "wafd_invoice_item",
+    "wafd_production_material",
     "wafd_project_hotel",
     "wafd_project_service",
     "wafd_purchase_order_item",
@@ -31,6 +33,7 @@ ALL_DOCTYPE_FILES = (
     "wafd_catering_project",
     "wafd_contract",
     "wafd_meal_plan",
+    "wafd_packaging_record",
     "wafd_loading_record",
     "wafd_production_batch",
     "wafd_delivery_trip",
@@ -40,7 +43,9 @@ ALL_DOCTYPE_FILES = (
     "wafd_invoice",
     "wafd_project_cost",
     "wafd_project_revenue",
+    "wafd_payment",
     "wafd_purchase_order",
+    "wafd_stock_balance",
     "wafd_stock_movement",
 )
 

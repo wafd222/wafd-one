@@ -170,6 +170,20 @@
       "link_to": "WAFD Ingredient",
       "type": "DocType",
       "restrict_to_domain": ""
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "سجلات التغليف",
+      "link_to": "WAFD Packaging Record",
+      "type": "DocType"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "التحصيلات",
+      "link_to": "WAFD Payment",
+      "type": "DocType"
     }
   ],
   "title": "WAFD ONE",

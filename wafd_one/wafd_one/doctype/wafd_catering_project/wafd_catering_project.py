@@ -305,3 +305,26 @@ def _combine_service_datetime(service_date, service_time, minutes_before=0):
 
     value = get_datetime(f"{service_date} {service_time}")
     return value - timedelta(minutes=minutes_before)
+
+
+@frappe.whitelist()
+def refresh_production_materials(project_name):
+    """Recalculate material requirements for every production batch in a project."""
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("write")
+    from wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch import refresh_material_requirements
+
+    names = frappe.get_all("WAFD Production Batch", filters={"project": project.name}, pluck="name")
+    totals = {"batches": 0, "available": 0, "shortage": 0, "not_calculated": 0, "material_cost": 0}
+    for name in names:
+        result = refresh_material_requirements(name)
+        totals["batches"] += 1
+        totals["material_cost"] += flt(result.get("total_material_cost"))
+        status = result.get("materials_status")
+        if status in ("متوفرة / Available", "مصروفة / Issued"):
+            totals["available"] += 1
+        elif status == "عجز / Shortage":
+            totals["shortage"] += 1
+        else:
+            totals["not_calculated"] += 1
+    return totals

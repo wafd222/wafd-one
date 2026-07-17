@@ -88,4 +88,10 @@ def post_movement(movement_name):
             balance.last_movement_date = doc.posting_date
             balance.save(ignore_permissions=True)
     doc.db_set({"status": "مرحلة / Posted", "posted_by": frappe.session.user, "posted_on": now_datetime()}, update_modified=True)
+    if doc.production_batch and frappe.db.exists("WAFD Production Batch", doc.production_batch):
+        frappe.db.set_value(
+            "WAFD Production Batch", doc.production_batch,
+            {"material_issue": doc.name, "materials_status": "مصروفة / Issued"},
+            update_modified=False,
+        )
     return {"name": doc.name, "posted": True}

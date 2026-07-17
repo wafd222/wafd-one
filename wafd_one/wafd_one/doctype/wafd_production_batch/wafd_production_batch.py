@@ -5,6 +5,12 @@ from frappe.utils import cint, flt, now_datetime
 
 class WafdProductionBatch(Document):
     def validate(self):
+        self._sync_from_meal_plan()
+        self._validate_quantities()
+        self._calculate_material_requirements()
+        self._validate_workflow()
+
+    def _validate_quantities(self):
         produced = cint(self.produced_quantity)
         rejected = cint(self.rejected_quantity)
         planned = cint(self.planned_quantity)
@@ -14,30 +20,72 @@ class WafdProductionBatch(Document):
         if min(produced, rejected, packed) < 0:
             frappe.throw("الكميات لا يمكن أن تكون سالبة / Quantities cannot be negative")
         if produced + rejected > planned:
-            frappe.throw("مجموع المنتج والمرفوض لا يمكن أن يتجاوز الكمية المخططة")
+            frappe.throw("مجموع المنتج والمرفوض لا يمكن أن يتجاوز الكمية المخططة / Produced and rejected quantities exceed plan")
         if packed > produced:
             frappe.throw("الكمية المغلفة لا يمكن أن تتجاوز الكمية المنتجة / Packed quantity cannot exceed produced quantity")
         if cint(self.box_count) and cint(self.units_per_box) and packed > cint(self.box_count) * cint(self.units_per_box):
             frappe.throw("الكمية المغلفة تتجاوز سعة الصناديق / Packed quantity exceeds box capacity")
         self.actual_yield_percent = (flt(produced) / flt(planned) * 100) if planned else 0
-        self._sync_from_meal_plan()
-        self._validate_workflow()
 
     def _sync_from_meal_plan(self):
         if not self.meal_plan:
             return
-        values = frappe.db.get_value("WAFD Meal Plan", self.meal_plan, ["project", "recipe", "quantity"], as_dict=True)
+        values = frappe.db.get_value(
+            "WAFD Meal Plan", self.meal_plan,
+            ["project", "recipe", "quantity", "service_date", "status"], as_dict=True,
+        )
         if not values:
             frappe.throw("خطة الوجبة غير موجودة / Meal plan was not found")
+        if values.status == "ملغي / Cancelled":
+            frappe.throw("لا يمكن إنشاء إنتاج لخطة ملغاة / Cannot produce a cancelled meal plan")
         if self.project and self.project != values.project:
             frappe.throw("المشروع لا يطابق خطة الوجبة / Project does not match the meal plan")
         self.project = values.project
         self.recipe = values.recipe
+        self.batch_date = self.batch_date or values.service_date
         if not self.planned_quantity:
             self.planned_quantity = cint(values.quantity)
 
+    def _calculate_material_requirements(self):
+        self.set("material_requirements", [])
+        self.total_material_cost = 0
+        self.materials_status = "لم تحسب / Not Calculated"
+        if not self.recipe or not self.planned_quantity:
+            return
+        _, requirements = _recipe_requirements(self)
+        has_shortage = False
+        for row in requirements:
+            available = 0
+            if self.source_warehouse:
+                available = flt(frappe.db.get_value(
+                    "WAFD Stock Balance",
+                    {"warehouse": self.source_warehouse, "ingredient": row["ingredient"]},
+                    "available_quantity",
+                ) or 0)
+            shortage = max(flt(row["quantity"]) - available, 0) if self.source_warehouse else flt(row["quantity"])
+            has_shortage = has_shortage or shortage > 0
+            amount = flt(row["quantity"]) * flt(row["unit_cost"])
+            self.total_material_cost += amount
+            self.append("material_requirements", {
+                "ingredient": row["ingredient"],
+                "required_quantity": row["quantity"],
+                "uom": row["uom"],
+                "available_quantity": available,
+                "shortage_quantity": shortage,
+                "unit_cost": row["unit_cost"],
+                "amount": amount,
+                "availability_status": "ناقص / Shortage" if shortage else "متوفر / Available",
+            })
+        if self.material_issue and frappe.db.get_value("WAFD Stock Movement", self.material_issue, "status") == "مرحلة / Posted":
+            self.materials_status = "مصروفة / Issued"
+        elif not self.source_warehouse:
+            self.materials_status = "لم تحسب / Not Calculated"
+        else:
+            self.materials_status = "عجز / Shortage" if has_shortage else "متوفرة / Available"
+
     def _validate_workflow(self):
-        if self.status in ("تحضير / Preparing", "طبخ / Cooking", "تغليف / Packaging", "جاهز / Ready", "مكتمل / Completed"):
+        active = ("تحضير / Preparing", "طبخ / Cooking", "تغليف / Packaging", "جاهز / Ready", "مكتمل / Completed")
+        if self.status in active:
             if not self.material_issue:
                 frappe.throw("يجب إنشاء وترحيل صرف المواد قبل بدء الإنتاج / Material issue must be created and posted before production")
             status = frappe.db.get_value("WAFD Stock Movement", self.material_issue, "status")
@@ -45,6 +93,8 @@ class WafdProductionBatch(Document):
                 frappe.throw("يجب ترحيل حركة صرف المواد أولاً / Post the material issue first")
         if self.status in ("جاهز / Ready", "مكتمل / Completed") and self.quality_status != "ناجح / Passed":
             frappe.throw("لا يمكن اعتماد الدفعة كجاهزة قبل نجاح فحص الجودة / A passed quality inspection is required")
+        if self.status == "مكتمل / Completed" and cint(self.produced_quantity) <= 0:
+            frappe.throw("أدخل الكمية المنتجة قبل إكمال الدفعة / Enter produced quantity before completing the batch")
 
     def on_update(self):
         self._update_meal_plan_status()
@@ -66,14 +116,40 @@ class WafdProductionBatch(Document):
 
 
 def _recipe_requirements(batch):
+    if not batch.recipe:
+        frappe.throw("حدد الوصفة أولاً / Select a recipe first")
     recipe = frappe.get_doc("WAFD Recipe", batch.recipe)
+    if recipe.status != "نشطة / Active":
+        frappe.throw("الوصفة غير نشطة / Recipe is inactive")
     yield_quantity = flt(recipe.yield_quantity)
     if yield_quantity <= 0:
         frappe.throw("كمية إنتاج الوصفة يجب أن تكون أكبر من صفر / Recipe yield must be greater than zero")
     if not recipe.items:
         frappe.throw("الوصفة لا تحتوي على مكونات / Recipe has no ingredients")
     factor = flt(batch.planned_quantity) / yield_quantity
-    return recipe, [{"ingredient": r.ingredient, "quantity": flt(r.quantity) * factor, "uom": r.uom, "unit_cost": flt(r.unit_cost)} for r in recipe.items]
+    requirements = []
+    for row in recipe.items:
+        requirements.append({
+            "ingredient": row.ingredient,
+            "quantity": flt(row.quantity) * factor,
+            "uom": row.uom,
+            "unit_cost": flt(row.unit_cost),
+        })
+    return recipe, requirements
+
+
+@frappe.whitelist()
+def refresh_material_requirements(batch_name):
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    batch._calculate_material_requirements()
+    batch.save()
+    return {
+        "name": batch.name,
+        "materials_status": batch.materials_status,
+        "total_material_cost": batch.total_material_cost,
+        "requirements": len(batch.material_requirements),
+    }
 
 
 @frappe.whitelist()
@@ -99,8 +175,6 @@ def create_material_issue(batch_name):
     batch.check_permission("write")
     if batch.material_issue and frappe.db.exists("WAFD Stock Movement", batch.material_issue):
         return {"name": batch.material_issue, "created": False}
-    if not batch.recipe:
-        frappe.throw("حدد الوصفة أولاً / Select a recipe first")
     if not batch.source_warehouse:
         frappe.throw("حدد مستودع الصرف أولاً / Select the source warehouse first")
     availability = check_material_availability(batch.name)

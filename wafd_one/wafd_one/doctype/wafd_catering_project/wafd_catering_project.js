@@ -31,6 +31,18 @@ frappe.ui.form.on("WAFD Catering Project", {
             );
         }, __("Operations"));
 
+        frm.add_custom_button(__("Refresh Production Materials"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.refresh_production_materials",
+                args: { project_name: frm.doc.name },
+                freeze: true, freeze_message: __("Calculating production materials..."),
+                callback(r) {
+                    const x = r.message || {};
+                    frappe.msgprint(__("Batches: {0}<br>Materials available: {1}<br>Shortages: {2}<br>Total material cost: {3}", [x.batches || 0, x.available || 0, x.shortage || 0, format_currency(x.material_cost || 0)]));
+                }
+            });
+        }, __("Operations"));
+
         frm.add_custom_button(__("Generate Meal Plans"), () => {
             frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",

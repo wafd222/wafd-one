@@ -2,6 +2,14 @@ frappe.ui.form.on("WAFD Production Batch", {
     refresh(frm) {
         if (frm.is_new()) return;
 
+        frm.add_custom_button(__("Refresh Material Requirements"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.refresh_material_requirements",
+                args: { batch_name: frm.doc.name }, freeze: true,
+                callback(r) { if (r.message) { frappe.show_alert({ message: __("Material requirements refreshed"), indicator: "green" }); frm.reload_doc(); } }
+            });
+        }, __("Operations"));
+
         frm.add_custom_button(__("Check Materials"), () => {
             frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.check_material_availability",

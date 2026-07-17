@@ -10,6 +10,9 @@
     "meal_plan",
     "recipe",
     "source_warehouse",
+    "material_requirements",
+    "materials_status",
+    "total_material_cost",
     "material_issue",
     "quality_status",
     "batch_date",
@@ -180,13 +183,35 @@
       "fieldtype": "Link",
       "label": "مشرف التغليف / Packaging Supervisor",
       "options": "User"
+    },
+    {
+      "fieldname": "material_requirements",
+      "fieldtype": "Table",
+      "label": "احتياجات المواد / Material Requirements",
+      "options": "WAFD Production Material",
+      "read_only": 1
+    },
+    {
+      "fieldname": "materials_status",
+      "fieldtype": "Select",
+      "label": "حالة المواد / Materials Status",
+      "options": "لم تحسب / Not Calculated\nمتوفرة / Available\nعجز / Shortage\nمصروفة / Issued",
+      "default": "لم تحسب / Not Calculated",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "total_material_cost",
+      "fieldtype": "Currency",
+      "label": "تكلفة المواد / Material Cost",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-16 18:00:00.000000",
+  "modified": "2026-07-17 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Production Batch",

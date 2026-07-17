@@ -51,10 +51,18 @@ def create_loading_record(packaging_name):
         frappe.throw("الكمية المغلفة يجب أن تكون أكبر من صفر / Packed quantity must be greater than zero")
     plan = frappe.get_doc("WAFD Meal Plan", packaging.meal_plan)
     project = frappe.get_doc("WAFD Catering Project", packaging.project)
-    return _get_or_create(
-        "WAFD Loading Record",
-        {"packaging_record": packaging.name},
-        {
+    existing = frappe.db.get_value(
+        "WAFD Loading Record", {"packaging_record": packaging.name}, "name"
+    )
+    if existing:
+        return {"name": existing, "created": False}
+
+    # Vehicle and driver are mandatory on the loading record. They may not be
+    # configured as project defaults, so open a populated draft for the user
+    # instead of trying to insert an incomplete document.
+    return {
+        "created": True,
+        "values": {
             "project": packaging.project,
             "meal_plan": packaging.meal_plan,
             "production_batch": packaging.production_batch,
@@ -67,7 +75,7 @@ def create_loading_record(packaging_name):
             "driver": project.default_driver,
             "status": "قيد التحميل / Loading",
         },
-    )
+    }
 
 
 @frappe.whitelist()

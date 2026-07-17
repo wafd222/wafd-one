@@ -2,13 +2,9 @@ frappe.ui.form.on("WAFD Production Batch", {
     refresh(frm) {
         if (frm.is_new()) return;
 
-        frm.add_custom_button(__("Refresh Material Requirements"), () => {
-            frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.refresh_material_requirements",
-                args: { batch_name: frm.doc.name }, freeze: true,
-                callback(r) { if (r.message) { frappe.show_alert({ message: __("Material requirements refreshed"), indicator: "green" }); frm.reload_doc(); } }
-            });
-        }, __("Operations"));
+        add_action(frm, __("Refresh Material Requirements"),
+            "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.refresh_material_requirements",
+            { batch_name: frm.doc.name }, () => frm.reload_doc());
 
         frm.add_custom_button(__("Check Materials"), () => {
             frappe.call({
@@ -26,21 +22,25 @@ frappe.ui.form.on("WAFD Production Batch", {
             });
         }, __("Operations"));
 
-        frm.add_custom_button(__("Create Material Issue"), () => {
-            frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_material_issue",
-                args: { batch_name: frm.doc.name }, freeze: true, freeze_message: __("Preparing material issue..."),
-                callback(r) { if (r.message) { frm.reload_doc(); frappe.set_route("Form", "WAFD Stock Movement", r.message.name); } }
-            });
-        }, __("Operations"));
+        add_action(frm, __("Create Material Issue"),
+            "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_material_issue",
+            { batch_name: frm.doc.name }, result => frappe.set_route("Form", "WAFD Stock Movement", result.name));
 
-        frm.add_custom_button(__("Quality Inspection"), () => {
-            frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_quality_inspection",
-                args: { batch_name: frm.doc.name },
-                callback(r) { if (r.message) frappe.set_route("Form", "WAFD Quality Inspection", r.message.name); }
+        add_action(frm, __("Quality Inspection"),
+            "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_quality_inspection",
+            { batch_name: frm.doc.name }, result => {
+                if (result.name) {
+                    frappe.set_route("Form", "WAFD Quality Inspection", result.name);
+                } else if (result.values) {
+                    frappe.new_doc("WAFD Quality Inspection", result.values);
+                }
             });
-        }, __("Operations"));
+
+        if (frm.doc.quality_status === "ناجح / Passed") {
+            add_action(frm, __("Create Packaging Record"),
+                "wafd_one.operations.create_packaging_record",
+                { batch_name: frm.doc.name }, result => frappe.set_route("Form", "WAFD Packaging Record", result.name));
+        }
     },
 
     meal_plan(frm) {
@@ -58,23 +58,20 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.status === "تحضير / Preparing" && !frm.doc.start_time) frm.set_value("start_time", now);
         if (frm.doc.status === "طبخ / Cooking" && !frm.doc.cooking_start_time) frm.set_value("cooking_start_time", now);
         if (frm.doc.status === "تغليف / Packaging" && !frm.doc.packaging_start_time) frm.set_value("packaging_start_time", now);
-        if ((frm.doc.status === "جاهز / Ready" || frm.doc.status === "مكتمل / Completed") && !frm.doc.packaging_end_time) frm.set_value("packaging_end_time", now);
+        if (["جاهز / Ready", "مكتمل / Completed"].includes(frm.doc.status) && !frm.doc.packaging_end_time) frm.set_value("packaging_end_time", now);
         if (frm.doc.status === "مكتمل / Completed" && !frm.doc.end_time) frm.set_value("end_time", now);
     }
 });
 
-frappe.ui.form.on("WAFD Production Batch", {
-    refresh(frm) {
-        if (frm.is_new()) return;
-        if (frm.doc.quality_status === "ناجح / Passed") {
-            frm.add_custom_button(__("Create Packaging Record"), () => {
-                frappe.call({
-                    method: "wafd_one.operations.create_packaging_record",
-                    args: { batch_name: frm.doc.name },
-                    freeze: true,
-                    callback(r) { if (r.message?.name) frappe.set_route("Form", "WAFD Packaging Record", r.message.name); }
-                });
-            }, __("Operations"));
-        }
-    }
-});
+function add_action(frm, label, method, args, on_success) {
+    frm.add_custom_button(label, () => {
+        frappe.call({
+            method,
+            args,
+            freeze: true,
+            callback(r) {
+                if (r.message && on_success) on_success(r.message);
+            }
+        });
+    }, __("Operations"));
+}

@@ -7,7 +7,14 @@ frappe.ui.form.on("WAFD Packaging Record", {
                     method: "wafd_one.operations.create_loading_record",
                     args: { packaging_name: frm.doc.name },
                     freeze: true,
-                    callback(r) { if (r.message?.name) frappe.set_route("Form", "WAFD Loading Record", r.message.name); }
+                    callback(r) {
+                        const result = r.message || {};
+                        if (result.name) {
+                            frappe.set_route("Form", "WAFD Loading Record", result.name);
+                        } else if (result.values) {
+                            frappe.new_doc("WAFD Loading Record", result.values);
+                        }
+                    }
                 });
             }, __("Operations"));
         }

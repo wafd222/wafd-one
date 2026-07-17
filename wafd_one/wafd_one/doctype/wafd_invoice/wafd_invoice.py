@@ -2,7 +2,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, nowdate
 
-class WafdInvoice(Document):
+class WAFDInvoice(Document):
     def validate(self):
         if not self.invoice_date:
             self.invoice_date = nowdate()

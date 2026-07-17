@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint
 
 
-class WafdDeliveryProof(Document):
+class WAFDDeliveryProof(Document):
     def validate(self):
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip, ["project","meal_plan","hotel","quantity","status"], as_dict=True)
         if not trip: frappe.throw("رحلة التوصيل غير موجودة / Delivery trip not found")

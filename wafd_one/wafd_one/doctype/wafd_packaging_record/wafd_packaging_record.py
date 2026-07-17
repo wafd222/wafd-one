@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, flt, nowdate
 
 
-class WafdPackagingRecord(Document):
+class WAFDPackagingRecord(Document):
     def validate(self):
         self._sync_batch()
         self._validate_quantities()

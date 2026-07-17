@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdHotel(Document):
+class WAFDHotel(Document):
     pass

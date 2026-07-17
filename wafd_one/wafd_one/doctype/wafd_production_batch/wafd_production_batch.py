@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, flt, now_datetime
 
 
-class WafdProductionBatch(Document):
+class WAFDProductionBatch(Document):
     def validate(self):
         self._sync_from_meal_plan()
         self._validate_quantities()

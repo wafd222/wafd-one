@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, now_datetime
 
 
-class WafdStockMovement(Document):
+class WAFDStockMovement(Document):
     def validate(self):
         if self.status == "مرحلة / Posted" and not self.posted_on:
             frappe.throw("استخدم زر ترحيل الحركة / Use the Post Movement button")

@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdMealPlanItem(Document):
+class WAFDMealPlanItem(Document):
     pass

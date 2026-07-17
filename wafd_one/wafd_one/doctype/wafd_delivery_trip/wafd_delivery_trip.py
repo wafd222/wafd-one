@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, now_datetime
 
 
-class WafdDeliveryTrip(Document):
+class WAFDDeliveryTrip(Document):
     def validate(self):
         loading = frappe.db.get_value("WAFD Loading Record", self.loading_record, ["project","meal_plan","vehicle","driver","hotel","quantity","status"], as_dict=True)
         if not loading: frappe.throw("سجل التحميل غير موجود / Loading record not found")

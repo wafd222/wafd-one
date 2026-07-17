@@ -1,7 +1,7 @@
 from frappe.model.document import Document
 from frappe.utils import flt
 
-class WafdPurchaseOrder(Document):
+class WAFDPurchaseOrder(Document):
     def validate(self):
         subtotal=0
         for row in self.items or []:

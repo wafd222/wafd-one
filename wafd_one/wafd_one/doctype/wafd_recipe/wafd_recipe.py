@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 
-class WafdRecipe(Document):
+class WAFDRecipe(Document):
     def validate(self):
         if flt(self.yield_quantity) <= 0:
             frappe.throw("عدد الحصص يجب أن يكون أكبر من صفر / Yield must be greater than zero")

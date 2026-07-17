@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 
-class WafdStockBalance(Document):
+class WAFDStockBalance(Document):
     def validate(self):
         self.actual_quantity = flt(self.actual_quantity)
         self.reserved_quantity = flt(self.reserved_quantity)

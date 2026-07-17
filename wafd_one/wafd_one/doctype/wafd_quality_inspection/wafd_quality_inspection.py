@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, now_datetime
 
 
-class WafdQualityInspection(Document):
+class WAFDQualityInspection(Document):
     def validate(self):
         failures = []
         if not frappe.db.exists("WAFD Production Batch", self.production_batch):

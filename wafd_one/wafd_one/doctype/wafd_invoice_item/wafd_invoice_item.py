@@ -1,4 +1,4 @@
 from frappe.model.document import Document
 
-class WafdInvoiceItem(Document):
+class WAFDInvoiceItem(Document):
     pass

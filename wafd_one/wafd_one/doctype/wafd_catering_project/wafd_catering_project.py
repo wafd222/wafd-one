@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, cint, date_diff, flt, getdate, now_datetime
 
 
-class WafdCateringProject(Document):
+class WAFDCateringProject(Document):
     def autoname(self):
         # Naming series generates the canonical project code and document name.
         pass

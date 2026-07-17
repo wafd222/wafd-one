@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdComplaint(Document):
+class WAFDComplaint(Document):
     pass

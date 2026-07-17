@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint
 
 
-class WafdContract(Document):
+class WAFDContract(Document):
     def validate(self):
         if self.start_date and self.end_date and self.end_date < self.start_date:
             frappe.throw("تاريخ نهاية العقد يجب أن يكون بعد تاريخ البداية / Contract end date must be after start date")

@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdStockMovementItem(Document):
+class WAFDStockMovementItem(Document):
     pass

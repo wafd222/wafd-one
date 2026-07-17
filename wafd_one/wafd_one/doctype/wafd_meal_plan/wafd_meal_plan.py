@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 
-class WafdMealPlan(Document):
+class WAFDMealPlan(Document):
     def validate(self):
         if flt(self.quantity) <= 0:
             frappe.throw("الكمية يجب أن تكون أكبر من صفر / Quantity must be greater than zero")

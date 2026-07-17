@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, now_datetime
 
 
-class WafdLoadingRecord(Document):
+class WAFDLoadingRecord(Document):
     def validate(self):
         pack = frappe.db.get_value("WAFD Packaging Record", self.packaging_record, ["project","meal_plan","production_batch","packed_quantity","box_count","status"], as_dict=True)
         if not pack: frappe.throw("سجل التغليف غير موجود / Packaging record not found")

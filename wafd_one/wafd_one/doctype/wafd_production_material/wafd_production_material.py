@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class WafdProductionMaterial(Document):
+class WAFDProductionMaterial(Document):
     pass

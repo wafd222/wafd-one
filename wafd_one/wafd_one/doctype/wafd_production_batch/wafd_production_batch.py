@@ -205,3 +205,18 @@ def create_quality_inspection(batch_name):
     doc = frappe.get_doc({"doctype": "WAFD Quality Inspection", "production_batch": batch.name, "inspection_date": now_datetime(), "inspector": frappe.session.user, "result": "مشروط / Conditional"})
     doc.insert()
     return {"name": doc.name, "created": True}
+
+
+@frappe.whitelist()
+def create_packaging_record(batch_name):
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    if batch.quality_status != "ناجح / Passed":
+        frappe.throw("يجب نجاح فحص الجودة أولاً / Quality inspection must pass first")
+    existing = frappe.db.get_value("WAFD Packaging Record", {"production_batch": batch.name}, "name")
+    if existing:
+        return {"name": existing, "created": False}
+    doc = frappe.get_doc({"doctype":"WAFD Packaging Record","project":batch.project,"production_batch":batch.name,"meal_plan":batch.meal_plan,"packaging_date":batch.batch_date,"planned_quantity":batch.produced_quantity,"packed_quantity":0,"status":"مخطط / Planned"})
+    doc.insert()
+    batch.db_set("packaging_record", doc.name, update_modified=False)
+    return {"name": doc.name, "created": True}

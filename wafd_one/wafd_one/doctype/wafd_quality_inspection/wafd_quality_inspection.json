@@ -1,203 +1,227 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:WAFD-QUALITY-INSPECTION-{#####}",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "production_batch",
-    "inspection_date",
-    "inspector",
-    "temperature",
-    "minimum_temperature",
-    "maximum_temperature",
-    "portion_weight",
-    "target_weight",
-    "weight_tolerance",
-    "appearance",
-    "taste",
-    "packaging",
-    "label_verified",
-    "production_date_verified",
-    "expiry_date_verified",
-    "sample_photo",
-    "result",
-    "corrective_action",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "production_batch",
-      "fieldtype": "Link",
-      "label": "دفعة الإنتاج / Production Batch",
-      "options": "WAFD Production Batch",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "inspection_date",
-      "fieldtype": "Datetime",
-      "label": "تاريخ الفحص / Inspection Date",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "inspector",
-      "fieldtype": "Link",
-      "label": "مفتش الجودة / Inspector",
-      "options": "User",
-      "reqd": 1
-    },
-    {
-      "fieldname": "temperature",
-      "fieldtype": "Float",
-      "label": "درجة الحرارة / Temperature"
-    },
-    {
-      "fieldname": "appearance",
-      "fieldtype": "Select",
-      "label": "المظهر / Appearance",
-      "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
-    },
-    {
-      "fieldname": "taste",
-      "fieldtype": "Select",
-      "label": "الطعم / Taste",
-      "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
-    },
-    {
-      "fieldname": "packaging",
-      "fieldtype": "Select",
-      "label": "التغليف / Packaging",
-      "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
-    },
-    {
-      "fieldname": "sample_photo",
-      "fieldtype": "Attach Image",
-      "label": "صورة العينة / Sample Photo"
-    },
-    {
-      "fieldname": "result",
-      "fieldtype": "Select",
-      "label": "النتيجة / Result",
-      "options": "ناجح / Passed\nمشروط / Conditional\nمرفوض / Rejected",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "corrective_action",
-      "fieldtype": "Small Text",
-      "label": "الإجراء التصحيحي / Corrective Action"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    },
-    {
-      "fieldname": "minimum_temperature",
-      "fieldtype": "Float",
-      "label": "أدنى حرارة مقبولة / Minimum Temperature"
-    },
-    {
-      "fieldname": "maximum_temperature",
-      "fieldtype": "Float",
-      "label": "أعلى حرارة مقبولة / Maximum Temperature"
-    },
-    {
-      "fieldname": "portion_weight",
-      "fieldtype": "Float",
-      "label": "وزن العينة / Sample Weight"
-    },
-    {
-      "fieldname": "target_weight",
-      "fieldtype": "Float",
-      "label": "الوزن المستهدف / Target Weight"
-    },
-    {
-      "fieldname": "weight_tolerance",
-      "fieldtype": "Percent",
-      "label": "هامش الوزن / Weight Tolerance %",
-      "default": "5"
-    },
-    {
-      "fieldname": "label_verified",
-      "fieldtype": "Check",
-      "label": "تم التحقق من الملصق / Label Verified",
-      "default": "0"
-    },
-    {
-      "fieldname": "production_date_verified",
-      "fieldtype": "Check",
-      "label": "تم التحقق من تاريخ الإنتاج / Production Date Verified",
-      "default": "0"
-    },
-    {
-      "fieldname": "expiry_date_verified",
-      "fieldtype": "Check",
-      "label": "تم التحقق من تاريخ الانتهاء / Expiry Date Verified",
-      "default": "0"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-16 18:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Quality Inspection",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Quality Inspector",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Production Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-QUALITY-INSPECTION-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "production_batch",
+  "inspection_date",
+  "inspector",
+  "temperature",
+  "appearance",
+  "taste",
+  "packaging",
+  "sample_photo",
+  "result",
+  "corrective_action",
+  "notes",
+  "minimum_temperature",
+  "maximum_temperature",
+  "portion_weight",
+  "target_weight",
+  "weight_tolerance",
+  "label_verified",
+  "production_date_verified",
+  "expiry_date_verified",
+  "menu_verified",
+  "hygiene_verified",
+  "decision_time",
+  "rejection_photo"
+ ],
+ "fields": [
+  {
+   "fieldname": "production_batch",
+   "fieldtype": "Link",
+   "label": "دفعة الإنتاج / Production Batch",
+   "options": "WAFD Production Batch",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "inspection_date",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الفحص / Inspection Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "inspector",
+   "fieldtype": "Link",
+   "label": "مفتش الجودة / Inspector",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "temperature",
+   "fieldtype": "Float",
+   "label": "درجة الحرارة / Temperature"
+  },
+  {
+   "fieldname": "appearance",
+   "fieldtype": "Select",
+   "label": "المظهر / Appearance",
+   "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
+  },
+  {
+   "fieldname": "taste",
+   "fieldtype": "Select",
+   "label": "الطعم / Taste",
+   "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
+  },
+  {
+   "fieldname": "packaging",
+   "fieldtype": "Select",
+   "label": "التغليف / Packaging",
+   "options": "مقبول / Acceptable\nغير مقبول / Unacceptable"
+  },
+  {
+   "fieldname": "sample_photo",
+   "fieldtype": "Attach Image",
+   "label": "صورة العينة / Sample Photo"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "النتيجة / Result",
+   "options": "ناجح / Passed\nمشروط / Conditional\nمرفوض / Rejected",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "corrective_action",
+   "fieldtype": "Small Text",
+   "label": "الإجراء التصحيحي / Corrective Action"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "minimum_temperature",
+   "fieldtype": "Float",
+   "label": "أدنى حرارة مقبولة / Minimum Temperature"
+  },
+  {
+   "fieldname": "maximum_temperature",
+   "fieldtype": "Float",
+   "label": "أعلى حرارة مقبولة / Maximum Temperature"
+  },
+  {
+   "fieldname": "portion_weight",
+   "fieldtype": "Float",
+   "label": "وزن العينة / Sample Weight"
+  },
+  {
+   "fieldname": "target_weight",
+   "fieldtype": "Float",
+   "label": "الوزن المستهدف / Target Weight"
+  },
+  {
+   "fieldname": "weight_tolerance",
+   "fieldtype": "Percent",
+   "label": "هامش الوزن / Weight Tolerance %",
+   "default": "5"
+  },
+  {
+   "fieldname": "label_verified",
+   "fieldtype": "Check",
+   "label": "تم التحقق من الملصق / Label Verified",
+   "default": "0"
+  },
+  {
+   "fieldname": "production_date_verified",
+   "fieldtype": "Check",
+   "label": "تم التحقق من تاريخ الإنتاج / Production Date Verified",
+   "default": "0"
+  },
+  {
+   "fieldname": "expiry_date_verified",
+   "fieldtype": "Check",
+   "label": "تم التحقق من تاريخ الانتهاء / Expiry Date Verified",
+   "default": "0"
+  },
+  {
+   "fieldname": "menu_verified",
+   "label": "مطابقة المنيو / Menu Verified",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "hygiene_verified",
+   "label": "النظافة وسلامة الغذاء / Hygiene Verified",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "decision_time",
+   "label": "وقت القرار / Decision Time",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "rejection_photo",
+   "label": "صورة الملاحظة / Rejection Photo",
+   "fieldtype": "Attach Image"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-16 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Quality Inspection",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Quality Inspector",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

@@ -1,168 +1,199 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:WAFD-DELIVERY-PROOF-{#####}",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "delivery_trip",
-    "delivery_time",
-    "received_quantity",
-    "rejected_quantity",
-    "receiver_name",
-    "receiver_mobile",
-    "receiver_signature",
-    "delivery_photo",
-    "latitude",
-    "longitude",
-    "status",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "delivery_trip",
-      "fieldtype": "Link",
-      "label": "رحلة التوصيل / Delivery Trip",
-      "options": "WAFD Delivery Trip",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "delivery_time",
-      "fieldtype": "Datetime",
-      "label": "وقت التسليم / Delivery Time",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "received_quantity",
-      "fieldtype": "Int",
-      "label": "الكمية المستلمة / Received Qty",
-      "reqd": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "rejected_quantity",
-      "fieldtype": "Int",
-      "label": "الكمية المرفوضة / Rejected Qty",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "receiver_name",
-      "fieldtype": "Data",
-      "label": "اسم المستلم / Receiver Name",
-      "reqd": 1
-    },
-    {
-      "fieldname": "receiver_mobile",
-      "fieldtype": "Data",
-      "label": "جوال المستلم / Receiver Mobile",
-      "options": "Phone"
-    },
-    {
-      "fieldname": "receiver_signature",
-      "fieldtype": "Signature",
-      "label": "توقيع المستلم / Signature"
-    },
-    {
-      "fieldname": "delivery_photo",
-      "fieldtype": "Attach Image",
-      "label": "صورة التسليم / Delivery Photo"
-    },
-    {
-      "fieldname": "latitude",
-      "fieldtype": "Float",
-      "label": "خط العرض / Latitude"
-    },
-    {
-      "fieldname": "longitude",
-      "fieldtype": "Float",
-      "label": "خط الطول / Longitude"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "مقبول بالكامل / Fully Accepted\nمقبول جزئياً / Partially Accepted\nمرفوض / Rejected",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Delivery Proof",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Driver",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Project Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-DELIVERY-PROOF-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "delivery_trip",
+  "delivery_time",
+  "received_quantity",
+  "rejected_quantity",
+  "receiver_name",
+  "receiver_mobile",
+  "receiver_signature",
+  "delivery_photo",
+  "latitude",
+  "longitude",
+  "status",
+  "notes",
+  "project",
+  "meal_plan",
+  "hotel",
+  "delivered_quantity"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivery_trip",
+   "fieldtype": "Link",
+   "label": "رحلة التوصيل / Delivery Trip",
+   "options": "WAFD Delivery Trip",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_time",
+   "fieldtype": "Datetime",
+   "label": "وقت التسليم / Delivery Time",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received_quantity",
+   "fieldtype": "Int",
+   "label": "الكمية المستلمة / Received Qty",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "rejected_quantity",
+   "fieldtype": "Int",
+   "label": "الكمية المرفوضة / Rejected Qty",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "receiver_name",
+   "fieldtype": "Data",
+   "label": "اسم المستلم / Receiver Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "receiver_mobile",
+   "fieldtype": "Data",
+   "label": "جوال المستلم / Receiver Mobile",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "receiver_signature",
+   "fieldtype": "Signature",
+   "label": "توقيع المستلم / Signature"
+  },
+  {
+   "fieldname": "delivery_photo",
+   "fieldtype": "Attach Image",
+   "label": "صورة التسليم / Delivery Photo"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "خط العرض / Latitude"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "خط الطول / Longitude"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مقبول بالكامل / Fully Accepted\nمقبول جزئياً / Partially Accepted\nمرفوض / Rejected",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "project",
+   "label": "المشروع / Project",
+   "fieldtype": "Link",
+   "options": "WAFD Catering Project",
+   "read_only": 1
+  },
+  {
+   "fieldname": "meal_plan",
+   "label": "خطة الوجبة / Meal Plan",
+   "fieldtype": "Link",
+   "options": "WAFD Meal Plan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hotel",
+   "label": "الفندق / Hotel",
+   "fieldtype": "Link",
+   "options": "WAFD Hotel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivered_quantity",
+   "label": "إجمالي الرحلة / Trip Quantity",
+   "fieldtype": "Int",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Delivery Proof",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Driver",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Project Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

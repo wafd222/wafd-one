@@ -1,156 +1,198 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:WAFD-LOADING-RECORD-{#####}",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "project",
-    "meal_plan",
-    "loading_date",
-    "quantity",
-    "vehicle",
-    "driver",
-    "supervisor",
-    "seal_number",
-    "loading_photo",
-    "status",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "المشروع / Project",
-      "options": "WAFD Catering Project",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "meal_plan",
-      "fieldtype": "Link",
-      "label": "خطة الوجبة / Meal Plan",
-      "options": "WAFD Meal Plan",
-      "reqd": 1
-    },
-    {
-      "fieldname": "loading_date",
-      "fieldtype": "Datetime",
-      "label": "وقت التحميل / Loading Time",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "quantity",
-      "fieldtype": "Int",
-      "label": "الكمية المحملة / Loaded Qty",
-      "reqd": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "vehicle",
-      "fieldtype": "Link",
-      "label": "المركبة / Vehicle",
-      "options": "WAFD Vehicle",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "driver",
-      "fieldtype": "Link",
-      "label": "السائق / Driver",
-      "options": "WAFD Driver",
-      "reqd": 1
-    },
-    {
-      "fieldname": "supervisor",
-      "fieldtype": "Link",
-      "label": "مشرف التحميل / Supervisor",
-      "options": "User"
-    },
-    {
-      "fieldname": "seal_number",
-      "fieldtype": "Data",
-      "label": "رقم الختم / Seal Number"
-    },
-    {
-      "fieldname": "loading_photo",
-      "fieldtype": "Attach Image",
-      "label": "صورة التحميل / Loading Photo"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "قيد التحميل / Loading\nتم التحميل / Loaded\nخرجت / Dispatched",
-      "default": "قيد التحميل / Loading",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Loading Record",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Quality Inspector",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-LOADING-RECORD-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "meal_plan",
+  "loading_date",
+  "quantity",
+  "vehicle",
+  "driver",
+  "supervisor",
+  "seal_number",
+  "loading_photo",
+  "status",
+  "notes",
+  "production_batch",
+  "packaging_record",
+  "hotel",
+  "box_count",
+  "temperature_at_loading",
+  "dispatch_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_plan",
+   "fieldtype": "Link",
+   "label": "خطة الوجبة / Meal Plan",
+   "options": "WAFD Meal Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loading_date",
+   "fieldtype": "Datetime",
+   "label": "وقت التحميل / Loading Time",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "الكمية المحملة / Loaded Qty",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "المركبة / Vehicle",
+   "options": "WAFD Vehicle",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "السائق / Driver",
+   "options": "WAFD Driver",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "مشرف التحميل / Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "seal_number",
+   "fieldtype": "Data",
+   "label": "رقم الختم / Seal Number"
+  },
+  {
+   "fieldname": "loading_photo",
+   "fieldtype": "Attach Image",
+   "label": "صورة التحميل / Loading Photo"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "قيد التحميل / Loading\nتم التحميل / Loaded\nخرجت / Dispatched",
+   "default": "قيد التحميل / Loading",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "production_batch",
+   "label": "دفعة الإنتاج / Production Batch",
+   "fieldtype": "Link",
+   "options": "WAFD Production Batch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "packaging_record",
+   "label": "سجل التغليف / Packaging Record",
+   "fieldtype": "Link",
+   "options": "WAFD Packaging Record",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hotel",
+   "label": "الفندق / Hotel",
+   "fieldtype": "Link",
+   "options": "WAFD Hotel",
+   "reqd": 1
+  },
+  {
+   "fieldname": "box_count",
+   "label": "عدد الصناديق / Box Count",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "temperature_at_loading",
+   "label": "درجة الحرارة عند التحميل / Loading Temperature",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "dispatch_time",
+   "label": "وقت الخروج / Dispatch Time",
+   "fieldtype": "Datetime"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Loading Record",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Quality Inspector",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

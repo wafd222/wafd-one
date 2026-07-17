@@ -1,0 +1,127 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "format:WAFD-STOCK-BALANCE-{#####}",
+  "creation": "2026-07-16 18:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "warehouse",
+    "ingredient",
+    "uom",
+    "actual_quantity",
+    "reserved_quantity",
+    "available_quantity",
+    "average_cost",
+    "stock_value",
+    "last_movement_date"
+  ],
+  "fields": [
+    {
+      "fieldname": "warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع / Warehouse",
+      "options": "WAFD Warehouse",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "ingredient",
+      "fieldtype": "Link",
+      "label": "الصنف / Ingredient",
+      "options": "WAFD Ingredient",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "uom",
+      "fieldtype": "Data",
+      "label": "الوحدة / UOM",
+      "read_only": 1
+    },
+    {
+      "fieldname": "actual_quantity",
+      "fieldtype": "Float",
+      "label": "الكمية الفعلية / Actual Qty",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "reserved_quantity",
+      "fieldtype": "Float",
+      "label": "الكمية المحجوزة / Reserved Qty",
+      "read_only": 1
+    },
+    {
+      "fieldname": "available_quantity",
+      "fieldtype": "Float",
+      "label": "المتاح / Available Qty",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "average_cost",
+      "fieldtype": "Currency",
+      "label": "متوسط التكلفة / Average Cost",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stock_value",
+      "fieldtype": "Currency",
+      "label": "قيمة المخزون / Stock Value",
+      "read_only": 1
+    },
+    {
+      "fieldname": "last_movement_date",
+      "fieldtype": "Datetime",
+      "label": "آخر حركة / Last Movement",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-16 18:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Stock Balance",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Storekeeper",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "report": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

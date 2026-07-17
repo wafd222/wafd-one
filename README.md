@@ -19,3 +19,7 @@
 ## التثبيت السحابي
 
 أضف المستودع إلى Bench يعمل بـ Frappe v16، ثبّت التطبيق على الموقع، ثم نفّذ التحديث. يقوم التطبيق بمزامنة مساحة WAFD ONE تلقائيًا بعد كل migration.
+
+
+## Version 3.4.0
+Smart Kitchen & Warehouse: stock balances, controlled stock posting, production workflow, packaging tracking, and quality gates.

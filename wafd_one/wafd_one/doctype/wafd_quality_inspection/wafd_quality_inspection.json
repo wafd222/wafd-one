@@ -10,9 +10,17 @@
     "inspection_date",
     "inspector",
     "temperature",
+    "minimum_temperature",
+    "maximum_temperature",
+    "portion_weight",
+    "target_weight",
+    "weight_tolerance",
     "appearance",
     "taste",
     "packaging",
+    "label_verified",
+    "production_date_verified",
+    "expiry_date_verified",
     "sample_photo",
     "result",
     "corrective_action",
@@ -86,13 +94,57 @@
       "fieldname": "notes",
       "fieldtype": "Small Text",
       "label": "ملاحظات / Notes"
+    },
+    {
+      "fieldname": "minimum_temperature",
+      "fieldtype": "Float",
+      "label": "أدنى حرارة مقبولة / Minimum Temperature"
+    },
+    {
+      "fieldname": "maximum_temperature",
+      "fieldtype": "Float",
+      "label": "أعلى حرارة مقبولة / Maximum Temperature"
+    },
+    {
+      "fieldname": "portion_weight",
+      "fieldtype": "Float",
+      "label": "وزن العينة / Sample Weight"
+    },
+    {
+      "fieldname": "target_weight",
+      "fieldtype": "Float",
+      "label": "الوزن المستهدف / Target Weight"
+    },
+    {
+      "fieldname": "weight_tolerance",
+      "fieldtype": "Percent",
+      "label": "هامش الوزن / Weight Tolerance %",
+      "default": "5"
+    },
+    {
+      "fieldname": "label_verified",
+      "fieldtype": "Check",
+      "label": "تم التحقق من الملصق / Label Verified",
+      "default": "0"
+    },
+    {
+      "fieldname": "production_date_verified",
+      "fieldtype": "Check",
+      "label": "تم التحقق من تاريخ الإنتاج / Production Date Verified",
+      "default": "0"
+    },
+    {
+      "fieldname": "expiry_date_verified",
+      "fieldtype": "Check",
+      "label": "تم التحقق من تاريخ الانتهاء / Expiry Date Verified",
+      "default": "0"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-16 18:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Quality Inspection",

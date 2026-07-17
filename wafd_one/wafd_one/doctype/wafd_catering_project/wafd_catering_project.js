@@ -48,10 +48,25 @@ frappe.ui.form.on("WAFD Catering Project", {
         frm.add_custom_button(__("Delivery Trip"), () => frappe.new_doc("WAFD Delivery Trip", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Cost"), () => frappe.new_doc("WAFD Project Cost", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Revenue"), () => frappe.new_doc("WAFD Project Revenue", { project: frm.doc.name }), __("Create"));
+    },
+    contract(frm) {
+        if (!frm.doc.contract) return;
+        frappe.db.get_value("WAFD Contract", frm.doc.contract, [
+            "mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"
+        ]).then(r => {
+            const values = r.message || {};
+            Object.keys(values).forEach(fieldname => {
+                if (!frm.doc[fieldname] && values[fieldname] !== undefined && values[fieldname] !== null) {
+                    frm.set_value(fieldname, values[fieldname]);
+                }
+            });
+        });
     }
 });
 
 frappe.ui.form.on("WAFD Project Service", {
+    service_start_date: recalculate,
+    service_end_date: recalculate,
     service_days: recalculate,
     beneficiaries: recalculate,
     meals_per_person_per_day: recalculate,

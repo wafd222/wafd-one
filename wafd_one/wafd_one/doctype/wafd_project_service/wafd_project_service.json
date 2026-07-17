@@ -46,6 +46,16 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "service_start_date",
+      "fieldtype": "Date",
+      "label": "تاريخ بداية الخدمة / Service Start Date"
+    },
+    {
+      "fieldname": "service_end_date",
+      "fieldtype": "Date",
+      "label": "تاريخ نهاية الخدمة / Service End Date"
+    },
+    {
       "fieldname": "service_days",
       "fieldtype": "Int",
       "label": "عدد أيام الخدمة / Service Days",

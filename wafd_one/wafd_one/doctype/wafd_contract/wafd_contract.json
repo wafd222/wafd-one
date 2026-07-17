@@ -26,6 +26,12 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "mission",
+      "fieldtype": "Link",
+      "label": "البعثة / العميل",
+      "options": "WAFD Mission"
+    },
+    {
       "fieldname": "project",
       "fieldtype": "Link",
       "label": "المشروع / Project",
@@ -56,11 +62,24 @@
       "label": "تاريخ النهاية / End Date"
     },
     {
+      "fieldname": "beneficiary_count",
+      "fieldtype": "Int",
+      "label": "عدد المستفيدين / Beneficiary Count",
+      "non_negative": 1
+    },
+    {
       "fieldname": "contract_value",
       "fieldtype": "Currency",
       "label": "قيمة العقد / Contract Value",
       "reqd": 1,
       "non_negative": 1
+    },
+    {
+      "fieldname": "currency",
+      "fieldtype": "Select",
+      "label": "العملة / Currency",
+      "options": "SAR\nUSD",
+      "default": "SAR"
     },
     {
       "fieldname": "payment_terms",

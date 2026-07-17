@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, cint, date_diff, flt, now_datetime
+from frappe.utils import add_days, cint, date_diff, flt, getdate, now_datetime
 
 
 class WafdCateringProject(Document):
@@ -9,7 +9,9 @@ class WafdCateringProject(Document):
         pass
 
     def validate(self):
+        self._sync_from_contract()
         self._validate_dates()
+        self._validate_contract()
         self._calculate_services()
         self._calculate_summary()
         self._validate_approvals()
@@ -21,6 +23,39 @@ class WafdCateringProject(Document):
     def after_insert(self):
         if not self.project_code:
             frappe.db.set_value(self.doctype, self.name, "project_code", self.name, update_modified=False)
+
+    def _sync_from_contract(self):
+        if not self.contract or getattr(self.flags, "from_contract_sync", False):
+            return
+        values = frappe.db.get_value(
+            "WAFD Contract",
+            self.contract,
+            ["mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"],
+            as_dict=True,
+        )
+        if not values:
+            frappe.throw("العقد المحدد غير موجود / Selected contract does not exist")
+        for fieldname in ("mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"):
+            if not self.get(fieldname) and values.get(fieldname) not in (None, ""):
+                self.set(fieldname, values.get(fieldname))
+
+    def _validate_contract(self):
+        if not self.contract:
+            return
+        contract = frappe.db.get_value(
+            "WAFD Contract", self.contract,
+            ["project", "mission", "start_date", "end_date"], as_dict=True,
+        )
+        if not contract:
+            frappe.throw("العقد المحدد غير موجود / Selected contract does not exist")
+        if contract.project and contract.project != self.name:
+            frappe.throw("العقد مرتبط بمشروع آخر / Contract is linked to another project")
+        if contract.mission and self.mission and contract.mission != self.mission:
+            frappe.throw("العميل في المشروع لا يطابق العميل في العقد / Project mission does not match contract mission")
+        if contract.start_date and self.start_date and getdate(self.start_date) < getdate(contract.start_date):
+            frappe.throw("بداية المشروع لا يمكن أن تسبق بداية العقد / Project cannot start before contract")
+        if contract.end_date and self.end_date and getdate(self.end_date) > getdate(contract.end_date):
+            frappe.throw("نهاية المشروع لا يمكن أن تتجاوز نهاية العقد / Project cannot end after contract")
 
     def _validate_dates(self):
         if self.start_date and self.end_date:
@@ -36,7 +71,17 @@ class WafdCateringProject(Document):
         default_days = cint(self.duration_days) or 1
         default_beneficiaries = cint(self.beneficiary_count)
         for row in self.get("services") or []:
-            days = cint(row.service_days) or default_days
+            service_start = getdate(row.service_start_date or self.start_date) if self.start_date else None
+            service_end = getdate(row.service_end_date or self.end_date) if self.end_date else None
+            if service_start and service_end and service_end < service_start:
+                frappe.throw(f"تاريخ نهاية الخدمة يجب أن يكون بعد بدايتها في صف {row.idx} / Invalid service date range in row {row.idx}")
+            if self.start_date and service_start and service_start < getdate(self.start_date):
+                frappe.throw(f"بداية الخدمة خارج مدة المشروع في صف {row.idx} / Service starts before project in row {row.idx}")
+            if self.end_date and service_end and service_end > getdate(self.end_date):
+                frappe.throw(f"نهاية الخدمة خارج مدة المشروع في صف {row.idx} / Service ends after project in row {row.idx}")
+            calculated_days = date_diff(service_end, service_start) + 1 if service_start and service_end else default_days
+            days = cint(row.service_days) or calculated_days
+            row.service_days = days
             beneficiaries = cint(row.beneficiaries) or default_beneficiaries
             multiplier = flt(row.meals_per_person_per_day) or 1
             row.total_meals = cint(days * beneficiaries * multiplier)
@@ -70,11 +115,20 @@ class WafdCateringProject(Document):
                 frappe.throw(f"ليس لديك صلاحية تغيير الاعتماد: {self.meta.get_label(fieldname)}")
 
 
+    def on_update(self):
+        if self.contract and not getattr(self.flags, "from_contract_sync", False):
+            values = {"project": self.name}
+            if self.mission:
+                values["mission"] = self.mission
+            frappe.db.set_value("WAFD Contract", self.contract, values, update_modified=False)
+
 @frappe.whitelist()
 def generate_meal_plans(project_name, replace_existing=0):
     """Generate daily meal plans from project services and assigned hotels."""
     project = frappe.get_doc("WAFD Catering Project", project_name)
     project.check_permission("write")
+    if not project.start_date or not project.end_date:
+        frappe.throw("حدد تاريخ بداية ونهاية المشروع / Set project start and end dates")
     if not project.services:
         frappe.throw("أضف خدمات المشروع أولاً / Add project services first")
     if not project.hotels:
@@ -89,24 +143,36 @@ def generate_meal_plans(project_name, replace_existing=0):
     created = 0
     skipped = 0
     for service in project.services:
-        days = min(cint(service.service_days) or cint(project.duration_days) or 1, cint(project.duration_days) or 1)
+        service_start = getdate(service.service_start_date or project.start_date)
+        service_end = getdate(service.service_end_date or project.end_date)
+        if service.service_days:
+            service_end = min(service_end, getdate(add_days(service_start, cint(service.service_days) - 1)))
         total_beneficiaries = cint(service.beneficiaries) or cint(project.beneficiary_count)
-        hotel_rows = project.hotels or []
-        allocated = sum(cint(h.guest_count) for h in hotel_rows)
+        multiplier = flt(service.meals_per_person_per_day) or 1
+        hotel_rows = list(project.hotels or [])
+        hotel_counts = [max(cint(row.guest_count), 0) for row in hotel_rows]
+        allocated = sum(hotel_counts)
 
-        for day_index in range(days):
-            service_date = add_days(project.start_date, day_index)
-            for hotel_row in hotel_rows:
-                quantity = cint(hotel_row.guest_count)
-                if not quantity:
-                    quantity = total_beneficiaries if len(hotel_rows) == 1 else 0
-                if not quantity and allocated == 0:
-                    quantity = total_beneficiaries // len(hotel_rows)
-                quantity = max(cint(quantity * (flt(service.meals_per_person_per_day) or 1)), 1)
+        if allocated > total_beneficiaries and total_beneficiaries:
+            frappe.throw(
+                f"مجموع نزلاء الفنادق ({allocated}) يتجاوز مستفيدي الخدمة ({total_beneficiaries}) / Hotel allocation exceeds service beneficiaries"
+            )
+        if not allocated:
+            base, remainder = divmod(total_beneficiaries, len(hotel_rows))
+            hotel_counts = [base + (1 if idx < remainder else 0) for idx in range(len(hotel_rows))]
+        elif allocated < total_beneficiaries:
+            hotel_counts[-1] += total_beneficiaries - allocated
+
+        current_date = service_start
+        while current_date <= service_end:
+            for hotel_row, guests in zip(hotel_rows, hotel_counts):
+                quantity = cint(guests * multiplier)
+                if quantity <= 0:
+                    continue
                 filters = {
                     "project": project.name,
                     "hotel": hotel_row.hotel,
-                    "service_date": service_date,
+                    "service_date": current_date,
                     "meal_type": service.service_type,
                     "source_service_row": service.name,
                 }
@@ -125,6 +191,7 @@ def generate_meal_plans(project_name, replace_existing=0):
                 })
                 doc.insert()
                 created += 1
+            current_date = getdate(add_days(current_date, 1))
     return {"created": created, "skipped": skipped}
 
 

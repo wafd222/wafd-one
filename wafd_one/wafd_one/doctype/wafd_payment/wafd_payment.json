@@ -8,6 +8,9 @@
   "field_order": [
     "invoice",
     "project",
+    "invoice_total",
+    "previously_paid",
+    "outstanding_before",
     "payment_date",
     "amount",
     "payment_method",
@@ -33,6 +36,24 @@
       "options": "WAFD Catering Project",
       "read_only": 1,
       "in_list_view": 1
+    },
+    {
+      "fieldname": "invoice_total",
+      "fieldtype": "Currency",
+      "label": "قيمة الفاتورة / Invoice Total",
+      "read_only": 1
+    },
+    {
+      "fieldname": "previously_paid",
+      "fieldtype": "Currency",
+      "label": "المحصل سابقاً / Previously Paid",
+      "read_only": 1
+    },
+    {
+      "fieldname": "outstanding_before",
+      "fieldtype": "Currency",
+      "label": "الرصيد قبل التحصيل / Outstanding Before Payment",
+      "read_only": 1
     },
     {
       "fieldname": "payment_date",

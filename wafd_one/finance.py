@@ -6,26 +6,88 @@ def _scalar(query, values=None):
     return frappe.db.sql(query, values or ())[0][0]
 
 
+def _confirmed_payments(invoice_name, exclude_payment=None):
+    conditions = ["invoice=%s", "status='معتمد / Confirmed'"]
+    values = [invoice_name]
+    if exclude_payment:
+        conditions.append("name!=%s")
+        values.append(exclude_payment)
+    return flt(
+        _scalar(
+            f"select coalesce(sum(amount), 0) from `tabWAFD Payment` where {' and '.join(conditions)}",
+            tuple(values),
+        )
+    )
+
+
+def resolve_unit_price(project_name, meal_plan_name=None, meal_type=None):
+    """Resolve a billable unit price using explicit and auditable fallbacks."""
+    if meal_plan_name:
+        price = flt(frappe.db.get_value("WAFD Meal Plan", meal_plan_name, "unit_price"))
+        if price > 0:
+            return price
+
+    if project_name:
+        services = frappe.db.get_all(
+            "WAFD Project Service",
+            filters={"parent": project_name, "parenttype": "WAFD Catering Project"},
+            fields=["service_type", "unit_price"],
+            order_by="idx asc",
+        )
+        for service in services:
+            if flt(service.unit_price) > 0 and (not meal_type or service.service_type == meal_type):
+                return flt(service.unit_price)
+        for service in services:
+            if flt(service.unit_price) > 0:
+                return flt(service.unit_price)
+
+        values = frappe.db.get_value(
+            "WAFD Catering Project", project_name, ["contract_value", "total_meals"], as_dict=True
+        ) or {}
+        if flt(values.get("contract_value")) > 0 and flt(values.get("total_meals")) > 0:
+            return flt(values.contract_value) / flt(values.total_meals)
+
+    return 0
+
+
+@frappe.whitelist()
+def get_invoice_totals(invoice_name, exclude_payment=None):
+    invoice = frappe.db.get_value(
+        "WAFD Invoice", invoice_name, ["project", "grand_total", "status"], as_dict=True
+    )
+    if not invoice:
+        frappe.throw("الفاتورة غير موجودة / Invoice not found")
+    paid = _confirmed_payments(invoice_name, exclude_payment=exclude_payment)
+    total = flt(invoice.grand_total)
+    return {
+        "project": invoice.project,
+        "invoice_total": total,
+        "paid_amount": paid,
+        "balance": max(total - paid, 0),
+        "status": invoice.status,
+    }
+
+
 def refresh_invoice_and_project(invoice_name):
     if not invoice_name or not frappe.db.exists("WAFD Invoice", invoice_name):
         return
 
     invoice = frappe.get_doc("WAFD Invoice", invoice_name)
-    paid = _scalar(
-        """select coalesce(sum(amount), 0)
-           from `tabWAFD Payment`
-           where invoice=%s and status='معتمد / Confirmed'""",
-        (invoice_name,),
-    )
-    balance = max(flt(invoice.grand_total) - flt(paid), 0)
+    paid = _confirmed_payments(invoice_name)
+    total = flt(invoice.grand_total)
+    balance = max(total - paid, 0)
     status = invoice.status
     if status != "ملغاة / Cancelled":
-        if balance <= 0 and flt(invoice.grand_total) > 0:
+        if total <= 0:
+            status = "مسودة / Draft"
+        elif balance <= 0:
             status = "مدفوعة / Paid"
-        elif flt(paid) > 0:
+        elif paid > 0:
             status = "مدفوعة جزئياً / Partially Paid"
         elif invoice.due_date and getdate(invoice.due_date) < getdate(nowdate()):
             status = "متأخرة / Overdue"
+        elif status not in ("مسودة / Draft", "مرسلة / Sent"):
+            status = "مرسلة / Sent"
 
     frappe.db.set_value(
         "WAFD Invoice",
@@ -91,35 +153,9 @@ def refresh_project_financials(project_name):
 def create_invoice_from_deliveries(project_name, tax_rate=15, due_date=None):
     project = frappe.get_doc("WAFD Catering Project", project_name)
     project.check_permission("write")
-    plans = frappe.db.sql(
-        """select mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price,
-                  coalesce(sum(dp.received_quantity), 0) delivered_quantity
-           from `tabWAFD Meal Plan` mp
-           left join `tabWAFD Delivery Proof` dp
-             on dp.meal_plan=mp.name
-            and dp.status in ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')
-           where mp.project=%s
-           group by mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price
-           having delivered_quantity > 0""",
-        (project_name,),
-        as_dict=True,
-    )
-    if not plans:
-        frappe.throw("لا توجد كميات مسلمة قابلة للفوترة / No delivered quantities to invoice")
-
-    already = set(
-        frappe.db.sql_list(
-            """select distinct ii.meal_plan
-               from `tabWAFD Invoice Item` ii
-               inner join `tabWAFD Invoice` i on i.name=ii.parent
-               where ii.parenttype='WAFD Invoice'
-                 and i.status!='ملغاة / Cancelled'
-                 and ifnull(ii.meal_plan, '')!=''"""
-        )
-    )
-    rows = [p for p in plans if p.name not in already]
+    rows = _get_billable_delivery_rows(project_name)
     if not rows:
-        frappe.throw("تمت فوترة جميع الكميات المسلمة / All delivered quantities are already invoiced")
+        frappe.throw("لا توجد كميات مسلمة قابلة للفوترة / No delivered quantities to invoice")
 
     inv = frappe.get_doc(
         {
@@ -133,21 +169,103 @@ def create_invoice_from_deliveries(project_name, tax_rate=15, due_date=None):
             "description": "فاتورة مبنية على الكميات المسلمة / Invoice based on delivered quantities",
         }
     )
+    _append_delivery_rows(inv, rows)
+    inv.insert()
+    return inv.name
+
+
+def _get_billable_delivery_rows(project_name, exclude_invoice=None):
+    plans = frappe.db.sql(
+        """select mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price,
+                  coalesce(sum(dp.received_quantity), 0) delivered_quantity
+           from `tabWAFD Meal Plan` mp
+           inner join `tabWAFD Delivery Proof` dp
+             on dp.meal_plan=mp.name
+            and dp.project=mp.project
+            and dp.status in ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')
+           where mp.project=%s
+           group by mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price
+           having delivered_quantity > 0""",
+        (project_name,),
+        as_dict=True,
+    )
+
+    conditions = [
+        "ii.parenttype='WAFD Invoice'",
+        "i.project=%s",
+        "i.status!='ملغاة / Cancelled'",
+        "ifnull(ii.meal_plan, '')!=''",
+    ]
+    values = [project_name]
+    if exclude_invoice:
+        conditions.append("i.name!=%s")
+        values.append(exclude_invoice)
+    already = set(
+        frappe.db.sql_list(
+            f"""select distinct ii.meal_plan
+                from `tabWAFD Invoice Item` ii
+                inner join `tabWAFD Invoice` i on i.name=ii.parent
+                where {' and '.join(conditions)}""",
+            tuple(values),
+        )
+    )
+    return [row for row in plans if row.name not in already]
+
+
+def _append_delivery_rows(invoice, rows):
+    missing_prices = []
     for row in rows:
-        inv.append(
+        unit_price = flt(row.unit_price) or resolve_unit_price(
+            invoice.project, row.name, row.meal_type
+        )
+        if unit_price <= 0:
+            missing_prices.append(row.name)
+        invoice.append(
             "items",
             {
                 "meal_plan": row.name,
                 "service_date": row.service_date,
                 "hotel": row.hotel,
                 "meal_type": row.meal_type,
-                "delivered_quantity": row.delivered_quantity,
-                "unit_price": row.unit_price,
-                "amount": flt(row.delivered_quantity) * flt(row.unit_price),
+                "delivered_quantity": flt(row.delivered_quantity),
+                "unit_price": unit_price,
+                "amount": flt(row.delivered_quantity) * unit_price,
             },
         )
-    inv.insert()
-    return inv.name
+    if missing_prices:
+        frappe.throw(
+            "يرجى تحديد سعر الوحدة في خطة الوجبة أو خدمات المشروع قبل إنشاء الفاتورة: {0} / "
+            "Set a unit price in the meal plan or project services before invoicing: {0}".format(
+                ", ".join(missing_prices)
+            )
+        )
+
+
+@frappe.whitelist()
+def rebuild_invoice(invoice_name):
+    """Rebuild a legacy or zero-value invoice from accepted delivery proofs."""
+    invoice = frappe.get_doc("WAFD Invoice", invoice_name)
+    invoice.check_permission("write")
+    if invoice.status == "ملغاة / Cancelled":
+        frappe.throw("لا يمكن إعادة احتساب فاتورة ملغاة / Cannot rebuild a cancelled invoice")
+    if _confirmed_payments(invoice.name) > 0:
+        frappe.throw(
+            "لا يمكن إعادة بناء فاتورة عليها تحصيلات معتمدة / "
+            "Cannot rebuild an invoice with confirmed payments"
+        )
+
+    rows = _get_billable_delivery_rows(invoice.project, exclude_invoice=invoice.name)
+    if not rows:
+        frappe.throw(
+            "لا توجد كميات مسلمة غير مفوترة لإعادة بناء الفاتورة / "
+            "No uninvoiced delivered quantities are available to rebuild this invoice"
+        )
+
+    invoice.set("items", [])
+    invoice.billing_basis = "الكميات المسلمة / Delivered Quantities"
+    _append_delivery_rows(invoice, rows)
+    invoice.save()
+    return invoice.name
 
 
 @frappe.whitelist()

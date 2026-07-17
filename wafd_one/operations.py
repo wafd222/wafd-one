@@ -13,32 +13,39 @@ def _get_or_create(doctype, filters, values):
 
 @frappe.whitelist()
 def create_packaging_record(batch_name):
+    """Open a correctly populated packaging draft, or return the existing record."""
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")
     if batch.quality_status != "ناجح / Passed":
         frappe.throw("يجب نجاح فحص الجودة قبل إنشاء سجل التغليف / Quality inspection must pass first")
-    quantity = cint(batch.produced_quantity)
+
+    quantity = cint(batch.produced_quantity) or cint(batch.planned_quantity)
     if quantity <= 0:
-        frappe.throw("لا توجد كمية صالحة للتغليف / No accepted quantity is available for packaging")
-    result = _get_or_create(
-        "WAFD Packaging Record",
-        {"production_batch": batch.name},
-        {
+        frappe.throw("أدخل الكمية المنتجة قبل إنشاء سجل التغليف / Enter produced quantity before packaging")
+
+    existing = frappe.db.get_value(
+        "WAFD Packaging Record", {"production_batch": batch.name}, "name"
+    )
+    if existing:
+        return {"name": existing, "created": False}
+
+    packed = cint(batch.packed_quantity) or quantity
+    return {
+        "created": True,
+        "values": {
             "project": batch.project,
             "production_batch": batch.name,
             "meal_plan": batch.meal_plan,
             "packaging_date": batch.batch_date or nowdate(),
             "planned_quantity": quantity,
-            "packed_quantity": cint(batch.packed_quantity),
+            "packed_quantity": packed,
+            "rejected_quantity": max(quantity - packed, 0),
             "box_count": cint(batch.box_count),
             "units_per_box": cint(batch.units_per_box),
             "supervisor": batch.packaging_supervisor,
             "status": "مخطط / Planned",
         },
-    )
-    if result["created"]:
-        batch.db_set("packaging_record", result["name"], update_modified=False)
-    return result
+    }
 
 
 @frappe.whitelist()

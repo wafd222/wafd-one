@@ -39,7 +39,13 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.quality_status === "ناجح / Passed") {
             add_action(frm, __("Create Packaging Record"),
                 "wafd_one.operations.create_packaging_record",
-                { batch_name: frm.doc.name }, result => frappe.set_route("Form", "WAFD Packaging Record", result.name));
+                { batch_name: frm.doc.name }, result => {
+                    if (result.name) {
+                        frappe.set_route("Form", "WAFD Packaging Record", result.name);
+                    } else if (result.values) {
+                        frappe.new_doc("WAFD Packaging Record", result.values);
+                    }
+                });
         }
     },
 

@@ -10,13 +10,23 @@ class WAFDPackagingRecord(Document):
         self._validate_gate()
 
     def _sync_batch(self):
-        values = frappe.db.get_value("WAFD Production Batch", self.production_batch, ["project", "meal_plan", "produced_quantity", "quality_status"], as_dict=True)
+        values = frappe.db.get_value(
+            "WAFD Production Batch",
+            self.production_batch,
+            ["project", "meal_plan", "planned_quantity", "produced_quantity", "quality_status", "batch_date"],
+            as_dict=True,
+        )
         if not values:
             frappe.throw("دفعة الإنتاج غير موجودة / Production batch not found")
         self.project = values.project
         self.meal_plan = values.meal_plan
-        self.packaging_date = self.packaging_date or nowdate()
-        self.planned_quantity = cint(values.produced_quantity)
+        self.packaging_date = self.packaging_date or values.batch_date or nowdate()
+        quantity = cint(values.produced_quantity) or cint(values.planned_quantity)
+        if quantity <= 0:
+            frappe.throw("الكمية المنتجة أو المخططة مطلوبة / Produced or planned quantity is required")
+        self.planned_quantity = quantity
+        if not self.packed_quantity:
+            self.packed_quantity = quantity
 
     def _validate_quantities(self):
         planned, packed, rejected = cint(self.planned_quantity), cint(self.packed_quantity), cint(self.rejected_quantity)

@@ -13,7 +13,12 @@ frappe.ui.form.on("WAFD Quality Inspection", {
                     args: { batch_name: frm.doc.production_batch },
                     freeze: true,
                     callback(r) {
-                        if (r.message?.name) frappe.set_route("Form", "WAFD Packaging Record", r.message.name);
+                        const result = r.message || {};
+                        if (result.name) {
+                            frappe.set_route("Form", "WAFD Packaging Record", result.name);
+                        } else if (result.values) {
+                            frappe.new_doc("WAFD Packaging Record", result.values);
+                        }
                     }
                 });
             }, __("Operations"));

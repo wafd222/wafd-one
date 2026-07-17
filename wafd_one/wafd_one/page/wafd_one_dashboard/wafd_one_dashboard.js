@@ -1,65 +1,88 @@
 frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
-  const page = frappe.ui.make_app_page({
-    parent: wrapper,
-    title: __("WAFD ONE"),
-    single_column: true,
-  });
-
-  const items = [
-    ["المشاريع", "WAFD Catering Project", "octicon octicon-project"],
-    ["البعثات والعملاء", "WAFD Mission", "octicon octicon-people"],
-    ["الفنادق", "WAFD Hotel", "octicon octicon-home"],
-    ["العقود", "WAFD Contract", "octicon octicon-file"],
-    ["خطط الوجبات", "WAFD Meal Plan", "octicon octicon-checklist"],
-    ["الوصفات", "WAFD Recipe", "octicon octicon-list-unordered"],
-    ["مكونات الأغذية", "WAFD Ingredient", "octicon octicon-package"],
-    ["دفعات الإنتاج", "WAFD Production Batch", "octicon octicon-gear"],
-    ["فحص الجودة", "WAFD Quality Inspection", "octicon octicon-shield"],
-    ["التغليف", "WAFD Packaging Record", "octicon octicon-package"],
-    ["رحلات التوصيل", "WAFD Delivery Trip", "octicon octicon-location"],
-    ["إثبات التسليم", "WAFD Delivery Proof", "octicon octicon-device-camera"],
-    ["المستودعات", "WAFD Warehouse", "octicon octicon-archive"],
-    ["حركة المخزون", "WAFD Stock Movement", "octicon octicon-sync"],
-    ["الموردون", "WAFD Supplier", "octicon octicon-briefcase"],
-    ["أوامر الشراء", "WAFD Purchase Order", "octicon octicon-cart"],
-    ["المركبات", "WAFD Vehicle", "octicon octicon-truck"],
-    ["السائقون", "WAFD Driver", "octicon octicon-person"],
-    ["تكاليف المشاريع", "WAFD Project Cost", "octicon octicon-graph"],
-    ["إيرادات المشاريع", "WAFD Project Revenue", "octicon octicon-credit-card"],
-    ["الفواتير", "WAFD Invoice", "octicon octicon-file-text"],
-    ["التحصيلات", "WAFD Payment", "octicon octicon-check"],
-  ];
-
+  const page = frappe.ui.make_app_page({ parent: wrapper, title: __("WAFD ONE"), single_column: true });
   const $root = $(wrapper).find(".layout-main-section");
   $root.attr("dir", "rtl").html(`
     <div class="wafd-dashboard">
-      <div class="wafd-hero">
-        <div>
-          <h2>WAFD ONE</h2>
-          <p>منصة موحدة لإدارة مشاريع الإعاشة والتخطيط والإنتاج والجودة والتوزيع والمخزون والمالية.</p>
-        </div>
+      <div class="wafd-hero"><div><h2>WAFD ONE</h2><p>لوحة القيادة التنفيذية لعمليات الإعاشة.</p></div></div>
+      <div class="wafd-toolbar">
+        <div><label>من</label><input type="date" class="form-control wafd-from-date"></div>
+        <div><label>إلى</label><input type="date" class="form-control wafd-to-date"></div>
+        <button class="btn btn-primary wafd-refresh">تحديث</button>
       </div>
-      <div class="wafd-section-title">مؤشرات اليوم</div><div class="wafd-kpis"></div><div class="wafd-section-title">العمليات الرئيسية</div>
-      <div class="wafd-grid"></div>
-    </div>
-  `);
+      <div class="wafd-section-title">المؤشرات التنفيذية</div><div class="wafd-kpis"></div>
+      <div class="wafd-section-title">التنبيهات التي تحتاج إجراء</div><div class="wafd-alerts"></div>
+      <div class="wafd-panels">
+        <section><h4>المشاريع النشطة</h4><div class="wafd-projects"></div></section>
+        <section><h4>التوصيلات القادمة</h4><div class="wafd-deliveries"></div></section>
+        <section><h4>الفواتير المتأخرة</h4><div class="wafd-invoices"></div></section>
+      </div>
+      <div class="wafd-section-title">العمليات الرئيسية</div><div class="wafd-grid"></div>
+    </div>`);
 
+  const today = frappe.datetime.get_today();
+  $root.find(".wafd-to-date").val(today);
+  $root.find(".wafd-from-date").val(frappe.datetime.add_days(today, -6));
+
+  const items = [
+    ["المشاريع", "WAFD Catering Project", "octicon-project"], ["البعثات والعملاء", "WAFD Mission", "octicon-people"],
+    ["الفنادق", "WAFD Hotel", "octicon-home"], ["العقود", "WAFD Contract", "octicon-file"],
+    ["خطط الوجبات", "WAFD Meal Plan", "octicon-checklist"], ["دفعات الإنتاج", "WAFD Production Batch", "octicon-gear"],
+    ["فحص الجودة", "WAFD Quality Inspection", "octicon-shield"], ["التغليف", "WAFD Packaging Record", "octicon-package"],
+    ["التحميل", "WAFD Loading Record", "octicon-package"], ["رحلات التوصيل", "WAFD Delivery Trip", "octicon-location"],
+    ["إثبات التسليم", "WAFD Delivery Proof", "octicon-device-camera"], ["حركة المخزون", "WAFD Stock Movement", "octicon-sync"],
+    ["أوامر الشراء", "WAFD Purchase Order", "octicon-cart"], ["الفواتير", "WAFD Invoice", "octicon-file-text"],
+    ["التحصيلات", "WAFD Payment", "octicon-check"], ["تكاليف المشاريع", "WAFD Project Cost", "octicon-graph"]
+  ];
   const $grid = $root.find(".wafd-grid");
-  items.forEach(([label, doctype, icon]) => {
-    const $card = $(`
-      <button type="button" class="wafd-card" data-doctype="${frappe.utils.escape_html(doctype)}">
-        <span class="wafd-card-icon ${icon}"></span>
-        <span class="wafd-card-label">${frappe.utils.escape_html(label)}</span>
-        <span class="wafd-card-arrow">‹</span>
-      </button>
-    `);
-    $grid.append($card);
-  });
+  items.forEach(([label, doctype, icon]) => $grid.append(`<button class="wafd-card" data-doctype="${frappe.utils.escape_html(doctype)}"><span class="wafd-card-icon octicon ${icon}"></span><span class="wafd-card-label">${label}</span><span class="wafd-card-arrow">‹</span></button>`));
 
-  $root.on("click", ".wafd-card", function () {
-    frappe.set_route("List", $(this).data("doctype"));
-  });
+  $root.on("click", ".wafd-card", function () { frappe.set_route("List", $(this).data("doctype")); });
+  $root.on("click", "[data-route-doctype]", function () { frappe.set_route("List", $(this).data("route-doctype")); });
+  $root.on("click", "[data-docname]", function () { frappe.set_route("Form", $(this).data("doctype"), $(this).data("docname")); });
+  $root.on("click", ".wafd-refresh", load_dashboard);
 
-  frappe.call({method:"wafd_one.finance.get_dashboard_data"}).then(r=>{const d=r.message||{};const fmt=v=>format_currency(v||0,"SAR");const cards=[["المشاريع النشطة",d.active_projects],["وجبات اليوم",d.planned_meals_today],["المسلم اليوم",d.delivered_meals_today],["المستحقات",fmt(d.receivables)],["الإيراد المحصل",fmt(d.collected_revenue)],["الربح",fmt(d.profit)]];const root=$(wrapper).find(".wafd-kpis");cards.forEach(x=>root.append(`<div class="wafd-kpi"><span>${frappe.utils.escape_html(String(x[0]))}</span><strong>${frappe.utils.escape_html(String(x[1]))}</strong></div>`));});
+  function money(value) { return format_currency(value || 0, "SAR"); }
+  function esc(value) { return frappe.utils.escape_html(String(value == null ? "" : value)); }
+  function empty(text) { return `<div class="wafd-empty">${esc(text)}</div>`; }
+  function status(text) { return `<span class="wafd-status">${esc(text || "-")}</span>`; }
+
+  function load_dashboard() {
+    frappe.call({
+      method: "wafd_one.finance.get_dashboard_data",
+      args: { from_date: $root.find(".wafd-from-date").val(), to_date: $root.find(".wafd-to-date").val() },
+      freeze: true,
+      freeze_message: __("جاري تحديث لوحة القيادة..."),
+    }).then(r => render(r.message || {}));
+  }
+
+  function render(d) {
+    const kpis = [
+      ["المشاريع النشطة", d.active_projects || 0], ["الوجبات المخططة", d.planned_meals || 0],
+      ["الوجبات المنتجة", d.produced_meals || 0], ["الوجبات المستلمة", d.delivered_meals || 0],
+      ["نسبة التسليم", `${flt(d.delivery_rate || 0).toFixed(1)}%`], ["المرفوض", d.rejected_meals || 0],
+      ["الإيراد المحصل", money(d.collected_revenue)], ["التكلفة", money(d.actual_cost)],
+      ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
+    ];
+    $root.find(".wafd-kpis").html(kpis.map(x => `<div class="wafd-kpi"><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join(""));
+
+    const alerts = d.alerts || {};
+    const alertCards = [
+      ["عجز المواد", alerts.material_shortages || 0, "WAFD Production Batch"],
+      ["دفعات جودة مرفوضة", alerts.quality_rejected || 0, "WAFD Production Batch"],
+      ["رحلات متأخرة", alerts.late_trips || 0, "WAFD Delivery Trip"],
+      ["فواتير متأخرة", alerts.overdue_invoices || 0, "WAFD Invoice"]
+    ];
+    $root.find(".wafd-alerts").html(alertCards.map(x => `<button class="wafd-alert ${x[1] ? "has-alert" : ""}" data-route-doctype="${x[2]}"><span>${x[0]}</span><b>${x[1]}</b></button>`).join(""));
+
+    const projects = d.projects || [];
+    $root.find(".wafd-projects").html(projects.length ? `<table class="wafd-table"><thead><tr><th>المشروع</th><th>التقدم</th><th>المسلم</th><th>الربح</th></tr></thead><tbody>${projects.map(x => `<tr data-doctype="WAFD Catering Project" data-docname="${esc(x.name)}"><td>${esc(x.project_name || x.name)}</td><td>${flt(x.progress_percent || 0).toFixed(1)}%</td><td>${esc(x.delivered_meals || 0)} / ${esc(x.total_meals || 0)}</td><td>${money(x.profit)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد مشاريع نشطة"));
+
+    const deliveries = d.upcoming_deliveries || [];
+    $root.find(".wafd-deliveries").html(deliveries.length ? `<table class="wafd-table"><thead><tr><th>التاريخ</th><th>الفندق</th><th>الكمية</th><th>الحالة</th></tr></thead><tbody>${deliveries.map(x => `<tr data-doctype="WAFD Delivery Trip" data-docname="${esc(x.name)}"><td>${esc(x.trip_date)}</td><td>${esc(x.hotel)}</td><td>${esc(x.quantity)}</td><td>${status(x.status)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد توصيلات قادمة"));
+
+    const invoices = d.overdue_invoices || [];
+    $root.find(".wafd-invoices").html(invoices.length ? `<table class="wafd-table"><thead><tr><th>الفاتورة</th><th>الاستحقاق</th><th>الرصيد</th><th>الحالة</th></tr></thead><tbody>${invoices.map(x => `<tr data-doctype="WAFD Invoice" data-docname="${esc(x.name)}"><td>${esc(x.name)}</td><td>${esc(x.due_date)}</td><td>${money(x.balance)}</td><td>${status(x.status)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد فواتير متأخرة"));
+  }
+
+  load_dashboard();
 };
-

@@ -52,6 +52,14 @@ def create_packaging_record(batch_name):
 def create_loading_record(packaging_name):
     packaging = frappe.get_doc("WAFD Packaging Record", packaging_name)
     packaging.check_permission("write")
+
+    # Repair legacy records whose quantities are complete but status stayed Planned.
+    original_status = packaging.status
+    packaging._validate_quantities()
+    packaging._derive_status()
+    if packaging.status != original_status:
+        packaging.save()
+
     if packaging.status != "مكتمل / Completed":
         frappe.throw("يجب إكمال سجل التغليف أولاً / Complete the packaging record first")
     if cint(packaging.packed_quantity) <= 0:

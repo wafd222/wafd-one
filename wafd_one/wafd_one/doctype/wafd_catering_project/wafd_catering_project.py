@@ -214,8 +214,10 @@ def generate_operation_plan(project_name):
 
     batches_created = 0
     batches_skipped = 0
+    # Delivery trips are intentionally not created here. A trip must be linked
+    # to a completed loading record and is created later from that record.
     trips_created = 0
-    trips_skipped = 0
+    trips_skipped = frappe.db.count("WAFD Delivery Trip", {"project": project.name})
     warnings = []
 
     for plan in meal_plans:
@@ -238,34 +240,6 @@ def generate_operation_plan(project_name):
                 })
                 batch.insert()
                 batches_created += 1
-
-        trip_name = frappe.db.get_value("WAFD Delivery Trip", {"meal_plan": plan.name}, "name")
-        if trip_name:
-            trips_skipped += 1
-        elif not project.default_vehicle or not project.default_driver:
-            # Delivery records require both values. Keep production planning usable without them.
-            pass
-        else:
-            planned_departure = _combine_service_datetime(plan.service_date, plan.service_time, minutes_before=60)
-            planned_arrival = _combine_service_datetime(plan.service_date, plan.service_time, minutes_before=15)
-            trip = frappe.get_doc({
-                "doctype": "WAFD Delivery Trip",
-                "project": project.name,
-                "meal_plan": plan.name,
-                "trip_date": plan.service_date,
-                "vehicle": project.default_vehicle,
-                "driver": project.default_driver,
-                "hotel": plan.hotel,
-                "quantity": plan.quantity,
-                "planned_departure": planned_departure,
-                "planned_arrival": planned_arrival,
-                "status": "مخططة / Planned",
-            })
-            trip.insert()
-            trips_created += 1
-
-    if meal_plans and (not project.default_vehicle or not project.default_driver):
-        warnings.append("لم تُنشأ رحلات التوصيل: حدد المركبة والسائق الافتراضيين في المشروع.")
 
     totals = {
         "meal_plans": frappe.db.count("WAFD Meal Plan", {"project": project.name}),

@@ -62,3 +62,19 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.status === "مكتمل / Completed" && !frm.doc.end_time) frm.set_value("end_time", now);
     }
 });
+
+frappe.ui.form.on("WAFD Production Batch", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+        if (frm.doc.quality_status === "ناجح / Passed") {
+            frm.add_custom_button(__("Create Packaging Record"), () => {
+                frappe.call({
+                    method: "wafd_one.operations.create_packaging_record",
+                    args: { batch_name: frm.doc.name },
+                    freeze: true,
+                    callback(r) { if (r.message?.name) frappe.set_route("Form", "WAFD Packaging Record", r.message.name); }
+                });
+            }, __("Operations"));
+        }
+    }
+});

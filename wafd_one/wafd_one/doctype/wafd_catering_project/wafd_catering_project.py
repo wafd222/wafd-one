@@ -30,7 +30,7 @@ class WAFDCateringProject(Document):
         values = frappe.db.get_value(
             "WAFD Contract",
             self.contract,
-            ["mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"],
+            ["mission", "hotel", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"],
             as_dict=True,
         )
         if not values:
@@ -38,6 +38,16 @@ class WAFDCateringProject(Document):
         for fieldname in ("mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"):
             if not self.get(fieldname) and values.get(fieldname) not in (None, ""):
                 self.set(fieldname, values.get(fieldname))
+
+        contract_hotel = values.get("hotel")
+        if contract_hotel:
+            if not self.primary_hotel:
+                self.primary_hotel = contract_hotel
+            if not any(row.hotel == contract_hotel for row in (self.hotels or [])):
+                self.append("hotels", {
+                    "hotel": contract_hotel,
+                    "guest_count": self.beneficiary_count or 0,
+                })
 
     def _validate_contract(self):
         if not self.contract:

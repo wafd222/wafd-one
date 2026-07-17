@@ -7,12 +7,16 @@
   "engine": "InnoDB",
   "field_order": [
     "contract_title",
+    "mission",
+    "hotel",
     "project",
     "contract_number",
     "signing_date",
     "start_date",
     "end_date",
+    "beneficiary_count",
     "contract_value",
+    "currency",
     "payment_terms",
     "attachment",
     "status"
@@ -30,6 +34,13 @@
       "fieldtype": "Link",
       "label": "البعثة / العميل",
       "options": "WAFD Mission"
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق الرئيسي / Primary Hotel",
+      "options": "WAFD Hotel",
+      "in_list_view": 1
     },
     {
       "fieldname": "project",
@@ -104,7 +115,7 @@
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-17 21:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Contract",

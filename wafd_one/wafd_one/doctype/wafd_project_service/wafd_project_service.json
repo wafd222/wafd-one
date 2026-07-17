@@ -16,7 +16,9 @@
     "total_meals",
     "unit_price",
     "estimated_revenue",
-    "notes"
+    "notes",
+    "service_start_date",
+    "service_end_date"
   ],
   "fields": [
     {

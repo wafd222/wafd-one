@@ -64,14 +64,24 @@ frappe.ui.form.on("WAFD Catering Project", {
     contract(frm) {
         if (!frm.doc.contract) return;
         frappe.db.get_value("WAFD Contract", frm.doc.contract, [
-            "mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"
+            "mission", "hotel", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"
         ]).then(r => {
             const values = r.message || {};
             Object.keys(values).forEach(fieldname => {
+                if (fieldname === "hotel") return;
                 if (!frm.doc[fieldname] && values[fieldname] !== undefined && values[fieldname] !== null) {
                     frm.set_value(fieldname, values[fieldname]);
                 }
             });
+            if (values.hotel && !frm.doc.primary_hotel) {
+                frm.set_value("primary_hotel", values.hotel);
+            }
+            if (values.hotel && !(frm.doc.hotels || []).some(row => row.hotel === values.hotel)) {
+                const row = frm.add_child("hotels");
+                row.hotel = values.hotel;
+                row.guest_count = frm.doc.beneficiary_count || values.beneficiary_count || 0;
+                frm.refresh_field("hotels");
+            }
         });
     }
 });

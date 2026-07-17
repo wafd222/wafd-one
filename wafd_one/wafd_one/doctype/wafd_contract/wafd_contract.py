@@ -38,11 +38,25 @@ class WAFDContract(Document):
             "beneficiary_count": self.beneficiary_count,
             "contract_value": self.contract_value,
             "currency": self.currency,
+            "primary_hotel": self.hotel,
         }
         for fieldname, value in mapping.items():
             if value not in (None, "") and project.get(fieldname) != value:
                 project.set(fieldname, value)
                 changed = True
+
+        if self.hotel:
+            hotel_rows = [row for row in (project.hotels or []) if row.hotel == self.hotel]
+            if not hotel_rows:
+                project.append("hotels", {
+                    "hotel": self.hotel,
+                    "guest_count": self.beneficiary_count or 0,
+                })
+                changed = True
+            elif self.beneficiary_count and hotel_rows[0].guest_count != self.beneficiary_count:
+                hotel_rows[0].guest_count = self.beneficiary_count
+                changed = True
+
         if changed:
             project.flags.from_contract_sync = True
             project.save(ignore_permissions=True)
@@ -60,6 +74,7 @@ def create_project_from_contract(contract_name):
         "project_name": contract.contract_title,
         "mission": contract.mission,
         "contract": contract.name,
+        "primary_hotel": contract.hotel,
         "start_date": contract.start_date,
         "end_date": contract.end_date,
         "beneficiary_count": contract.beneficiary_count,
@@ -67,6 +82,11 @@ def create_project_from_contract(contract_name):
         "currency": contract.currency or "SAR",
         "status": "مسودة / Draft",
     })
+    if contract.hotel:
+        project.append("hotels", {
+            "hotel": contract.hotel,
+            "guest_count": contract.beneficiary_count or 0,
+        })
     project.insert()
     contract.db_set("project", project.name, update_modified=True)
     return {"name": project.name, "created": True}

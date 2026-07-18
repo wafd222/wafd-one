@@ -9,9 +9,8 @@ wafd_one.patches.v4_5.recalculate_invoice_totals
 wafd_one.patches.v4_6.load_reference_master_data
 wafd_one.patches.v4_6_1.expand_reference_master_data
 wafd_one.patches.v4_7_1.install_administration_workspace
-
 wafd_one.patches.v4_7_2.ensure_top_level_administration_workspace
 wafd_one.patches.v4_7_3.fix_administration_entry
-
 wafd_one.patches.v4_7_4.verify_administration_assets
 wafd_one.patches.v4_8_0.install_administration_console
+wafd_one.patches.v4_8_1.execute

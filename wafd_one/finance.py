@@ -175,6 +175,12 @@ def create_invoice_from_deliveries(project_name, tax_rate=15, due_date=None):
 
 
 def _get_billable_delivery_rows(project_name, exclude_invoice=None):
+    """Return only the accepted delivered quantity that is still available to invoice.
+
+    Quantities are calculated per meal plan as accepted delivery proofs minus quantities
+    already reserved by non-cancelled invoices. This allows later incremental deliveries
+    for the same meal plan to be invoiced without duplicating earlier quantities.
+    """
     plans = frappe.db.sql(
         """select mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price,
                   coalesce(sum(dp.received_quantity), 0) delivered_quantity
@@ -192,6 +198,7 @@ def _get_billable_delivery_rows(project_name, exclude_invoice=None):
 
     conditions = [
         "ii.parenttype='WAFD Invoice'",
+        "ii.parentfield='items'",
         "i.project=%s",
         "i.status!='ملغاة / Cancelled'",
         "ifnull(ii.meal_plan, '')!=''",
@@ -200,16 +207,50 @@ def _get_billable_delivery_rows(project_name, exclude_invoice=None):
     if exclude_invoice:
         conditions.append("i.name!=%s")
         values.append(exclude_invoice)
-    already = set(
-        frappe.db.sql_list(
-            f"""select distinct ii.meal_plan
-                from `tabWAFD Invoice Item` ii
-                inner join `tabWAFD Invoice` i on i.name=ii.parent
-                where {' and '.join(conditions)}""",
-            tuple(values),
-        )
+
+    invoiced_rows = frappe.db.sql(
+        f"""select ii.meal_plan, coalesce(sum(ii.delivered_quantity), 0) invoiced_quantity
+            from `tabWAFD Invoice Item` ii
+            inner join `tabWAFD Invoice` i on i.name=ii.parent
+            where {' and '.join(conditions)}
+            group by ii.meal_plan""",
+        tuple(values),
+        as_dict=True,
     )
-    return [row for row in plans if row.name not in already]
+    invoiced_by_plan = {row.meal_plan: flt(row.invoiced_quantity) for row in invoiced_rows}
+
+    billable = []
+    for row in plans:
+        remaining = max(flt(row.delivered_quantity) - invoiced_by_plan.get(row.name, 0), 0)
+        if remaining <= 0:
+            continue
+        row.delivered_quantity = remaining
+        billable.append(row)
+    return billable
+
+
+@frappe.whitelist()
+def get_uninvoiced_delivery_items(project_name, invoice_name=None):
+    """Return accepted delivery quantities that can be loaded into an invoice form."""
+    if not project_name:
+        return []
+    if not frappe.has_permission("WAFD Catering Project", "read", project_name):
+        frappe.throw("غير مصرح لك بعرض هذا المشروع / You are not permitted to view this project")
+
+    rows = _get_billable_delivery_rows(project_name, exclude_invoice=invoice_name)
+    result = []
+    for row in rows:
+        unit_price = flt(row.unit_price) or resolve_unit_price(project_name, row.name, row.meal_type)
+        result.append({
+            "meal_plan": row.name,
+            "service_date": row.service_date,
+            "hotel": row.hotel,
+            "meal_type": row.meal_type,
+            "delivered_quantity": flt(row.delivered_quantity),
+            "unit_price": unit_price,
+            "amount": flt(row.delivered_quantity) * unit_price,
+        })
+    return result
 
 
 def _append_delivery_rows(invoice, rows):

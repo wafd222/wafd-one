@@ -1,3 +1,32 @@
+function wafd_load_delivered_items(frm) {
+    if (!frm.doc.project || frm.doc.billing_basis !== "الكميات المسلمة / Delivered Quantities") return;
+    if ((frm.doc.items || []).length) return;
+
+    frappe.call({
+        method: "wafd_one.finance.get_uninvoiced_delivery_items",
+        args: {
+            project_name: frm.doc.project,
+            invoice_name: frm.is_new() ? null : frm.doc.name
+        },
+        freeze: true,
+        freeze_message: __("Loading accepted delivery quantities..."),
+        callback(r) {
+            const rows = r.message || [];
+            if (!rows.length) {
+                frappe.msgprint(__("No accepted, uninvoiced delivery quantities are available for this project."));
+                return;
+            }
+            frm.clear_table("items");
+            rows.forEach(data => {
+                const row = frm.add_child("items");
+                Object.assign(row, data);
+            });
+            frm.refresh_field("items");
+            wafd_recalculate_item_subtotal(frm);
+        }
+    });
+}
+
 function wafd_recalculate_invoice(frm) {
     const subtotal = flt(frm.doc.subtotal || 0);
     const tax_rate = flt(frm.doc.tax_rate || 0);
@@ -29,6 +58,10 @@ frappe.ui.form.on("WAFD Invoice", {
     refresh(frm) {
         wafd_recalculate_invoice(frm);
 
+        if (frm.doc.billing_basis === "الكميات المسلمة / Delivered Quantities" && !(frm.doc.items || []).length) {
+            frm.add_custom_button(__("Load Delivered Quantities"), () => wafd_load_delivered_items(frm), __("Operations"));
+        }
+
         if (frm.is_new() || frm.doc.status === "ملغاة / Cancelled") return;
 
         if (flt(frm.doc.grand_total) <= 0) {
@@ -58,6 +91,16 @@ frappe.ui.form.on("WAFD Invoice", {
                     status: "مسودة / Draft"
                 });
             }, __("Operations"));
+        }
+    },
+
+    project(frm) {
+        wafd_load_delivered_items(frm);
+    },
+
+    billing_basis(frm) {
+        if (frm.doc.billing_basis === "الكميات المسلمة / Delivered Quantities") {
+            wafd_load_delivered_items(frm);
         }
     },
 

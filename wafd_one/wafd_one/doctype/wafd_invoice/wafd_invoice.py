@@ -13,6 +13,11 @@ class WAFDInvoice(Document):
         if self.billing_basis == "قيمة العقد / Contract Value":
             self.subtotal = flt(frappe.db.get_value("WAFD Catering Project", self.project, "contract_value"))
         elif self.billing_basis == "الكميات المسلمة / Delivered Quantities":
+            # Build invoice items automatically from accepted, uninvoiced delivery proofs.
+            # This keeps billing tied to actual delivered quantities and prevents manual
+            # entry mistakes. Existing item rows are preserved and recalculated.
+            if not self.items:
+                self._populate_items_from_deliveries()
             self._recalculate_delivered_items()
             self.subtotal = sum(flt(row.amount) for row in (self.items or []))
 
@@ -41,22 +46,74 @@ class WAFDInvoice(Document):
         self.balance = max(flt(self.grand_total - self.paid_amount, 2), 0)
         self._set_status()
 
+    def _populate_items_from_deliveries(self):
+        from wafd_one.finance import _append_delivery_rows, _get_billable_delivery_rows
+
+        rows = _get_billable_delivery_rows(
+            self.project, exclude_invoice=None if self.is_new() else self.name
+        )
+        if not rows:
+            frappe.throw(
+                "لا توجد كميات تسليم مقبولة وغير مفوترة لهذا المشروع / "
+                "No accepted, uninvoiced delivery quantities are available for this project"
+            )
+        _append_delivery_rows(self, rows)
+
     def _recalculate_delivered_items(self):
-        from wafd_one.finance import resolve_unit_price
+        from wafd_one.finance import _get_billable_delivery_rows, resolve_unit_price
 
         if not self.items:
-            frappe.throw("لا توجد بنود فاتورة / Invoice has no items")
+            frappe.throw(
+                "لا توجد كميات تسليم مقبولة وغير مفوترة لهذا المشروع / "
+                "No accepted, uninvoiced delivery quantities are available for this project"
+            )
+
+        available_rows = _get_billable_delivery_rows(
+            self.project, exclude_invoice=None if self.is_new() else self.name
+        )
+        available_by_plan = {row.name: flt(row.delivered_quantity) for row in available_rows}
+        seen_plans = set()
         missing = []
+
         for row in self.items:
+            if not row.meal_plan:
+                frappe.throw("يجب تحديد خطة الوجبة لكل بند / Every invoice item must have a meal plan")
+            if row.meal_plan in seen_plans:
+                frappe.throw(
+                    "لا يمكن تكرار خطة الوجبة في الفاتورة: {0} / Duplicate meal plan in invoice: {0}".format(
+                        row.meal_plan
+                    )
+                )
+            seen_plans.add(row.meal_plan)
+
+            plan_project = frappe.db.get_value("WAFD Meal Plan", row.meal_plan, "project")
+            if plan_project != self.project:
+                frappe.throw(
+                    "خطة الوجبة {0} لا تتبع هذا المشروع / Meal plan {0} does not belong to this project".format(
+                        row.meal_plan
+                    )
+                )
+
             row.delivered_quantity = flt(row.delivered_quantity)
             if row.delivered_quantity <= 0:
                 frappe.throw("كمية البند يجب أن تكون أكبر من صفر / Invoice item quantity must be greater than zero")
+
+            available = available_by_plan.get(row.meal_plan, 0)
+            if row.delivered_quantity > available:
+                frappe.throw(
+                    "الكمية المفوترة لخطة الوجبة {0} ({1}) تتجاوز الكمية المتاحة للفوترة ({2}) / "
+                    "Invoiced quantity for meal plan {0} ({1}) exceeds the billable quantity ({2})".format(
+                        row.meal_plan, row.delivered_quantity, available
+                    )
+                )
+
             row.unit_price = flt(row.unit_price) or resolve_unit_price(
                 self.project, row.meal_plan, row.meal_type
             )
             if row.unit_price <= 0:
                 missing.append(row.meal_plan or str(row.idx))
-            row.amount = row.delivered_quantity * row.unit_price
+            row.amount = flt(row.delivered_quantity * row.unit_price, 2)
+
         if missing:
             frappe.throw(
                 "تعذر تحديد سعر الوحدة للبنود: {0} / Unable to resolve unit price for items: {0}".format(

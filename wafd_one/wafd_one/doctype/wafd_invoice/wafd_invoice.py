@@ -16,8 +16,12 @@ class WAFDInvoice(Document):
             self._recalculate_delivered_items()
             self.subtotal = sum(flt(row.amount) for row in (self.items or []))
 
-        self.tax_amount = flt(self.subtotal) * flt(self.tax_rate) / 100
-        self.grand_total = flt(self.subtotal) + flt(self.tax_amount)
+        # Always calculate financial totals on the server. Client-side calculation is
+        # only for immediate display; these values are the authoritative saved values.
+        self.subtotal = flt(self.subtotal)
+        self.tax_rate = flt(self.tax_rate)
+        self.tax_amount = flt(self.subtotal * self.tax_rate / 100, 2)
+        self.grand_total = flt(self.subtotal + self.tax_amount, 2)
 
         if self.billing_basis != "يدوي / Manual" and flt(self.grand_total) <= 0:
             frappe.throw(
@@ -33,8 +37,8 @@ class WAFDInvoice(Document):
                    where invoice=%s and status='معتمد / Confirmed'""",
                 self.name,
             )[0][0]
-        self.paid_amount = flt(confirmed)
-        self.balance = max(flt(self.grand_total) - self.paid_amount, 0)
+        self.paid_amount = flt(confirmed, 2)
+        self.balance = max(flt(self.grand_total - self.paid_amount, 2), 0)
         self._set_status()
 
     def _recalculate_delivered_items(self):

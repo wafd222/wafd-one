@@ -60,8 +60,8 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       ["المشاريع النشطة", d.active_projects || 0], ["الوجبات المخططة", d.planned_meals || 0],
       ["الوجبات المنتجة", d.produced_meals || 0], ["الوجبات المستلمة", d.delivered_meals || 0],
       ["نسبة التسليم", `${flt(d.delivery_rate || 0).toFixed(1)}%`], ["المرفوض", d.rejected_meals || 0],
-      ["الإيراد المحصل", money(d.collected_revenue)], ["التكلفة", money(d.actual_cost)],
-      ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
+      ["إجمالي الفواتير", money(d.invoiced_revenue)], ["الإيراد المحصل", money(d.collected_revenue)],
+      ["التكلفة", money(d.actual_cost)], ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
     ];
     $root.find(".wafd-kpis").html(kpis.map(x => `<div class="wafd-kpi"><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join(""));
 
@@ -85,4 +85,10 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   }
 
   load_dashboard();
+};
+
+
+frappe.pages["wafd-one-dashboard"].on_page_show = function (wrapper) {
+  const $button = $(wrapper).find(".wafd-refresh");
+  if ($button.length) $button.trigger("click");
 };

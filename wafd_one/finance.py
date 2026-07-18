@@ -301,6 +301,11 @@ def get_dashboard_data(from_date=None, to_date=None):
            where date(delivery_time) between %s and %s""",
         date_values,
     )
+    invoiced = _scalar(
+        """select coalesce(sum(grand_total), 0) from `tabWAFD Invoice`
+           where invoice_date between %s and %s and status!='ملغاة / Cancelled'""",
+        date_values,
+    )
     receivable = _scalar(
         """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
            where status not in ('مدفوعة / Paid', 'ملغاة / Cancelled')"""
@@ -366,6 +371,7 @@ def get_dashboard_data(from_date=None, to_date=None):
         "delivered_meals": delivered,
         "rejected_meals": rejected,
         "delivery_rate": flt(delivered) / flt(planned) * 100 if planned else 0,
+        "invoiced_revenue": invoiced,
         "receivables": receivable,
         "overdue_receivables": overdue,
         "actual_cost": costs,

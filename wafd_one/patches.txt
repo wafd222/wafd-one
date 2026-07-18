@@ -5,3 +5,4 @@
 wafd_one.patches.v2_6.sync_all_wafd_metadata
 wafd_one.patches.v2_8.rebuild_workspace_from_source
 wafd_one.patches.v3_0.install_stable_dashboard
+wafd_one.patches.v4_5.recalculate_invoice_totals

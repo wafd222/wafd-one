@@ -263,6 +263,7 @@ def before_migrate():
 
 def after_install():
     apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=True)
+    ensure_administration_page_and_workspace()
     frappe.clear_cache()
 
 
@@ -275,4 +276,73 @@ def after_migrate():
         assign_manager_access=True,
         sync_doctypes=True,
     )
+    ensure_administration_page_and_workspace()
     frappe.clear_cache()
+
+
+def ensure_administration_page_and_workspace():
+    """Synchronize the administration Page and expose it as a visible workspace.
+
+    This is deliberately executed after every migrate because some Frappe Cloud
+    upgrades can remove standard Page/Workspace records from custom apps.
+    """
+    import json
+    from pathlib import Path
+
+    # Reload the standard page metadata first so Page links never point to a
+    # missing record.
+    frappe.reload_doc(
+        "wafd_one", "page", "wafd_administration", force=True, reset_permissions=True
+    )
+
+    page_name = "wafd-administration"
+    if not frappe.db.exists("Page", page_name):
+        frappe.throw("WAFD Administration page synchronization failed.")
+
+    source_path = (
+        Path(__file__).resolve().parent
+        / "wafd_one"
+        / "workspace"
+        / "wafd_administration"
+        / "wafd_administration.json"
+    )
+    with source_path.open(encoding="utf-8") as source:
+        data = json.load(source)
+
+    workspace_name = "إدارة WAFD ONE"
+    data.update({
+        "doctype": "Workspace",
+        "name": workspace_name,
+        "label": workspace_name,
+        "title": workspace_name,
+        "module": "WAFD ONE",
+        "app": "wafd_one",
+        "public": 1,
+        "for_user": "",
+        "is_hidden": 0,
+        # Keep it top-level. A child workspace may not be shown in the app
+        # sidebar until its parent has already been opened.
+        "parent_page": "",
+    })
+
+    if frappe.db.exists("Workspace", workspace_name):
+        frappe.delete_doc(
+            "Workspace", workspace_name, force=True, ignore_permissions=True
+        )
+
+    workspace = frappe.get_doc(data)
+    workspace.flags.ignore_permissions = True
+    workspace.flags.ignore_version = True
+    workspace.insert(ignore_permissions=True)
+    workspace.reload()
+
+    shortcuts = {row.label: row.link_to for row in workspace.shortcuts}
+    if shortcuts.get("فتح إدارة WAFD ONE") != page_name:
+        frappe.throw("WAFD Administration workspace shortcut synchronization failed.")
+    if workspace.is_hidden or not workspace.public or workspace.parent_page:
+        frappe.throw("WAFD Administration workspace visibility validation failed.")
+    if workspace.app != "wafd_one":
+        frappe.throw("WAFD Administration workspace app ownership validation failed.")
+
+    frappe.clear_cache()
+    return True

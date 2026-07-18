@@ -281,22 +281,25 @@ def after_migrate():
 
 
 def ensure_administration_page_and_workspace():
-    """Synchronize the administration Page and expose it as a visible workspace.
+    """Synchronize the administration Page and expose it reliably.
 
-    This is deliberately executed after every migrate because some Frappe Cloud
-    upgrades can remove standard Page/Workspace records from custom apps.
+    The Page is the source of truth. The Workspace is recreated using an ASCII
+    document name with an Arabic label, which is more reliable across Frappe
+    versions and app-sidebar implementations.
     """
     import json
     from pathlib import Path
 
-    # Reload the standard page metadata first so Page links never point to a
-    # missing record.
     frappe.reload_doc(
         "wafd_one", "page", "wafd_administration", force=True, reset_permissions=True
     )
 
-    page_name = "wafd-administration"
-    if not frappe.db.exists("Page", page_name):
+    page_name = frappe.db.get_value(
+        "Page", {"page_name": "wafd-administration"}, "name"
+    ) or frappe.db.get_value(
+        "Page", {"name": "wafd-administration"}, "name"
+    )
+    if not page_name:
         frappe.throw("WAFD Administration page synchronization failed.")
 
     source_path = (
@@ -309,26 +312,26 @@ def ensure_administration_page_and_workspace():
     with source_path.open(encoding="utf-8") as source:
         data = json.load(source)
 
-    workspace_name = "إدارة WAFD ONE"
+    workspace_name = "WAFD Administration"
     data.update({
         "doctype": "Workspace",
         "name": workspace_name,
-        "label": workspace_name,
-        "title": workspace_name,
+        "label": "إدارة WAFD ONE",
+        "title": "إدارة WAFD ONE",
         "module": "WAFD ONE",
         "app": "wafd_one",
         "public": 1,
         "for_user": "",
         "is_hidden": 0,
-        # Keep it top-level. A child workspace may not be shown in the app
-        # sidebar until its parent has already been opened.
         "parent_page": "",
     })
 
-    if frappe.db.exists("Workspace", workspace_name):
-        frappe.delete_doc(
-            "Workspace", workspace_name, force=True, ignore_permissions=True
-        )
+    # Remove records created by earlier attempts before inserting the canonical one.
+    for old_name in ("إدارة WAFD ONE", workspace_name):
+        if frappe.db.exists("Workspace", old_name):
+            frappe.delete_doc(
+                "Workspace", old_name, force=True, ignore_permissions=True
+            )
 
     workspace = frappe.get_doc(data)
     workspace.flags.ignore_permissions = True
@@ -344,5 +347,12 @@ def ensure_administration_page_and_workspace():
     if workspace.app != "wafd_one":
         frappe.throw("WAFD Administration workspace app ownership validation failed.")
 
+    # Keep a permanent direct entry on the dashboard as a fallback even when a
+    # specific Frappe sidebar build filters custom workspaces.
+    dashboard_page = frappe.db.exists("Page", "wafd-one-dashboard")
+    if not dashboard_page:
+        frappe.throw("WAFD ONE dashboard page is missing.")
+
     frappe.clear_cache()
     return True
+

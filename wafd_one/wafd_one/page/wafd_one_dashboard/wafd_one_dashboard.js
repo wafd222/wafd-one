@@ -3,7 +3,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   const $root = $(wrapper).find(".layout-main-section");
   $root.attr("dir", "rtl").html(`
     <div class="wafd-dashboard">
-      <div class="wafd-hero"><div><h2>WAFD ONE</h2><p>لوحة القيادة التنفيذية لعمليات الإعاشة.</p></div></div>
+      <div class="wafd-hero"><div><h2>WAFD ONE</h2><p>لوحة القيادة التنفيذية لعمليات الإعاشة.</p></div><div class="wafd-admin-entry" style="display:none"><button class="btn btn-default wafd-open-administration">إدارة WAFD ONE</button></div></div>
       <div class="wafd-toolbar">
         <div><label>من</label><input type="date" class="form-control wafd-from-date"></div>
         <div><label>إلى</label><input type="date" class="form-control wafd-to-date"></div>
@@ -18,6 +18,14 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       </div>
       <div class="wafd-section-title">العمليات الرئيسية</div><div class="wafd-grid"></div>
     </div>`);
+
+  const can_administer = frappe.session.user === "Administrator" || (frappe.user_roles || []).includes("System Manager");
+  if (can_administer) {
+    $root.find(".wafd-admin-entry").show();
+  }
+  $root.on("click", ".wafd-open-administration", function () {
+    frappe.set_route("wafd-administration");
+  });
 
   const today = frappe.datetime.get_today();
   $root.find(".wafd-to-date").val(today);
@@ -35,6 +43,9 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   ];
   const $grid = $root.find(".wafd-grid");
   items.forEach(([label, doctype, icon]) => $grid.append(`<button class="wafd-card" data-doctype="${frappe.utils.escape_html(doctype)}"><span class="wafd-card-icon octicon ${icon}"></span><span class="wafd-card-label">${label}</span><span class="wafd-card-arrow">‹</span></button>`));
+  if (can_administer) {
+    $grid.append(`<button class="wafd-card wafd-open-administration"><span class="wafd-card-icon octicon octicon-gear"></span><span class="wafd-card-label">إدارة WAFD ONE</span><span class="wafd-card-arrow">‹</span></button>`);
+  }
 
   $root.on("click", ".wafd-card", function () { frappe.set_route("List", $(this).data("doctype")); });
   $root.on("click", "[data-route-doctype]", function () { frappe.set_route("List", $(this).data("route-doctype")); });
@@ -60,8 +71,8 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       ["إجمالي المشاريع", d.active_projects || 0], ["الوجبات المخططة", d.planned_meals || 0],
       ["الوجبات المنتجة", d.produced_meals || 0], ["الوجبات المستلمة", d.delivered_meals || 0],
       ["نسبة التسليم", `${flt(d.delivery_rate || 0).toFixed(1)}%`], ["المرفوض", d.rejected_meals || 0],
-      ["إجمالي الفواتير", money(d.invoiced_revenue)], ["الإيراد المحصل", money(d.collected_revenue)],
-      ["التكلفة", money(d.actual_cost)], ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
+      ["إجمالي الفواتير", money(d.invoiced_revenue)], ["الإيراد المحصل", money(d.collected_revenue)], ["التكلفة", money(d.actual_cost)],
+      ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
     ];
     $root.find(".wafd-kpis").html(kpis.map(x => `<div class="wafd-kpi"><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join(""));
 
@@ -88,10 +99,4 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   }
 
   load_dashboard();
-};
-
-
-frappe.pages["wafd-one-dashboard"].on_page_show = function (wrapper) {
-  const $button = $(wrapper).find(".wafd-refresh");
-  if ($button.length) $button.trigger("click");
 };

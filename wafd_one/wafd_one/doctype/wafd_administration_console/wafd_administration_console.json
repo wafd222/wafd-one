@@ -1,0 +1,112 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-18 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "warning_html",
+    "section_summary",
+    "refresh_summary",
+    "database_summary",
+    "section_master",
+    "install_master_data",
+    "section_reset",
+    "confirmation_phrase",
+    "reload_master_data",
+    "reset_database"
+  ],
+  "fields": [
+    {
+      "fieldname": "warning_html",
+      "fieldtype": "HTML",
+      "options": "<div class=\"alert alert-warning\"><strong>منطقة إدارة مقيدة</strong><br>إعادة التهيئة تحذف سجلات WAFD ONE التشغيلية والمرجعية فقط. لا يتم حذف المستخدمين أو الأدوار أو الصلاحيات أو إعدادات النظام.</div>"
+    },
+    {
+      "fieldname": "section_summary",
+      "fieldtype": "Section Break",
+      "label": "ملخص قاعدة البيانات"
+    },
+    {
+      "fieldname": "refresh_summary",
+      "fieldtype": "Button",
+      "label": "تحديث الملخص"
+    },
+    {
+      "fieldname": "database_summary",
+      "fieldtype": "HTML"
+    },
+    {
+      "fieldname": "section_master",
+      "fieldtype": "Section Break",
+      "label": "البيانات المرجعية"
+    },
+    {
+      "fieldname": "install_master_data",
+      "fieldtype": "Button",
+      "label": "تثبيت البيانات المرجعية الناقصة"
+    },
+    {
+      "fieldname": "section_reset",
+      "fieldtype": "Section Break",
+      "label": "إعادة تهيئة بيانات WAFD ONE"
+    },
+    {
+      "description": "اكتب العبارة الإنجليزية كما هي تمامًا: RESET WAFD ONE",
+      "fieldname": "confirmation_phrase",
+      "fieldtype": "Data",
+      "label": "عبارة التأكيد"
+    },
+    {
+      "default": "1",
+      "fieldname": "reload_master_data",
+      "fieldtype": "Check",
+      "label": "إعادة تثبيت البيانات المرجعية بعد التهيئة"
+    },
+    {
+      "fieldname": "reset_database",
+      "fieldtype": "Button",
+      "label": "إعادة تهيئة بيانات WAFD ONE"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-07-18 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Administration Console",
+  "naming_rule": "Set by user",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "System Manager",
+      "share": 0,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "WAFD Operations Manager",
+      "share": 0,
+      "write": 1
+    }
+  ],
+  "quick_entry": 0,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0
+}

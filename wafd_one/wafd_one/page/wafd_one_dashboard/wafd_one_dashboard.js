@@ -19,12 +19,12 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       <div class="wafd-section-title">العمليات الرئيسية</div><div class="wafd-grid"></div>
     </div>`);
 
-  const can_administer = frappe.session.user === "Administrator" || (frappe.user_roles || []).includes("System Manager");
+  const can_administer = frappe.session.user === "Administrator" || ((frappe.user_roles || []).includes("System Manager") || (frappe.user_roles || []).includes("WAFD Operations Manager"));
   if (can_administer) {
     $root.find(".wafd-admin-entry").show();
   }
   $root.on("click", ".wafd-open-administration", function () {
-    frappe.set_route("wafd-administration");
+    frappe.set_route("Form", "WAFD Administration Console");
   });
 
   const today = frappe.datetime.get_today();
@@ -44,10 +44,10 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   const $grid = $root.find(".wafd-grid");
   items.forEach(([label, doctype, icon]) => $grid.append(`<button class="wafd-card" data-doctype="${frappe.utils.escape_html(doctype)}"><span class="wafd-card-icon octicon ${icon}"></span><span class="wafd-card-label">${label}</span><span class="wafd-card-arrow">‹</span></button>`));
   if (can_administer) {
-    $grid.append(`<button class="wafd-card wafd-open-administration"><span class="wafd-card-icon octicon octicon-gear"></span><span class="wafd-card-label">إدارة WAFD ONE</span><span class="wafd-card-arrow">‹</span></button>`);
+    $grid.append(`<button class="wafd-card wafd-open-administration" type="button"><span class="wafd-card-icon octicon octicon-gear"></span><span class="wafd-card-label">إدارة WAFD ONE</span><span class="wafd-card-arrow">‹</span></button>`);
   }
 
-  $root.on("click", ".wafd-card", function () { frappe.set_route("List", $(this).data("doctype")); });
+  $root.on("click", ".wafd-card[data-doctype]", function () { frappe.set_route("List", $(this).data("doctype")); });
   $root.on("click", "[data-route-doctype]", function () { frappe.set_route("List", $(this).data("route-doctype")); });
   $root.on("click", "[data-docname]", function () { frappe.set_route("Form", $(this).data("doctype"), $(this).data("docname")); });
   $root.on("click", ".wafd-refresh", load_dashboard);

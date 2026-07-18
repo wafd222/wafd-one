@@ -47,6 +47,7 @@ ALL_DOCTYPE_FILES = (
     "wafd_purchase_order",
     "wafd_stock_balance",
     "wafd_stock_movement",
+    "wafd_administration_console",
 )
 
 REQUIRED_WORKSPACE_DOCTYPES = (
@@ -155,6 +156,7 @@ def _validate_workspace_record(workspace):
         "خطط الوجبات": "WAFD Meal Plan",
         "الوصفات": "WAFD Recipe",
         "مكونات الأغذية": "WAFD Ingredient",
+        "إدارة WAFD ONE": "WAFD Administration Console",
     }
     actual = {row.label: row.link_to for row in workspace.shortcuts}
     missing = [label for label, target in expected.items() if actual.get(label) != target]

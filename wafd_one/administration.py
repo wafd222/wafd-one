@@ -1,7 +1,7 @@
 """Administrative utilities for WAFD ONE.
 
 Destructive operations in this module are deliberately restricted to
-Administrator and System Manager users and require an explicit confirmation
+Administrator, System Manager, and WAFD Operations Manager users and require an explicit confirmation
 phrase from the client.
 """
 
@@ -69,9 +69,9 @@ REFERENCE_DOCTYPES = [
 def _check_admin_permission() -> None:
     user = frappe.session.user
     roles = set(frappe.get_roles(user))
-    if user != "Administrator" and "System Manager" not in roles:
+    if user != "Administrator" and not ({"System Manager", "WAFD Operations Manager"} & roles):
         frappe.throw(
-            _("Only Administrator or a System Manager can use WAFD administration tools."),
+            _("Only Administrator, System Manager, or WAFD Operations Manager can use WAFD administration tools."),
             frappe.PermissionError,
         )
 

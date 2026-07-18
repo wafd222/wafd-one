@@ -12,7 +12,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       <div class="wafd-section-title">المؤشرات التنفيذية</div><div class="wafd-kpis"></div>
       <div class="wafd-section-title">التنبيهات التي تحتاج إجراء</div><div class="wafd-alerts"></div>
       <div class="wafd-panels">
-        <section><h4>المشاريع النشطة</h4><div class="wafd-projects"></div></section>
+        <section><h4>المشاريع</h4><div class="wafd-projects"></div></section>
         <section><h4>التوصيلات القادمة</h4><div class="wafd-deliveries"></div></section>
         <section><h4>الفواتير المتأخرة</h4><div class="wafd-invoices"></div></section>
       </div>
@@ -21,7 +21,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
 
   const today = frappe.datetime.get_today();
   $root.find(".wafd-to-date").val(today);
-  $root.find(".wafd-from-date").val(frappe.datetime.add_days(today, -6));
+  $root.find(".wafd-from-date").val(frappe.datetime.add_days(today, -29));
 
   const items = [
     ["المشاريع", "WAFD Catering Project", "octicon-project"], ["البعثات والعملاء", "WAFD Mission", "octicon-people"],
@@ -57,10 +57,10 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
 
   function render(d) {
     const kpis = [
-      ["المشاريع النشطة", d.active_projects || 0], ["الوجبات المخططة", d.planned_meals || 0],
+      ["إجمالي المشاريع", d.active_projects || 0], ["الوجبات المخططة", d.planned_meals || 0],
       ["الوجبات المنتجة", d.produced_meals || 0], ["الوجبات المستلمة", d.delivered_meals || 0],
       ["نسبة التسليم", `${flt(d.delivery_rate || 0).toFixed(1)}%`], ["المرفوض", d.rejected_meals || 0],
-      ["الإيراد المحصل", money(d.collected_revenue)], ["التكلفة", money(d.actual_cost)],
+      ["إجمالي الفواتير", money(d.invoiced_revenue)], ["الإيراد المحصل", money(d.collected_revenue)], ["التكلفة", money(d.actual_cost)],
       ["الربح", money(d.profit)], ["المستحقات", money(d.receivables)]
     ];
     $root.find(".wafd-kpis").html(kpis.map(x => `<div class="wafd-kpi"><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join(""));
@@ -70,12 +70,15 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       ["عجز المواد", alerts.material_shortages || 0, "WAFD Production Batch"],
       ["دفعات جودة مرفوضة", alerts.quality_rejected || 0, "WAFD Production Batch"],
       ["رحلات متأخرة", alerts.late_trips || 0, "WAFD Delivery Trip"],
-      ["فواتير متأخرة", alerts.overdue_invoices || 0, "WAFD Invoice"]
+      ["فواتير متأخرة", alerts.overdue_invoices || 0, "WAFD Invoice"],
+      ["فواتير غير مسددة", alerts.unpaid_invoices || 0, "WAFD Invoice"],
+      ["فجوة الإنتاج", alerts.production_gap || 0, "WAFD Production Batch"],
+      ["تسليم دون إنتاج مسجل", alerts.delivery_without_production || 0, "WAFD Delivery Proof"]
     ];
     $root.find(".wafd-alerts").html(alertCards.map(x => `<button class="wafd-alert ${x[1] ? "has-alert" : ""}" data-route-doctype="${x[2]}"><span>${x[0]}</span><b>${x[1]}</b></button>`).join(""));
 
     const projects = d.projects || [];
-    $root.find(".wafd-projects").html(projects.length ? `<table class="wafd-table"><thead><tr><th>المشروع</th><th>التقدم</th><th>المسلم</th><th>الربح</th></tr></thead><tbody>${projects.map(x => `<tr data-doctype="WAFD Catering Project" data-docname="${esc(x.name)}"><td>${esc(x.project_name || x.name)}</td><td>${flt(x.progress_percent || 0).toFixed(1)}%</td><td>${esc(x.delivered_meals || 0)} / ${esc(x.total_meals || 0)}</td><td>${money(x.profit)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد مشاريع نشطة"));
+    $root.find(".wafd-projects").html(projects.length ? `<table class="wafd-table"><thead><tr><th>المشروع</th><th>التقدم</th><th>المسلم</th><th>الربح</th></tr></thead><tbody>${projects.map(x => `<tr data-doctype="WAFD Catering Project" data-docname="${esc(x.name)}"><td>${esc(x.project_name || x.name)}</td><td>${flt(x.progress_percent || 0).toFixed(1)}%</td><td>${esc(x.delivered_meals || 0)} / ${esc(x.total_meals || 0)}</td><td>${money(x.profit)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد مشاريع"));
 
     const deliveries = d.upcoming_deliveries || [];
     $root.find(".wafd-deliveries").html(deliveries.length ? `<table class="wafd-table"><thead><tr><th>التاريخ</th><th>الفندق</th><th>الكمية</th><th>الحالة</th></tr></thead><tbody>${deliveries.map(x => `<tr data-doctype="WAFD Delivery Trip" data-docname="${esc(x.name)}"><td>${esc(x.trip_date)}</td><td>${esc(x.hotel)}</td><td>${esc(x.quantity)}</td><td>${status(x.status)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد توصيلات قادمة"));

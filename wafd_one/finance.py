@@ -311,45 +311,59 @@ def rebuild_invoice(invoice_name):
 
 @frappe.whitelist()
 def get_dashboard_data(from_date=None, to_date=None):
-    """Return executive KPIs and exception lists for the WAFD ONE dashboard."""
+    """Return executive KPIs and exception lists for the WAFD ONE dashboard.
+
+    Operational documents can legitimately have an empty business date during old
+    test cycles. In that case the document creation date is used, so existing data
+    does not disappear from the dashboard. Cancelled records are always excluded.
+    """
     to_date = getdate(to_date or nowdate())
-    from_date = getdate(from_date or add_days(to_date, -6))
+    from_date = getdate(from_date or add_days(to_date, -29))
     if from_date > to_date:
         frappe.throw("تاريخ البداية يجب أن يسبق تاريخ النهاية / From date must be before to date")
 
     date_values = (from_date, to_date)
-    active = frappe.db.count(
-        "WAFD Catering Project", {"status": ["in", ["تخطيط / Planning", "نشط / Active"]]}
+
+    # The headline project count represents every usable project in the system.
+    # Completed projects remain visible because they still own deliveries, invoices,
+    # costs and payments. Cancelled projects alone are excluded.
+    projects_count = frappe.db.count(
+        "WAFD Catering Project", {"status": ["!=", "ملغي / Cancelled"]}
     )
+
     planned = _scalar(
         """select coalesce(sum(quantity), 0) from `tabWAFD Meal Plan`
-           where service_date between %s and %s and status!='ملغي / Cancelled'""",
+           where coalesce(service_date, date(creation)) between %s and %s
+             and status!='ملغي / Cancelled'""",
         date_values,
     )
     produced = _scalar(
         """select coalesce(sum(produced_quantity), 0) from `tabWAFD Production Batch`
-           where batch_date between %s and %s and status!='موقوف / Stopped'""",
+           where coalesce(batch_date, date(creation)) between %s and %s
+             and status!='موقوف / Stopped'""",
         date_values,
     )
     delivered = _scalar(
-        """select coalesce(sum(received_quantity), 0) from `tabWAFD Delivery Proof`
-           where date(delivery_time) between %s and %s
+        """select coalesce(sum(coalesce(nullif(received_quantity, 0), delivered_quantity, 0)), 0)
+           from `tabWAFD Delivery Proof`
+           where coalesce(date(delivery_time), date(creation)) between %s and %s
              and status in ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')""",
         date_values,
     )
     rejected = _scalar(
         """select coalesce(sum(rejected_quantity), 0) from `tabWAFD Delivery Proof`
-           where date(delivery_time) between %s and %s""",
+           where coalesce(date(delivery_time), date(creation)) between %s and %s""",
         date_values,
     )
     invoiced = _scalar(
         """select coalesce(sum(grand_total), 0) from `tabWAFD Invoice`
-           where invoice_date between %s and %s and status!='ملغاة / Cancelled'""",
+           where coalesce(invoice_date, date(creation)) between %s and %s
+             and status!='ملغاة / Cancelled'""",
         date_values,
     )
     receivable = _scalar(
         """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
-           where status not in ('مدفوعة / Paid', 'ملغاة / Cancelled')"""
+           where balance > 0 and status not in ('مدفوعة / Paid', 'ملغاة / Cancelled')"""
     )
     overdue = _scalar(
         """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
@@ -358,46 +372,102 @@ def get_dashboard_data(from_date=None, to_date=None):
     )
     costs = _scalar(
         """select coalesce(sum(amount), 0) from `tabWAFD Project Cost`
-           where cost_date between %s and %s
+           where coalesce(cost_date, date(creation)) between %s and %s
              and status not in ('ملغي / Cancelled', 'مسودة / Draft')""",
         date_values,
     )
     revenue = _scalar(
         """select coalesce(sum(amount), 0) from `tabWAFD Payment`
-           where payment_date between %s and %s and status='معتمد / Confirmed'""",
+           where coalesce(payment_date, date(creation)) between %s and %s
+             and status='معتمد / Confirmed'""",
         date_values,
     )
 
+    # Alerts follow the date selected on the dashboard. This avoids showing KPIs
+    # for one period while evaluating exceptions against a different (today-only)
+    # period. Old records with an empty operational date fall back to creation.
+    alert_reference_date = to_date
+    alert_cutoff = f"{alert_reference_date} 23:59:59"
+
+    material_shortages = _scalar(
+        """select count(*) from `tabWAFD Production Batch`
+           where coalesce(batch_date, date(creation)) between %s and %s
+             and materials_status='عجز / Shortage'
+             and status!='موقوف / Stopped'""",
+        date_values,
+    )
+    quality_rejected = _scalar(
+        """select count(*) from `tabWAFD Production Batch`
+           where coalesce(batch_date, date(creation)) between %s and %s
+             and quality_status='مرفوض / Rejected'
+             and status!='موقوف / Stopped'""",
+        date_values,
+    )
+    late_trips = _scalar(
+        """select count(*) from `tabWAFD Delivery Trip`
+           where status not in ('تم التسليم / Delivered', 'ملغية / Cancelled')
+             and (
+                 status='متأخرة / Delayed'
+                 or (planned_arrival is not null and planned_arrival < %s)
+                 or (planned_arrival is null and coalesce(trip_date, date(creation)) < %s)
+             )""",
+        (alert_cutoff, alert_reference_date),
+    )
+    overdue_invoice_count = _scalar(
+        """select count(*) from `tabWAFD Invoice`
+           where due_date is not null and due_date < %s
+             and balance > 0
+             and status!='ملغاة / Cancelled'""",
+        (alert_reference_date,),
+    )
+    unpaid_invoice_count = _scalar(
+        """select count(*) from `tabWAFD Invoice`
+           where balance > 0
+             and status not in ('مدفوعة / Paid', 'ملغاة / Cancelled')"""
+    )
+
     alerts = {
-        "material_shortages": frappe.db.count("WAFD Production Batch", {"materials_status": "عجز / Shortage"}),
-        "quality_rejected": frappe.db.count("WAFD Production Batch", {"quality_status": "مرفوض / Rejected"}),
-        "late_trips": frappe.db.count(
-            "WAFD Delivery Trip",
-            {"planned_arrival": ["<", frappe.utils.now()], "status": ["in", ["مخططة / Planned", "تم التحميل / Loaded", "في الطريق / In Transit"]]},
-        ),
-        "overdue_invoices": frappe.db.count(
-            "WAFD Invoice",
-            {"due_date": ["<", nowdate()], "balance": [">", 0], "status": ["!=", "ملغاة / Cancelled"]},
-        ),
+        "material_shortages": int(material_shortages or 0),
+        "quality_rejected": int(quality_rejected or 0),
+        "late_trips": int(late_trips or 0),
+        "overdue_invoices": int(overdue_invoice_count or 0),
+        "unpaid_invoices": int(unpaid_invoice_count or 0),
+        "production_gap": max(flt(planned) - flt(produced), 0),
+        "delivery_without_production": max(flt(delivered) - flt(produced), 0),
     }
 
-    active_projects = frappe.db.get_all(
+    projects = frappe.db.get_all(
         "WAFD Catering Project",
-        filters={"status": ["in", ["تخطيط / Planning", "نشط / Active"]]},
-        fields=["name", "project_name", "status", "progress_percent", "total_meals", "delivered_meals", "profit"],
-        order_by="end_date asc",
+        filters={"status": ["!=", "ملغي / Cancelled"]},
+        fields=[
+            "name",
+            "project_name",
+            "status",
+            "progress_percent",
+            "total_meals",
+            "delivered_meals",
+            "profit",
+        ],
+        order_by="modified desc",
         limit=8,
     )
     upcoming_deliveries = frappe.db.get_all(
         "WAFD Delivery Trip",
-        filters={"trip_date": ["between", [nowdate(), add_days(nowdate(), 2)]], "status": ["not in", ["تم التسليم / Delivered", "ملغية / Cancelled"]]},
+        filters={
+            "trip_date": ["between", [nowdate(), add_days(nowdate(), 2)]],
+            "status": ["not in", ["تم التسليم / Delivered", "ملغية / Cancelled"]],
+        },
         fields=["name", "trip_date", "hotel", "driver", "quantity", "status", "planned_arrival"],
         order_by="trip_date asc, planned_arrival asc",
         limit=10,
     )
     overdue_invoices = frappe.db.get_all(
         "WAFD Invoice",
-        filters={"due_date": ["<", nowdate()], "balance": [">", 0], "status": ["!=", "ملغاة / Cancelled"]},
+        filters={
+            "due_date": ["<", alert_reference_date],
+            "balance": [">", 0],
+            "status": ["!=", "ملغاة / Cancelled"],
+        },
         fields=["name", "project", "due_date", "grand_total", "paid_amount", "balance", "status"],
         order_by="due_date asc",
         limit=10,
@@ -406,20 +476,20 @@ def get_dashboard_data(from_date=None, to_date=None):
     return {
         "from_date": str(from_date),
         "to_date": str(to_date),
-        "active_projects": active,
-        "planned_meals": planned,
-        "produced_meals": produced,
-        "delivered_meals": delivered,
-        "rejected_meals": rejected,
+        "active_projects": projects_count,
+        "planned_meals": flt(planned),
+        "produced_meals": flt(produced),
+        "delivered_meals": flt(delivered),
+        "rejected_meals": flt(rejected),
         "delivery_rate": flt(delivered) / flt(planned) * 100 if planned else 0,
-        "invoiced_revenue": invoiced,
-        "receivables": receivable,
-        "overdue_receivables": overdue,
-        "actual_cost": costs,
-        "collected_revenue": revenue,
+        "invoiced_revenue": flt(invoiced),
+        "receivables": flt(receivable),
+        "overdue_receivables": flt(overdue),
+        "actual_cost": flt(costs),
+        "collected_revenue": flt(revenue),
         "profit": flt(revenue) - flt(costs),
         "alerts": alerts,
-        "projects": active_projects,
+        "projects": projects,
         "upcoming_deliveries": upcoming_deliveries,
         "overdue_invoices": overdue_invoices,
     }

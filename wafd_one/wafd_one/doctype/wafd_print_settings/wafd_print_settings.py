@@ -38,18 +38,8 @@ class WAFDPrintSettings(Document):
         for field in ("margin_top", "margin_bottom", "margin_right", "margin_left"):
             if float(self.get(field) or 0) < 0:
                 frappe.throw(_("الهوامش لا يمكن أن تكون سالبة / Margins cannot be negative"))
-        base_size = int(self.base_font_size or 0)
-        title_size = int(self.title_font_size or 0)
-        line_width = int(self.header_line_width or 0)
-        if base_size < 8 or base_size > 30:
+        if int(self.base_font_size or 0) < 8 or int(self.base_font_size or 0) > 30:
             frappe.throw(_("حجم النص يجب أن يكون بين 8 و30 / Font size must be between 8 and 30"))
-        if title_size < 10 or title_size > 48:
-            frappe.throw(_("حجم العنوان يجب أن يكون بين 10 و48 / Title size must be between 10 and 48"))
-        if line_width < 0 or line_width > 30:
-            frappe.throw(_("سماكة خط الرأس يجب أن تكون بين 0 و30 / Header line width must be between 0 and 30"))
-        for field in ("margin_top", "margin_bottom", "margin_right", "margin_left"):
-            if float(self.get(field) or 0) > 60:
-                frappe.throw(_("الهوامش يجب ألا تتجاوز 60 مم / Margins cannot exceed 60 mm"))
 
 @frappe.whitelist()
 def reset_defaults():

@@ -76,7 +76,6 @@
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Administration Console",
-  "naming_rule": "Set by user",
   "owner": "Administrator",
   "permissions": [
     {
@@ -108,5 +107,8 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "track_changes": 0
+  "track_changes": 0,
+  "custom": 0,
+  "hide_from_search": 0,
+  "istable": 0
 }

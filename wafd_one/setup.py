@@ -50,6 +50,22 @@ ALL_DOCTYPE_FILES = (
     "wafd_administration_console",
 )
 
+# Backward-compatible Phase 1 subset used by historical repair patches.
+PHASE_ONE_DOCTYPE_FILES = (
+    "wafd_mission",
+    "wafd_hotel",
+    "wafd_supplier",
+    "wafd_ingredient",
+    "wafd_recipe_item",
+    "wafd_recipe",
+    "wafd_meal_plan_item",
+    "wafd_project_hotel",
+    "wafd_project_service",
+    "wafd_catering_project",
+    "wafd_contract",
+    "wafd_meal_plan",
+)
+
 REQUIRED_WORKSPACE_DOCTYPES = (
     "WAFD Catering Project",
     "WAFD Mission",
@@ -236,6 +252,36 @@ def reload_workspace(force_rebuild=False):
         return rebuild_workspace_from_source()
     return True
 
+
+def ensure_administration_page_and_workspace():
+    """Backward-compatible entry point for historical v4.7 patches.
+
+    The former separate administration Page/Workspace was replaced by the
+    canonical searchable Single DocType. Historical patches may still run on
+    fresh sites, so they must resolve safely instead of raising ImportError.
+    """
+    if not frappe.db.exists("DocType", "WAFD Administration Console"):
+        frappe.reload_doc(
+            "wafd_one",
+            "doctype",
+            "wafd_administration_console",
+            force=True,
+            reset_permissions=True,
+        )
+
+    # Remove obsolete navigation records only when they exist. The dashboard
+    # page remains the supported application landing page.
+    for obsolete_workspace in ("WAFD Administration", "إدارة WAFD ONE"):
+        if obsolete_workspace != "WAFD ONE" and frappe.db.exists("Workspace", obsolete_workspace):
+            frappe.delete_doc(
+                "Workspace",
+                obsolete_workspace,
+                force=True,
+                ignore_permissions=True,
+            )
+
+    return rebuild_workspace_from_source()
+
 def ensure_default_app():
     try:
         settings = frappe.get_single("System Settings")
@@ -265,7 +311,6 @@ def before_migrate():
 
 def after_install():
     apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=True)
-    ensure_administration_page_and_workspace()
     frappe.clear_cache()
 
 
@@ -278,7 +323,6 @@ def after_migrate():
         assign_manager_access=True,
         sync_doctypes=True,
     )
-    ensure_administration_page_and_workspace()
     frappe.clear_cache()
 
 

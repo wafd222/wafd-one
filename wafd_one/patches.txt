@@ -14,3 +14,4 @@ wafd_one.patches.v4_7_3.fix_administration_entry
 wafd_one.patches.v4_7_4.verify_administration_assets
 wafd_one.patches.v4_8_0.install_administration_console
 wafd_one.patches.v4_8_1.execute
+wafd_one.patches.v4_8_2.execute

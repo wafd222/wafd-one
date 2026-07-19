@@ -23,6 +23,5 @@ after_migrate = "wafd_one.setup.after_migrate"
 
 page_js = {
     "wafd-one-dashboard": "public/js/wafd_one_dashboard.js",
-    "wafd-administration": "public/js/wafd_administration.js",
 }
 app_include_css = ["/assets/wafd_one/css/wafd_one_dashboard.css"]

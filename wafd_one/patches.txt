@@ -30,3 +30,5 @@ wafd_one.patches.v4_9_2.execute
 wafd_one.patches.v4_9_3.execute
 wafd_one.patches.v4_9_7.execute
 wafd_one.patches.v5_0_0.execute
+wafd_one.patches.v5_1_0.execute
+wafd_one.patches.v5_1_1.execute

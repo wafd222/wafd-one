@@ -282,6 +282,81 @@ def ensure_administration_page_and_workspace():
 
     return rebuild_workspace_from_source()
 
+
+def ensure_administration_console():
+    """Synchronize and validate the canonical administration Single DocType.
+
+    ``frappe.reload_doc`` is the supported first path.  If a site has stale
+    module metadata or the record was removed as an orphan, the fallback uses
+    Frappe's own JSON importer rather than inserting a standard DocType
+    directly.  This preserves the framework's schema, permission and module
+    synchronization behavior.
+    """
+    from pathlib import Path
+
+    from frappe.modules.import_file import import_file_by_path
+
+    doctype_name = "WAFD Administration Console"
+    source_path = (
+        Path(__file__).resolve().parent
+        / "wafd_one"
+        / "doctype"
+        / "wafd_administration_console"
+        / "wafd_administration_console.json"
+    )
+    if not source_path.is_file():
+        frappe.throw(f"Missing administration console metadata file: {source_path}")
+
+    frappe.reload_doc(
+        "wafd_one",
+        "doctype",
+        "wafd_administration_console",
+        force=True,
+        reset_permissions=True,
+    )
+
+    if not frappe.db.exists("DocType", doctype_name):
+        import_file_by_path(
+            str(source_path),
+            force=True,
+            ignore_version=True,
+            reset_permissions=True,
+        )
+
+    if not frappe.db.exists("DocType", doctype_name):
+        frappe.throw(
+            "WAFD Administration Console was not created after metadata synchronization."
+        )
+
+    meta = frappe.get_doc("DocType", doctype_name)
+    failures = []
+    if not meta.issingle:
+        failures.append("issingle must be enabled")
+    if meta.custom:
+        failures.append("custom must be disabled")
+    if meta.module != "WAFD ONE":
+        failures.append("module must be WAFD ONE")
+    if getattr(meta, "hide_from_search", 0):
+        failures.append("hide_from_search must be disabled")
+
+    required_roles = {"System Manager", "WAFD Operations Manager"}
+    actual_roles = {row.role for row in meta.permissions}
+    missing_roles = sorted(required_roles - actual_roles)
+    if missing_roles:
+        failures.append("missing permissions for " + ", ".join(missing_roles))
+
+    if failures:
+        frappe.throw(
+            "WAFD Administration Console metadata validation failed: "
+            + "; ".join(failures)
+        )
+
+    # Confirm that the controller can be imported.  This is the same class of
+    # validation used by Frappe when detecting orphan standard DocTypes.
+    frappe.get_meta(doctype_name)
+    frappe.clear_cache(doctype=doctype_name)
+    return True
+
 def ensure_default_app():
     try:
         settings = frappe.get_single("System Settings")
@@ -299,6 +374,7 @@ def apply_setup(force_rebuild=False, assign_manager_access=True, sync_doctypes=F
     ensure_roles()
     if sync_doctypes:
         sync_all_doctypes()
+    ensure_administration_console()
     reload_workspace(force_rebuild=force_rebuild)
     if assign_manager_access:
         ensure_system_manager_access()
@@ -315,90 +391,13 @@ def after_install():
 
 
 def after_migrate():
-    # Frappe v16 can incorrectly remove valid custom-app DocTypes during
-    # remove_orphan_doctypes. Reload WAFD ONE metadata before rebuilding
-    # the workspace so the migration can recover safely.
+    # The framework has already synchronized all application DocTypes before
+    # this hook runs.  Re-sync only the administration console recovery path,
+    # then rebuild navigation.  Avoid reloading every operational DocType a
+    # second time on each migration.
     apply_setup(
         force_rebuild=True,
         assign_manager_access=True,
-        sync_doctypes=True,
+        sync_doctypes=False,
     )
     frappe.clear_cache()
-
-
-def ensure_administration_page_and_workspace():
-    """Synchronize the administration Page and expose it reliably.
-
-    The Page is the source of truth. The Workspace is recreated using an ASCII
-    document name with an Arabic label, which is more reliable across Frappe
-    versions and app-sidebar implementations.
-    """
-    import json
-    from pathlib import Path
-
-    frappe.reload_doc(
-        "wafd_one", "page", "wafd_administration", force=True, reset_permissions=True
-    )
-
-    page_name = frappe.db.get_value(
-        "Page", {"page_name": "wafd-administration"}, "name"
-    ) or frappe.db.get_value(
-        "Page", {"name": "wafd-administration"}, "name"
-    )
-    if not page_name:
-        frappe.throw("WAFD Administration page synchronization failed.")
-
-    source_path = (
-        Path(__file__).resolve().parent
-        / "wafd_one"
-        / "workspace"
-        / "wafd_administration"
-        / "wafd_administration.json"
-    )
-    with source_path.open(encoding="utf-8") as source:
-        data = json.load(source)
-
-    workspace_name = "WAFD Administration"
-    data.update({
-        "doctype": "Workspace",
-        "name": workspace_name,
-        "label": "إدارة WAFD ONE",
-        "title": "إدارة WAFD ONE",
-        "module": "WAFD ONE",
-        "app": "wafd_one",
-        "public": 1,
-        "for_user": "",
-        "is_hidden": 0,
-        "parent_page": "",
-    })
-
-    # Remove records created by earlier attempts before inserting the canonical one.
-    for old_name in ("إدارة WAFD ONE", workspace_name):
-        if frappe.db.exists("Workspace", old_name):
-            frappe.delete_doc(
-                "Workspace", old_name, force=True, ignore_permissions=True
-            )
-
-    workspace = frappe.get_doc(data)
-    workspace.flags.ignore_permissions = True
-    workspace.flags.ignore_version = True
-    workspace.insert(ignore_permissions=True)
-    workspace.reload()
-
-    shortcuts = {row.label: row.link_to for row in workspace.shortcuts}
-    if shortcuts.get("فتح إدارة WAFD ONE") != page_name:
-        frappe.throw("WAFD Administration workspace shortcut synchronization failed.")
-    if workspace.is_hidden or not workspace.public or workspace.parent_page:
-        frappe.throw("WAFD Administration workspace visibility validation failed.")
-    if workspace.app != "wafd_one":
-        frappe.throw("WAFD Administration workspace app ownership validation failed.")
-
-    # Keep a permanent direct entry on the dashboard as a fallback even when a
-    # specific Frappe sidebar build filters custom workspaces.
-    dashboard_page = frappe.db.exists("Page", "wafd-one-dashboard")
-    if not dashboard_page:
-        frappe.throw("WAFD ONE dashboard page is missing.")
-
-    frappe.clear_cache()
-    return True
-

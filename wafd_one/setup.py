@@ -22,6 +22,7 @@ ALL_DOCTYPE_FILES = (
     "wafd_purchase_order_item",
     "wafd_recipe_item",
     "wafd_stock_movement_item",
+    "wafd_data_source",
     "wafd_driver",
     "wafd_hotel",
     "wafd_mission",

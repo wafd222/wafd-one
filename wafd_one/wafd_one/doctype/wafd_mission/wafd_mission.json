@@ -12,6 +12,15 @@
     "mobile",
     "email",
     "address",
+    "official_name",
+    "mission_type",
+    "hajj_season",
+    "source_section",
+    "source_authority",
+    "source_url",
+    "verification_status",
+    "last_verified_on",
+    "source_notes",
     "status"
   ],
   "fields": [
@@ -58,13 +67,65 @@
       "options": "نشط / Active\nغير نشط / Inactive",
       "default": "نشط / Active",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "official_name",
+      "fieldtype": "Data",
+      "label": "الاسم الرسمي / Official Name"
+    },
+    {
+      "fieldname": "mission_type",
+      "fieldtype": "Select",
+      "label": "النوع / Type",
+      "options": "مكتب شؤون حجاج / Hajj Affairs Office\nبعثة حج / Hajj Mission\nجهة تنظيمية / Regulatory Body\nغير محدد / Unspecified",
+      "default": "مكتب شؤون حجاج / Hajj Affairs Office"
+    },
+    {
+      "fieldname": "hajj_season",
+      "fieldtype": "Data",
+      "label": "موسم الحج المرجعي / Reference Hajj Season"
+    },
+    {
+      "fieldname": "source_section",
+      "fieldtype": "Section Break",
+      "label": "المصدر والتحقق / Source & Verification",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_authority",
+      "fieldtype": "Data",
+      "label": "الجهة المصدر / Source Authority"
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_verified_on",
+      "fieldtype": "Date",
+      "label": "آخر تحقق / Last Verified On"
+    },
+    {
+      "fieldname": "source_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات المصدر / Source Notes"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-19 15:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Mission",

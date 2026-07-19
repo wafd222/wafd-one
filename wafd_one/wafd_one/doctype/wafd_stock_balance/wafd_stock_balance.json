@@ -14,7 +14,10 @@
     "available_quantity",
     "average_cost",
     "stock_value",
-    "last_movement_date"
+    "last_movement_date",
+    "count_status",
+    "physical_count_date",
+    "stock_source_note"
   ],
   "fields": [
     {
@@ -76,13 +79,31 @@
       "fieldtype": "Datetime",
       "label": "آخر حركة / Last Movement",
       "read_only": 1
+    },
+    {
+      "fieldname": "count_status",
+      "fieldtype": "Select",
+      "label": "حالة الجرد / Count Status",
+      "options": "غير مجرود / Not Counted\nجرد مبدئي / Initial Count\nجرد معتمد / Approved Count",
+      "default": "غير مجرود / Not Counted",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "physical_count_date",
+      "fieldtype": "Datetime",
+      "label": "تاريخ الجرد الفعلي / Physical Count Date"
+    },
+    {
+      "fieldname": "stock_source_note",
+      "fieldtype": "Small Text",
+      "label": "مصدر الرصيد / Balance Source Note"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-16 18:00:00.000000",
+  "modified": "2026-07-19 15:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Stock Balance",

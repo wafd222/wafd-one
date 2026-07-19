@@ -16,7 +16,26 @@
     "mobile",
     "email",
     "capacity",
-    "status"
+    "zone_type",
+    "central_map_number",
+    "central_sector",
+    "source_map_edition",
+    "classification",
+    "tourism_license_number",
+    "map_url",
+    "source_section",
+    "source_authority",
+    "source_url",
+    "verification_status",
+    "last_verified_on",
+    "source_notes",
+    "status",
+    "alternate_names",
+    "booking_listed",
+    "expedia_listed",
+    "agoda_listed",
+    "trivago_listed",
+    "listing_checked_on"
   ],
   "fields": [
     {
@@ -83,13 +102,119 @@
       "options": "نشط / Active\nغير نشط / Inactive",
       "default": "نشط / Active",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "zone_type",
+      "fieldtype": "Select",
+      "label": "النطاق / Zone",
+      "options": "المنطقة المركزية / Central Zone\nخارج المنطقة المركزية / Outside Central Zone\nغير محدد / Unspecified",
+      "default": "غير محدد / Unspecified",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "central_map_number",
+      "fieldtype": "Data",
+      "label": "رقم الفندق في المخطط / Central Map No."
+    },
+    {
+      "fieldname": "central_sector",
+      "fieldtype": "Select",
+      "label": "قطاع المنطقة المركزية / Central Sector",
+      "options": "100\n200\n300\n400"
+    },
+    {
+      "fieldname": "source_map_edition",
+      "fieldtype": "Data",
+      "label": "إصدار المخطط المرجعي / Source Map Edition"
+    },
+    {
+      "fieldname": "classification",
+      "fieldtype": "Select",
+      "label": "التصنيف / Classification",
+      "options": "5 نجوم / 5 Stars\n4 نجوم / 4 Stars\n3 نجوم / 3 Stars\nنجمتان / 2 Stars\nنجمة / 1 Star\nغير مصنف / Unclassified\nغير متحقق / Unverified"
+    },
+    {
+      "fieldname": "tourism_license_number",
+      "fieldtype": "Data",
+      "label": "رقم ترخيص السياحة / Tourism License No."
+    },
+    {
+      "fieldname": "map_url",
+      "fieldtype": "Data",
+      "label": "رابط الموقع / Map URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "source_section",
+      "fieldtype": "Section Break",
+      "label": "المصدر والتحقق / Source & Verification",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_authority",
+      "fieldtype": "Data",
+      "label": "الجهة المصدر / Source Authority"
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_verified_on",
+      "fieldtype": "Date",
+      "label": "آخر تحقق / Last Verified On"
+    },
+    {
+      "fieldname": "source_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات المصدر / Source Notes"
+    },
+    {
+      "fieldname": "alternate_names",
+      "fieldtype": "Small Text",
+      "label": "أسماء بديلة / Alternate Names"
+    },
+    {
+      "fieldname": "booking_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Booking.com / Listed on Booking.com"
+    },
+    {
+      "fieldname": "expedia_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Expedia / Listed on Expedia"
+    },
+    {
+      "fieldname": "agoda_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Agoda / Listed on Agoda"
+    },
+    {
+      "fieldname": "trivago_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Trivago / Listed on Trivago"
+    },
+    {
+      "fieldname": "listing_checked_on",
+      "fieldtype": "Date",
+      "label": "تاريخ فحص منصات الحجز / Listing Checked On"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-19 15:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Hotel",

@@ -1,0 +1,145 @@
+{
+  "doctype": "DocType",
+  "name": "WAFD Ingredient Price Observation",
+  "module": "WAFD ONE",
+  "autoname": "format:PRICE-{#####}",
+  "track_changes": 1,
+  "field_order": [
+    "ingredient",
+    "retailer",
+    "city",
+    "brand_product",
+    "package_quantity",
+    "package_uom",
+    "package_price",
+    "normalized_unit_cost",
+    "observed_on",
+    "source_url",
+    "availability",
+    "price_type",
+    "verification_status",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "ingredient",
+      "fieldtype": "Link",
+      "label": "المكون / Ingredient",
+      "options": "WAFD Ingredient",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "retailer",
+      "fieldtype": "Data",
+      "label": "المتجر أو المورد / Retailer or Supplier",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "city",
+      "fieldtype": "Data",
+      "label": "المدينة / City",
+      "default": "المدينة المنورة"
+    },
+    {
+      "fieldname": "brand_product",
+      "fieldtype": "Data",
+      "label": "العلامة والمنتج / Brand and Product"
+    },
+    {
+      "fieldname": "package_quantity",
+      "fieldtype": "Float",
+      "label": "كمية العبوة / Package Quantity",
+      "reqd": 1
+    },
+    {
+      "fieldname": "package_uom",
+      "fieldtype": "Select",
+      "label": "وحدة العبوة / Package UOM",
+      "options": "كجم / Kg\nلتر / Liter\nحبة / Piece\nجرام / Gram\nمل / ml",
+      "reqd": 1
+    },
+    {
+      "fieldname": "package_price",
+      "fieldtype": "Currency",
+      "label": "سعر العبوة شامل الضريبة / Package Price incl. VAT",
+      "reqd": 1
+    },
+    {
+      "fieldname": "normalized_unit_cost",
+      "fieldtype": "Currency",
+      "label": "تكلفة الوحدة المعيارية / Normalized Unit Cost",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "observed_on",
+      "fieldtype": "Date",
+      "label": "تاريخ الرصد / Observed On",
+      "reqd": 1,
+      "default": "Today",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "availability",
+      "fieldtype": "Select",
+      "label": "التوفر / Availability",
+      "options": "متوفر / Available\nغير متوفر / Out of Stock\nغير مؤكد / Unknown",
+      "default": "غير مؤكد / Unknown"
+    },
+    {
+      "fieldname": "price_type",
+      "fieldtype": "Select",
+      "label": "نوع السعر / Price Type",
+      "options": "تجزئة / Retail\nجملة / Wholesale\nعرض / Promotion\nفاتورة مورد / Supplier Invoice",
+      "default": "تجزئة / Retail"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "موثق من المصدر / Source Verified\nفاتورة فعلية / Actual Invoice\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Storekeeper",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "report": 1,
+      "export": 1
+    },
+    {
+      "role": "WAFD Finance User",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "report": 1,
+      "export": 1
+    }
+  ]
+}

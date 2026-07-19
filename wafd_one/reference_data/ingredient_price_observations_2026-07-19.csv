@@ -1,0 +1,6 @@
+﻿ingredient,retailer,brand_product,package_quantity,package_uom,package_price,normalized_unit_cost,observed_on,source_url,availability,price_type,verification_status
+أرز بسمتي,Carrefour KSA,أبو كاس أرز بسمتي 5 كج,5,كجم / Kg,35.99,7.198,2026-07-19,https://www.carrefourksa.com/mafsau/ar/c/FKSA1701240,متوفر / Available,عرض / Promotion,موثق من المصدر / Source Verified
+أرز بسمتي,Carrefour KSA,الوليمة أرز مزة بسمتي 5 كج,5,كجم / Kg,50.95,10.19,2026-07-19,https://www.carrefourksa.com/mafsau/ar/c/FKSA1701240,متوفر / Available,تجزئة / Retail,موثق من المصدر / Source Verified
+زيت نباتي,Lulu Hypermarket KSA,Hayat Blended Oil 1.5L,1.5,لتر / Liter,20.95,13.9667,2026-07-19,https://gcc.luluhypermarket.com/en-sa/hayat-frying-blended-oil-1-5-litres/p/1144337,متوفر / Available,تجزئة / Retail,موثق من المصدر / Source Verified
+زيت نباتي,Lulu Hypermarket KSA,Sunny Active 2 x 1.5L,3,لتر / Liter,27.99,9.33,2026-07-19,https://gcc.luluhypermarket.com/en-sa/sunny-active-multipurpose-cooking-oil-value-pack-2-x-1-5-litres/p/1681935,متوفر / Available,عرض / Promotion,موثق من المصدر / Source Verified
+ماء 330 مل,Tamimi Markets,Berain Water 24 x 330ml,24,حبة / Piece,14.5,0.6042,2026-07-19,https://shop.tamimimarkets.com/,متوفر / Available,تجزئة / Retail,موثق من المصدر / Source Verified

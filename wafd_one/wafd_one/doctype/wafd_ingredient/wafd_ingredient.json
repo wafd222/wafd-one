@@ -13,7 +13,18 @@
     "standard_cost",
     "minimum_stock",
     "default_supplier",
-    "status"
+    "storage_condition",
+    "shelf_life_days",
+    "source_section",
+    "source_authority",
+    "source_url",
+    "verification_status",
+    "last_verified_on",
+    "source_notes",
+    "status",
+    "cost_basis",
+    "cost_last_updated",
+    "cost_confidence"
   ],
   "fields": [
     {
@@ -69,13 +80,80 @@
       "options": "نشط / Active\nغير نشط / Inactive",
       "default": "نشط / Active",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "storage_condition",
+      "fieldtype": "Select",
+      "label": "حالة التخزين / Storage Condition",
+      "options": "جاف / Dry\nمبرد / Chilled\nمجمد / Frozen\nدرجة حرارة الغرفة / Ambient\nحسب تعليمات المصنع / Manufacturer Instructions"
+    },
+    {
+      "fieldname": "shelf_life_days",
+      "fieldtype": "Int",
+      "label": "مدة الصلاحية بالأيام / Shelf Life Days",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "source_section",
+      "fieldtype": "Section Break",
+      "label": "المصدر والتحقق / Source & Verification",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_authority",
+      "fieldtype": "Data",
+      "label": "الجهة المصدر / Source Authority"
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_verified_on",
+      "fieldtype": "Date",
+      "label": "آخر تحقق / Last Verified On"
+    },
+    {
+      "fieldname": "source_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات المصدر / Source Notes"
+    },
+    {
+      "fieldname": "cost_basis",
+      "fieldtype": "Select",
+      "label": "أساس التكلفة / Cost Basis",
+      "options": "متوسط أسعار موثقة / Verified Price Average\nآخر فاتورة مورد / Latest Supplier Invoice\nتكلفة يدوية / Manual Cost\nتقديري / Estimated",
+      "default": "تقديري / Estimated"
+    },
+    {
+      "fieldname": "cost_last_updated",
+      "fieldtype": "Datetime",
+      "label": "آخر تحديث للتكلفة / Cost Last Updated",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cost_confidence",
+      "fieldtype": "Select",
+      "label": "موثوقية التكلفة / Cost Confidence",
+      "options": "عالية / High\nمتوسطة / Medium\nمنخفضة / Low",
+      "default": "منخفضة / Low"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
+  "modified": "2026-07-19 15:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Ingredient",

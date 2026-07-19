@@ -1,0 +1,170 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "hash",
+  "creation": "2026-07-19 17:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "ingredient",
+    "supplier",
+    "source_type",
+    "source_name",
+    "source_url",
+    "observed_on",
+    "city",
+    "pack_quantity",
+    "pack_uom",
+    "pack_price",
+    "vat_included",
+    "unit_cost",
+    "approval_status",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "ingredient",
+      "fieldtype": "Link",
+      "label": "المكون / Ingredient",
+      "options": "WAFD Ingredient",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "supplier",
+      "fieldtype": "Link",
+      "label": "المورد / Supplier",
+      "options": "WAFD Supplier"
+    },
+    {
+      "fieldname": "source_type",
+      "fieldtype": "Select",
+      "label": "نوع المصدر / Source Type",
+      "options": "فاتورة مورد / Supplier Invoice\nعرض مورد / Supplier Quote\nسعر تجزئة إلكتروني / Online Retail\nسعر تعاقدي / Contract Price",
+      "reqd": 1
+    },
+    {
+      "fieldname": "source_name",
+      "fieldtype": "Data",
+      "label": "اسم المصدر / Source Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "observed_on",
+      "fieldtype": "Date",
+      "label": "تاريخ الرصد / Observed On",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "city",
+      "fieldtype": "Data",
+      "label": "المدينة / City",
+      "default": "المدينة المنورة"
+    },
+    {
+      "fieldname": "pack_quantity",
+      "fieldtype": "Float",
+      "label": "كمية العبوة / Pack Quantity",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "pack_uom",
+      "fieldtype": "Select",
+      "label": "وحدة العبوة / Pack UOM",
+      "options": "كجم / Kg\nجرام / Gram\nلتر / Liter\nمل / ML\nحبة / Piece",
+      "reqd": 1
+    },
+    {
+      "fieldname": "pack_price",
+      "fieldtype": "Currency",
+      "label": "سعر العبوة / Pack Price",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "vat_included",
+      "fieldtype": "Check",
+      "label": "شامل الضريبة / VAT Included",
+      "default": 1
+    },
+    {
+      "fieldname": "unit_cost",
+      "fieldtype": "Currency",
+      "label": "تكلفة الوحدة / Unit Cost",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "approval_status",
+      "fieldtype": "Select",
+      "label": "حالة الاعتماد / Approval Status",
+      "options": "معتمد / Approved\nمرجعي / Benchmark\nمرفوض / Rejected",
+      "default": "مرجعي / Benchmark",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-19 17:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Ingredient Price",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Finance User",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Storekeeper",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1
+    }
+  ],
+  "sort_field": "observed_on",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "title_field": "ingredient"
+}

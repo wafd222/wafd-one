@@ -147,6 +147,26 @@ HOTELS = [
     ("فندق نرسيان طيبة", "العريض", "العريض، المدينة المنورة", None, None),
     ("فندق دار الشروق", "العريض", "العريض، المدينة المنورة", None, None),
     ("فندق طيبة فيو", "العريض", "العريض، المدينة المنورة", None, None),
+    ("فندق مكارم برج المدينة", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق بنينسولا ورث", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق جادة ريزيدنس باي سي إتش", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق فينيو الحارثية", "المنطقة المركزية الشمالية", "قرب المسجد النبوي", None, None),
+    ("فندق ذا بلتمور المدينة", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق جراند ميلينيوم الحرم", "المنطقة المركزية", "قرب المسجد النبوي", None, None),
+    ("فندق روتانا المناخة المدينة", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق جيور المدينة", "المنطقة المركزية", "قرب المسجد النبوي", None, None),
+    ("فندق إيوا إكسبريس المدينة", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق آفال", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق سيجنتشر جيست المدينة", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق دار الرضا", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق ميراج السلام", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق سرايا طابة", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق زها المدينة", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق درة الإيمان", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق ديار المدينة", "خارج المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق منازل الصافية", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق المدينة الذهبي", "المنطقة المركزية", "المدينة المنورة", None, None),
+    ("فندق نزل الهجرة", "المنطقة المركزية", "المدينة المنورة", None, None),
 ]
 
 SUPPLIERS = [
@@ -376,28 +396,8 @@ def load_reference_master_data() -> dict[str, int]:
         recipe.insert(ignore_permissions=True)
         counts["recipes"] += 1
 
-    # Create useful opening balances. The values are reference opening stock and
-    # can be edited by the storekeeper after a physical count.
-    warehouse_by_category = {
-        "لحوم / Meat": "غرفة التجميد 2 - اللحوم",
-        "دواجن / Poultry": "غرفة التجميد 1 - الدواجن",
-        "خضار / Vegetables": "غرفة التبريد 2 - الخضار",
-        "ألبان / Dairy": "غرفة التبريد 1 - الألبان",
-        "مشروبات / Beverages": "مستودع المشروبات",
-        "تغليف / Packaging": "مستودع التغليف",
-        "أرز وحبوب / Rice & Grains": "المستودع الجاف 1 - الأرز والحبوب",
-        "أخرى / Other": "المستودع الجاف 2 - البهارات والبقوليات",
-    }
-    for ingredient in frappe.get_all("WAFD Ingredient", fields=["name", "category", "uom", "standard_cost", "minimum_stock"]):
-        warehouse = warehouse_by_category.get(ingredient.category, "المستودع الجاف 2 - البهارات والبقوليات")
-        if not frappe.db.exists("WAFD Warehouse", warehouse):
-            continue
-        if frappe.db.exists("WAFD Stock Balance", {"warehouse": warehouse, "ingredient": ingredient.name}):
-            continue
-        opening_qty = float(ingredient.minimum_stock or 0) * 1.5
-        if opening_qty <= 0:
-            opening_qty = 100
-        _insert("WAFD Stock Balance", {"warehouse": warehouse, "ingredient": ingredient.name, "uom": ingredient.uom, "actual_quantity": opening_qty, "reserved_quantity": 0, "average_cost": ingredient.standard_cost or 0, "last_movement_date": now_datetime()})
-        counts["stock_balances"] += 1
+    # Inventory quantities are operational facts and must never be fabricated.
+    # Warehouses and ingredient masters are created, but opening balances are
+    # entered only after a physical count or an approved stock movement.
 
     return counts

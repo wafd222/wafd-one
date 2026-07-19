@@ -4,3 +4,6 @@ include *.md
 recursive-include wafd_one *.json *.py *.js *.css *.html *.svg *.png *.jpg *.jpeg *.txt
 recursive-exclude wafd_one __pycache__ *
 recursive-exclude wafd_one *.pyc
+
+recursive-include wafd_one/data_templates *.csv
+recursive-include wafd_one/reference_data *.csv

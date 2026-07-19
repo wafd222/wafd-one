@@ -133,3 +133,20 @@ frappe.ui.form.on("WAFD Catering Project", {
         }, __("Operations"));
     }
 });
+
+frappe.ui.form.on("WAFD Catering Project", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+        frm.add_custom_button(__("تعهد فندق"), () => {
+            frappe.new_doc("WAFD Hotel Undertaking", {
+                project: frm.doc.name,
+                contract: frm.doc.contract,
+                mission: frm.doc.mission,
+                hotel: frm.doc.primary_hotel,
+                beneficiary_count: frm.doc.beneficiary_count,
+                start_date: frm.doc.start_date,
+                end_date: frm.doc.end_date
+            });
+        }, __("المستندات"));
+    }
+});

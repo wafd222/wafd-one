@@ -1,0 +1,83 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "naming_series:",
+  "creation": "2026-07-19 18:30:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "identity_section", "naming_series", "undertaking_date", "status", "company_section",
+    "company_name", "company_cr", "company_representative", "company_phone", "company_email",
+    "party_section", "second_party_name", "second_party_cr", "second_party_representative",
+    "links_section", "project", "contract", "mission", "hotel",
+    "service_section", "nationality", "beneficiary_count", "meal_types", "start_date", "end_date",
+    "supply_location", "service_notes", "terms_section", "additional_terms",
+    "approval_section", "authorized_signatory", "signatory_title", "signature_image", "company_stamp",
+    "pdf_section", "generated_pdf", "generated_on", "generated_by"
+  ],
+  "fields": [
+    {"fieldname":"identity_section","fieldtype":"Section Break","label":"بيانات التعهد / Undertaking Details"},
+    {"fieldname":"naming_series","fieldtype":"Select","label":"سلسلة الترقيم / Naming Series","options":"WAFD-UND-.YYYY.-.#####","default":"WAFD-UND-.YYYY.-.#####","reqd":1,"hidden":1},
+    {"fieldname":"undertaking_date","fieldtype":"Date","label":"تاريخ التعهد / Undertaking Date","default":"Today","reqd":1,"in_list_view":1},
+    {"fieldname":"status","fieldtype":"Select","label":"الحالة / Status","options":"مسودة / Draft\nمعتمد / Approved\nتم إصدار PDF / PDF Generated\nملغي / Cancelled","default":"مسودة / Draft","reqd":1,"in_list_view":1},
+
+    {"fieldname":"company_section","fieldtype":"Section Break","label":"الطرف الأول — شركة وفد المدينة / First Party"},
+    {"fieldname":"company_name","fieldtype":"Data","label":"اسم الشركة / Company Name","default":"شركة وفد المدينة لخدمات الإعاشة","reqd":1},
+    {"fieldname":"company_cr","fieldtype":"Data","label":"السجل التجاري / Commercial Registration","default":"7051832694","reqd":1},
+    {"fieldname":"company_representative","fieldtype":"Data","label":"ممثل الشركة / Company Representative","default":"نزار نذير بن ظفر","reqd":1},
+    {"fieldname":"company_phone","fieldtype":"Data","label":"هاتف الشركة / Company Phone","options":"Phone","default":"0500336989"},
+    {"fieldname":"company_email","fieldtype":"Data","label":"بريد الشركة / Company Email","options":"Email","default":"wafd.almadinah@gmail.com"},
+
+    {"fieldname":"party_section","fieldtype":"Section Break","label":"الطرف الثاني / Second Party"},
+    {"fieldname":"second_party_name","fieldtype":"Data","label":"اسم الطرف الثاني / Second Party Name","reqd":1,"in_list_view":1},
+    {"fieldname":"second_party_cr","fieldtype":"Data","label":"السجل التجاري للطرف الثاني / Second Party CR"},
+    {"fieldname":"second_party_representative","fieldtype":"Data","label":"ممثل الطرف الثاني / Second Party Representative"},
+
+    {"fieldname":"links_section","fieldtype":"Section Break","label":"الربط بالنظام / System Links"},
+    {"fieldname":"project","fieldtype":"Link","label":"المشروع / Project","options":"WAFD Catering Project","in_list_view":1},
+    {"fieldname":"contract","fieldtype":"Link","label":"العقد / Contract","options":"WAFD Contract"},
+    {"fieldname":"mission","fieldtype":"Link","label":"البعثة أو العميل / Mission or Client","options":"WAFD Mission"},
+    {"fieldname":"hotel","fieldtype":"Link","label":"الفندق / Hotel","options":"WAFD Hotel","reqd":1,"in_list_view":1},
+
+    {"fieldname":"service_section","fieldtype":"Section Break","label":"بيانات خدمة الإعاشة / Catering Service"},
+    {"fieldname":"nationality","fieldtype":"Data","label":"الجنسية / Nationality"},
+    {"fieldname":"beneficiary_count","fieldtype":"Int","label":"عدد المستفيدين / Beneficiary Count","reqd":1,"non_negative":1},
+    {"fieldname":"meal_types","fieldtype":"MultiSelect","label":"الوجبات / Meals","options":"إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break","reqd":1},
+    {"fieldname":"start_date","fieldtype":"Date","label":"تاريخ البداية / Start Date","reqd":1},
+    {"fieldname":"end_date","fieldtype":"Date","label":"تاريخ النهاية / End Date","reqd":1},
+    {"fieldname":"supply_location","fieldtype":"Data","label":"موقع التوريد / Supply Location","fetch_from":"hotel.hotel_name","read_only":1},
+    {"fieldname":"service_notes","fieldtype":"Small Text","label":"ملاحظات الخدمة / Service Notes"},
+
+    {"fieldname":"terms_section","fieldtype":"Section Break","label":"البنود الإضافية / Additional Terms"},
+    {"fieldname":"additional_terms","fieldtype":"Text Editor","label":"بنود إضافية / Additional Terms","description":"تظهر بعد البنود العشرة المعتمدة في القالب."},
+
+    {"fieldname":"approval_section","fieldtype":"Section Break","label":"الاعتماد والتوقيع / Approval and Signature"},
+    {"fieldname":"authorized_signatory","fieldtype":"Data","label":"الموقّع المعتمد / Authorized Signatory","default":"نزار نذير بن ظفر","reqd":1},
+    {"fieldname":"signatory_title","fieldtype":"Data","label":"صفة الموقّع / Signatory Title","default":"المدير العام / General Manager"},
+    {"fieldname":"signature_image","fieldtype":"Attach Image","label":"صورة التوقيع / Signature Image"},
+    {"fieldname":"company_stamp","fieldtype":"Attach Image","label":"ختم الشركة / Company Stamp"},
+
+    {"fieldname":"pdf_section","fieldtype":"Section Break","label":"ملف PDF / PDF File"},
+    {"fieldname":"generated_pdf","fieldtype":"Attach","label":"ملف التعهد PDF / Undertaking PDF","read_only":1},
+    {"fieldname":"generated_on","fieldtype":"Datetime","label":"تاريخ الإصدار / Generated On","read_only":1},
+    {"fieldname":"generated_by","fieldtype":"Link","label":"أصدره / Generated By","options":"User","read_only":1}
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-07-19 18:30:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Hotel Undertaking",
+  "owner": "Administrator",
+  "permissions": [
+    {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"submit":1,"cancel":1,"amend":1,"email":1,"export":1,"print":1,"report":1,"share":1},
+    {"role":"WAFD Operations Manager","read":1,"write":1,"create":1,"submit":1,"cancel":1,"amend":1,"email":1,"export":1,"print":1,"report":1,"share":1},
+    {"role":"WAFD Project Manager","read":1,"write":1,"create":1,"submit":1,"email":1,"export":1,"print":1,"report":1,"share":1}
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "second_party_name",
+  "track_changes": 1
+}

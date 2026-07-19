@@ -396,6 +396,11 @@
     {
       "link_doctype": "WAFD Project Cost",
       "link_fieldname": "project"
+    },
+    {
+      "group": "المستندات / Documents",
+      "link_doctype": "WAFD Hotel Undertaking",
+      "link_fieldname": "project"
     }
   ],
   "modified": "2026-07-17 21:00:00.000000",

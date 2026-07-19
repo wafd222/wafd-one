@@ -22,3 +22,21 @@ frappe.ui.form.on("WAFD Contract", {
         }
     }
 });
+
+frappe.ui.form.on("WAFD Contract", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+        frm.add_custom_button(__("تعهد فندق"), () => {
+            frappe.new_doc("WAFD Hotel Undertaking", {
+                contract: frm.doc.name,
+                project: frm.doc.project,
+                mission: frm.doc.mission,
+                hotel: frm.doc.hotel,
+                second_party_name: frm.doc.contract_title,
+                beneficiary_count: frm.doc.beneficiary_count,
+                start_date: frm.doc.start_date,
+                end_date: frm.doc.end_date
+            });
+        }, __("المستندات"));
+    }
+});

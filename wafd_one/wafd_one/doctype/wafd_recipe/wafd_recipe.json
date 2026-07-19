@@ -1,133 +1,133 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "field:recipe_name",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "recipe_name",
-    "meal_category",
-    "yield_quantity",
-    "items",
-    "total_cost",
-    "cost_per_portion",
-    "instructions",
-    "status"
-  ],
-  "fields": [
-    {
-      "fieldname": "recipe_name",
-      "fieldtype": "Data",
-      "label": "اسم الوصفة / Recipe Name",
-      "reqd": 1,
-      "unique": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "meal_category",
-      "fieldtype": "Select",
-      "label": "التصنيف / Category",
-      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nكوفي بريك / Coffee Break\nبوفيه / Buffet"
-    },
-    {
-      "fieldname": "yield_quantity",
-      "fieldtype": "Int",
-      "label": "عدد الحصص / Yield",
-      "reqd": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "items",
-      "fieldtype": "Table",
-      "label": "المكونات / Ingredients",
-      "options": "WAFD Recipe Item"
-    },
-    {
-      "fieldname": "total_cost",
-      "fieldtype": "Currency",
-      "label": "إجمالي التكلفة / Total Cost",
-      "read_only": 1
-    },
-    {
-      "fieldname": "cost_per_portion",
-      "fieldtype": "Currency",
-      "label": "تكلفة الحصة / Cost per Portion",
-      "read_only": 1
-    },
-    {
-      "fieldname": "instructions",
-      "fieldtype": "Text Editor",
-      "label": "طريقة التحضير / Instructions"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "نشطة / Active\nغير نشطة / Inactive",
-      "default": "نشطة / Active",
-      "in_list_view": 1
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Recipe",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Production Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Storekeeper",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1,
-  "title_field": "recipe_name"
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:recipe_name",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "recipe_name",
+  "meal_category",
+  "yield_quantity",
+  "items",
+  "total_cost",
+  "cost_per_portion",
+  "instructions",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "recipe_name",
+   "fieldtype": "Data",
+   "label": "اسم الوصفة / Recipe Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_category",
+   "fieldtype": "Select",
+   "label": "التصنيف / Category",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة خفيفة / Snack"
+  },
+  {
+   "fieldname": "yield_quantity",
+   "fieldtype": "Int",
+   "label": "عدد الحصص / Yield",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "المكونات / Ingredients",
+   "options": "WAFD Recipe Item"
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "إجمالي التكلفة / Total Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_per_portion",
+   "fieldtype": "Currency",
+   "label": "تكلفة الحصة / Cost per Portion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "instructions",
+   "fieldtype": "Text Editor",
+   "label": "طريقة التحضير / Instructions"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "نشطة / Active\nغير نشطة / Inactive",
+   "default": "نشطة / Active",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Recipe",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Storekeeper",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "recipe_name"
 }

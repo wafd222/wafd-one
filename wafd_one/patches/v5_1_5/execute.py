@@ -2,7 +2,7 @@ import frappe
 
 
 def execute():
-    """Reload the corrected hotel undertaking print format only."""
+    """Reload the exact hotel undertaking header/footer layout."""
     frappe.reload_doc("wafd_one", "print_format", "wafd_hotel_undertaking", force=True)
     if frappe.db.exists("DocType", "WAFD Print Settings"):
         settings = frappe.get_single("WAFD Print Settings")

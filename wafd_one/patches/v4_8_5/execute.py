@@ -1,8 +1,8 @@
-"""Final administration-console synchronization and navigation repair."""
+"""Backward-compatible administration navigation repair."""
 
-from wafd_one.setup import ensure_administration_console, rebuild_workspace_from_source
+from wafd_one.setup import ensure_administration_page, rebuild_workspace_from_source
 
 
 def execute():
-    ensure_administration_console()
+    ensure_administration_page()
     rebuild_workspace_from_source()

@@ -118,8 +118,8 @@
       "is_query_report": 0,
       "label": "إدارة WAFD ONE",
       "link_count": 0,
-      "link_to": "WAFD Administration Console",
-      "link_type": "DocType",
+      "link_to": "wafd-administration-console",
+      "link_type": "Page",
       "onboard": 0,
       "type": "Link"
     }
@@ -207,9 +207,10 @@
     {
       "color": "Red",
       "label": "إدارة WAFD ONE",
-      "link_to": "WAFD Administration Console",
-      "type": "DocType",
-      "restrict_to_domain": ""
+      "link_to": "wafd-administration-console",
+      "type": "Page",
+      "restrict_to_domain": "",
+      "doc_view": ""
     }
   ],
   "title": "WAFD ONE",

@@ -47,7 +47,6 @@ ALL_DOCTYPE_FILES = (
     "wafd_purchase_order",
     "wafd_stock_balance",
     "wafd_stock_movement",
-    "wafd_administration_console",
 )
 
 # Backward-compatible Phase 1 subset used by historical repair patches.
@@ -172,7 +171,7 @@ def _validate_workspace_record(workspace):
         "خطط الوجبات": "WAFD Meal Plan",
         "الوصفات": "WAFD Recipe",
         "مكونات الأغذية": "WAFD Ingredient",
-        "إدارة WAFD ONE": "WAFD Administration Console",
+        "إدارة WAFD ONE": "wafd-administration-console",
     }
     actual = {row.label: row.link_to for row in workspace.shortcuts}
     missing = [label for label, target in expected.items() if actual.get(label) != target]
@@ -181,6 +180,24 @@ def _validate_workspace_record(workspace):
             "WAFD ONE workspace rebuild failed. Missing shortcuts: "
             + ", ".join(missing)
         )
+
+    admin_shortcut = next(
+        (row for row in workspace.shortcuts if row.label == "إدارة WAFD ONE"),
+        None,
+    )
+    if not admin_shortcut or admin_shortcut.type != "Page":
+        frappe.throw("WAFD ONE administration shortcut must target a Desk Page.")
+
+    admin_link = next(
+        (row for row in workspace.links if row.label == "إدارة WAFD ONE"),
+        None,
+    )
+    if (
+        not admin_link
+        or admin_link.link_type != "Page"
+        or admin_link.link_to != "wafd-administration-console"
+    ):
+        frappe.throw("WAFD ONE administration workspace link is invalid.")
 
     import json
 
@@ -254,23 +271,9 @@ def reload_workspace(force_rebuild=False):
 
 
 def ensure_administration_page_and_workspace():
-    """Backward-compatible entry point for historical v4.7 patches.
+    """Backward-compatible entry point for historical administration patches."""
+    ensure_administration_page()
 
-    The former separate administration Page/Workspace was replaced by the
-    canonical searchable Single DocType. Historical patches may still run on
-    fresh sites, so they must resolve safely instead of raising ImportError.
-    """
-    if not frappe.db.exists("DocType", "WAFD Administration Console"):
-        frappe.reload_doc(
-            "wafd_one",
-            "doctype",
-            "wafd_administration_console",
-            force=True,
-            reset_permissions=True,
-        )
-
-    # Remove obsolete navigation records only when they exist. The dashboard
-    # page remains the supported application landing page.
     for obsolete_workspace in ("WAFD Administration", "إدارة WAFD ONE"):
         if obsolete_workspace != "WAFD ONE" and frappe.db.exists("Workspace", obsolete_workspace):
             frappe.delete_doc(
@@ -281,6 +284,28 @@ def ensure_administration_page_and_workspace():
             )
 
     return rebuild_workspace_from_source()
+
+
+def ensure_administration_page():
+    """Synchronize and validate the canonical Desk Page route."""
+    page_name = "wafd-administration-console"
+    frappe.reload_doc(
+        "wafd_one",
+        "page",
+        "wafd_administration_console",
+        force=True,
+    )
+    if not frappe.db.exists("Page", page_name):
+        frappe.throw("WAFD Administration Console Page was not created during synchronization.")
+    page = frappe.get_doc("Page", page_name)
+    if page.module != "WAFD ONE" or page.page_name != page_name:
+        frappe.throw("WAFD Administration Console Page metadata validation failed.")
+    required_roles = {"System Manager", "WAFD Operations Manager"}
+    actual_roles = {row.role for row in page.roles}
+    if not required_roles.issubset(actual_roles):
+        frappe.throw("WAFD Administration Console Page permissions are incomplete.")
+    frappe.clear_cache()
+    return True
 
 
 def ensure_administration_console():
@@ -374,7 +399,7 @@ def apply_setup(force_rebuild=False, assign_manager_access=True, sync_doctypes=F
     ensure_roles()
     if sync_doctypes:
         sync_all_doctypes()
-    ensure_administration_console()
+    ensure_administration_page()
     reload_workspace(force_rebuild=force_rebuild)
     if assign_manager_access:
         ensure_system_manager_access()

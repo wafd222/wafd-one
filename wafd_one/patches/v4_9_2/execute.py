@@ -71,4 +71,3 @@ def execute():
         else:
             doc.insert(ignore_permissions=True)
 
-    frappe.db.commit()

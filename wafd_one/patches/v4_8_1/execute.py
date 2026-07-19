@@ -1,11 +1,13 @@
-"""Compatibility module for the historical patch path.
+"""Compatibility patch for the historical v4.8.1 path.
 
-The implementation originally lived in the package ``__init__`` while
-``patches.txt`` referenced ``wafd_one.patches.v4_8_1.execute``.  Keeping this
-module makes that exact patch path importable on clean and partially upgraded
-sites.
+Keep a real callable in this module. Importing ``execute`` from the package with
+``from . import execute`` is unsafe here because this module itself is named
+``execute`` and Python may resolve the package attribute to the module object.
 """
 
-from . import execute
+from wafd_one.setup import ensure_administration_page, rebuild_workspace_from_source
 
-__all__ = ["execute"]
+
+def execute():
+    ensure_administration_page()
+    rebuild_workspace_from_source()

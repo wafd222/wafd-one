@@ -27,4 +27,4 @@ wafd_one.patches.v4_9_0.execute
 wafd_one.patches.v4_9_1.execute
 
 wafd_one.patches.v4_9_2.execute
-wafd_one.patches.v4_9_3.execute.execute
+wafd_one.patches.v4_9_3.execute

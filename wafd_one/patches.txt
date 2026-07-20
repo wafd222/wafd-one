@@ -33,13 +33,13 @@ wafd_one.patches.v5_0_0.execute
 wafd_one.patches.v5_1_0.execute
 wafd_one.patches.v5_1_6.execute
 wafd_one.patches.v5_1_7.execute
-wafd_one.patches.v5_3_0.execute
+wafd_one.patches.v5_3_0
 
-wafd_one.patches.v5_3_1.execute
-wafd_one.patches.v5_4_0.execute
+wafd_one.patches.v5_3_1
+wafd_one.patches.v5_4_0
 
-wafd_one.patches.v5_5_0.execute
-wafd_one.patches.v5_6_0.execute
+wafd_one.patches.v5_5_0
+wafd_one.patches.v5_6_0
 
 wafd_one.patches.v5_7_0.execute
 

@@ -1,10 +1,11 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, nowdate
+from frappe.utils import flt, getdate, nowdate
 
 
 class WAFDPayment(Document):
     def validate(self):
+        self._protect_confirmed_payment_link()
         if not self.payment_date:
             self.payment_date = nowdate()
         if not self.invoice:
@@ -18,6 +19,13 @@ class WAFDPayment(Document):
         self.previously_paid = totals["paid_amount"]
         self.outstanding_before = totals["balance"]
 
+        invoice_date = frappe.db.get_value("WAFD Invoice", self.invoice, "invoice_date")
+        if invoice_date and self.payment_date and getdate(self.payment_date) < getdate(invoice_date):
+            frappe.throw(
+                "تاريخ التحصيل لا يمكن أن يسبق تاريخ الفاتورة / "
+                "Payment date cannot precede invoice date"
+            )
+
         if totals["status"] == "ملغاة / Cancelled":
             frappe.throw("لا يمكن تسجيل تحصيل على فاتورة ملغاة / Cannot pay a cancelled invoice")
         if flt(self.invoice_total) <= 0:
@@ -29,6 +37,19 @@ class WAFDPayment(Document):
                 "مبلغ التحصيل يتجاوز الرصيد المتبقي ({0}) / Payment exceeds outstanding balance ({0})".format(
                     frappe.format_value(self.outstanding_before, {"fieldtype": "Currency"})
                 )
+            )
+
+    def _protect_confirmed_payment_link(self):
+        """A confirmed receipt must not be silently moved to another invoice."""
+        if self.is_new():
+            return
+        previous = self.get_doc_before_save()
+        if not previous or previous.status != "معتمد / Confirmed":
+            return
+        if self.invoice != previous.invoice or self.project != previous.project:
+            frappe.throw(
+                "لا يمكن نقل تحصيل معتمد إلى فاتورة أو مشروع آخر / "
+                "A confirmed payment cannot be moved to another invoice or project"
             )
 
     def on_update(self):

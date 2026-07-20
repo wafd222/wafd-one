@@ -1,9 +1,11 @@
 {
-  "doctype": "Page",
-  "name": "wafd-one-dashboard",
-  "page_name": "wafd-one-dashboard",
-  "title": "WAFD ONE",
-  "module": "WAFD ONE",
-  "standard": "Yes",
-  "icon": "organization"
+ "doctype": "Page",
+ "name": "wafd-one-dashboard",
+ "page_name": "wafd-one-dashboard",
+ "title": "WAFD ONE",
+ "module": "WAFD ONE",
+ "standard": "Yes",
+ "icon": "organization",
+ "creation": "2026-07-21 00:00:00.000000",
+ "modified": "2026-07-21 00:00:00.000000"
 }

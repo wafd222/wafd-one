@@ -1,4 +1,4 @@
-# WAFD ONE v6.0.3
+# WAFD ONE v6.0.4
 
 Production governance, approvals, auditability, operations, food safety and financial intelligence.
 

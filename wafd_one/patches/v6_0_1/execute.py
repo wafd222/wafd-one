@@ -2,10 +2,10 @@ import frappe
 
 
 def execute():
-    for name in (
-        "wafd_governance_settings",
-        "wafd_approval_request",
-        "wafd_audit_event",
-    ):
-        frappe.reload_doc("wafd_one", "doctype", name, force=True, reset_permissions=True)
+    """Compatibility patch retained for already published patch history.
+
+    The previous implementation reloaded governance DocTypes a second time.
+    Schema synchronization already handles that, so this patch now only clears
+    caches and remains safely idempotent.
+    """
     frappe.clear_cache()

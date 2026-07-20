@@ -1,6 +1,6 @@
 [project]
 name = "wafd_one"
-version = "6.0.3"
+version = "6.0.4"
 description = "WAFD ONE integrated catering operations management for Frappe Framework v16"
 readme = "README.md"
 requires-python = ">=3.10"

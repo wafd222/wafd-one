@@ -10,7 +10,13 @@
     "quantity",
     "uom",
     "unit_cost",
-    "amount"
+    "amount",
+    "lot_number",
+    "supplier_batch_number",
+    "production_date",
+    "expiry_date",
+    "receiving_temperature",
+    "traceability_notes"
   ],
   "fields": [
     {
@@ -42,13 +48,45 @@
       "fieldtype": "Currency",
       "label": "الإجمالي / Amount",
       "read_only": 1
+    },
+    {
+      "fieldname": "lot_number",
+      "fieldtype": "Data",
+      "label": "رقم التشغيلة / Lot Number",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "supplier_batch_number",
+      "fieldtype": "Data",
+      "label": "دفعة المورد / Supplier Batch Number"
+    },
+    {
+      "fieldname": "production_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الإنتاج / Production Date"
+    },
+    {
+      "fieldname": "expiry_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الانتهاء / Expiry Date",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "receiving_temperature",
+      "fieldtype": "Float",
+      "label": "حرارة الاستلام °م / Receiving Temperature °C"
+    },
+    {
+      "fieldname": "traceability_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات التتبع / Traceability Notes"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 1,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-13 00:00:00.000000",
+  "modified": "2026-07-20 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Stock Movement Item",

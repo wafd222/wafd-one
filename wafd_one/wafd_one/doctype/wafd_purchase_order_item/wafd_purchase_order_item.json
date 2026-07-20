@@ -51,7 +51,8 @@
       "fieldname": "received_quantity",
       "fieldtype": "Float",
       "label": "الكمية المستلمة / Received Qty",
-      "non_negative": 1
+      "non_negative": 1,
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 0,

@@ -37,6 +37,13 @@
     "revenue",
     "profit",
     "profit_margin_percent",
+    "invoiced_amount",
+    "outstanding_amount",
+    "cost_variance",
+    "revenue_variance",
+    "cost_per_meal",
+    "revenue_per_meal",
+    "profit_per_meal",
     "progress_section",
     "total_meals",
     "delivered_meals",
@@ -379,6 +386,48 @@
       "fieldname": "notes",
       "fieldtype": "Small Text",
       "label": "ملاحظات / Notes"
+    },
+    {
+      "fieldname": "invoiced_amount",
+      "fieldtype": "Currency",
+      "label": "إجمالي الفواتير / Total Invoiced",
+      "read_only": 1
+    },
+    {
+      "fieldname": "outstanding_amount",
+      "fieldtype": "Currency",
+      "label": "الذمم المستحقة / Outstanding Receivables",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cost_variance",
+      "fieldtype": "Currency",
+      "label": "انحراف التكلفة / Cost Variance",
+      "read_only": 1
+    },
+    {
+      "fieldname": "revenue_variance",
+      "fieldtype": "Currency",
+      "label": "انحراف الإيراد / Revenue Variance",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cost_per_meal",
+      "fieldtype": "Currency",
+      "label": "التكلفة لكل وجبة / Cost per Meal",
+      "read_only": 1
+    },
+    {
+      "fieldname": "revenue_per_meal",
+      "fieldtype": "Currency",
+      "label": "الإيراد لكل وجبة / Revenue per Meal",
+      "read_only": 1
+    },
+    {
+      "fieldname": "profit_per_meal",
+      "fieldtype": "Currency",
+      "label": "الربح لكل وجبة / Profit per Meal",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 0,

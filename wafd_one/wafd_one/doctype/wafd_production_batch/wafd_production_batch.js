@@ -2,6 +2,25 @@ frappe.ui.form.on("WAFD Production Batch", {
     refresh(frm) {
         if (frm.is_new()) return;
 
+        frm.add_custom_button(__("New CCP Check"), () => {
+            frappe.new_doc("WAFD CCP Check", {
+                production_batch: frm.doc.name,
+                check_time: frappe.datetime.now_datetime(),
+                inspector: frappe.session.user
+            });
+        }, __("Food Safety"));
+
+        if (frm.doc.food_safety_release_status !== "مفرج / Released") {
+            frm.add_custom_button(__("Release Food Safety Batch"), () => {
+                frappe.call({
+                    method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.release_food_safety_batch",
+                    args: { batch_name: frm.doc.name },
+                    freeze: true,
+                    callback() { frm.reload_doc(); }
+                });
+            }, __("Food Safety"));
+        }
+
         add_action(frm, __("Refresh Material Requirements"),
             "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.refresh_material_requirements",
             { batch_name: frm.doc.name }, () => frm.reload_doc());

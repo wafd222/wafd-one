@@ -25,3 +25,19 @@ page_js = {
     "wafd-one-dashboard": "public/js/wafd_one_dashboard.js",
 }
 app_include_css = ["/assets/wafd_one/css/wafd_one_dashboard.css"]
+
+
+doc_events = {
+    doctype: {
+        "after_insert": "wafd_one.governance.audit_after_insert",
+        "on_update": "wafd_one.governance.audit_on_update",
+        "on_trash": "wafd_one.governance.audit_on_trash",
+    }
+    for doctype in (
+        "WAFD Contract", "WAFD Catering Project", "WAFD Meal Plan",
+        "WAFD Production Batch", "WAFD Purchase Order", "WAFD Stock Movement",
+        "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
+        "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
+        "WAFD Project Revenue", "WAFD Approval Request",
+    )
+}

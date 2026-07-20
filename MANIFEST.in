@@ -7,3 +7,5 @@ recursive-exclude wafd_one *.pyc
 
 recursive-include wafd_one/data_templates *.csv
 recursive-include wafd_one/reference_data *.csv
+
+include RELEASE_NOTES_5.6.0.md

@@ -22,6 +22,8 @@
     "estimated_cost",
     "estimated_profit",
     "estimated_margin_percent",
+    "daily_planned_quantity",
+    "capacity_utilization_percent",
     "status",
     "notes"
   ],
@@ -142,13 +144,25 @@
       "fieldtype": "Percent",
       "label": "هامش الربح التقديري / Estimated Margin",
       "read_only": 1
+    },
+    {
+      "fieldname": "daily_planned_quantity",
+      "fieldtype": "Int",
+      "label": "إجمالي اليوم المخطط / Daily Planned Total",
+      "read_only": 1
+    },
+    {
+      "fieldname": "capacity_utilization_percent",
+      "fieldtype": "Percent",
+      "label": "استخدام الطاقة اليومية / Daily Capacity Utilization",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-16 18:00:00.000000",
+  "modified": "2026-07-20 16:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Meal Plan",

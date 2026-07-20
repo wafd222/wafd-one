@@ -15,8 +15,16 @@
     "start_date",
     "end_date",
     "beneficiary_count",
+    "project_type",
     "contract_value",
     "currency",
+    "services_section",
+    "services",
+    "operations_defaults_section",
+    "default_source_warehouse",
+    "operations_defaults_column",
+    "default_vehicle",
+    "default_driver",
     "payment_terms",
     "attachment",
     "status"
@@ -47,7 +55,6 @@
       "fieldtype": "Link",
       "label": "المشروع / Project",
       "options": "WAFD Catering Project",
-      "reqd": 1,
       "in_list_view": 1
     },
     {
@@ -109,6 +116,51 @@
       "options": "مسودة / Draft\nساري / Active\nمنتهي / Expired\nملغي / Cancelled",
       "default": "مسودة / Draft",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "project_type",
+      "fieldtype": "Select",
+      "label": "نوع المشروع / Project Type",
+      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nفعاليات / Events\nأخرى / Other",
+      "default": "إعاشة فندقية / Hotel Catering"
+    },
+    {
+      "fieldname": "services_section",
+      "fieldtype": "Section Break",
+      "label": "الخدمات والوجبات / Services and Meals"
+    },
+    {
+      "fieldname": "services",
+      "fieldtype": "Table",
+      "label": "الخدمات / Services",
+      "options": "WAFD Project Service"
+    },
+    {
+      "fieldname": "operations_defaults_section",
+      "fieldtype": "Section Break",
+      "label": "إعدادات التشغيل الافتراضية / Operational Defaults"
+    },
+    {
+      "fieldname": "default_source_warehouse",
+      "fieldtype": "Link",
+      "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "operations_defaults_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "default_vehicle",
+      "fieldtype": "Link",
+      "label": "المركبة الافتراضية / Default Vehicle",
+      "options": "WAFD Vehicle"
+    },
+    {
+      "fieldname": "default_driver",
+      "fieldtype": "Link",
+      "label": "السائق الافتراضي / Default Driver",
+      "options": "WAFD Driver"
     }
   ],
   "index_web_pages_for_search": 0,

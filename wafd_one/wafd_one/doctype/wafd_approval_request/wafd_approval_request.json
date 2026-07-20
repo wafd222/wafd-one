@@ -1,0 +1,181 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "WAFD-APR-.YYYY.-.#####",
+  "creation": "",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "reference_section",
+    "reference_doctype",
+    "reference_name",
+    "reference_title",
+    "amount",
+    "workflow_section",
+    "status",
+    "requested_by",
+    "requested_on",
+    "decision_column",
+    "decided_by",
+    "decided_on",
+    "reason",
+    "decision_notes",
+    "snapshot"
+  ],
+  "fields": [
+    {
+      "fieldname": "reference_section",
+      "fieldtype": "Section Break",
+      "label": "المستند / Reference"
+    },
+    {
+      "fieldname": "reference_doctype",
+      "fieldtype": "Link",
+      "label": "نوع المستند / Document Type",
+      "options": "DocType",
+      "reqd": 1
+    },
+    {
+      "fieldname": "reference_name",
+      "fieldtype": "Dynamic Link",
+      "label": "المستند / Document",
+      "options": "reference_doctype",
+      "reqd": 1
+    },
+    {
+      "fieldname": "reference_title",
+      "fieldtype": "Data",
+      "label": "العنوان / Title",
+      "read_only": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "القيمة / Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "workflow_section",
+      "fieldtype": "Section Break",
+      "label": "الموافقة / Approval"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "بانتظار الاعتماد / Pending\nمعتمد / Approved\nمرفوض / Rejected\nملغي / Cancelled",
+      "default": "بانتظار الاعتماد / Pending",
+      "reqd": 1
+    },
+    {
+      "fieldname": "requested_by",
+      "fieldtype": "Link",
+      "label": "طلب بواسطة / Requested By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "requested_on",
+      "fieldtype": "Datetime",
+      "label": "وقت الطلب / Requested On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "decision_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "decided_by",
+      "fieldtype": "Link",
+      "label": "اعتمد/رفض بواسطة / Decided By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "decided_on",
+      "fieldtype": "Datetime",
+      "label": "وقت القرار / Decided On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "reason",
+      "fieldtype": "Small Text",
+      "label": "سبب الطلب / Request Reason"
+    },
+    {
+      "fieldname": "decision_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات القرار / Decision Notes"
+    },
+    {
+      "fieldname": "snapshot",
+      "fieldtype": "Code",
+      "label": "لقطة البيانات / Data Snapshot",
+      "options": "JSON",
+      "read_only": 1
+    }
+  ],
+  "grid_page_length": 50,
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Approval Request",
+  "naming_rule": "Random",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "write": 1,
+      "report": 1,
+      "role": "WAFD Operations Manager"
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "write": 1,
+      "report": 1,
+      "role": "WAFD Project Manager"
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Finance User"
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Storekeeper"
+    },
+    {
+      "read": 1,
+      "write": 1,
+      "report": 1,
+      "role": "WAFD Approver"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Auditor"
+    },
+    {
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "role": "System Manager"
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "reference_title",
+  "search_fields": "reference_doctype,reference_name,status"
+}

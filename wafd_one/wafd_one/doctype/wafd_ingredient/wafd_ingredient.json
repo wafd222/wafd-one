@@ -22,6 +22,9 @@
     "last_verified_on",
     "source_notes",
     "status",
+    "latest_market_cost",
+    "latest_price_date",
+    "latest_price_source",
     "cost_basis",
     "cost_last_updated",
     "cost_confidence"
@@ -129,6 +132,25 @@
       "label": "ملاحظات المصدر / Source Notes"
     },
     {
+      "fieldname": "latest_market_cost",
+      "fieldtype": "Currency",
+      "label": "آخر تكلفة سوقية / Latest Market Cost",
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "latest_price_date",
+      "fieldtype": "Date",
+      "label": "تاريخ آخر سعر / Latest Price Date",
+      "read_only": 1
+    },
+    {
+      "fieldname": "latest_price_source",
+      "fieldtype": "Data",
+      "label": "مصدر آخر سعر / Latest Price Source",
+      "read_only": 1
+    },
+    {
       "fieldname": "cost_basis",
       "fieldtype": "Select",
       "label": "أساس التكلفة / Cost Basis",
@@ -153,7 +175,7 @@
   "istable": 0,
   "is_submittable": 0,
   "links": [],
-  "modified": "2026-07-19 15:00:00.000000",
+  "modified": "2026-07-20 17:45:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Ingredient",

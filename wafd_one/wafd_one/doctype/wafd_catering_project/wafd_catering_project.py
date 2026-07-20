@@ -4,10 +4,6 @@ from frappe.utils import add_days, cint, date_diff, flt, getdate, now_datetime
 
 
 class WAFDCateringProject(Document):
-    def autoname(self):
-        # Naming series generates the canonical project code and document name.
-        pass
-
     def validate(self):
         self._sync_from_contract()
         self._validate_dates()

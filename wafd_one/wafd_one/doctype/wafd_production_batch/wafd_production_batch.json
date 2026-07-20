@@ -1,278 +1,334 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "format:WAFD-PRODUCTION-BATCH-{#####}",
- "creation": "2026-07-13 00:00:00.000000",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "project",
-  "meal_plan",
-  "recipe",
-  "source_warehouse",
-  "material_issue",
-  "quality_status",
-  "batch_date",
-  "planned_quantity",
-  "produced_quantity",
-  "rejected_quantity",
-  "actual_yield_percent",
-  "kitchen",
-  "production_supervisor",
-  "start_time",
-  "end_time",
-  "status",
-  "notes",
-  "cooking_start_time",
-  "packaging_start_time",
-  "packaging_end_time",
-  "packed_quantity",
-  "box_count",
-  "units_per_box",
-  "packaging_supervisor",
-  "material_requirements",
-  "materials_status",
-  "total_material_cost",
-  "packaging_record"
- ],
- "fields": [
-  {
-   "fieldname": "project",
-   "fieldtype": "Link",
-   "label": "المشروع / Project",
-   "options": "WAFD Catering Project",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "meal_plan",
-   "fieldtype": "Link",
-   "label": "خطة الوجبة / Meal Plan",
-   "options": "WAFD Meal Plan",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "recipe",
-   "fieldtype": "Link",
-   "label": "الوصفة / Recipe",
-   "options": "WAFD Recipe",
-   "read_only": 1
-  },
-  {
-   "fieldname": "source_warehouse",
-   "fieldtype": "Link",
-   "label": "مستودع الصرف / Source Warehouse",
-   "options": "WAFD Warehouse"
-  },
-  {
-   "fieldname": "material_issue",
-   "fieldtype": "Link",
-   "label": "حركة صرف المواد / Material Issue",
-   "options": "WAFD Stock Movement",
-   "read_only": 1
-  },
-  {
-   "fieldname": "quality_status",
-   "fieldtype": "Select",
-   "label": "حالة الجودة / Quality Status",
-   "options": "لم يفحص / Not Inspected\nناجح / Passed\nمشروط / Conditional\nمرفوض / Rejected",
-   "default": "لم يفحص / Not Inspected",
-   "read_only": 1
-  },
-  {
-   "fieldname": "batch_date",
-   "fieldtype": "Date",
-   "label": "تاريخ الإنتاج / Production Date",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "planned_quantity",
-   "fieldtype": "Int",
-   "label": "الكمية المخططة / Planned Qty",
-   "reqd": 1,
-   "non_negative": 1
-  },
-  {
-   "fieldname": "produced_quantity",
-   "fieldtype": "Int",
-   "label": "الكمية المنتجة / Produced Qty",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "rejected_quantity",
-   "fieldtype": "Int",
-   "label": "الكمية المرفوضة / Rejected Qty",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "actual_yield_percent",
-   "fieldtype": "Percent",
-   "label": "نسبة الإنتاج الفعلية / Actual Yield %",
-   "read_only": 1
-  },
-  {
-   "fieldname": "kitchen",
-   "fieldtype": "Data",
-   "label": "المطبخ / Kitchen"
-  },
-  {
-   "fieldname": "production_supervisor",
-   "fieldtype": "Link",
-   "label": "مشرف الإنتاج / Supervisor",
-   "options": "User"
-  },
-  {
-   "fieldname": "start_time",
-   "fieldtype": "Datetime",
-   "label": "بداية الإنتاج / Start"
-  },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Datetime",
-   "label": "نهاية الإنتاج / End"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "الحالة / Status",
-   "options": "مخطط / Planned\nتحضير / Preparing\nطبخ / Cooking\nتغليف / Packaging\nجاهز / Ready\nمكتمل / Completed\nموقوف / Stopped",
-   "default": "مخطط / Planned",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "notes",
-   "fieldtype": "Small Text",
-   "label": "ملاحظات / Notes"
-  },
-  {
-   "fieldname": "cooking_start_time",
-   "fieldtype": "Datetime",
-   "label": "بداية الطبخ / Cooking Start"
-  },
-  {
-   "fieldname": "packaging_start_time",
-   "fieldtype": "Datetime",
-   "label": "بداية التغليف / Packaging Start"
-  },
-  {
-   "fieldname": "packaging_end_time",
-   "fieldtype": "Datetime",
-   "label": "نهاية التغليف / Packaging End"
-  },
-  {
-   "fieldname": "packed_quantity",
-   "fieldtype": "Int",
-   "label": "الكمية المغلفة / Packed Qty",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "box_count",
-   "fieldtype": "Int",
-   "label": "عدد الصناديق / Box Count",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "units_per_box",
-   "fieldtype": "Int",
-   "label": "وجبات لكل صندوق / Units per Box",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "packaging_supervisor",
-   "fieldtype": "Link",
-   "label": "مشرف التغليف / Packaging Supervisor",
-   "options": "User"
-  },
-  {
-   "fieldname": "material_requirements",
-   "fieldtype": "Table",
-   "label": "احتياجات المواد / Material Requirements",
-   "options": "WAFD Production Material",
-   "read_only": 1
-  },
-  {
-   "fieldname": "materials_status",
-   "fieldtype": "Select",
-   "label": "حالة المواد / Materials Status",
-   "options": "لم تحسب / Not Calculated\nمتوفرة / Available\nعجز / Shortage\nمصروفة / Issued",
-   "default": "لم تحسب / Not Calculated",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "total_material_cost",
-   "fieldtype": "Currency",
-   "label": "تكلفة المواد / Material Cost",
-   "read_only": 1
-  },
-  {
-   "fieldname": "packaging_record",
-   "label": "سجل التغليف / Packaging Record",
-   "fieldtype": "Link",
-   "options": "WAFD Packaging Record",
-   "read_only": 1
-  }
- ],
- "index_web_pages_for_search": 0,
- "istable": 0,
- "is_submittable": 0,
- "links": [],
- "modified": "2026-07-17 00:00:00.000000",
- "modified_by": "Administrator",
- "module": "WAFD ONE",
- "name": "WAFD Production Batch",
- "owner": "Administrator",
- "permissions": [
-  {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Operations Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Production Supervisor",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Quality Inspector",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  }
- ],
- "sort_field": "creation",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:WAFD-PRODUCTION-BATCH-{#####}",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "project",
+    "meal_plan",
+    "recipe",
+    "source_warehouse",
+    "material_issue",
+    "quality_status",
+    "traceability_section",
+    "traceability_code",
+    "food_safety_release_status",
+    "released_by",
+    "released_on",
+    "batch_date",
+    "service_deadline",
+    "schedule_status",
+    "planned_quantity",
+    "produced_quantity",
+    "rejected_quantity",
+    "actual_yield_percent",
+    "kitchen",
+    "production_supervisor",
+    "start_time",
+    "end_time",
+    "status",
+    "notes",
+    "cooking_start_time",
+    "packaging_start_time",
+    "packaging_end_time",
+    "packed_quantity",
+    "box_count",
+    "units_per_box",
+    "packaging_supervisor",
+    "material_requirements",
+    "materials_status",
+    "total_material_cost",
+    "packaging_record"
+  ],
+  "fields": [
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "meal_plan",
+      "fieldtype": "Link",
+      "label": "خطة الوجبة / Meal Plan",
+      "options": "WAFD Meal Plan",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "recipe",
+      "fieldtype": "Link",
+      "label": "الوصفة / Recipe",
+      "options": "WAFD Recipe",
+      "read_only": 1
+    },
+    {
+      "fieldname": "source_warehouse",
+      "fieldtype": "Link",
+      "label": "مستودع الصرف / Source Warehouse",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "material_issue",
+      "fieldtype": "Link",
+      "label": "حركة صرف المواد / Material Issue",
+      "options": "WAFD Stock Movement",
+      "read_only": 1
+    },
+    {
+      "fieldname": "quality_status",
+      "fieldtype": "Select",
+      "label": "حالة الجودة / Quality Status",
+      "options": "لم يفحص / Not Inspected\nناجح / Passed\nمشروط / Conditional\nمرفوض / Rejected",
+      "default": "لم يفحص / Not Inspected",
+      "read_only": 1
+    },
+    {
+      "fieldname": "batch_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الإنتاج / Production Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "planned_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المخططة / Planned Qty",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "produced_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المنتجة / Produced Qty",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "rejected_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المرفوضة / Rejected Qty",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "actual_yield_percent",
+      "fieldtype": "Percent",
+      "label": "نسبة الإنتاج الفعلية / Actual Yield %",
+      "read_only": 1
+    },
+    {
+      "fieldname": "kitchen",
+      "fieldtype": "Data",
+      "label": "المطبخ / Kitchen"
+    },
+    {
+      "fieldname": "production_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف الإنتاج / Supervisor",
+      "options": "User"
+    },
+    {
+      "fieldname": "start_time",
+      "fieldtype": "Datetime",
+      "label": "بداية الإنتاج / Start"
+    },
+    {
+      "fieldname": "end_time",
+      "fieldtype": "Datetime",
+      "label": "نهاية الإنتاج / End"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مخطط / Planned\nتحضير / Preparing\nطبخ / Cooking\nتغليف / Packaging\nجاهز / Ready\nمكتمل / Completed\nموقوف / Stopped",
+      "default": "مخطط / Planned",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    },
+    {
+      "fieldname": "cooking_start_time",
+      "fieldtype": "Datetime",
+      "label": "بداية الطبخ / Cooking Start"
+    },
+    {
+      "fieldname": "packaging_start_time",
+      "fieldtype": "Datetime",
+      "label": "بداية التغليف / Packaging Start"
+    },
+    {
+      "fieldname": "packaging_end_time",
+      "fieldtype": "Datetime",
+      "label": "نهاية التغليف / Packaging End"
+    },
+    {
+      "fieldname": "packed_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المغلفة / Packed Qty",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "box_count",
+      "fieldtype": "Int",
+      "label": "عدد الصناديق / Box Count",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "units_per_box",
+      "fieldtype": "Int",
+      "label": "وجبات لكل صندوق / Units per Box",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "packaging_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف التغليف / Packaging Supervisor",
+      "options": "User"
+    },
+    {
+      "fieldname": "material_requirements",
+      "fieldtype": "Table",
+      "label": "احتياجات المواد / Material Requirements",
+      "options": "WAFD Production Material",
+      "read_only": 1
+    },
+    {
+      "fieldname": "materials_status",
+      "fieldtype": "Select",
+      "label": "حالة المواد / Materials Status",
+      "options": "لم تحسب / Not Calculated\nمتوفرة / Available\nعجز / Shortage\nمصروفة / Issued",
+      "default": "لم تحسب / Not Calculated",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "total_material_cost",
+      "fieldtype": "Currency",
+      "label": "تكلفة المواد / Material Cost",
+      "read_only": 1
+    },
+    {
+      "fieldname": "packaging_record",
+      "label": "سجل التغليف / Packaging Record",
+      "fieldtype": "Link",
+      "options": "WAFD Packaging Record",
+      "read_only": 1
+    },
+    {
+      "fieldname": "service_deadline",
+      "fieldtype": "Datetime",
+      "label": "الموعد النهائي للخدمة / Service Deadline",
+      "read_only": 1
+    },
+    {
+      "fieldname": "schedule_status",
+      "fieldtype": "Select",
+      "label": "حالة الجدول / Schedule Status",
+      "options": "في الوقت / On Time\nمعرض للتأخير / At Risk\nمتأخر / Delayed",
+      "default": "في الوقت / On Time",
+      "read_only": 1
+    },
+    {
+      "fieldname": "traceability_section",
+      "fieldtype": "Section Break",
+      "label": "التتبع والإفراج الغذائي / Traceability and Food Safety Release"
+    },
+    {
+      "fieldname": "traceability_code",
+      "fieldtype": "Data",
+      "label": "رمز التتبع / Traceability Code",
+      "read_only": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "food_safety_release_status",
+      "fieldtype": "Select",
+      "label": "حالة الإفراج الغذائي / Food Safety Release",
+      "options": "بانتظار المراجعة / Pending Review\nموقوف / On Hold\nمفرج / Released\nمرفوض / Rejected",
+      "default": "بانتظار المراجعة / Pending Review",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "released_by",
+      "fieldtype": "Link",
+      "label": "أفرج بواسطة / Released By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "released_on",
+      "fieldtype": "Datetime",
+      "label": "وقت الإفراج / Released On",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Production Batch",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Quality Inspector",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
 }

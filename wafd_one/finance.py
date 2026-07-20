@@ -103,50 +103,122 @@ def refresh_project_financials(project_name):
     if not project_name or not frappe.db.exists("WAFD Catering Project", project_name):
         return
 
-    costs = _scalar(
-        """select coalesce(sum(amount), 0)
-           from `tabWAFD Project Cost`
-           where project=%s and status not in ('ملغي / Cancelled', 'مسودة / Draft')""",
+    project = frappe.db.get_value(
+        "WAFD Catering Project", project_name,
+        ["estimated_cost", "estimated_revenue", "contract_value", "total_meals"],
+        as_dict=True,
+    ) or {}
+    costs = flt(_scalar(
+        """select coalesce(sum(amount), 0) from `tabWAFD Project Cost`
+           where project=%s and status in ('معتمد / Approved', 'مدفوع / Paid')""",
         (project_name,),
-    )
-    revenues = _scalar(
-        """select coalesce(sum(amount), 0)
-           from `tabWAFD Project Revenue`
+    ))
+    collected_revenue = flt(_scalar(
+        """select coalesce(sum(amount), 0) from `tabWAFD Project Revenue`
            where project=%s and status='محصل / Collected'""",
         (project_name,),
-    )
-    invoice_paid = _scalar(
-        """select coalesce(sum(p.amount), 0)
-           from `tabWAFD Payment` p
+    ))
+    invoice_paid = flt(_scalar(
+        """select coalesce(sum(p.amount), 0) from `tabWAFD Payment` p
            inner join `tabWAFD Invoice` i on i.name=p.invoice
            where p.project=%s and p.status='معتمد / Confirmed'
              and i.status!='ملغاة / Cancelled'""",
         (project_name,),
-    )
-    revenue = max(flt(revenues), flt(invoice_paid))
-    delivered = _scalar(
-        """select coalesce(sum(received_quantity), 0)
-           from `tabWAFD Delivery Proof`
+    ))
+    invoiced = flt(_scalar(
+        """select coalesce(sum(grand_total), 0) from `tabWAFD Invoice`
+           where project=%s and status!='ملغاة / Cancelled'""",
+        (project_name,),
+    ))
+    outstanding = flt(_scalar(
+        """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
+           where project=%s and status!='ملغاة / Cancelled'""",
+        (project_name,),
+    ))
+    revenue = max(collected_revenue, invoice_paid)
+    delivered = flt(_scalar(
+        """select coalesce(sum(received_quantity), 0) from `tabWAFD Delivery Proof`
            where project=%s and status in
              ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')""",
         (project_name,),
+    ))
+    total = flt(project.get("total_meals"))
+    basis_meals = delivered or total
+    estimated_revenue = flt(project.get("estimated_revenue")) or flt(project.get("contract_value"))
+    estimated_cost = flt(project.get("estimated_cost"))
+    profit = revenue - costs
+    values = {
+        "actual_cost": costs,
+        "revenue": revenue,
+        "profit": profit,
+        "profit_margin_percent": profit / revenue * 100 if revenue else 0,
+        "invoiced_amount": invoiced,
+        "outstanding_amount": outstanding,
+        "cost_variance": costs - estimated_cost,
+        "revenue_variance": revenue - estimated_revenue,
+        "cost_per_meal": costs / basis_meals if basis_meals else 0,
+        "revenue_per_meal": revenue / basis_meals if basis_meals else 0,
+        "profit_per_meal": profit / basis_meals if basis_meals else 0,
+        "delivered_meals": delivered,
+        "remaining_meals": max(total - delivered, 0),
+        "progress_percent": delivered / total * 100 if total else 0,
+    }
+    frappe.db.set_value("WAFD Catering Project", project_name, values, update_modified=False)
+    return values
+
+
+@frappe.whitelist()
+def get_financial_intelligence(project_name=None, as_of_date=None):
+    """Return project profitability and receivables ageing from posted WAFD records."""
+    as_of_date = getdate(as_of_date or nowdate())
+    filters = {"status": ["!=", "ملغي / Cancelled"]}
+    if project_name:
+        filters["name"] = project_name
+    projects = frappe.db.get_all(
+        "WAFD Catering Project", filters=filters,
+        fields=["name", "project_name", "contract_value", "estimated_cost", "estimated_revenue",
+                "actual_cost", "revenue", "profit", "profit_margin_percent", "invoiced_amount",
+                "outstanding_amount", "delivered_meals", "cost_per_meal", "revenue_per_meal",
+                "profit_per_meal", "cost_variance", "revenue_variance"],
+        order_by="profit desc",
     )
-    total = flt(frappe.db.get_value("WAFD Catering Project", project_name, "total_meals"))
-    profit = revenue - flt(costs)
-    frappe.db.set_value(
-        "WAFD Catering Project",
-        project_name,
-        {
-            "actual_cost": costs,
-            "revenue": revenue,
-            "profit": profit,
-            "profit_margin_percent": profit / revenue * 100 if revenue else 0,
-            "delivered_meals": delivered,
-            "remaining_meals": max(total - flt(delivered), 0),
-            "progress_percent": flt(delivered) / total * 100 if total else 0,
-        },
-        update_modified=False,
+    for row in projects:
+        refresh_project_financials(row.name)
+    projects = frappe.db.get_all(
+        "WAFD Catering Project", filters=filters,
+        fields=["name", "project_name", "contract_value", "estimated_cost", "estimated_revenue",
+                "actual_cost", "revenue", "profit", "profit_margin_percent", "invoiced_amount",
+                "outstanding_amount", "delivered_meals", "cost_per_meal", "revenue_per_meal",
+                "profit_per_meal", "cost_variance", "revenue_variance"],
+        order_by="profit desc",
     )
+    ageing = {"current": 0.0, "days_1_30": 0.0, "days_31_60": 0.0, "days_61_90": 0.0, "over_90": 0.0}
+    invoice_filters = ["status!='ملغاة / Cancelled'", "balance>0"]
+    values = []
+    if project_name:
+        invoice_filters.append("project=%s")
+        values.append(project_name)
+    invoices = frappe.db.sql(
+        f"select name, project, due_date, balance from `tabWAFD Invoice` where {' and '.join(invoice_filters)}",
+        tuple(values), as_dict=True,
+    )
+    for inv in invoices:
+        if not inv.due_date or getdate(inv.due_date) >= as_of_date:
+            ageing["current"] += flt(inv.balance)
+            continue
+        days = (as_of_date - getdate(inv.due_date)).days
+        key = "days_1_30" if days <= 30 else "days_31_60" if days <= 60 else "days_61_90" if days <= 90 else "over_90"
+        ageing[key] += flt(inv.balance)
+    totals = {
+        "contract_value": sum(flt(x.contract_value) for x in projects),
+        "actual_cost": sum(flt(x.actual_cost) for x in projects),
+        "collected_revenue": sum(flt(x.revenue) for x in projects),
+        "invoiced_amount": sum(flt(x.invoiced_amount) for x in projects),
+        "outstanding_amount": sum(flt(x.outstanding_amount) for x in projects),
+        "profit": sum(flt(x.profit) for x in projects),
+    }
+    totals["profit_margin_percent"] = totals["profit"] / totals["collected_revenue"] * 100 if totals["collected_revenue"] else 0
+    return {"as_of_date": str(as_of_date), "totals": totals, "ageing": ageing, "projects": projects}
 
 
 @frappe.whitelist()

@@ -1,0 +1,146 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-20 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "section_temperature",
+    "minimum_cooking_temperature",
+    "minimum_hot_holding_temperature",
+    "maximum_cold_holding_temperature",
+    "maximum_ambient_exposure_minutes",
+    "section_control",
+    "require_ccp_checks_before_release",
+    "require_passed_quality_before_release",
+    "require_rejection_photo",
+    "default_weight_tolerance",
+    "section_notes",
+    "standard_reference_note"
+  ],
+  "fields": [
+    {
+      "fieldname": "section_temperature",
+      "fieldtype": "Section Break",
+      "label": "حدود سلامة الغذاء القابلة للضبط / Configurable Food Safety Limits"
+    },
+    {
+      "fieldname": "minimum_cooking_temperature",
+      "fieldtype": "Float",
+      "label": "الحد الأدنى لحرارة الطهي °م / Minimum Cooking Temperature °C",
+      "default": "74",
+      "reqd": 1
+    },
+    {
+      "fieldname": "minimum_hot_holding_temperature",
+      "fieldtype": "Float",
+      "label": "الحد الأدنى للحفظ الساخن °م / Minimum Hot Holding °C",
+      "default": "60",
+      "reqd": 1
+    },
+    {
+      "fieldname": "maximum_cold_holding_temperature",
+      "fieldtype": "Float",
+      "label": "الحد الأعلى للحفظ البارد °م / Maximum Cold Holding °C",
+      "default": "5",
+      "reqd": 1
+    },
+    {
+      "fieldname": "maximum_ambient_exposure_minutes",
+      "fieldtype": "Int",
+      "label": "أقصى مدة خارج التحكم الحراري بالدقائق / Maximum Ambient Exposure Minutes",
+      "default": "120",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_control",
+      "fieldtype": "Section Break",
+      "label": "ضوابط الإفراج / Release Controls"
+    },
+    {
+      "fieldname": "require_ccp_checks_before_release",
+      "fieldtype": "Check",
+      "label": "اشتراط فحوص نقاط التحكم الحرجة قبل الإفراج / Require CCP Checks Before Release",
+      "default": "1"
+    },
+    {
+      "fieldname": "require_passed_quality_before_release",
+      "fieldtype": "Check",
+      "label": "اشتراط نجاح فحص الجودة قبل الإفراج / Require Passed Quality Inspection",
+      "default": "1"
+    },
+    {
+      "fieldname": "require_rejection_photo",
+      "fieldtype": "Check",
+      "label": "اشتراط صورة عند عدم المطابقة / Require Photo for Nonconformance",
+      "default": "1"
+    },
+    {
+      "fieldname": "default_weight_tolerance",
+      "fieldtype": "Percent",
+      "label": "هامش الوزن الافتراضي / Default Weight Tolerance %",
+      "default": "5"
+    },
+    {
+      "fieldname": "section_notes",
+      "fieldtype": "Section Break",
+      "label": "المراجع / References"
+    },
+    {
+      "fieldname": "standard_reference_note",
+      "fieldtype": "Small Text",
+      "label": "مرجع السياسة الداخلية / Internal Policy Reference",
+      "description": "القيم الافتراضية قابلة للتعديل وفق خطة HACCP المعتمدة ومتطلبات الجهة الرقابية والعقد."
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "issingle": 1,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Food Safety Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Quality Inspector",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

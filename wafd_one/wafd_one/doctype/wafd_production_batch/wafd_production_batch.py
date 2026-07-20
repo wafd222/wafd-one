@@ -1,12 +1,15 @@
+import uuid
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, flt, now_datetime
+from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime
 
 
 class WAFDProductionBatch(Document):
     def validate(self):
+        self._ensure_traceability_code()
         self._sync_from_meal_plan()
         self._validate_quantities()
+        self._validate_schedule()
         self._calculate_material_requirements()
         self._validate_workflow()
 
@@ -45,6 +48,42 @@ class WAFDProductionBatch(Document):
         self.batch_date = self.batch_date or values.service_date
         if not self.planned_quantity:
             self.planned_quantity = cint(values.quantity)
+
+    def _validate_schedule(self):
+        if self.meal_plan:
+            plan = frappe.db.get_value("WAFD Meal Plan", self.meal_plan, ["service_date", "service_time"], as_dict=True)
+            if plan and plan.service_date:
+                deadline = get_datetime(f"{plan.service_date} {plan.service_time or '23:59:59'}")
+                self.service_deadline = deadline
+                current = now_datetime()
+                if self.status not in ("جاهز / Ready", "مكتمل / Completed", "موقوف / Stopped"):
+                    if current > deadline:
+                        self.schedule_status = "متأخر / Delayed"
+                    elif current > add_to_date(deadline, hours=-4):
+                        self.schedule_status = "معرض للتأخير / At Risk"
+                    else:
+                        self.schedule_status = "في الوقت / On Time"
+                else:
+                    self.schedule_status = "في الوقت / On Time"
+
+        timeline = [
+            ("start_time", self.start_time),
+            ("cooking_start_time", self.cooking_start_time),
+            ("packaging_start_time", self.packaging_start_time),
+            ("packaging_end_time", self.packaging_end_time),
+            ("end_time", self.end_time),
+        ]
+        previous_name = None
+        previous_value = None
+        for fieldname, value in timeline:
+            if not value:
+                continue
+            current_value = get_datetime(value)
+            if previous_value and current_value < previous_value:
+                frappe.throw(f"ترتيب أوقات الإنتاج غير صحيح بين {previous_name} و {fieldname} / Production timeline is out of order")
+            previous_name, previous_value = fieldname, current_value
+        if self.end_time and self.service_deadline and get_datetime(self.end_time) > get_datetime(self.service_deadline):
+            frappe.throw("وقت انتهاء الإنتاج بعد موعد الخدمة / Production end time is after service deadline")
 
     def _calculate_material_requirements(self):
         self.set("material_requirements", [])
@@ -93,8 +132,24 @@ class WAFDProductionBatch(Document):
                 frappe.throw("يجب ترحيل حركة صرف المواد أولاً / Post the material issue first")
         if self.status in ("جاهز / Ready", "مكتمل / Completed") and self.quality_status != "ناجح / Passed":
             frappe.throw("لا يمكن اعتماد الدفعة كجاهزة قبل نجاح فحص الجودة / A passed quality inspection is required")
+        if self.status in ("جاهز / Ready", "مكتمل / Completed") and self.food_safety_release_status != "مفرج / Released":
+            frappe.throw("لا يمكن اعتماد الدفعة كجاهزة قبل الإفراج الغذائي / Food safety release is required")
         if self.status == "مكتمل / Completed" and cint(self.produced_quantity) <= 0:
             frappe.throw("أدخل الكمية المنتجة قبل إكمال الدفعة / Enter produced quantity before completing the batch")
+
+    def _ensure_traceability_code(self):
+        if not self.traceability_code:
+            self.traceability_code = "WAFD-TRC-" + uuid.uuid4().hex[:12].upper()
+
+    def before_save(self):
+        if self.is_new():
+            return
+        previous = self.get_doc_before_save()
+        if previous and previous.food_safety_release_status == "مفرج / Released":
+            protected = ("project", "meal_plan", "recipe", "source_warehouse", "planned_quantity", "produced_quantity", "rejected_quantity", "batch_date")
+            changed = [field for field in protected if self.get(field) != previous.get(field)]
+            if changed:
+                frappe.throw("لا يمكن تعديل بيانات الدفعة الأساسية بعد الإفراج الغذائي / Released batch core data cannot be modified")
 
     def on_update(self):
         self._update_meal_plan_status()
@@ -224,3 +279,55 @@ def create_packaging_record(batch_name):
     from wafd_one.operations import create_packaging_record as create_record
 
     return create_record(batch_name)
+
+
+def _open_noncompliant_ccp_checks(batch_name):
+    return frappe.get_all(
+        "WAFD CCP Check",
+        filters={
+            "production_batch": batch_name,
+            "compliance_status": "غير مطابق / Noncompliant",
+            "verification_status": ["!=", "تم التحقق / Verified"],
+        },
+        pluck="name",
+    )
+
+
+@frappe.whitelist()
+def release_food_safety_batch(batch_name):
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    frappe.db.sql("select name from `tabWAFD Production Batch` where name=%s for update", batch.name)
+    batch.reload()
+    if batch.food_safety_release_status == "مفرج / Released":
+        return {"name": batch.name, "released": False}
+    settings = frappe.get_single("WAFD Food Safety Settings")
+    if settings.require_passed_quality_before_release and batch.quality_status != "ناجح / Passed":
+        frappe.throw("يجب نجاح فحص الجودة قبل الإفراج / A passed quality inspection is required before release")
+    checks = frappe.get_all("WAFD CCP Check", filters={"production_batch": batch.name}, fields=["name", "compliance_status", "verification_status"])
+    if settings.require_ccp_checks_before_release and not checks:
+        frappe.throw("يجب تسجيل فحص نقطة تحكم حرجة واحد على الأقل / At least one CCP check is required")
+    unverified = [row.name for row in checks if row.verification_status != "تم التحقق / Verified"]
+    if unverified:
+        frappe.throw("توجد فحوص لم يتم التحقق منها: " + ", ".join(unverified) + " / Unverified CCP checks exist")
+    unresolved = [row.name for row in checks if row.compliance_status == "غير مطابق / Noncompliant"]
+    if unresolved:
+        frappe.throw("لا يمكن الإفراج مع وجود انحرافات غير مطابقة: " + ", ".join(unresolved) + " / Noncompliant CCP checks block release")
+    batch.db_set({
+        "food_safety_release_status": "مفرج / Released",
+        "released_by": frappe.session.user,
+        "released_on": now_datetime(),
+    }, update_modified=True)
+    return {"name": batch.name, "released": True, "traceability_code": batch.traceability_code}
+
+
+@frappe.whitelist()
+def hold_food_safety_batch(batch_name, reason=None):
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    if batch.food_safety_release_status == "مفرج / Released":
+        frappe.throw("لا يمكن إيقاف دفعة مفرج عنها دون إجراء سحب رسمي / A released batch requires a formal recall process")
+    batch.db_set("food_safety_release_status", "موقوف / On Hold", update_modified=True)
+    if reason:
+        batch.add_comment("Comment", "Food safety hold: " + reason)
+    return {"name": batch.name, "held": True}

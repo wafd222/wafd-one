@@ -25,4 +25,7 @@ class WAFDQualityInspection(Document):
 
     def on_update(self):
         frappe.db.set_value("WAFD Production Batch", self.production_batch, "quality_status", self.result or "لم يفحص / Not Inspected", update_modified=False)
-        if self.result == "مرفوض / Rejected": frappe.db.set_value("WAFD Production Batch", self.production_batch, "status", "موقوف / Stopped", update_modified=False)
+        if self.result == "مرفوض / Rejected":
+            frappe.db.set_value("WAFD Production Batch", self.production_batch, {"status": "موقوف / Stopped", "food_safety_release_status": "مرفوض / Rejected"}, update_modified=False)
+        elif self.result == "مشروط / Conditional":
+            frappe.db.set_value("WAFD Production Batch", self.production_batch, "food_safety_release_status", "موقوف / On Hold", update_modified=False)

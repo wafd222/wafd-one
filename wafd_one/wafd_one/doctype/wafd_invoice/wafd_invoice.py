@@ -5,7 +5,7 @@ from frappe.utils import flt, getdate, nowdate
 
 class WAFDInvoice(Document):
     def validate(self):
-        self._protect_confirmed_financial_history()
+        self._protect_invoice_with_confirmed_payments()
         if not self.invoice_date:
             self.invoice_date = nowdate()
         if self.due_date and getdate(self.due_date) < getdate(self.invoice_date):
@@ -47,40 +47,27 @@ class WAFDInvoice(Document):
         self.balance = max(flt(self.grand_total - self.paid_amount, 2), 0)
         self._set_status()
 
-    def _protect_confirmed_financial_history(self):
-        """Prevent edits that would rewrite an invoice after money was confirmed."""
+
+    def _protect_invoice_with_confirmed_payments(self):
         if self.is_new():
             return
-
-        confirmed = frappe.db.sql(
-            """select coalesce(sum(amount), 0) from `tabWAFD Payment`
-               where invoice=%s and status='معتمد / Confirmed'""",
-            self.name,
-        )[0][0]
-        if flt(confirmed) <= 0:
+        confirmed = frappe.db.count("WAFD Payment", {"invoice": self.name, "status": "معتمد / Confirmed"})
+        if not confirmed:
             return
-
         previous = self.get_doc_before_save()
         if not previous:
             return
-
-        protected_fields = ("project", "billing_basis", "subtotal", "tax_rate", "tax_amount", "grand_total")
-        changed = [field for field in protected_fields if self.has_value_changed(field)]
-        old_items = [
-            (row.meal_plan, flt(row.delivered_quantity), flt(row.unit_price), flt(row.amount))
-            for row in (previous.items or [])
-        ]
-        new_items = [
-            (row.meal_plan, flt(row.delivered_quantity), flt(row.unit_price), flt(row.amount))
-            for row in (self.items or [])
-        ]
+        protected = ("project", "invoice_date", "billing_basis", "subtotal", "tax_rate")
+        changed = [self.meta.get_label(field) for field in protected if self.get(field) != previous.get(field)]
+        old_items = [(r.meal_plan, flt(r.delivered_quantity), flt(r.unit_price), flt(r.amount)) for r in (previous.items or [])]
+        new_items = [(r.meal_plan, flt(r.delivered_quantity), flt(r.unit_price), flt(r.amount)) for r in (self.items or [])]
         if old_items != new_items:
-            changed.append("items")
-
+            changed.append(self.meta.get_label("items"))
         if changed:
             frappe.throw(
-                "لا يمكن تعديل أساس أو قيمة فاتورة عليها تحصيلات معتمدة. ألغِ التحصيل أولاً / "
-                "Cannot change the basis or value of an invoice with confirmed payments. Cancel the payment first."
+                "لا يمكن تعديل أساس أو قيمة فاتورة عليها تحصيلات معتمدة: {0} / Billing fields cannot be changed after confirmed payments: {0}".format(
+                    ", ".join(changed)
+                )
             )
 
     def _populate_items_from_deliveries(self):
@@ -159,6 +146,11 @@ class WAFDInvoice(Document):
             )
 
     def _set_status(self):
+        from wafd_one.governance import ensure_approved
+        if self.status == "مرسلة / Sent" and not self.is_new():
+            previous = self.get_doc_before_save()
+            if previous and previous.status != self.status:
+                ensure_approved(self, "إرسال الفاتورة / invoice sending")
         if self.status == "ملغاة / Cancelled":
             return
         if flt(self.grand_total) <= 0:
@@ -177,13 +169,5 @@ class WAFDInvoice(Document):
         refresh_project_financials(self.project)
 
     def on_trash(self):
-        confirmed = frappe.db.sql(
-            """select coalesce(sum(amount), 0) from `tabWAFD Payment`
-               where invoice=%s and status='معتمد / Confirmed'""",
-            self.name,
-        )[0][0]
-        if flt(confirmed) > 0:
-            frappe.throw(
-                "لا يمكن حذف فاتورة مرتبطة بتحصيلات معتمدة / "
-                "Cannot delete an invoice linked to confirmed payments"
-            )
+        if frappe.db.exists("WAFD Payment", {"invoice": self.name, "status": "معتمد / Confirmed"}):
+            frappe.throw("لا يمكن حذف فاتورة مرتبطة بتحصيل معتمد / An invoice with confirmed payments cannot be deleted")

@@ -1,0 +1,197 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "approval_section",
+    "enable_contract_approval",
+    "contract_threshold",
+    "approval_column",
+    "enable_purchase_approval",
+    "purchase_threshold",
+    "finance_section",
+    "enable_invoice_approval",
+    "invoice_threshold",
+    "enable_payment_approval",
+    "payment_threshold",
+    "finance_column",
+    "enable_cost_approval",
+    "cost_threshold",
+    "enable_revenue_approval",
+    "revenue_threshold",
+    "separation_section",
+    "prevent_self_approval",
+    "approver_role",
+    "audit_section",
+    "enable_audit_log",
+    "audit_retention_days"
+  ],
+  "fields": [
+    {
+      "fieldname": "approval_section",
+      "fieldtype": "Section Break",
+      "label": "ضوابط الموافقات / Approval Controls"
+    },
+    {
+      "fieldname": "enable_contract_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد العقود / Require Contract Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "contract_threshold",
+      "fieldtype": "Currency",
+      "label": "حد قيمة العقد / Contract Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_contract_approval"
+    },
+    {
+      "fieldname": "approval_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "enable_purchase_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد أوامر الشراء / Require Purchase Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "purchase_threshold",
+      "fieldtype": "Currency",
+      "label": "حد أمر الشراء / Purchase Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_purchase_approval"
+    },
+    {
+      "fieldname": "finance_section",
+      "fieldtype": "Section Break",
+      "label": "الضوابط المالية / Financial Controls"
+    },
+    {
+      "fieldname": "enable_invoice_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد الفواتير / Require Invoice Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "invoice_threshold",
+      "fieldtype": "Currency",
+      "label": "حد الفاتورة / Invoice Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_invoice_approval"
+    },
+    {
+      "fieldname": "enable_payment_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد التحصيلات / Require Payment Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "payment_threshold",
+      "fieldtype": "Currency",
+      "label": "حد التحصيل / Payment Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_payment_approval"
+    },
+    {
+      "fieldname": "finance_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "enable_cost_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد التكاليف / Require Cost Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "cost_threshold",
+      "fieldtype": "Currency",
+      "label": "حد التكلفة / Cost Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_cost_approval"
+    },
+    {
+      "fieldname": "enable_revenue_approval",
+      "fieldtype": "Check",
+      "label": "اعتماد الإيرادات / Require Revenue Approval",
+      "default": 0
+    },
+    {
+      "fieldname": "revenue_threshold",
+      "fieldtype": "Currency",
+      "label": "حد الإيراد / Revenue Threshold",
+      "default": 0,
+      "depends_on": "eval:doc.enable_revenue_approval"
+    },
+    {
+      "fieldname": "separation_section",
+      "fieldtype": "Section Break",
+      "label": "فصل الصلاحيات / Segregation of Duties"
+    },
+    {
+      "fieldname": "prevent_self_approval",
+      "fieldtype": "Check",
+      "label": "منع الاعتماد الذاتي / Prevent Self Approval",
+      "default": 1
+    },
+    {
+      "fieldname": "approver_role",
+      "fieldtype": "Link",
+      "label": "دور المعتمد / Approver Role",
+      "options": "Role",
+      "default": "WAFD Approver"
+    },
+    {
+      "fieldname": "audit_section",
+      "fieldtype": "Section Break",
+      "label": "التدقيق / Audit"
+    },
+    {
+      "fieldname": "enable_audit_log",
+      "fieldtype": "Check",
+      "label": "تفعيل سجل التدقيق / Enable Audit Log",
+      "default": 1
+    },
+    {
+      "fieldname": "audit_retention_days",
+      "fieldtype": "Int",
+      "label": "مدة الاحتفاظ بالأيام / Retention Days",
+      "default": 2555,
+      "description": "Seven years by default."
+    }
+  ],
+  "grid_page_length": 50,
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Governance Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "role": "System Manager"
+    },
+    {
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "role": "WAFD Operations Manager"
+    },
+    {
+      "read": 1,
+      "role": "WAFD Auditor"
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "issingle": 1
+}

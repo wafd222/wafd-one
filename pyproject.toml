@@ -1,0 +1,15 @@
+[project]
+name = "wafd_one"
+version = "6.0.1"
+description = "WAFD ONE integrated catering operations management for Frappe Framework v16"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Wafd Almadinah", email = "wafd.almadinah@gmail.com" }]
+dependencies = []
+
+[build-system]
+requires = ["flit_core>=3.9,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0-dev,<17.0.0"

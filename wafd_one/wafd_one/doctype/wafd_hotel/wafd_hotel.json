@@ -7,6 +7,7 @@
   "engine": "InnoDB",
   "field_order": [
     "hotel_name",
+    "hotel_name_en",
     "city",
     "district",
     "address",
@@ -20,6 +21,8 @@
     "central_map_number",
     "central_sector",
     "source_map_edition",
+    "distance_to_haram_km",
+    "proximity_band",
     "classification",
     "tourism_license_number",
     "map_url",
@@ -45,6 +48,12 @@
       "reqd": 1,
       "in_list_view": 1,
       "unique": 1
+    },
+    {
+      "fieldname": "hotel_name_en",
+      "fieldtype": "Data",
+      "label": "الاسم الإنجليزي / English Name",
+      "in_list_view": 1
     },
     {
       "fieldname": "city",
@@ -126,6 +135,18 @@
       "fieldname": "source_map_edition",
       "fieldtype": "Data",
       "label": "إصدار المخطط المرجعي / Source Map Edition"
+    },
+    {
+      "fieldname": "distance_to_haram_km",
+      "fieldtype": "Float",
+      "label": "المسافة من المسجد النبوي (كم) / Distance to Haram (km)",
+      "precision": "3"
+    },
+    {
+      "fieldname": "proximity_band",
+      "fieldtype": "Select",
+      "label": "نطاق القرب / Proximity Band",
+      "options": "داخل المنطقة المركزية / Central Area\nقريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km\nخارج النطاق / Outside Scope"
     },
     {
       "fieldname": "classification",
@@ -220,7 +241,7 @@
       "link_fieldname": "hotel"
     }
   ],
-  "modified": "2026-07-19 15:00:00.000000",
+  "modified": "2026-07-21 18:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Hotel",
@@ -276,5 +297,6 @@
   "sort_order": "DESC",
   "states": [],
   "track_changes": 1,
-  "title_field": "hotel_name"
+  "title_field": "hotel_name",
+  "search_fields": "hotel_name, hotel_name_en, central_map_number, district"
 }

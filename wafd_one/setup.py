@@ -543,9 +543,39 @@ def ensure_madinah_hotels_400():
         raise RuntimeError(f"Hotel catalogue installation incomplete: {len(missing)} record(s) missing")
     return {"catalogue_count": 400, "installed_count": len(installed)}
 
+
+def ensure_madinah_central_and_nearby_hotels():
+    """Install/update official central-map hotels and verified properties within 2 km; never delete user data."""
+    import csv
+    from frappe.utils import nowdate
+    path = Path(__file__).resolve().parent / "reference_data" / "madinah_central_and_nearby_hotels_2026.csv"
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    installed = 0
+    for row in rows:
+        hotel_name = (row.get("hotel_name") or "").strip()
+        if not hotel_name:
+            continue
+        existing = frappe.db.get_value("WAFD Hotel", {"hotel_name": hotel_name}, "name")
+        doc = frappe.get_doc("WAFD Hotel", existing) if existing else frappe.new_doc("WAFD Hotel")
+        if not existing:
+            doc.hotel_name = hotel_name
+            doc.status = "نشط / Active"
+        for fieldname in ("hotel_name_en", "city", "district", "zone_type", "central_map_number", "central_sector", "source_map_edition", "proximity_band", "source_authority", "source_url", "verification_status", "source_notes"):
+            value = (row.get(fieldname) or "").strip()
+            if value:
+                doc.set(fieldname, value)
+        if row.get("distance_to_haram_km") not in (None, ""):
+            doc.distance_to_haram_km = float(row["distance_to_haram_km"])
+        doc.last_verified_on = nowdate()
+        doc.save(ignore_permissions=True) if existing else doc.insert(ignore_permissions=True)
+        installed += 1
+    return {"catalogue_count": len(rows), "installed_or_updated": installed}
+
 def after_migrate():
     ensure_hotel_undertaking_print_format()
     ensure_madinah_hotels_400()
+    ensure_madinah_central_and_nearby_hotels()
     # The framework has already synchronized all application DocTypes before
     # this hook runs.  Re-sync only the administration console recovery path,
     # then rebuild navigation.  Avoid reloading every operational DocType a

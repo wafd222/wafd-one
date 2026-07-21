@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, now_datetime
+from frappe.utils.pdf import get_pdf
 
 PRINT_FORMAT = "تعهد والتزام إعاشة — WAFD"
 DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
@@ -97,7 +98,12 @@ def approve_and_generate_pdf(name):
         doc.save(); doc.submit(); doc.reload()
     if doc.docstatus == 2:
         frappe.throw(_("لا يمكن إصدار PDF لتعهد ملغي / Cannot generate a PDF for a cancelled undertaking"))
-    pdf_content=frappe.get_print("WAFD Hotel Undertaking", doc.name, print_format=PRINT_FORMAT, as_pdf=True)
+    html = frappe.get_print("WAFD Hotel Undertaking", doc.name, print_format=PRINT_FORMAT, as_pdf=False, no_letterhead=1)
+    pdf_content = get_pdf(html, options={
+        "page-size": "A4", "margin-top": "7mm", "margin-right": "9mm",
+        "margin-bottom": "7mm", "margin-left": "9mm",
+        "disable-smart-shrinking": "", "print-media-type": "", "encoding": "UTF-8",
+    })
     filename=f"{doc.name}.pdf"
     existing=frappe.db.get_value("File", {"attached_to_doctype":doc.doctype,"attached_to_name":doc.name,"file_name":filename}, "name")
     if existing: frappe.delete_doc("File", existing, ignore_permissions=True, force=True)

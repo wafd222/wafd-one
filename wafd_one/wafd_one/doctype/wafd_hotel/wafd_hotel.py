@@ -19,3 +19,21 @@ class WAFDHotel(Document):
         if self.zone_type != "المنطقة المركزية / Central Zone":
             self.central_map_number = None
             self.central_sector = None
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def hotel_link_query(doctype, txt, searchfield, start, page_len, filters):
+    txt = (txt or "").strip()
+    like = f"%{txt}%"
+    return frappe.db.sql(
+        """select name, hotel_name, coalesce(hotel_name_en, ''), coalesce(central_map_number, ''), coalesce(district, '')
+           from `tabWAFD Hotel`
+           where status = 'نشط / Active'
+             and (proximity_band in ('داخل المنطقة المركزية / Central Area', 'قريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km')
+                  or zone_type = 'المنطقة المركزية / Central Zone')
+             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_en like %(like)s or central_map_number like %(like)s)
+           order by case when central_map_number is null or central_map_number='' then 1 else 0 end, cast(central_map_number as unsigned), hotel_name
+           limit %(start)s, %(page_len)s""",
+        {"txt": txt, "like": like, "start": int(start), "page_len": int(page_len)},
+    )

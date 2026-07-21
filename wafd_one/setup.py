@@ -589,10 +589,38 @@ def ensure_madinah_central_and_nearby_hotels():
                 continue
             doc.set(fieldname, value)
 
-        for fieldname in ("hotel_name_en", "city", "district", "central_map_number", "central_sector", "source_map_edition", "source_authority", "source_url", "verification_status", "source_notes"):
+        # Assign free-text fields directly.  Controlled Select fields are
+        # normalized against the live DocType metadata before saving so a
+        # catalogue label can never abort the site migration.
+        for fieldname in ("hotel_name_en", "city", "district", "central_map_number", "central_sector", "source_map_edition", "source_authority", "source_url", "source_notes"):
             value = (row.get(fieldname) or "").strip()
             if value:
                 doc.set(fieldname, value)
+
+        verification_value = (row.get("verification_status") or "").strip()
+        verification_aliases = {
+            "تم التحقق من القرب / Proximity Verified": "يحتاج مراجعة / Needs Review",
+            "موثق من المصدر الرسمي / Official Source Verified": "موثق من الموقع الرسمي للمنشأة / Official Property Source",
+        }
+        verification_value = verification_aliases.get(verification_value, verification_value)
+        verification_field = meta.get_field("verification_status")
+        verification_allowed = [
+            item.strip() for item in (verification_field.options or "").splitlines() if item.strip()
+        ]
+        if verification_value in verification_allowed:
+            doc.verification_status = verification_value
+        elif verification_allowed:
+            # Use the safest non-assertive status rather than failing migration.
+            fallback = "يحتاج مراجعة / Needs Review"
+            doc.verification_status = fallback if fallback in verification_allowed else verification_allowed[0]
+            frappe.log_error(
+                title="WAFD hotel verification status normalization",
+                message=(
+                    f"Normalized invalid verification_status {verification_value!r} "
+                    f"for {hotel_name} to {doc.verification_status!r}. "
+                    f"Allowed: {verification_allowed}"
+                ),
+            )
         if row.get("distance_to_haram_km") not in (None, ""):
             doc.distance_to_haram_km = float(row["distance_to_haram_km"])
         doc.last_verified_on = nowdate()

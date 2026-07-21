@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import frappe
 
 
@@ -420,30 +423,28 @@ def before_migrate():
 
 def after_install():
     apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=True)
+    ensure_hotel_undertaking_print_format()
+    ensure_madinah_hotels_400()
     frappe.clear_cache()
 
 
 
 def ensure_hotel_undertaking_print_format():
-    """Force the safe undertaking template into every legacy matching format.
-
-    This deliberately runs after every migration because old sites may retain a
-    database copy of the Jinja template even after the standard JSON was synced.
-    """
+    """Force one safe template into every undertaking print format."""
     source = (
         Path(__file__).resolve().parent
-        / "wafd_one"
-        / "print_format"
-        / "wafd_hotel_undertaking"
+        / "wafd_one" / "print_format" / "wafd_hotel_undertaking"
         / "wafd_hotel_undertaking.json"
     )
     data = json.loads(source.read_text(encoding="utf-8"))
     canonical_name = data["name"]
     safe_html = data.get("html") or ""
+    forbidden = ("get_single", "frappe.get_doc", "frappe.db.sql")
+    if any(token in safe_html for token in forbidden):
+        raise RuntimeError("Unsafe server call found in undertaking template source")
 
-    if "get_single" in safe_html:
-        raise RuntimeError("Unsafe get_single call found in undertaking template source")
-
+    # Only touch formats that belong to this DocType. Never reassign unrelated
+    # formats merely because their HTML contains a similar token.
     names = set(
         frappe.get_all(
             "Print Format",
@@ -455,26 +456,96 @@ def ensure_hotel_undertaking_print_format():
 
     for name in names:
         if frappe.db.exists("Print Format", name):
-            doc = frappe.get_doc("Print Format", name)
-            # Repair the canonical format and every legacy copy that contains
-            # the removed unsafe call. This prevents the old URL/selection from
-            # continuing to open a broken database template.
-            if name != canonical_name and "get_single" not in (doc.html or ""):
-                continue
-            doc.html = safe_html
-            doc.doc_type = "WAFD Hotel Undertaking"
-            doc.custom_format = 1
-            doc.print_format_type = "Jinja"
-            doc.disabled = 0
-            doc.raw_printing = 0
-            doc.save(ignore_permissions=True)
+            frappe.db.set_value("Print Format", name, {
+                "html": safe_html,
+                "doc_type": "WAFD Hotel Undertaking",
+                "custom_format": 1,
+                "print_format_type": "Jinja",
+                "disabled": 0,
+                "raw_printing": 0,
+            }, update_modified=False)
         else:
             frappe.get_doc(data).insert(ignore_permissions=True)
 
+    if frappe.db.has_column("DocType", "default_print_format"):
+        frappe.db.set_value("DocType", "WAFD Hotel Undertaking", "default_print_format", canonical_name, update_modified=False)
+
+    unsafe_formats = frappe.get_all(
+        "Print Format",
+        filters={"doc_type": "WAFD Hotel Undertaking"},
+        fields=["name", "html"],
+    )
+    remaining = [
+        row.name
+        for row in unsafe_formats
+        if any(token in (row.html or "") for token in forbidden)
+    ]
+    if remaining:
+        raise RuntimeError(
+            "Hotel Undertaking repair incomplete; unsafe format(s): "
+            + ", ".join(remaining)
+        )
     frappe.clear_cache(doctype="Print Format")
+
+
+def ensure_madinah_hotels_400():
+    """Add all missing records from the reviewed 400-row file without deletion."""
+    import csv
+    from frappe.utils import nowdate
+    path = Path(__file__).resolve().parent / "reference_data" / "madinah_hotels_400_ota_review.csv"
+    if not path.exists():
+        raise RuntimeError(f"Hotel catalogue is missing: {path}")
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+
+    expected_names = []
+    seen = set()
+    for row in rows:
+        hotel_name = (row.get("hotel_name") or "").strip()
+        if not hotel_name or hotel_name in seen:
+            continue
+        seen.add(hotel_name)
+        expected_names.append(hotel_name)
+        existing = frappe.db.get_value("WAFD Hotel", {"hotel_name": hotel_name}, "name")
+        if existing:
+            doc = frappe.get_doc("WAFD Hotel", existing)
+            changed = False
+            for fieldname in ("city", "district", "address", "source_authority", "source_url"):
+                value = (row.get(fieldname) or "").strip()
+                if value and not doc.get(fieldname):
+                    doc.set(fieldname, value)
+                    changed = True
+            if not doc.get("verification_status"):
+                doc.verification_status = "يحتاج مراجعة / Needs Review"
+                changed = True
+            if changed:
+                doc.save(ignore_permissions=True)
+            continue
+
+        doc = frappe.new_doc("WAFD Hotel")
+        doc.hotel_name = hotel_name
+        doc.status = "نشط / Active"
+        doc.city = (row.get("city") or "المدينة المنورة").strip()
+        doc.district = (row.get("district") or "").strip()
+        doc.address = (row.get("address") or "").strip()
+        doc.verification_status = "يحتاج مراجعة / Needs Review"
+        doc.source_authority = (row.get("source_authority") or "").strip()
+        doc.source_url = (row.get("source_url") or "").strip()
+        doc.source_notes = (row.get("verification_status") or "").strip()
+        doc.last_verified_on = nowdate()
+        doc.insert(ignore_permissions=True)
+
+    if len(expected_names) != 400:
+        raise RuntimeError(f"Hotel catalogue must contain 400 unique names; found {len(expected_names)}")
+    installed = set(frappe.get_all("WAFD Hotel", filters={"hotel_name": ["in", expected_names]}, pluck="hotel_name"))
+    missing = [name for name in expected_names if name not in installed]
+    if missing:
+        raise RuntimeError(f"Hotel catalogue installation incomplete: {len(missing)} record(s) missing")
+    return {"catalogue_count": 400, "installed_count": len(installed)}
 
 def after_migrate():
     ensure_hotel_undertaking_print_format()
+    ensure_madinah_hotels_400()
     # The framework has already synchronized all application DocTypes before
     # this hook runs.  Re-sync only the administration console recovery path,
     # then rebuild navigation.  Avoid reloading every operational DocType a

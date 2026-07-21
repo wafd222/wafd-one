@@ -143,29 +143,14 @@ def install_master_data() -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def clear_reference_data(confirmation: str) -> dict:
-    """Delete reference data only. Fails safely when operations still link to it."""
+def clear_reference_data(confirmation: str = "") -> dict:
+    """Legacy endpoint permanently disabled from v6.3.0.
+
+    Kept only so cached clients cannot invoke an older destructive action.
+    """
     _check_admin_permission()
-    if (confirmation or "").strip() != CONFIRMATION_PHRASE:
-        frappe.throw(_("The confirmation phrase is incorrect."))
+    frappe.throw(
+        _("Reference-data deletion has been permanently disabled. Hotels, recipes, ingredients, and all operational records are protected."),
+        title=_("Protected operation"),
+    )
 
-    # This option is intentionally conservative: operational documents are not
-    # deleted. Standard Frappe link checks are not bypassed here; instead we
-    # refuse the action when any operational records exist.
-    operational = [d for d in RESET_ORDER if d not in REFERENCE_DOCTYPES and d not in {
-        "WAFD Invoice Item", "WAFD Meal Plan Item", "WAFD Production Material",
-        "WAFD Purchase Order Item", "WAFD Recipe Item", "WAFD Stock Movement Item",
-        "WAFD Project Hotel", "WAFD Project Service"
-    }]
-    operational_counts = _counts(operational)
-    blocking = {k: v for k, v in operational_counts.items() if v}
-    if blocking:
-        frappe.throw(_("Operational records still exist. Use Reset Demo Database instead."))
-
-    try:
-        deleted = _delete_doctypes(REFERENCE_DOCTYPES)
-        frappe.db.commit()
-    except Exception:
-        frappe.db.rollback()
-        raise
-    return {"deleted": deleted, "deleted_total": sum(deleted.values())}

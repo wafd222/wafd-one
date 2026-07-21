@@ -1,0 +1,5 @@
+﻿data_area,source_authority,source_url,usage,verification_rule
+Food composition and nutrients,USDA FoodData Central,https://fdc.nal.usda.gov/,Ingredient nutrient reference; public-domain data,Match exact food form and preparation state before use
+Recipe nutrient calculation,FAO/INFOODS,https://www.fao.org/infoods/infoods/en/,Yield and retention-aware recipe calculations,"Record raw weights, cooked yield, and retention factors"
+Healthy menu principles,World Health Organization,https://www.who.int/news-room/fact-sheets/detail/healthy-diet,"Menu review for salt, sugar, fat and food-group balance",Operational recipes remain company-specific and require chef approval
+Operational recipes,WAFD Al-Madinah Catering Services,,Standard recipes for 100 portions inside WAFD ONE,"Pilot-cook, weigh final yield, approve by chef and quality supervisor"

@@ -27,15 +27,51 @@ def _default_canvas(title, doctype):
         {"id":"footerline","type":"line","x":40,"y":1040,"w":700,"h":15,"z":1,"style":""},
     ]}
 
+def _stable_name(category):
+    return "WDT-" + category.upper().replace(" ", "-")
+
+
+def _ensure_template(title, doctype, category):
+    filters = {"template_title": title, "reference_doctype": doctype}
+    existing_name = frappe.db.get_value("WAFD Document Template", filters, "name")
+    if existing_name:
+        return existing_name
+
+    # Use a deterministic name in the migration patch. This avoids relying on
+    # DocType naming metadata while schema synchronization is still in progress,
+    # and makes the patch safe to run repeatedly.
+    stable_name = _stable_name(category)
+    if frappe.db.exists("WAFD Document Template", stable_name):
+        return stable_name
+
+    doc = frappe.get_doc({
+        "doctype": "WAFD Document Template",
+        "name": stable_name,
+        "template_title": title,
+        "reference_doctype": doctype,
+        "document_category": category,
+        "enabled": 1,
+        "is_default": 1 if category in {"Hotel Undertaking", "Contract", "Invoice"} else 0,
+        "page_size": "A4",
+        "orientation": "Portrait",
+        "direction": "RTL",
+        "margin_top_mm": 8,
+        "margin_right_mm": 8,
+        "margin_bottom_mm": 8,
+        "margin_left_mm": 8,
+        "canvas_json": json.dumps(_default_canvas(title, doctype), ensure_ascii=False),
+    })
+    doc.flags.name_set = True
+    doc.insert(ignore_permissions=True, ignore_if_duplicate=True)
+    return doc.name
+
+
 def execute():
     if not frappe.db.exists("DocType", "WAFD Document Template"):
         return
+
     for title, doctype, category in DOCUMENTS:
-        if not frappe.db.exists("DocType", doctype):
-            continue
-        name = frappe.db.get_value("WAFD Document Template", {"template_title": title, "reference_doctype": doctype}, "name")
-        if name:
-            continue
-        doc = frappe.get_doc({"doctype":"WAFD Document Template","template_title":title,"reference_doctype":doctype,"document_category":category,"enabled":1,"is_default":1 if category in {"Hotel Undertaking","Contract","Invoice"} else 0,"page_size":"A4","orientation":"Portrait","direction":"RTL","margin_top_mm":8,"margin_right_mm":8,"margin_bottom_mm":8,"margin_left_mm":8,"canvas_json":json.dumps(_default_canvas(title, doctype),ensure_ascii=False)})
-        doc.insert(ignore_permissions=True)
-    frappe.clear_cache()
+        if frappe.db.exists("DocType", doctype):
+            _ensure_template(title, doctype, category)
+
+    frappe.clear_cache(doctype="WAFD Document Template")

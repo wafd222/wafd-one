@@ -7,6 +7,7 @@ ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Project Mana
 ALLOWED_PAGE_SIZES = {"A4", "A5", "Letter"}
 ALLOWED_ORIENTATIONS = {"Portrait", "Landscape"}
 ALLOWED_DIRECTIONS = {"RTL", "LTR"}
+ALLOWED_BLOCK_TYPES = {"text", "field", "image", "logo", "stamp", "signature", "line", "table", "qr"}
 DANGEROUS_MARKUP = (
     "<script", "</style", "javascript:", "vbscript:", "expression(",
     "@import", "onerror=", "onload=", "onclick=", "onmouseover=",
@@ -62,7 +63,24 @@ def compile_template(template):
         w, h = max(_num(block.get("w"), 20), 5), max(_num(block.get("h"), 20), 5)
         z = int(_num(block.get("z"), 1))
         style = _safe_style(block.get("style"))
-        base = f"position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;z-index:{z};overflow:hidden;{style}"
+        font_family = escape(str(block.get("font_family") or "Arial"), quote=True)
+        font_size = max(min(_num(block.get("font_size"), 14), 200), 6)
+        color = escape(str(block.get("color") or "#111111"), quote=True)
+        background = escape(str(block.get("background") or "transparent"), quote=True)
+        opacity = max(min(_num(block.get("opacity"), 1), 1), 0)
+        rotation = max(min(_num(block.get("rotation"), 0), 360), -360)
+        formatting = ""
+        if block.get("bold"):
+            formatting += "font-weight:700;"
+        if block.get("italic"):
+            formatting += "font-style:italic;"
+        if block.get("underline"):
+            formatting += "text-decoration:underline;"
+        base = (
+            f"position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;z-index:{z};"
+            f"overflow:hidden;font-family:{font_family};font-size:{font_size}px;color:{color};"
+            f"background:{background};opacity:{opacity};transform:rotate({rotation}deg);{formatting}{style}"
+        )
         if btype in {"image", "logo", "stamp", "signature"}:
             src = escape(str(block.get("src") or getattr(template, btype, "") or ""), quote=True)
             content = f'<img src="{src}" alt="" style="width:100%;height:100%;object-fit:contain">' if src else ""
@@ -122,11 +140,28 @@ def save_template(template_name, canvas_json, page_settings=None):
     _check_access(write=True)
     doc = frappe.get_doc("WAFD Document Template", template_name)
     doc.check_permission("write")
-    payload = json.loads(canvas_json)
+    try:
+        payload = json.loads(canvas_json)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        frappe.throw(frappe._("Designer data is not valid JSON."))
     if not isinstance(payload, dict) or not isinstance(payload.get("blocks", []), list):
         frappe.throw(frappe._("Invalid designer payload."))
-    if len(payload.get("blocks", [])) > 250:
+    blocks = payload.get("blocks", [])
+    if len(blocks) > 250:
         frappe.throw(frappe._("A template cannot contain more than 250 elements."))
+    for index, block in enumerate(blocks, start=1):
+        if not isinstance(block, dict) or block.get("type") not in ALLOWED_BLOCK_TYPES:
+            frappe.throw(frappe._("Invalid element at position {0}.").format(index))
+        for key in ("x", "y", "w", "h", "z", "font_size", "opacity", "rotation"):
+            if key in block and not isinstance(block[key], (int, float)):
+                frappe.throw(frappe._("Invalid numeric value in element {0}.").format(index))
+        if _num(block.get("x"), 0) < 0 or _num(block.get("y"), 0) < 0:
+            frappe.throw(frappe._("Element positions cannot be negative."))
+        if _num(block.get("w"), 20) < 5 or _num(block.get("h"), 20) < 5:
+            frappe.throw(frappe._("Element dimensions are too small."))
+        # Compile once during validation to reject unsafe HTML/CSS before saving.
+        _assert_safe_markup(block.get("html") or "", frappe._("document element"))
+        _assert_safe_markup(block.get("style") or "", frappe._("CSS style"))
     doc.canvas_json = json.dumps(payload, ensure_ascii=False)
     if page_settings:
         settings = json.loads(page_settings)

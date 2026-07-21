@@ -561,7 +561,35 @@ def ensure_madinah_central_and_nearby_hotels():
         if not existing:
             doc.hotel_name = hotel_name
             doc.status = "نشط / Active"
-        for fieldname in ("hotel_name_en", "city", "district", "zone_type", "central_map_number", "central_sector", "source_map_edition", "proximity_band", "source_authority", "source_url", "verification_status", "source_notes"):
+        # Normalize controlled Select values before assigning them.  The
+        # geographic zone and the proximity band are intentionally separate:
+        # a hotel outside the formal central area can still be within 2 km.
+        zone_value = (row.get("zone_type") or "").strip()
+        zone_aliases = {
+            "قريب من المنطقة المركزية / Near Central": "خارج المنطقة المركزية / Outside Central Zone",
+            "داخل المنطقة المركزية / Central Area": "المنطقة المركزية / Central Zone",
+        }
+        zone_value = zone_aliases.get(zone_value, zone_value)
+        proximity_value = (row.get("proximity_band") or "").strip()
+
+        meta = frappe.get_meta("WAFD Hotel")
+        for fieldname, value in (
+            ("zone_type", zone_value),
+            ("proximity_band", proximity_value),
+        ):
+            if not value:
+                continue
+            field = meta.get_field(fieldname)
+            allowed = [item.strip() for item in (field.options or "").splitlines() if item.strip()]
+            if value not in allowed:
+                frappe.log_error(
+                    title="WAFD hotel catalogue Select normalization",
+                    message=f"Skipped invalid {fieldname} value {value!r} for {hotel_name}. Allowed: {allowed}",
+                )
+                continue
+            doc.set(fieldname, value)
+
+        for fieldname in ("hotel_name_en", "city", "district", "central_map_number", "central_sector", "source_map_edition", "source_authority", "source_url", "verification_status", "source_notes"):
             value = (row.get(fieldname) or "").strip()
             if value:
                 doc.set(fieldname, value)

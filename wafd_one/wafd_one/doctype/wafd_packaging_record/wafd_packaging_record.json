@@ -1,216 +1,218 @@
 {
- "doctype": "DocType",
- "name": "WAFD Packaging Record",
- "module": "WAFD ONE",
- "autoname": "format:PKG-{YYYY}-{#####}",
- "engine": "InnoDB",
- "track_changes": 1,
- "title_field": "production_batch",
- "search_fields": "project,production_batch,meal_plan,status",
- "field_order": [
-  "project",
-  "production_batch",
-  "meal_plan",
-  "section_break_1",
-  "packaging_date",
-  "start_time",
-  "end_time",
-  "status",
-  "column_break_1",
-  "planned_quantity",
-  "packed_quantity",
-  "rejected_quantity",
-  "completion_percent",
-  "section_break_2",
-  "box_count",
-  "units_per_box",
-  "package_type",
-  "label_verified",
-  "section_break_3",
-  "supervisor",
-  "team",
-  "packaging_photo",
-  "notes"
- ],
- "fields": [
-  {
-   "fieldname": "project",
-   "label": "المشروع / Project",
-   "fieldtype": "Link",
-   "options": "WAFD Catering Project",
-   "reqd": 1
-  },
-  {
-   "fieldname": "production_batch",
-   "label": "دفعة الإنتاج / Production Batch",
-   "fieldtype": "Link",
-   "options": "WAFD Production Batch",
-   "reqd": 1
-  },
-  {
-   "fieldname": "meal_plan",
-   "label": "خطة الوجبة / Meal Plan",
-   "fieldtype": "Link",
-   "options": "WAFD Meal Plan",
-   "reqd": 1
-  },
-  {
-   "fieldname": "section_break_1",
-   "label": "بيانات التشغيل / Operation",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "packaging_date",
-   "label": "تاريخ التغليف / Packaging Date",
-   "fieldtype": "Date",
-   "reqd": 1
-  },
-  {
-   "fieldname": "start_time",
-   "label": "وقت البدء / Start Time",
-   "fieldtype": "Datetime"
-  },
-  {
-   "fieldname": "end_time",
-   "label": "وقت الانتهاء / End Time",
-   "fieldtype": "Datetime"
-  },
-  {
-   "fieldname": "status",
-   "label": "الحالة / Status",
-   "fieldtype": "Select",
-   "options": "مخطط / Planned\nقيد التغليف / In Progress\nمكتمل / Completed\nموقوف / Stopped",
-   "reqd": 1,
-   "default": "مخطط / Planned"
-  },
-  {
-   "fieldname": "column_break_1",
-   "label": "",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "planned_quantity",
-   "label": "الكمية المخططة / Planned Qty",
-   "fieldtype": "Int",
-   "reqd": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "packed_quantity",
-   "label": "الكمية المغلفة / Packed Qty",
-   "fieldtype": "Int",
-   "reqd": 1
-  },
-  {
-   "fieldname": "rejected_quantity",
-   "label": "المرفوض أثناء التغليف / Rejected Qty",
-   "fieldtype": "Int"
-  },
-  {
-   "fieldname": "completion_percent",
-   "label": "نسبة الإنجاز / Completion %",
-   "fieldtype": "Percent",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_2",
-   "label": "التعبئة والصناديق / Packing",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "box_count",
-   "label": "عدد الصناديق / Box Count",
-   "fieldtype": "Int"
-  },
-  {
-   "fieldname": "units_per_box",
-   "label": "وجبات لكل صندوق / Units per Box",
-   "fieldtype": "Int"
-  },
-  {
-   "fieldname": "package_type",
-   "label": "نوع العبوة / Package Type",
-   "fieldtype": "Data"
-  },
-  {
-   "fieldname": "label_verified",
-   "label": "تم التحقق من الملصقات / Labels Verified",
-   "fieldtype": "Check"
-  },
-  {
-   "fieldname": "section_break_3",
-   "label": "الفريق والإثبات / Team & Evidence",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "supervisor",
-   "label": "مشرف التغليف / Supervisor",
-   "fieldtype": "Link",
-   "options": "User"
-  },
-  {
-   "fieldname": "team",
-   "label": "فريق التغليف / Packaging Team",
-   "fieldtype": "Small Text"
-  },
-  {
-   "fieldname": "packaging_photo",
-   "label": "صورة التغليف / Packaging Photo",
-   "fieldtype": "Attach Image"
-  },
-  {
-   "fieldname": "notes",
-   "label": "ملاحظات / Notes",
-   "fieldtype": "Small Text"
-  }
- ],
- "permissions": [
-  {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Operations Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Production Supervisor",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Quality Inspector",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC"
+  "doctype": "DocType",
+  "name": "WAFD Packaging Record",
+  "module": "WAFD ONE",
+  "autoname": "format:PKG-{YYYY}-{#####}",
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "title_field": "production_batch",
+  "search_fields": "project,production_batch,meal_plan,status",
+  "field_order": [
+    "project",
+    "production_batch",
+    "meal_plan",
+    "section_break_1",
+    "packaging_date",
+    "start_time",
+    "end_time",
+    "status",
+    "column_break_1",
+    "planned_quantity",
+    "packed_quantity",
+    "rejected_quantity",
+    "completion_percent",
+    "section_break_2",
+    "box_count",
+    "units_per_box",
+    "package_type",
+    "label_verified",
+    "section_break_3",
+    "supervisor",
+    "team",
+    "packaging_photo",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "project",
+      "label": "المشروع / Project",
+      "fieldtype": "Link",
+      "options": "WAFD Catering Project",
+      "reqd": 1
+    },
+    {
+      "fieldname": "production_batch",
+      "label": "دفعة الإنتاج / Production Batch",
+      "fieldtype": "Link",
+      "options": "WAFD Production Batch",
+      "reqd": 1
+    },
+    {
+      "fieldname": "meal_plan",
+      "label": "خطة الوجبة / Meal Plan",
+      "fieldtype": "Link",
+      "options": "WAFD Meal Plan",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_break_1",
+      "label": "بيانات التشغيل / Operation",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "packaging_date",
+      "label": "تاريخ التغليف / Packaging Date",
+      "fieldtype": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "start_time",
+      "label": "وقت البدء / Start Time",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "end_time",
+      "label": "وقت الانتهاء / End Time",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "status",
+      "label": "الحالة / Status",
+      "fieldtype": "Select",
+      "options": "مخطط / Planned\nقيد التغليف / In Progress\nمكتمل / Completed\nموقوف / Stopped",
+      "reqd": 1,
+      "default": "مخطط / Planned"
+    },
+    {
+      "fieldname": "column_break_1",
+      "label": "",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "planned_quantity",
+      "label": "الكمية المخططة / Planned Qty",
+      "fieldtype": "Int",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "packed_quantity",
+      "label": "الكمية المغلفة / Packed Qty",
+      "fieldtype": "Int",
+      "reqd": 1
+    },
+    {
+      "fieldname": "rejected_quantity",
+      "label": "المرفوض أثناء التغليف / Rejected Qty",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "completion_percent",
+      "label": "نسبة الإنجاز / Completion %",
+      "fieldtype": "Percent",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_2",
+      "label": "التعبئة والصناديق / Packing",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "box_count",
+      "label": "عدد الصناديق / Box Count",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "units_per_box",
+      "label": "وجبات لكل صندوق / Units per Box",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "package_type",
+      "label": "نوع العبوة / Package Type",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "label_verified",
+      "label": "تم التحقق من الملصقات / Labels Verified",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "section_break_3",
+      "label": "الفريق والإثبات / Team & Evidence",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "supervisor",
+      "label": "مشرف التغليف / Supervisor",
+      "fieldtype": "Link",
+      "options": "User"
+    },
+    {
+      "fieldname": "team",
+      "label": "فريق التغليف / Packaging Team",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "packaging_photo",
+      "label": "صورة التغليف / Packaging Photo",
+      "fieldtype": "Attach Image"
+    },
+    {
+      "fieldname": "notes",
+      "label": "ملاحظات / Notes",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Quality Inspector",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "modified": "2026-07-21 16:00:00.000000",
+  "creation": "2026-07-21 16:00:00.000000"
 }

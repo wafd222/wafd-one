@@ -5,6 +5,7 @@ import csv
 import json
 import re
 import tomllib
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,14 @@ def main() -> None:
     for path in ROOT.rglob("*.json"):
         doc = json.loads(path.read_text(encoding="utf-8"))
         json_docs.append((path, doc))
+        if isinstance(doc, dict) and doc.get("doctype") in {
+            "DocType", "Workspace", "Page", "Report", "Print Format",
+            "Dashboard Chart", "Number Card",
+        }:
+            for fieldname in ("creation", "modified"):
+                value = doc.get(fieldname)
+                assert value, f"Blank {fieldname} metadata in {path}"
+                datetime.fromisoformat(value)
 
     required = {
         "WAFD Invoice", "WAFD Invoice Item", "WAFD Payment",
@@ -61,6 +70,7 @@ def main() -> None:
 
     patch_lines = [line.strip() for line in (ROOT / "wafd_one/patches.txt").read_text().splitlines()]
     assert "wafd_one.patches.v6_3_2.execute" in patch_lines
+    assert "wafd_one.patches.v6_4_0.execute" in patch_lines
     assert "frappe.utils" not in html
     setup_text = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
     assert "ensure_hotel_undertaking_print_format()" in setup_text

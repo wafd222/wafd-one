@@ -423,7 +423,58 @@ def after_install():
     frappe.clear_cache()
 
 
+
+def ensure_hotel_undertaking_print_format():
+    """Force the safe undertaking template into every legacy matching format.
+
+    This deliberately runs after every migration because old sites may retain a
+    database copy of the Jinja template even after the standard JSON was synced.
+    """
+    source = (
+        Path(__file__).resolve().parent
+        / "wafd_one"
+        / "print_format"
+        / "wafd_hotel_undertaking"
+        / "wafd_hotel_undertaking.json"
+    )
+    data = json.loads(source.read_text(encoding="utf-8"))
+    canonical_name = data["name"]
+    safe_html = data.get("html") or ""
+
+    if "get_single" in safe_html:
+        raise RuntimeError("Unsafe get_single call found in undertaking template source")
+
+    names = set(
+        frappe.get_all(
+            "Print Format",
+            filters={"doc_type": "WAFD Hotel Undertaking"},
+            pluck="name",
+        )
+    )
+    names.add(canonical_name)
+
+    for name in names:
+        if frappe.db.exists("Print Format", name):
+            doc = frappe.get_doc("Print Format", name)
+            # Repair the canonical format and every legacy copy that contains
+            # the removed unsafe call. This prevents the old URL/selection from
+            # continuing to open a broken database template.
+            if name != canonical_name and "get_single" not in (doc.html or ""):
+                continue
+            doc.html = safe_html
+            doc.doc_type = "WAFD Hotel Undertaking"
+            doc.custom_format = 1
+            doc.print_format_type = "Jinja"
+            doc.disabled = 0
+            doc.raw_printing = 0
+            doc.save(ignore_permissions=True)
+        else:
+            frappe.get_doc(data).insert(ignore_permissions=True)
+
+    frappe.clear_cache(doctype="Print Format")
+
 def after_migrate():
+    ensure_hotel_undertaking_print_format()
     # The framework has already synchronized all application DocTypes before
     # this hook runs.  Re-sync only the administration console recovery path,
     # then rebuild navigation.  Avoid reloading every operational DocType a

@@ -60,7 +60,10 @@ def main() -> None:
     assert len(names) == len(set(names)), "Exact duplicate hotel names found"
 
     patch_lines = [line.strip() for line in (ROOT / "wafd_one/patches.txt").read_text().splitlines()]
-    assert "wafd_one.patches.v6_3_1.execute" in patch_lines
+    assert "wafd_one.patches.v6_3_2.execute" in patch_lines
+    assert "frappe.utils" not in html
+    setup_text = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
+    assert "ensure_hotel_undertaking_print_format()" in setup_text
 
     print(f"WAFD ONE {version} release validation passed")
 

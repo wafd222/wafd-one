@@ -56,3 +56,5 @@ wafd_one.patches.v6_2_0.execute
 wafd_one.patches.v6_3_0.execute
 
 wafd_one.patches.v6_3_1.execute
+
+wafd_one.patches.v6_3_2.execute

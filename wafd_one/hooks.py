@@ -24,7 +24,24 @@ after_migrate = "wafd_one.setup.after_migrate"
 page_js = {
     "wafd-one-dashboard": "public/js/wafd_one_dashboard.js",
 }
+
+page_css = {
+    "wafd-document-studio": "wafd_one/page/wafd_document_studio/wafd_document_studio.css",
+}
 app_include_css = ["/assets/wafd_one/css/wafd_one_dashboard.css"]
+
+
+doctype_js = {
+    "WAFD Hotel Undertaking": "public/js/document_studio_form.js",
+    "WAFD Contract": "public/js/document_studio_form.js",
+    "WAFD Invoice": "public/js/document_studio_form.js",
+    "WAFD Catering Project": "public/js/document_studio_form.js",
+    "WAFD Production Batch": "public/js/document_studio_form.js",
+    "WAFD Meal Plan": "public/js/document_studio_form.js",
+    "WAFD Loading Record": "public/js/document_studio_form.js",
+    "WAFD Delivery Proof": "public/js/document_studio_form.js",
+    "WAFD Mission": "public/js/document_studio_form.js",
+}
 
 
 doc_events = {

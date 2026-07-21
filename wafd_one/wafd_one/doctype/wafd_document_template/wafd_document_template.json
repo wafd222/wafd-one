@@ -1,0 +1,215 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:WDT-.#####",
+  "creation": "2026-07-21 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "template_title",
+    "reference_doctype",
+    "document_category",
+    "enabled",
+    "is_default",
+    "design_section",
+    "page_size",
+    "orientation",
+    "direction",
+    "column_break_1",
+    "margin_top_mm",
+    "margin_right_mm",
+    "margin_bottom_mm",
+    "margin_left_mm",
+    "assets_section",
+    "logo",
+    "stamp",
+    "signature",
+    "content_section",
+    "canvas_json",
+    "custom_css",
+    "compiled_html",
+    "revision"
+  ],
+  "fields": [
+    {
+      "fieldname": "template_title",
+      "fieldtype": "Data",
+      "label": "Template Title",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "reference_doctype",
+      "fieldtype": "Link",
+      "label": "Reference DocType",
+      "options": "DocType",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "document_category",
+      "fieldtype": "Select",
+      "label": "Document Category",
+      "options": "Hotel Undertaking\nContract\nQuotation\nInvoice\nOperation Order\nProduction Order\nPreparation Order\nLoading Order\nDelivery Note\nCertificate\nReport\nOther",
+      "default": "Other"
+    },
+    {
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled",
+      "default": "1",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "is_default",
+      "fieldtype": "Check",
+      "label": "Default Template",
+      "default": "0",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "design_section",
+      "fieldtype": "Section Break",
+      "label": "Page Design"
+    },
+    {
+      "fieldname": "page_size",
+      "fieldtype": "Select",
+      "label": "Page Size",
+      "options": "A4\nA5\nLetter",
+      "default": "A4"
+    },
+    {
+      "fieldname": "orientation",
+      "fieldtype": "Select",
+      "label": "Orientation",
+      "options": "Portrait\nLandscape",
+      "default": "Portrait"
+    },
+    {
+      "fieldname": "direction",
+      "fieldtype": "Select",
+      "label": "Text Direction",
+      "options": "RTL\nLTR",
+      "default": "RTL"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "margin_top_mm",
+      "fieldtype": "Float",
+      "label": "Top Margin (mm)",
+      "default": "10"
+    },
+    {
+      "fieldname": "margin_right_mm",
+      "fieldtype": "Float",
+      "label": "Right Margin (mm)",
+      "default": "10"
+    },
+    {
+      "fieldname": "margin_bottom_mm",
+      "fieldtype": "Float",
+      "label": "Bottom Margin (mm)",
+      "default": "10"
+    },
+    {
+      "fieldname": "margin_left_mm",
+      "fieldtype": "Float",
+      "label": "Left Margin (mm)",
+      "default": "10"
+    },
+    {
+      "fieldname": "assets_section",
+      "fieldtype": "Section Break",
+      "label": "Brand Assets"
+    },
+    {
+      "fieldname": "logo",
+      "fieldtype": "Attach Image",
+      "label": "Logo"
+    },
+    {
+      "fieldname": "stamp",
+      "fieldtype": "Attach Image",
+      "label": "Stamp"
+    },
+    {
+      "fieldname": "signature",
+      "fieldtype": "Attach Image",
+      "label": "Signature"
+    },
+    {
+      "fieldname": "content_section",
+      "fieldtype": "Section Break",
+      "label": "Designer Data"
+    },
+    {
+      "fieldname": "canvas_json",
+      "fieldtype": "Code",
+      "label": "Canvas JSON",
+      "options": "JSON",
+      "hidden": 1
+    },
+    {
+      "fieldname": "custom_css",
+      "fieldtype": "Code",
+      "label": "Custom CSS",
+      "options": "CSS"
+    },
+    {
+      "fieldname": "compiled_html",
+      "fieldtype": "Code",
+      "label": "Compiled HTML",
+      "options": "HTML",
+      "read_only": 1
+    },
+    {
+      "fieldname": "revision",
+      "fieldtype": "Int",
+      "label": "Revision",
+      "default": "1",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-21 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Document Template",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Operations Manager",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "WAFD Project Manager"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

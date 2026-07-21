@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import add_days, flt, getdate, nowdate
+from frappe.utils import add_days, cint, flt, getdate, nowdate
 
 
 def _scalar(query, values=None):
@@ -565,3 +565,117 @@ def get_dashboard_data(from_date=None, to_date=None):
         "upcoming_deliveries": upcoming_deliveries,
         "overdue_invoices": overdue_invoices,
     }
+
+@frappe.whitelist()
+def finance_integrity_check(project_name=None, repair=False):
+    """Reconcile delivery billing, invoice balances and project rollups.
+
+    The check is read-only by default. With ``repair=1`` it recalculates invoice
+    balances/statuses and project financial summaries using authoritative records.
+    It never creates, deletes, confirms or cancels financial documents.
+    """
+    if "System Manager" not in frappe.get_roles() and "WAFD Finance User" not in frappe.get_roles():
+        frappe.throw("غير مصرح / Not permitted", frappe.PermissionError)
+
+    project_filter = " and i.project=%s" if project_name else ""
+    values = (project_name,) if project_name else ()
+
+    over_invoiced = frappe.db.sql(
+        f"""select ii.meal_plan, i.project,
+                   coalesce(sum(ii.delivered_quantity), 0) invoiced_quantity,
+                   coalesce((
+                       select sum(dp.received_quantity)
+                       from `tabWAFD Delivery Proof` dp
+                       where dp.meal_plan=ii.meal_plan
+                         and dp.project=i.project
+                         and dp.status in ('مقبول بالكامل / Fully Accepted',
+                                           'مقبول جزئياً / Partially Accepted')
+                   ), 0) accepted_quantity
+            from `tabWAFD Invoice Item` ii
+            inner join `tabWAFD Invoice` i on i.name=ii.parent
+            where ii.parenttype='WAFD Invoice'
+              and ii.parentfield='items'
+              and i.status!='ملغاة / Cancelled'
+              and ifnull(ii.meal_plan, '')!=''{project_filter}
+            group by ii.meal_plan, i.project
+            having invoiced_quantity > accepted_quantity + 0.005""",
+        values,
+        as_dict=True,
+    )
+
+    invoice_mismatches = frappe.db.sql(
+        f"""select i.name, i.project, i.grand_total, i.paid_amount, i.balance,
+                   coalesce(sum(case when p.status='معتمد / Confirmed' then p.amount else 0 end), 0)
+                       confirmed_paid
+            from `tabWAFD Invoice` i
+            left join `tabWAFD Payment` p on p.invoice=i.name
+            where i.status!='ملغاة / Cancelled'{project_filter}
+            group by i.name, i.project, i.grand_total, i.paid_amount, i.balance
+            having abs(i.paid_amount-confirmed_paid) > 0.005
+                or abs(i.balance-greatest(i.grand_total-confirmed_paid, 0)) > 0.005""",
+        values,
+        as_dict=True,
+    )
+
+    payment_overruns = frappe.db.sql(
+        f"""select i.name invoice, i.project, i.grand_total,
+                   coalesce(sum(p.amount), 0) confirmed_paid
+            from `tabWAFD Invoice` i
+            inner join `tabWAFD Payment` p on p.invoice=i.name
+              and p.status='معتمد / Confirmed'
+            where i.status!='ملغاة / Cancelled'{project_filter}
+            group by i.name, i.project, i.grand_total
+            having confirmed_paid > i.grand_total + 0.005""",
+        values,
+        as_dict=True,
+    )
+
+    duplicate_invoice_plans = frappe.db.sql(
+        f"""select i.name invoice, i.project, ii.meal_plan, count(*) row_count
+            from `tabWAFD Invoice Item` ii
+            inner join `tabWAFD Invoice` i on i.name=ii.parent
+            where ii.parenttype='WAFD Invoice'
+              and ii.parentfield='items'
+              and i.status!='ملغاة / Cancelled'
+              and ifnull(ii.meal_plan, '')!=''{project_filter}
+            group by i.name, i.project, ii.meal_plan
+            having count(*) > 1""",
+        values,
+        as_dict=True,
+    )
+
+    repaired_invoices = []
+    repaired_projects = []
+    if cint(repair):
+        invoice_names = frappe.db.get_all(
+            "WAFD Invoice",
+            filters={
+                "status": ["!=", "ملغاة / Cancelled"],
+                **({"project": project_name} if project_name else {}),
+            },
+            pluck="name",
+        )
+        for invoice_name in invoice_names:
+            refresh_invoice_and_project(invoice_name)
+            repaired_invoices.append(invoice_name)
+
+        project_names = [project_name] if project_name else frappe.db.get_all(
+            "WAFD Catering Project",
+            filters={"status": ["!=", "ملغي / Cancelled"]},
+            pluck="name",
+        )
+        for name in project_names:
+            refresh_project_financials(name)
+            repaired_projects.append(name)
+
+    result = {
+        "ok": not any((over_invoiced, invoice_mismatches, payment_overruns, duplicate_invoice_plans)),
+        "project": project_name,
+        "over_invoiced_delivery_plans": over_invoiced,
+        "invoice_balance_mismatches": invoice_mismatches,
+        "payment_overruns": payment_overruns,
+        "duplicate_invoice_meal_plans": duplicate_invoice_plans,
+        "repaired_invoices": repaired_invoices,
+        "repaired_projects": repaired_projects,
+    }
+    return result

@@ -5,11 +5,17 @@ from frappe.utils import flt, getdate, nowdate
 
 class WAFDPayment(Document):
     def validate(self):
-        from wafd_one.governance import ensure_approved
-        if self.status == "معتمد / Confirmed" and not self.is_new():
-            previous = self.get_doc_before_save()
-            if previous and previous.status != self.status:
-                ensure_approved(self, "اعتماد التحصيل / payment confirmation")
+        from wafd_one.governance import approval_required, ensure_approved
+        if self.status == "معتمد / Confirmed":
+            if self.is_new() and approval_required(self):
+                frappe.throw(
+                    "احفظ التحصيل كمسودة أولاً ثم أنشئ طلب اعتماد / "
+                    "Save the payment as a draft before requesting approval"
+                )
+            if not self.is_new():
+                previous = self.get_doc_before_save()
+                if previous and previous.status != self.status:
+                    ensure_approved(self, "اعتماد التحصيل / payment confirmation")
         if not self.payment_date:
             self.payment_date = nowdate()
         if not self.invoice:

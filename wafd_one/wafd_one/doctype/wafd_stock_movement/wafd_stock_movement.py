@@ -168,6 +168,8 @@ def post_movement(movement_name):
     if doc.reference_type == "WAFD Purchase Order" and doc.reference_name:
         from wafd_one.wafd_one.doctype.wafd_purchase_order.wafd_purchase_order import sync_purchase_order_receipts
         sync_purchase_order_receipts(doc.reference_name)
+    from wafd_one.costing import refresh_costs_after_stock_movement
+    refresh_costs_after_stock_movement(doc)
     if doc.production_batch and frappe.db.exists("WAFD Production Batch", doc.production_batch):
         frappe.db.set_value(
             "WAFD Production Batch", doc.production_batch,

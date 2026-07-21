@@ -50,3 +50,5 @@ wafd_one.patches.v5_9_0.execute
 wafd_one.patches.v6_0_0.execute
 
 wafd_one.patches.v6_0_1.execute
+
+wafd_one.patches.v6_2_0.execute

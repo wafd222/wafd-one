@@ -51,34 +51,11 @@ frappe.ui.form.on("WAFD Administration Console", {
     });
   },
 
-  reset_database(frm) {
-    const confirmation = String(frm.doc.confirmation_phrase || "").trim();
-    if (confirmation !== "RESET WAFD ONE") {
-      frappe.msgprint(__("Type RESET WAFD ONE exactly before continuing."));
-      return;
-    }
-
-    frappe.confirm(__("This will permanently delete all WAFD operational and reference records. Continue?"), () => {
-      frappe.call({
-        method: "wafd_one.administration.reset_demo_database",
-        type: "POST",
-        args: {
-          confirmation,
-          reload_master_data: frm.doc.reload_master_data ? 1 : 0,
-        },
-        freeze: true,
-        freeze_message: __("Resetting WAFD ONE data..."),
-        callback(r) {
-          const data = r.message || {};
-          frappe.msgprint({
-            title: __("Reset completed"),
-            indicator: "green",
-            message: `${__("Deleted records")}: ${Number(data.deleted_total || 0)}<br>${__("Created reference records")}: ${Number(data.created_total || 0)}`,
-          });
-          frm.set_value("confirmation_phrase", "");
-          frm.trigger("load_summary");
-        },
-      });
+  reset_database() {
+    frappe.msgprint({
+      title: __("Protected operation"),
+      indicator: "orange",
+      message: __("Data reset is disabled. This button never deletes hotels, recipes, projects, or operational records. Use Install Missing Master Data to add only missing reference records."),
     });
   },
 });

@@ -110,34 +110,18 @@ def _delete_doctypes(doctypes: list[str]) -> dict[str, int]:
 
 
 @frappe.whitelist(methods=["POST"])
-def reset_demo_database(confirmation: str, reload_master_data: int | str = 1) -> dict:
-    """Delete all WAFD records and optionally reinstall reference master data.
+def reset_demo_database(confirmation: str = "", reload_master_data: int | str = 1) -> dict:
+    """Legacy endpoint retained only to prevent accidental destructive resets.
 
-    This deliberately leaves users, roles, permissions, workspaces, DocTypes,
-    translations, system settings and all non-WAFD application data untouched.
+    From v6.2.0 this action never deletes data. Existing sites or cached clients
+    that still call the old method receive a clear error and must use the safe
+    missing-master-data installer instead.
     """
     _check_admin_permission()
-    if (confirmation or "").strip() != CONFIRMATION_PHRASE:
-        frappe.throw(_("The confirmation phrase is incorrect."))
-
-    try:
-        deleted = _delete_doctypes(RESET_ORDER)
-        created = {}
-        if cint(reload_master_data):
-            created = load_reference_master_data()
-        frappe.db.commit()
-    except Exception:
-        frappe.db.rollback()
-        frappe.log_error(frappe.get_traceback(), "WAFD ONE database reset failed")
-        raise
-
-    return {
-        "deleted": deleted,
-        "deleted_total": sum(deleted.values()),
-        "created": created,
-        "created_total": sum(created.values()) if created else 0,
-        "message": _("WAFD ONE data was reset successfully."),
-    }
+    frappe.throw(
+        _("Data reset has been permanently disabled to protect hotels, recipes, projects, and operational records. Use Install Missing Master Data instead."),
+        title=_("Protected operation"),
+    )
 
 
 @frappe.whitelist(methods=["POST"])

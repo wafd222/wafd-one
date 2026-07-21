@@ -12,15 +12,13 @@
     "section_master",
     "install_master_data",
     "section_reset",
-    "confirmation_phrase",
-    "reload_master_data",
     "reset_database"
   ],
   "fields": [
     {
       "fieldname": "warning_html",
       "fieldtype": "HTML",
-      "options": "<div class=\"alert alert-warning\"><strong>منطقة إدارة مقيدة</strong><br>إعادة التهيئة تحذف سجلات WAFD ONE التشغيلية والمرجعية فقط. لا يتم حذف المستخدمين أو الأدوار أو الصلاحيات أو إعدادات النظام.</div>"
+      "options": "<div class=\"alert alert-success\"><strong>حماية البيانات مفعلة</strong><br>إعادة تهيئة البيانات معطلة نهائياً. لن يتم حذف الفنادق أو الوصفات أو المشاريع أو الحركات. استخدم تثبيت البيانات المرجعية الناقصة لإضافة السجلات المفقودة فقط.</div>"
     },
     {
       "fieldname": "section_summary",
@@ -49,30 +47,19 @@
     {
       "fieldname": "section_reset",
       "fieldtype": "Section Break",
-      "label": "إعادة تهيئة بيانات WAFD ONE"
-    },
-    {
-      "description": "اكتب العبارة الإنجليزية كما هي تمامًا: RESET WAFD ONE",
-      "fieldname": "confirmation_phrase",
-      "fieldtype": "Data",
-      "label": "عبارة التأكيد"
-    },
-    {
-      "default": "1",
-      "fieldname": "reload_master_data",
-      "fieldtype": "Check",
-      "label": "إعادة تثبيت البيانات المرجعية بعد التهيئة"
+      "label": "حماية البيانات من الحذف"
     },
     {
       "fieldname": "reset_database",
       "fieldtype": "Button",
-      "label": "إعادة تهيئة بيانات WAFD ONE"
+      "label": "إعادة التهيئة معطلة لحماية البيانات",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 1,
   "issingle": 1,
   "links": [],
-  "modified": "2026-07-18 00:00:00.000000",
+  "modified": "2026-07-21 13:00:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Administration Console",

@@ -28,6 +28,7 @@ ALL_DOCTYPE_FILES = (
     "wafd_recipe_item",
     "wafd_stock_movement_item",
     "wafd_food_safety_settings",
+    "wafd_finance_settings",
     "wafd_governance_settings",
     "wafd_approval_request",
     "wafd_audit_event",

@@ -1,5 +1,30 @@
 import frappe
-from frappe.utils import add_days, cint, flt, getdate, nowdate
+from frappe.utils import add_days, cint, flt, getdate, now_datetime, nowdate
+
+
+
+def get_finance_settings():
+    """Return safe finance defaults even during first migration."""
+    defaults = {
+        "default_tax_rate": 15.0,
+        "default_due_days": 30,
+        "minimum_auto_invoice_amount": 0.0,
+        "auto_create_delivery_invoices": 0,
+        "auto_mark_overdue": 1,
+        "overdue_alert_days": 1,
+        "require_reference_for_non_cash": 1,
+    }
+    if not frappe.db.exists("DocType", "WAFD Finance Settings"):
+        return defaults
+    try:
+        doc = frappe.get_single("WAFD Finance Settings")
+        for key in defaults:
+            value = doc.get(key)
+            if value is not None:
+                defaults[key] = value
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD Finance Settings Read")
+    return defaults
 
 
 def _scalar(query, values=None):
@@ -222,9 +247,12 @@ def get_financial_intelligence(project_name=None, as_of_date=None):
 
 
 @frappe.whitelist()
-def create_invoice_from_deliveries(project_name, tax_rate=15, due_date=None):
+def create_invoice_from_deliveries(project_name, tax_rate=None, due_date=None):
     project = frappe.get_doc("WAFD Catering Project", project_name)
     project.check_permission("write")
+    settings = get_finance_settings()
+    tax_rate = flt(settings["default_tax_rate"] if tax_rate in (None, "") else tax_rate)
+    due_date = due_date or add_days(nowdate(), cint(settings["default_due_days"]))
     rows = _get_billable_delivery_rows(project_name)
     if not rows:
         frappe.throw("لا توجد كميات مسلمة قابلة للفوترة / No delivered quantities to invoice")
@@ -749,8 +777,73 @@ def close_project_financially(project_name):
     return get_project_billing_status(project_name)
 
 
+def _upsert_overdue_alert(invoice_name, project_name, due_date, balance, overdue_days):
+    if not frappe.db.exists("DocType", "WAFD Operations Alert"):
+        return
+    key = f"finance-overdue::{invoice_name}"
+    message = (
+        f"فاتورة متأخرة {invoice_name} برصيد {flt(balance, 2)} منذ {overdue_days} يوم / "
+        f"Invoice {invoice_name} is overdue by {overdue_days} day(s), balance {flt(balance, 2)}"
+    )
+    existing = frappe.db.get_value(
+        "WAFD Operations Alert", {"deduplication_key": key, "status": ["!=", "مغلق / Closed"]}, "name"
+    )
+    values = {
+        "alert_type": "فاتورة متأخرة / Overdue Invoice",
+        "severity": "مرتفع / High" if overdue_days <= 30 else "حرج / Critical",
+        "status": "مفتوح / Open",
+        "alert_date": now_datetime(),
+        "project": project_name,
+        "reference_doctype": "WAFD Invoice",
+        "reference_name": invoice_name,
+        "message": message,
+        "recommended_action": "متابعة التحصيل وتوثيق الإجراء / Follow up collection and document the action",
+        "deduplication_key": key,
+    }
+    if existing:
+        frappe.db.set_value("WAFD Operations Alert", existing, values, update_modified=False)
+    else:
+        frappe.get_doc({"doctype": "WAFD Operations Alert", **values}).insert(ignore_permissions=True)
+
+
+def auto_create_delivery_invoices():
+    """Create one safe draft invoice per project for currently uninvoiced accepted deliveries."""
+    settings = get_finance_settings()
+    if not cint(settings["auto_create_delivery_invoices"]):
+        return {"created": [], "skipped": []}
+    created, skipped = [], []
+    projects = frappe.get_all(
+        "WAFD Catering Project",
+        filters={"status": ["in", ["نشط / Active", "مكتمل / Completed"]]},
+        pluck="name",
+    )
+    for project_name in projects:
+        rows = _get_billable_delivery_rows(project_name)
+        if not rows:
+            continue
+        estimated_subtotal = sum(
+            flt(row.delivered_quantity) * (flt(row.unit_price) or resolve_unit_price(project_name, row.name, row.meal_type))
+            for row in rows
+        )
+        if estimated_subtotal <= 0 or estimated_subtotal < flt(settings["minimum_auto_invoice_amount"]):
+            skipped.append(project_name)
+            continue
+        try:
+            invoice_name = create_invoice_from_deliveries(
+                project_name,
+                tax_rate=settings["default_tax_rate"],
+                due_date=add_days(nowdate(), cint(settings["default_due_days"])),
+            )
+            created.append(invoice_name)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"WAFD Auto Invoice {project_name}")
+            skipped.append(project_name)
+    return {"created": created, "skipped": skipped}
+
+
 def refresh_overdue_invoices():
-    """Daily scheduler: refresh open invoice balances and overdue status."""
+    """Daily scheduler: refresh balances, overdue states, alerts and optional draft billing."""
+    settings = get_finance_settings()
     names = frappe.get_all(
         "WAFD Invoice",
         filters={"status": ["not in", ["ملغاة / Cancelled", "مدفوعة / Paid"]]},
@@ -758,4 +851,19 @@ def refresh_overdue_invoices():
     )
     for name in names:
         refresh_invoice_and_project(name)
+
+    if cint(settings["auto_mark_overdue"]):
+        overdue = frappe.get_all(
+            "WAFD Invoice",
+            filters={"due_date": ["<", nowdate()], "balance": [">", 0], "status": ["!=", "ملغاة / Cancelled"]},
+            fields=["name", "project", "due_date", "balance"],
+        )
+        threshold = cint(settings["overdue_alert_days"])
+        today = getdate(nowdate())
+        for invoice in overdue:
+            days = (today - getdate(invoice.due_date)).days
+            if days >= threshold:
+                _upsert_overdue_alert(invoice.name, invoice.project, invoice.due_date, invoice.balance, days)
+
+    return auto_create_delivery_invoices()
     return len(names)

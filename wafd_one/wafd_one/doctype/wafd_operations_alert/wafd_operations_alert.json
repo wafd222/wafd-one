@@ -1,30 +1,168 @@
 {
- "actions": [], "allow_rename": 0, "autoname": "format:WAFD-OPS-ALERT-{#####}",
- "creation": "2026-07-20 00:00:00.000000", "doctype": "DocType", "engine": "InnoDB",
- "field_order": ["alert_type","severity","status","alert_date","project","reference_doctype","reference_name","message","recommended_action","resolution","resolved_by","resolved_on","deduplication_key"],
- "fields": [
-  {"fieldname":"alert_type","fieldtype":"Select","label":"نوع التنبيه / Alert Type","options":"تجاوز الطاقة / Capacity Exceeded\nاقتراب الطاقة / Capacity Warning\nعجز مخزون / Stock Shortage\nتأخر إنتاج / Production Delay\nفشل جودة / Quality Failure\nتأخر تسليم / Delivery Delay\nتعارض موارد / Resource Conflict","reqd":1,"in_list_view":1},
-  {"fieldname":"severity","fieldtype":"Select","label":"الأولوية / Severity","options":"منخفض / Low\nمتوسط / Medium\nمرتفع / High\nحرج / Critical","default":"متوسط / Medium","reqd":1,"in_list_view":1},
-  {"fieldname":"status","fieldtype":"Select","label":"الحالة / Status","options":"مفتوح / Open\nقيد المعالجة / In Progress\nمغلق / Closed","default":"مفتوح / Open","reqd":1,"in_list_view":1},
-  {"fieldname":"alert_date","fieldtype":"Datetime","label":"تاريخ التنبيه / Alert Date","reqd":1,"in_list_view":1},
-  {"fieldname":"project","fieldtype":"Link","label":"المشروع / Project","options":"WAFD Catering Project","in_list_view":1},
-  {"fieldname":"reference_doctype","fieldtype":"Link","label":"نوع المرجع / Reference Type","options":"DocType"},
-  {"fieldname":"reference_name","fieldtype":"Dynamic Link","label":"المرجع / Reference","options":"reference_doctype"},
-  {"fieldname":"message","fieldtype":"Small Text","label":"التنبيه / Message","reqd":1},
-  {"fieldname":"recommended_action","fieldtype":"Small Text","label":"الإجراء المقترح / Recommended Action"},
-  {"fieldname":"resolution","fieldtype":"Small Text","label":"الحل / Resolution"},
-  {"fieldname":"resolved_by","fieldtype":"Link","label":"أغلق بواسطة / Resolved By","options":"User","read_only":1},
-  {"fieldname":"resolved_on","fieldtype":"Datetime","label":"تاريخ الإغلاق / Resolved On","read_only":1},
-  {"fieldname":"deduplication_key","fieldtype":"Data","label":"مفتاح منع التكرار / Deduplication Key","unique":1,"hidden":1,"read_only":1}
- ],
- "index_web_pages_for_search":0,"links":[],"modified":"2026-07-20 00:00:00.000000","modified_by":"Administrator","module":"WAFD ONE","name":"WAFD Operations Alert","owner":"Administrator",
- "permissions":[
-  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
-  {"role":"WAFD Operations Manager","read":1,"write":1,"create":1,"report":1,"export":1},
-  {"role":"WAFD Project Manager","read":1,"write":1,"report":1},
-  {"role":"WAFD Production Supervisor","read":1,"write":1,"report":1},
-  {"role":"WAFD Quality Inspector","read":1,"write":1,"report":1},
-  {"role":"WAFD Delivery Supervisor","read":1,"write":1,"report":1}
- ],
- "sort_field":"alert_date","sort_order":"DESC","states":[],"track_changes":1
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "format:WAFD-OPS-ALERT-{#####}",
+  "creation": "2026-07-20 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "alert_type",
+    "severity",
+    "status",
+    "alert_date",
+    "project",
+    "reference_doctype",
+    "reference_name",
+    "message",
+    "recommended_action",
+    "resolution",
+    "resolved_by",
+    "resolved_on",
+    "deduplication_key"
+  ],
+  "fields": [
+    {
+      "fieldname": "alert_type",
+      "fieldtype": "Select",
+      "label": "نوع التنبيه / Alert Type",
+      "options": "تجاوز الطاقة / Capacity Exceeded\nاقتراب الطاقة / Capacity Warning\nعجز مخزون / Stock Shortage\nتأخر إنتاج / Production Delay\nفشل جودة / Quality Failure\nتأخر تسليم / Delivery Delay\nتعارض موارد / Resource Conflict\nفاتورة متأخرة / Overdue Invoice",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "severity",
+      "fieldtype": "Select",
+      "label": "الأولوية / Severity",
+      "options": "منخفض / Low\nمتوسط / Medium\nمرتفع / High\nحرج / Critical",
+      "default": "متوسط / Medium",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مفتوح / Open\nقيد المعالجة / In Progress\nمغلق / Closed",
+      "default": "مفتوح / Open",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "alert_date",
+      "fieldtype": "Datetime",
+      "label": "تاريخ التنبيه / Alert Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "reference_doctype",
+      "fieldtype": "Link",
+      "label": "نوع المرجع / Reference Type",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "reference_name",
+      "fieldtype": "Dynamic Link",
+      "label": "المرجع / Reference",
+      "options": "reference_doctype"
+    },
+    {
+      "fieldname": "message",
+      "fieldtype": "Small Text",
+      "label": "التنبيه / Message",
+      "reqd": 1
+    },
+    {
+      "fieldname": "recommended_action",
+      "fieldtype": "Small Text",
+      "label": "الإجراء المقترح / Recommended Action"
+    },
+    {
+      "fieldname": "resolution",
+      "fieldtype": "Small Text",
+      "label": "الحل / Resolution"
+    },
+    {
+      "fieldname": "resolved_by",
+      "fieldtype": "Link",
+      "label": "أغلق بواسطة / Resolved By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "resolved_on",
+      "fieldtype": "Datetime",
+      "label": "تاريخ الإغلاق / Resolved On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "deduplication_key",
+      "fieldtype": "Data",
+      "label": "مفتاح منع التكرار / Deduplication Key",
+      "unique": 1,
+      "hidden": 1,
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-07-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Operations Alert",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "report": 1,
+      "export": 1
+    },
+    {
+      "role": "WAFD Project Manager",
+      "read": 1,
+      "write": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "write": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Quality Inspector",
+      "read": 1,
+      "write": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Delivery Supervisor",
+      "read": 1,
+      "write": 1,
+      "report": 1
+    }
+  ],
+  "sort_field": "alert_date",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
 }

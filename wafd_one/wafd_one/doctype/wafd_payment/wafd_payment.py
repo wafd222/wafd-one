@@ -40,6 +40,17 @@ class WAFDPayment(Document):
             frappe.throw("لا يمكن تسجيل تحصيل لفاتورة قيمتها صفر / Cannot pay a zero-value invoice")
         if flt(self.amount) <= 0:
             frappe.throw("مبلغ التحصيل يجب أن يكون أكبر من صفر / Payment must be greater than zero")
+        from wafd_one.finance import get_finance_settings
+        settings = get_finance_settings()
+        if (
+            self.status == "معتمد / Confirmed"
+            and self.payment_method != "نقدي / Cash"
+            and settings.get("require_reference_for_non_cash")
+            and not self.reference_number
+        ):
+            frappe.throw(
+                "رقم المرجع مطلوب للتحصيل غير النقدي / Reference number is required for non-cash payments"
+            )
         if self.reference_number:
             duplicate = frappe.db.exists(
                 "WAFD Payment",

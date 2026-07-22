@@ -1,0 +1,83 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "default_waste_percent",
+    "default_overhead_percent",
+    "default_target_margin_percent",
+    "default_vat_rate",
+    "budget_warning_percent",
+    "budget_exceeded_percent"
+  ],
+  "fields": [
+    {
+      "fieldname": "default_waste_percent",
+      "fieldtype": "Percent",
+      "label": "الهدر الافتراضي / Default Waste %",
+      "default": 3
+    },
+    {
+      "fieldname": "default_overhead_percent",
+      "fieldtype": "Percent",
+      "label": "المصاريف غير المباشرة / Default Overhead %",
+      "default": 10
+    },
+    {
+      "fieldname": "default_target_margin_percent",
+      "fieldtype": "Percent",
+      "label": "هامش الربح المستهدف / Target Margin %",
+      "default": 20
+    },
+    {
+      "fieldname": "default_vat_rate",
+      "fieldtype": "Percent",
+      "label": "ضريبة القيمة المضافة / VAT %",
+      "default": 15
+    },
+    {
+      "fieldname": "budget_warning_percent",
+      "fieldtype": "Percent",
+      "label": "حد تحذير الميزانية / Budget Warning %",
+      "default": 90
+    },
+    {
+      "fieldname": "budget_exceeded_percent",
+      "fieldtype": "Percent",
+      "label": "حد تجاوز الميزانية / Budget Exceeded %",
+      "default": 100
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "issingle": 1,
+  "istable": 0,
+  "modified": "2026-07-22 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Costing Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1
+    },
+    {
+      "role": "WAFD Finance User",
+      "read": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

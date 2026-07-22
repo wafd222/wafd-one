@@ -63,5 +63,6 @@ doc_events = {
 scheduler_events = {
     "daily": [
         "wafd_one.finance.refresh_overdue_invoices",
+        "wafd_one.costing.daily_costing_refresh",
     ]
 }

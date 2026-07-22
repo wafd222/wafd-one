@@ -31,14 +31,14 @@ class WAFDRecipe(Document):
             if flt(row.quantity) <= 0:
                 frappe.throw(f"كمية المكون يجب أن تكون أكبر من صفر: {row.ingredient}")
             ingredient = frappe.db.get_value(
-                "WAFD Ingredient", row.ingredient, ["uom", "standard_cost", "status"], as_dict=True
+                "WAFD Ingredient", row.ingredient, ["uom", "standard_cost", "latest_market_cost", "status"], as_dict=True
             )
             if not ingredient:
                 frappe.throw(f"المكون غير موجود: {row.ingredient} / Ingredient not found")
             if ingredient.status == "غير نشط / Inactive":
                 frappe.throw(f"المكون غير نشط: {row.ingredient} / Ingredient is inactive")
             row.uom = ingredient.uom
-            row.unit_cost = flt(ingredient.standard_cost)
+            row.unit_cost = flt(ingredient.latest_market_cost) or flt(ingredient.standard_cost)
             row.amount = flt(row.quantity) * flt(row.unit_cost)
             direct_total += flt(row.amount)
 
@@ -62,5 +62,7 @@ class WAFDRecipe(Document):
         self.cost_per_portion = direct_per_portion
         self.full_cost_per_portion = full_cost
         self.recommended_price_ex_vat = selling_ex_vat
-        self.recommended_price_incl_vat = selling_ex_vat * 1.15
+        from wafd_one.costing import get_costing_settings
+        vat_rate = flt(get_costing_settings().get("default_vat_rate"))
+        self.recommended_price_incl_vat = selling_ex_vat * (1 + vat_rate / 100)
         self.costed_on = now_datetime()

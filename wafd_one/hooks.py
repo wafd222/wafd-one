@@ -58,3 +58,10 @@ doc_events = {
         "WAFD Project Revenue", "WAFD Approval Request",
     )
 }
+
+
+scheduler_events = {
+    "daily": [
+        "wafd_one.finance.refresh_overdue_invoices",
+    ]
+}

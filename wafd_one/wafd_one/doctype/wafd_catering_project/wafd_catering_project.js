@@ -150,3 +150,54 @@ frappe.ui.form.on("WAFD Catering Project", {
         }, __("المستندات"));
     }
 });
+
+
+frappe.ui.form.on("WAFD Catering Project", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+
+        frm.add_custom_button(__("Financial Status"), () => {
+            frappe.call({
+                method: "wafd_one.finance.get_project_billing_status",
+                args: { project_name: frm.doc.name },
+                freeze: true,
+                callback(r) {
+                    const x = r.message || {};
+                    frappe.msgprint({
+                        title: __("Financial Status"),
+                        indicator: x.ready_for_closure ? "green" : "orange",
+                        message: `
+                            <p>${__("Delivered Meals")}: <b>${format_number(x.delivered_meals || 0)}</b> / ${format_number(x.total_meals || 0)}</p>
+                            <p>${__("Uninvoiced Delivered Quantity")}: <b>${format_number(x.billable_quantity || 0)}</b></p>
+                            <p>${__("Invoices")}: <b>${x.invoice_count || 0}</b></p>
+                            <p>${__("Invoiced Amount")}: <b>${format_currency(x.invoiced_amount || 0)}</b></p>
+                            <p>${__("Collected Revenue")}: <b>${format_currency(x.revenue || 0)}</b></p>
+                            <p>${__("Outstanding Amount")}: <b>${format_currency(x.outstanding_amount || 0)}</b></p>
+                            <p>${__("Profit")}: <b>${format_currency(x.profit || 0)}</b></p>
+                            <p><b>${x.ready_for_closure ? __("Ready for financial closure") : __("Financial closure requirements are not complete")}</b></p>`
+                    });
+                }
+            });
+        }, __("Finance"));
+
+        if (frm.doc.status !== "مكتمل / Completed" && frm.doc.status !== "ملغي / Cancelled") {
+            frm.add_custom_button(__("Close Project Financially"), () => {
+                frappe.confirm(
+                    __("Complete this project only after all deliveries, invoices and collections are closed?"),
+                    () => frappe.call({
+                        method: "wafd_one.finance.close_project_financially",
+                        args: { project_name: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("Checking financial closure..."),
+                        callback(r) {
+                            if (r.message) {
+                                frappe.show_alert({ message: __("Project closed successfully"), indicator: "green" });
+                                frm.reload_doc();
+                            }
+                        }
+                    })
+                );
+            }, __("Finance"));
+        }
+    }
+});

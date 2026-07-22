@@ -679,3 +679,83 @@ def finance_integrity_check(project_name=None, repair=False):
         "repaired_projects": repaired_projects,
     }
     return result
+
+
+@frappe.whitelist()
+def get_project_billing_status(project_name):
+    """Return a concise, auditable billing and collection status for one project."""
+    if not project_name or not frappe.db.exists("WAFD Catering Project", project_name):
+        frappe.throw("المشروع غير موجود / Project not found")
+    if not frappe.has_permission("WAFD Catering Project", "read", project_name):
+        frappe.throw("غير مصرح لك بعرض هذا المشروع / You are not permitted to view this project")
+
+    refresh_project_financials(project_name)
+    project = frappe.db.get_value(
+        "WAFD Catering Project",
+        project_name,
+        ["total_meals", "delivered_meals", "invoiced_amount", "outstanding_amount", "revenue", "actual_cost", "profit", "status"],
+        as_dict=True,
+    ) or {}
+    billable_rows = _get_billable_delivery_rows(project_name)
+    billable_quantity = sum(flt(row.delivered_quantity) for row in billable_rows)
+    invoice_count = frappe.db.count("WAFD Invoice", {"project": project_name, "status": ["!=", "ملغاة / Cancelled"]})
+    payment_count = frappe.db.count("WAFD Payment", {"project": project_name, "status": "معتمد / Confirmed"})
+
+    return {
+        **project,
+        "invoice_count": invoice_count,
+        "payment_count": payment_count,
+        "billable_quantity": billable_quantity,
+        "ready_for_closure": bool(
+            invoice_count
+            and flt(project.get("delivered_meals")) >= flt(project.get("total_meals"))
+            and billable_quantity <= 0
+            and flt(project.get("outstanding_amount")) <= 0
+        ),
+    }
+
+
+@frappe.whitelist()
+def close_project_financially(project_name):
+    """Complete a project only after delivery, billing and collection are fully closed."""
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("write")
+    if project.status == "ملغي / Cancelled":
+        frappe.throw("لا يمكن إقفال مشروع ملغي / A cancelled project cannot be closed")
+
+    status = get_project_billing_status(project_name)
+    blockers = []
+    if flt(status.get("total_meals")) <= 0:
+        blockers.append("إجمالي الوجبات غير محدد / Total meals is not defined")
+    if flt(status.get("delivered_meals")) < flt(status.get("total_meals")):
+        blockers.append("لم تكتمل جميع عمليات التسليم / Deliveries are not complete")
+    if flt(status.get("billable_quantity")) > 0:
+        blockers.append("توجد كميات مسلمة غير مفوترة / Delivered quantities remain uninvoiced")
+    if not status.get("invoice_count"):
+        blockers.append("لا توجد فاتورة للمشروع / The project has no invoice")
+    if flt(status.get("outstanding_amount")) > 0:
+        blockers.append("يوجد رصيد مستحق غير محصل / Outstanding receivables remain")
+
+    if blockers:
+        frappe.throw("<br>".join(blockers), title="تعذر إقفال المشروع / Project closure blocked")
+
+    frappe.db.set_value(
+        "WAFD Catering Project",
+        project_name,
+        "status",
+        "مكتمل / Completed",
+        update_modified=True,
+    )
+    return get_project_billing_status(project_name)
+
+
+def refresh_overdue_invoices():
+    """Daily scheduler: refresh open invoice balances and overdue status."""
+    names = frappe.get_all(
+        "WAFD Invoice",
+        filters={"status": ["not in", ["ملغاة / Cancelled", "مدفوعة / Paid"]]},
+        pluck="name",
+    )
+    for name in names:
+        refresh_invoice_and_project(name)
+    return len(names)

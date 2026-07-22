@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, getdate, nowdate
+from frappe.utils import add_days, flt, getdate, nowdate
 
 
 class WAFDInvoice(Document):
@@ -8,6 +8,8 @@ class WAFDInvoice(Document):
         self._protect_invoice_with_confirmed_payments()
         if not self.invoice_date:
             self.invoice_date = nowdate()
+        if not self.due_date:
+            self.due_date = add_days(self.invoice_date, 30)
         if self.due_date and getdate(self.due_date) < getdate(self.invoice_date):
             frappe.throw("تاريخ الاستحقاق لا يمكن أن يسبق تاريخ الفاتورة / Due date cannot precede invoice date")
 

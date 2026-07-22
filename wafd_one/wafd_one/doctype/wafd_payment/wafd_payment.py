@@ -40,6 +40,21 @@ class WAFDPayment(Document):
             frappe.throw("لا يمكن تسجيل تحصيل لفاتورة قيمتها صفر / Cannot pay a zero-value invoice")
         if flt(self.amount) <= 0:
             frappe.throw("مبلغ التحصيل يجب أن يكون أكبر من صفر / Payment must be greater than zero")
+        if self.reference_number:
+            duplicate = frappe.db.exists(
+                "WAFD Payment",
+                {
+                    "name": ["!=", self.name or ""],
+                    "reference_number": self.reference_number,
+                    "payment_method": self.payment_method,
+                    "status": "معتمد / Confirmed",
+                },
+            )
+            if duplicate:
+                frappe.throw(
+                    "رقم المرجع مستخدم في تحصيل معتمد آخر / "
+                    "Reference number is already used by another confirmed payment"
+                )
         if self.status == "معتمد / Confirmed" and flt(self.amount) > flt(self.outstanding_before):
             frappe.throw(
                 "مبلغ التحصيل يتجاوز الرصيد المتبقي ({0}) / Payment exceeds outstanding balance ({0})".format(

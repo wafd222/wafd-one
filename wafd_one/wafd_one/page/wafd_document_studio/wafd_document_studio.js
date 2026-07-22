@@ -41,6 +41,21 @@ class WAFDDocumentStudio {
         </select>
         <span class="wds-status"></span>
       </div>
+      <div class="wds-welcome" style="display:none">
+        <div class="wds-welcome-card">
+          <h2>${__('Create a document in one click')}</h2>
+          <p>${__('Choose the document type. WAFD ONE will prepare the page, margins and basic content automatically.')}</p>
+          <div class="wds-quick-grid">
+            ${this.quick_card('undertaking','📄',__('Undertaking'))}
+            ${this.quick_card('contract','📑',__('Contract'))}
+            ${this.quick_card('quotation','💼',__('Quotation'))}
+            ${this.quick_card('invoice','🧾',__('Invoice'))}
+            ${this.quick_card('operation','📋',__('Operation Order'))}
+            ${this.quick_card('certificate','🏆',__('Certificate'))}
+          </div>
+          <button class="btn btn-default btn-sm wds-advanced-new">${__('Custom document')}</button>
+        </div>
+      </div>
       <div class="wds-shell">
         <aside class="wds-panel wds-left-panel">
           <h4>${__('Elements')}</h4>
@@ -69,6 +84,10 @@ class WAFDDocumentStudio {
     return `<button class="wds-tool" data-type="${type}" draggable="true"><span>${icon}</span><small>${label}</small></button>`;
   }
 
+  quick_card(kind, icon, label) {
+    return `<button class="wds-quick-card" data-kind="${kind}"><span>${icon}</span><b>${label}</b><small>${__('Create and open')}</small></button>`;
+  }
+
   bind() {
     this.wrapper.on('click', '.wds-tool', e => this.add_block($(e.currentTarget).data('type')));
     this.wrapper.on('dragstart', '.wds-tool', e => e.originalEvent.dataTransfer.setData('text/wds-type', $(e.currentTarget).data('type')));
@@ -80,7 +99,9 @@ class WAFDDocumentStudio {
       const rect = e.currentTarget.getBoundingClientRect();
       this.add_block(type, (e.originalEvent.clientX - rect.left) / this.zoom, (e.originalEvent.clientY - rect.top) / this.zoom);
     });
-    this.wrapper.on('click', '.wds-new', () => this.new_template());
+    this.wrapper.on('click', '.wds-new', () => this.show_welcome());
+    this.wrapper.on('click', '.wds-quick-card', e => this.quick_create($(e.currentTarget).data('kind')));
+    this.wrapper.on('click', '.wds-advanced-new', () => this.new_template());
     this.wrapper.on('click', '.wds-save', () => this.save());
     this.wrapper.on('click', '.wds-preview', () => this.preview());
     this.wrapper.on('click', '.wds-pdf', () => this.pdf());
@@ -125,12 +146,14 @@ class WAFDDocumentStudio {
     rows.forEach(x => sel.append(`<option value="${frappe.utils.escape_html(x.name)}">${frappe.utils.escape_html(x.template_title)} — ${frappe.utils.escape_html(x.reference_doctype)}</option>`));
     const route = frappe.route_options || {}; frappe.route_options = null;
     if (route.template) { sel.val(route.template); this.load_template(route.template); }
+    else { this.show_welcome(); }
   }
 
   async load_template(name) {
     if (!name) return;
     const r = await frappe.call('wafd_one.document_studio.get_template', {template_name:name});
     this.template = r.message;
+    this.hide_welcome();
     this.blocks = (this.template.canvas && this.template.canvas.blocks) || [];
     this.render_page(); this.render_fields(); this.render_page_properties();
     this.dirty = false; this.status(__('Loaded'));
@@ -260,7 +283,49 @@ class WAFDDocumentStudio {
   layer(delta){const b=this.get(this.selected);if(!b)return;b.z=Math.max(1,Number(b.z||1)+delta);this.render_page();this.select(b.id);this.mark_dirty()}
   toggle_lock(){const b=this.get(this.selected);if(!b)return;b.locked=!b.locked;this.render_page();this.select(b.id);this.mark_dirty()}
 
-  async new_template(){const d=new frappe.ui.Dialog({title:__('New Template'),fields:[{fieldname:'template_title',fieldtype:'Data',label:__('Template Title'),reqd:1},{fieldname:'reference_doctype',fieldtype:'Link',options:'DocType',label:__('Reference DocType'),reqd:1},{fieldname:'document_category',fieldtype:'Select',options:'Hotel Undertaking\nContract\nQuotation\nInvoice\nOperation Order\nProduction Order\nPreparation Order\nLoading Order\nDelivery Note\nCertificate\nReport\nOther',label:__('Category'),default:'Other'}],primary_action_label:__('Create'),primary_action:async v=>{const r=await frappe.call('wafd_one.document_studio.create_template',v);d.hide();await this.load_templates();this.wrapper.find('.wds-template').val(r.message);this.load_template(r.message)}});d.show()}
+  show_welcome(){
+    this.wrapper.find('.wds-shell').hide();
+    this.wrapper.find('.wds-welcome').show();
+    this.status('');
+  }
+
+  hide_welcome(){
+    this.wrapper.find('.wds-welcome').hide();
+    this.wrapper.find('.wds-shell').show();
+  }
+
+  async quick_create(kind){
+    const card = this.wrapper.find(`.wds-quick-card[data-kind="${kind}"]`);
+    card.prop('disabled', true).addClass('creating');
+    try {
+      const r = await frappe.call({
+        method:'wafd_one.document_studio.quick_create_template',
+        args:{kind}, freeze:true, freeze_message:__('Preparing document...')
+      });
+      await this.load_templates();
+      this.wrapper.find('.wds-template').val(r.message);
+      await this.load_template(r.message);
+      frappe.show_alert({message:__('Document is ready for editing'), indicator:'green'});
+    } finally {
+      card.prop('disabled', false).removeClass('creating');
+    }
+  }
+
+  async new_template(){
+    const d=new frappe.ui.Dialog({
+      title:__('Custom document'),
+      fields:[
+        {fieldname:'template_title',fieldtype:'Data',label:__('Document name'),reqd:1},
+        {fieldname:'reference_doctype',fieldtype:'Link',options:'DocType',label:__('Data source'),reqd:1,description:__('Choose only when creating a custom document.')}
+      ],
+      primary_action_label:__('Create'),
+      primary_action:async v=>{
+        const r=await frappe.call('wafd_one.document_studio.create_template',{...v,document_category:'Other'});
+        d.hide(); await this.load_templates(); this.wrapper.find('.wds-template').val(r.message); this.load_template(r.message)
+      }
+    });
+    d.show()
+  }
   async save(){if(!this.template)return;const args={template_name:this.template.name,canvas_json:JSON.stringify({version:2,blocks:this.blocks}),page_settings:JSON.stringify(this.template)};await frappe.call({method:'wafd_one.document_studio.save_template',args,freeze:true,freeze_message:__('Saving template...')});this.dirty=false;this.status(__('Saved'));frappe.show_alert({message:__('Template saved'),indicator:'green'})}
   preview(){if(!this.template)return;window.open(`/api/method/wafd_one.document_studio.preview_html?template_name=${encodeURIComponent(this.template.name)}`,'_blank')}
   pdf(){if(!this.template)return;window.open(`/api/method/wafd_one.document_studio.download_pdf?template_name=${encodeURIComponent(this.template.name)}`,'_blank')}

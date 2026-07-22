@@ -14,6 +14,68 @@ DANGEROUS_MARKUP = (
 )
 
 
+
+QUICK_TEMPLATE_TYPES = {
+    "undertaking": {"title": "تعهد فندق", "doctype": "WAFD Hotel Undertaking", "category": "Hotel Undertaking"},
+    "contract": {"title": "عقد", "doctype": "WAFD Contract", "category": "Contract"},
+    "quotation": {"title": "عرض سعر", "doctype": "WAFD Contract", "category": "Quotation"},
+    "invoice": {"title": "فاتورة", "doctype": "WAFD Invoice", "category": "Invoice"},
+    "operation": {"title": "أمر تشغيل", "doctype": "WAFD Catering Project", "category": "Operation Order"},
+    "certificate": {"title": "شهادة", "doctype": "WAFD Hotel Undertaking", "category": "Certificate"},
+}
+
+
+def _starter_canvas(title):
+    return {
+        "version": 2,
+        "blocks": [
+            {"id": "header", "type": "text", "x": 70, "y": 45, "w": 650, "h": 44, "z": 1, "html": '<div style="text-align:center;font-size:20px;font-weight:700">شركة وفد المدينة لخدمات الإعاشة</div>', "font_family": "Arial", "font_size": 18, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "title", "type": "text", "x": 120, "y": 120, "w": 550, "h": 55, "z": 2, "html": f'<div style="text-align:center;font-size:26px;font-weight:700">{escape(title)}</div>', "font_family": "Arial", "font_size": 24, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "date", "type": "field", "x": 500, "y": 190, "w": 230, "h": 32, "z": 2, "html": '<div style="text-align:right">التاريخ: {{ frappe.utils.formatdate(frappe.utils.nowdate()) }}</div>', "font_family": "Arial", "font_size": 14, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "docname", "type": "field", "x": 70, "y": 190, "w": 260, "h": 32, "z": 2, "html": '<div style="text-align:left">الرقم: {{ doc.get("name") or "" }}</div>', "font_family": "Arial", "font_size": 14, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "body", "type": "text", "x": 75, "y": 250, "w": 650, "h": 430, "z": 2, "html": '<div style="direction:rtl;text-align:right;line-height:2">اكتب نص المستند هنا. اضغط مرتين على النص للتعديل، أو أضف بيانات المستند من القائمة.</div>', "font_family": "Arial", "font_size": 16, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "signature", "type": "text", "x": 430, "y": 760, "w": 290, "h": 80, "z": 2, "html": '<div style="text-align:center;line-height:1.8">شركة وفد المدينة لخدمات الإعاشة<br>التوقيع والختم</div>', "font_family": "Arial", "font_size": 14, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+            {"id": "footerline", "type": "line", "x": 70, "y": 930, "w": 660, "h": 10, "z": 1, "html": "", "font_family": "Arial", "font_size": 12, "color": "#111111", "background": "transparent", "opacity": 1, "rotation": 0},
+        ],
+    }
+
+
+def _unique_template_title(base_title):
+    title = base_title
+    number = 2
+    while frappe.db.exists("WAFD Document Template", {"template_title": title}):
+        title = f"{base_title} {number}"
+        number += 1
+    return title
+
+
+@frappe.whitelist()
+def quick_create_template(kind):
+    _check_access(write=True)
+    config = QUICK_TEMPLATE_TYPES.get(kind)
+    if not config:
+        frappe.throw(frappe._("Unsupported document type."))
+    if not frappe.db.exists("DocType", config["doctype"]):
+        frappe.throw(frappe._("The required document type is not installed: {0}").format(config["doctype"]))
+    title = _unique_template_title(config["title"])
+    doc = frappe.get_doc({
+        "doctype": "WAFD Document Template",
+        "template_title": title,
+        "reference_doctype": config["doctype"],
+        "document_category": config["category"],
+        "enabled": 1,
+        "page_size": "A4",
+        "orientation": "Portrait",
+        "direction": "RTL",
+        "margin_top_mm": 10,
+        "margin_right_mm": 10,
+        "margin_bottom_mm": 10,
+        "margin_left_mm": 10,
+        "canvas_json": json.dumps(_starter_canvas(title), ensure_ascii=False),
+    })
+    doc.insert()
+    return doc.name
+
 def _check_access(write=False):
     roles = set(frappe.get_roles())
     if not roles.intersection(ALLOWED_ROLES):

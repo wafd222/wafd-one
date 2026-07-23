@@ -26,13 +26,24 @@ class WAFDCateringProject(Document):
         values = frappe.db.get_value(
             "WAFD Contract",
             self.contract,
-            ["mission", "hotel", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"],
+            ["mission", "hotel", "start_date", "end_date", "beneficiary_count", "contract_value", "currency",
+             "contract_type", "service_model", "first_meal", "last_meal", "vip_count", "children_count",
+             "delivery_location", "contact_person", "contact_phone", "delivery_window", "delivery_instructions",
+             "project_manager", "operations_manager", "delivery_supervisor", "default_kitchen", "operation_priority",
+             "tax_rate", "tax_amount", "discount_amount", "advance_amount"],
             as_dict=True,
         )
         if not values:
             frappe.throw("العقد المحدد غير موجود / Selected contract does not exist")
-        for fieldname in ("mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency"):
-            if not self.get(fieldname) and values.get(fieldname) not in (None, ""):
+        sync_fields = (
+            "mission", "start_date", "end_date", "beneficiary_count", "contract_value", "currency",
+            "contract_type", "service_model", "first_meal", "last_meal", "vip_count", "children_count",
+            "delivery_location", "contact_person", "contact_phone", "delivery_window", "delivery_instructions",
+            "project_manager", "operations_manager", "delivery_supervisor", "default_kitchen", "operation_priority",
+            "tax_rate", "tax_amount", "discount_amount", "advance_amount",
+        )
+        for fieldname in sync_fields:
+            if self.get(fieldname) in (None, "", 0) and values.get(fieldname) not in (None, ""):
                 self.set(fieldname, values.get(fieldname))
 
         contract_hotel = values.get("hotel")

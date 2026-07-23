@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import cint, date_diff, flt, getdate
 
 
 class WAFDContract(Document):
@@ -19,6 +19,18 @@ class WAFDContract(Document):
             frappe.throw("قيمة العقد لا يمكن أن تكون سالبة / Contract value cannot be negative")
         if self.beneficiary_count is not None and cint(self.beneficiary_count) < 0:
             frappe.throw("عدد المستفيدين لا يمكن أن يكون سالبًا / Beneficiary count cannot be negative")
+        for fieldname in ("beneficiary_count", "vip_count", "children_count", "payment_due_days"):
+            if self.get(fieldname) is not None and cint(self.get(fieldname)) < 0:
+                frappe.throw(f"{self.meta.get_label(fieldname)} لا يمكن أن يكون سالبًا / Cannot be negative")
+        for fieldname in ("discount_amount", "tax_rate", "advance_percent"):
+            if self.get(fieldname) is not None and flt(self.get(fieldname)) < 0:
+                frappe.throw(f"{self.meta.get_label(fieldname)} لا يمكن أن يكون سالبًا / Cannot be negative")
+        if flt(self.tax_rate) > 100 or flt(self.advance_percent) > 100:
+            frappe.throw("النسب المئوية لا يمكن أن تتجاوز 100% / Percentages cannot exceed 100%")
+        if self.start_date and self.end_date:
+            self.duration_days = date_diff(self.end_date, self.start_date) + 1
+        else:
+            self.duration_days = 0
         if self.status == "ساري / Active":
             from wafd_one.governance import ensure_approved
             if not self.is_new():
@@ -47,9 +59,15 @@ class WAFDContract(Document):
             row.total_meals = cint(days * beneficiaries * multiplier)
             row.estimated_revenue = flt(row.total_meals) * flt(row.unit_price)
             total_value += flt(row.estimated_revenue)
-        # Preserve a manually agreed contract value. Only derive it when empty.
-        if not flt(self.contract_value) and total_value:
-            self.contract_value = total_value
+        self.services_subtotal = total_value
+        taxable = max(total_value - flt(self.discount_amount), 0)
+        self.tax_amount = taxable * flt(self.tax_rate) / 100
+        calculated_total = taxable + flt(self.tax_amount)
+        # Preserve a manually agreed contract value when entered. Otherwise derive it.
+        if not flt(self.contract_value) and calculated_total:
+            self.contract_value = calculated_total
+        self.advance_amount = flt(self.contract_value) * flt(self.advance_percent) / 100
+        self.outstanding_contract_amount = max(flt(self.contract_value) - flt(self.advance_amount), 0)
 
     def _validate_linked_project(self):
         if not self.project:
@@ -78,6 +96,26 @@ class WAFDContract(Document):
             "default_source_warehouse": self.default_source_warehouse,
             "default_vehicle": self.default_vehicle,
             "default_driver": self.default_driver,
+            "contract_type": self.contract_type,
+            "service_model": self.service_model,
+            "first_meal": self.first_meal,
+            "last_meal": self.last_meal,
+            "vip_count": self.vip_count,
+            "children_count": self.children_count,
+            "delivery_location": self.delivery_location,
+            "contact_person": self.contact_person,
+            "contact_phone": self.contact_phone,
+            "delivery_window": self.delivery_window,
+            "delivery_instructions": self.delivery_instructions,
+            "project_manager": self.project_manager,
+            "operations_manager": self.operations_manager,
+            "delivery_supervisor": self.delivery_supervisor,
+            "default_kitchen": self.default_kitchen,
+            "operation_priority": self.operation_priority,
+            "tax_rate": self.tax_rate,
+            "tax_amount": self.tax_amount,
+            "discount_amount": self.discount_amount,
+            "advance_amount": self.advance_amount,
         }
         for fieldname, value in mapping.items():
             if value not in (None, "") and project.get(fieldname) != value:
@@ -107,6 +145,8 @@ def _service_values(row):
         "service_type": row.service_type,
         "meal_name": row.meal_name,
         "service_time": row.service_time,
+        "delivery_lead_minutes": row.delivery_lead_minutes,
+        "packaging_type": row.packaging_type,
         "recipe": row.recipe,
         "service_start_date": row.service_start_date,
         "service_end_date": row.service_end_date,
@@ -151,6 +191,26 @@ def create_project_from_contract(contract_name):
         "default_source_warehouse": contract.default_source_warehouse,
         "default_vehicle": contract.default_vehicle,
         "default_driver": contract.default_driver,
+        "contract_type": contract.contract_type,
+        "service_model": contract.service_model,
+        "first_meal": contract.first_meal,
+        "last_meal": contract.last_meal,
+        "vip_count": contract.vip_count,
+        "children_count": contract.children_count,
+        "delivery_location": contract.delivery_location,
+        "contact_person": contract.contact_person,
+        "contact_phone": contract.contact_phone,
+        "delivery_window": contract.delivery_window,
+        "delivery_instructions": contract.delivery_instructions,
+        "project_manager": contract.project_manager,
+        "operations_manager": contract.operations_manager,
+        "delivery_supervisor": contract.delivery_supervisor,
+        "default_kitchen": contract.default_kitchen,
+        "operation_priority": contract.operation_priority,
+        "tax_rate": contract.tax_rate,
+        "tax_amount": contract.tax_amount,
+        "discount_amount": contract.discount_amount,
+        "advance_amount": contract.advance_amount,
         "status": "مسودة / Draft",
     })
     if contract.hotel:

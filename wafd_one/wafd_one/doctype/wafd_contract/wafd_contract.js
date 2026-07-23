@@ -41,6 +41,30 @@ frappe.ui.form.on("WAFD Contract", {
                 })
             );
         }, __("التشغيل / Operations"));
+    },
+
+    start_date: calculate_contract,
+    end_date: calculate_contract,
+    beneficiary_count: calculate_contract,
+    discount_amount: calculate_contract,
+    tax_rate: calculate_contract,
+    advance_percent: calculate_contract,
+
+    mission(frm) {
+        if (!frm.doc.mission) return;
+        frappe.db.get_value("WAFD Mission", frm.doc.mission, ["contact_person", "mobile"], (r) => {
+            if (!frm.doc.contact_person && r?.contact_person) frm.set_value("contact_person", r.contact_person);
+            if (!frm.doc.contact_phone && r?.mobile) frm.set_value("contact_phone", r.mobile);
+        });
+    },
+
+    hotel(frm) {
+        if (!frm.doc.hotel) return;
+        frappe.db.get_value("WAFD Hotel", frm.doc.hotel, ["address", "contact_person", "mobile"], (r) => {
+            if (!frm.doc.delivery_location && r?.address) frm.set_value("delivery_location", r.address);
+            if (!frm.doc.contact_person && r?.contact_person) frm.set_value("contact_person", r.contact_person);
+            if (!frm.doc.contact_phone && r?.mobile) frm.set_value("contact_phone", r.mobile);
+        });
     }
 });
 
@@ -50,15 +74,37 @@ frappe.ui.form.on("WAFD Project Service", {
     service_days: calculate_service,
     beneficiaries: calculate_service,
     meals_per_person_per_day: calculate_service,
-    unit_price: calculate_service
+    unit_price: calculate_service,
+    services_remove: calculate_contract
 });
 
 function calculate_service(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
-    const days = flt(row.service_days || 0);
+    let days = flt(row.service_days || 0);
+    if (!days && row.service_start_date && row.service_end_date) {
+        days = frappe.datetime.get_day_diff(row.service_end_date, row.service_start_date) + 1;
+        frappe.model.set_value(cdt, cdn, "service_days", days);
+    }
     const beneficiaries = flt(row.beneficiaries || frm.doc.beneficiary_count || 0);
     const multiplier = flt(row.meals_per_person_per_day || 1);
     const total = Math.round(days * beneficiaries * multiplier);
     frappe.model.set_value(cdt, cdn, "total_meals", total);
     frappe.model.set_value(cdt, cdn, "estimated_revenue", total * flt(row.unit_price));
+    calculate_contract(frm);
+}
+
+function calculate_contract(frm) {
+    if (frm.doc.start_date && frm.doc.end_date) {
+        frm.set_value("duration_days", frappe.datetime.get_day_diff(frm.doc.end_date, frm.doc.start_date) + 1);
+    }
+    const subtotal = (frm.doc.services || []).reduce((sum, row) => sum + flt(row.estimated_revenue), 0);
+    const taxable = Math.max(subtotal - flt(frm.doc.discount_amount), 0);
+    const tax = taxable * flt(frm.doc.tax_rate) / 100;
+    const total = taxable + tax;
+    const advance = total * flt(frm.doc.advance_percent) / 100;
+    frm.set_value("services_subtotal", subtotal);
+    frm.set_value("tax_amount", tax);
+    if (!frm.doc.contract_value || frm.doc.__islocal) frm.set_value("contract_value", total);
+    frm.set_value("advance_amount", flt(frm.doc.contract_value || total) * flt(frm.doc.advance_percent) / 100);
+    frm.set_value("outstanding_contract_amount", Math.max(flt(frm.doc.contract_value || total) - advance, 0));
 }

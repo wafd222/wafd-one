@@ -1,121 +1,135 @@
 {
-  "actions": [],
-  "allow_rename": 0,
-  "autoname": "hash",
-  "creation": "2026-07-16 12:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "service_type",
-    "meal_name",
-    "recipe",
-    "service_time",
-    "service_days",
-    "beneficiaries",
-    "meals_per_person_per_day",
-    "total_meals",
-    "unit_price",
-    "estimated_revenue",
-    "notes",
-    "service_start_date",
-    "service_end_date"
-  ],
-  "fields": [
-    {
-      "fieldname": "service_type",
-      "fieldtype": "Select",
-      "label": "نوع الخدمة / Service Type",
-      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة ترحيبية / Welcome Meal\nأخرى / Other",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "meal_name",
-      "fieldtype": "Data",
-      "label": "اسم الوجبة / Meal Name",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "service_time",
-      "fieldtype": "Time",
-      "label": "وقت الخدمة / Service Time"
-    },
-    {
-      "fieldname": "recipe",
-      "fieldtype": "Link",
-      "label": "الوصفة / Recipe",
-      "options": "WAFD Recipe",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "service_start_date",
-      "fieldtype": "Date",
-      "label": "تاريخ بداية الخدمة / Service Start Date"
-    },
-    {
-      "fieldname": "service_end_date",
-      "fieldtype": "Date",
-      "label": "تاريخ نهاية الخدمة / Service End Date"
-    },
-    {
-      "fieldname": "service_days",
-      "fieldtype": "Int",
-      "label": "عدد أيام الخدمة / Service Days",
-      "default": 1,
-      "non_negative": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "beneficiaries",
-      "fieldtype": "Int",
-      "label": "عدد المستفيدين / Beneficiaries",
-      "non_negative": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "meals_per_person_per_day",
-      "fieldtype": "Float",
-      "label": "وجبات للفرد يومياً / Meals per Person per Day",
-      "default": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "total_meals",
-      "fieldtype": "Int",
-      "label": "إجمالي الوجبات / Total Meals",
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "unit_price",
-      "fieldtype": "Currency",
-      "label": "سعر الوحدة / Unit Price",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "estimated_revenue",
-      "fieldtype": "Currency",
-      "label": "الإيراد التقديري / Estimated Revenue",
-      "read_only": 1
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 1,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-16 18:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Project Service",
-  "owner": "Administrator",
-  "permissions": [],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 0
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-07-16 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "service_type",
+  "meal_name",
+  "recipe",
+  "service_time",
+  "delivery_lead_minutes",
+  "packaging_type",
+  "service_days",
+  "beneficiaries",
+  "meals_per_person_per_day",
+  "total_meals",
+  "unit_price",
+  "estimated_revenue",
+  "notes",
+  "service_start_date",
+  "service_end_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "service_type",
+   "fieldtype": "Select",
+   "label": "نوع الخدمة / Service Type",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة ترحيبية / Welcome Meal\nأخرى / Other",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_name",
+   "fieldtype": "Data",
+   "label": "اسم الوجبة / Meal Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_time",
+   "fieldtype": "Time",
+   "label": "وقت الخدمة / Service Time"
+  },
+  {
+   "fieldname": "recipe",
+   "fieldtype": "Link",
+   "label": "الوصفة / Recipe",
+   "options": "WAFD Recipe",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_start_date",
+   "fieldtype": "Date",
+   "label": "تاريخ بداية الخدمة / Service Start Date"
+  },
+  {
+   "fieldname": "service_end_date",
+   "fieldtype": "Date",
+   "label": "تاريخ نهاية الخدمة / Service End Date"
+  },
+  {
+   "fieldname": "service_days",
+   "fieldtype": "Int",
+   "label": "عدد أيام الخدمة / Service Days",
+   "default": 1,
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "beneficiaries",
+   "fieldtype": "Int",
+   "label": "عدد المستفيدين / Beneficiaries",
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meals_per_person_per_day",
+   "fieldtype": "Float",
+   "label": "وجبات للفرد يومياً / Meals per Person per Day",
+   "default": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "total_meals",
+   "fieldtype": "Int",
+   "label": "إجمالي الوجبات / Total Meals",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "unit_price",
+   "fieldtype": "Currency",
+   "label": "سعر الوحدة / Unit Price",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "estimated_revenue",
+   "fieldtype": "Currency",
+   "label": "الإيراد التقديري / Estimated Revenue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "delivery_lead_minutes",
+   "fieldtype": "Int",
+   "label": "التسليم قبل الخدمة بالدقائق / Delivery Lead Minutes",
+   "default": "45"
+  },
+  {
+   "fieldname": "packaging_type",
+   "fieldtype": "Select",
+   "label": "نوع التغليف / Packaging Type",
+   "options": "علبة فردية / Individual Box\nحافظات حرارية / Thermal Containers\nبوفيه / Buffet Setup\nأخرى / Other"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-16 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Project Service",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
 }

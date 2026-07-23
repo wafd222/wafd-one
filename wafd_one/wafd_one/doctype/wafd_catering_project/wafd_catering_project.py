@@ -139,77 +139,248 @@ class WAFDCateringProject(Document):
                 values["mission"] = self.mission
             frappe.db.set_value("WAFD Contract", self.contract, values, update_modified=False)
 
+MEAL_SEQUENCE = (
+    "سحور / Suhoor",
+    "إفطار / Breakfast",
+    "كوفي بريك / Coffee Break",
+    "غداء / Lunch",
+    "عشاء / Dinner",
+    "إفطار صائم / Iftar Saem",
+)
+
+MEAL_DEFAULT_TIMES = {
+    "سحور / Suhoor": "02:00:00",
+    "إفطار / Breakfast": "07:00:00",
+    "كوفي بريك / Coffee Break": "10:00:00",
+    "غداء / Lunch": "13:00:00",
+    "عشاء / Dinner": "19:00:00",
+    "إفطار صائم / Iftar Saem": "18:00:00",
+}
+
+# Meal Plan historically used a shorter English label for Iftar Saem.
+MEAL_PLAN_TYPE_MAP = {
+    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+}
+
+
+def _project_hotels(project):
+    rows = [row for row in (project.hotels or []) if row.hotel]
+    if not rows and project.primary_hotel:
+        rows = [frappe._dict(hotel=project.primary_hotel, guest_count=project.beneficiary_count or 0)]
+    if not rows:
+        frappe.throw("أضف فندقاً واحداً على الأقل / Add at least one hotel")
+    return rows
+
+
+def _allocate_hotel_counts(project, hotel_rows, total_beneficiaries):
+    hotel_counts = [max(cint(row.guest_count), 0) for row in hotel_rows]
+    allocated = sum(hotel_counts)
+    if allocated > total_beneficiaries and total_beneficiaries:
+        frappe.throw(
+            f"مجموع نزلاء الفنادق ({allocated}) يتجاوز عدد المستفيدين ({total_beneficiaries}) / Hotel allocation exceeds beneficiaries"
+        )
+    if not allocated:
+        base, remainder = divmod(total_beneficiaries, len(hotel_rows))
+        hotel_counts = [base + (1 if idx < remainder else 0) for idx in range(len(hotel_rows))]
+    elif allocated < total_beneficiaries:
+        hotel_counts[-1] += total_beneficiaries - allocated
+    return hotel_counts
+
+
+def _meal_range_for_date(project, service_date):
+    """Return meals allowed on a date, respecting first/last meal boundaries."""
+    meals = list(MEAL_SEQUENCE)
+    first_meal = project.first_meal if project.first_meal in meals else "إفطار / Breakfast"
+    last_meal = project.last_meal if project.last_meal in meals else "عشاء / Dinner"
+    if getdate(service_date) == getdate(project.start_date):
+        meals = meals[meals.index(first_meal):]
+    if getdate(service_date) == getdate(project.end_date):
+        meals = meals[: meals.index(last_meal) + 1]
+    return meals
+
+
+def _schedule_rows(project):
+    """Build normalized meal schedule rows from explicit services or contract boundaries."""
+    rows = []
+    if project.services:
+        for service in project.services:
+            service_start = getdate(service.service_start_date or project.start_date)
+            service_end = getdate(service.service_end_date or project.end_date)
+            if service.service_days:
+                service_end = min(service_end, getdate(add_days(service_start, cint(service.service_days) - 1)))
+            current_date = service_start
+            while current_date <= service_end:
+                rows.append(frappe._dict(
+                    service_date=current_date,
+                    meal_type=service.service_type,
+                    service_time=service.service_time or MEAL_DEFAULT_TIMES.get(service.service_type),
+                    menu_name=service.meal_name or service.service_type,
+                    recipe=service.recipe,
+                    unit_price=flt(service.unit_price),
+                    beneficiaries=cint(service.beneficiaries) or cint(project.beneficiary_count),
+                    multiplier=flt(service.meals_per_person_per_day) or 1,
+                    source_service_row=service.name,
+                ))
+                current_date = getdate(add_days(current_date, 1))
+        return rows
+
+    # No service rows: derive the full schedule directly from project dates and
+    # first/last meal. This makes a newly-created contract project operational
+    # without duplicating the same data in a service table first.
+    current_date = getdate(project.start_date)
+    while current_date <= getdate(project.end_date):
+        for meal_type in _meal_range_for_date(project, current_date):
+            rows.append(frappe._dict(
+                service_date=current_date,
+                meal_type=meal_type,
+                service_time=MEAL_DEFAULT_TIMES.get(meal_type),
+                menu_name=meal_type,
+                recipe=None,
+                unit_price=0,
+                beneficiaries=cint(project.beneficiary_count),
+                multiplier=1,
+                source_service_row=None,
+            ))
+        current_date = getdate(add_days(current_date, 1))
+    return rows
+
+
+def _meal_plan_preview(project):
+    hotel_rows = _project_hotels(project)
+    schedule = _schedule_rows(project)
+    plan_count = 0
+    total_quantity = 0
+    dates = set()
+    meals = set()
+    for row in schedule:
+        counts = _allocate_hotel_counts(project, hotel_rows, cint(row.beneficiaries))
+        for guests in counts:
+            quantity = cint(guests * flt(row.multiplier))
+            if quantity > 0:
+                plan_count += 1
+                total_quantity += quantity
+        dates.add(str(row.service_date))
+        meals.add(row.meal_type)
+    return {
+        "plan_count": plan_count,
+        "total_quantity": total_quantity,
+        "day_count": len(dates),
+        "hotel_count": len(hotel_rows),
+        "meal_types": list(meals),
+        "derived_from_services": bool(project.services),
+    }
+
+
 @frappe.whitelist()
-def generate_meal_plans(project_name, replace_existing=0):
-    """Generate daily meal plans from project services and assigned hotels."""
+def get_meal_plan_preview(project_name):
     project = frappe.get_doc("WAFD Catering Project", project_name)
-    project.check_permission("write")
+    project.check_permission("read")
     if not project.start_date or not project.end_date:
         frappe.throw("حدد تاريخ بداية ونهاية المشروع / Set project start and end dates")
-    if not project.services:
-        frappe.throw("أضف خدمات المشروع أولاً / Add project services first")
-    if not project.hotels:
-        frappe.throw("أضف فندقاً واحداً على الأقل / Add at least one hotel")
+    if cint(project.beneficiary_count) <= 0:
+        frappe.throw("حدد عدد المستفيدين / Set beneficiary count")
+    return _meal_plan_preview(project)
+
+
+@frappe.whitelist()
+def generate_meal_plans(project_name, replace_existing=0):
+    """Generate daily hotel meal plans from explicit services or project meal boundaries."""
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("write")
+    if project.status in ("مكتمل / Completed", "ملغي / Cancelled"):
+        frappe.throw("لا يمكن إنشاء خطط لمشروع مكتمل أو ملغي / Cannot plan a completed or cancelled project")
+    if not project.start_date or not project.end_date:
+        frappe.throw("حدد تاريخ بداية ونهاية المشروع / Set project start and end dates")
+    if cint(project.beneficiary_count) <= 0:
+        frappe.throw("حدد عدد المستفيدين / Set beneficiary count")
+
+    hotel_rows = _project_hotels(project)
+    schedule = _schedule_rows(project)
+    if not schedule:
+        frappe.throw("تعذر تكوين جدول الوجبات / Could not build meal schedule")
 
     replace_existing = cint(replace_existing)
     if replace_existing:
+        protected = frappe.get_all(
+            "WAFD Meal Plan",
+            filters={"project": project.name, "status": ["not in", ["مسودة / Draft", "ملغي / Cancelled"]]},
+            pluck="name",
+        )
+        if protected:
+            frappe.throw(
+                "لا يمكن الاستبدال لوجود خطط بدأ تنفيذها: {0} / Cannot replace plans already in operation".format(
+                    ", ".join(protected[:5])
+                )
+            )
         existing = frappe.get_all("WAFD Meal Plan", filters={"project": project.name}, pluck="name")
         for name in existing:
             frappe.delete_doc("WAFD Meal Plan", name, ignore_permissions=True)
 
     created = 0
     skipped = 0
-    for service in project.services:
-        service_start = getdate(service.service_start_date or project.start_date)
-        service_end = getdate(service.service_end_date or project.end_date)
-        if service.service_days:
-            service_end = min(service_end, getdate(add_days(service_start, cint(service.service_days) - 1)))
-        total_beneficiaries = cint(service.beneficiaries) or cint(project.beneficiary_count)
-        multiplier = flt(service.meals_per_person_per_day) or 1
-        hotel_rows = list(project.hotels or [])
-        hotel_counts = [max(cint(row.guest_count), 0) for row in hotel_rows]
-        allocated = sum(hotel_counts)
+    total_quantity = 0
+    warnings = []
+    for row in schedule:
+        total_beneficiaries = cint(row.beneficiaries) or cint(project.beneficiary_count)
+        hotel_counts = _allocate_hotel_counts(project, hotel_rows, total_beneficiaries)
+        for hotel_row, guests in zip(hotel_rows, hotel_counts):
+            quantity = cint(guests * flt(row.multiplier))
+            if quantity <= 0:
+                continue
+            meal_type = MEAL_PLAN_TYPE_MAP.get(row.meal_type, row.meal_type)
+            filters = {
+                "project": project.name,
+                "hotel": hotel_row.hotel,
+                "service_date": row.service_date,
+                "meal_type": meal_type,
+            }
+            if row.source_service_row:
+                filters["source_service_row"] = row.source_service_row
+            if frappe.db.exists("WAFD Meal Plan", filters):
+                skipped += 1
+                continue
+            doc = frappe.get_doc({
+                "doctype": "WAFD Meal Plan",
+                **filters,
+                "quantity": quantity,
+                "service_time": row.service_time,
+                "menu_name": row.menu_name or meal_type,
+                "recipe": row.recipe,
+                "unit_price": flt(row.unit_price),
+                "status": "مسودة / Draft",
+            })
+            doc.insert()
+            created += 1
+            total_quantity += quantity
+            if not row.recipe:
+                warnings.append(f"{row.service_date} - {meal_type}: لا توجد وصفة / Recipe missing")
 
-        if allocated > total_beneficiaries and total_beneficiaries:
-            frappe.throw(
-                f"مجموع نزلاء الفنادق ({allocated}) يتجاوز مستفيدي الخدمة ({total_beneficiaries}) / Hotel allocation exceeds service beneficiaries"
+    totals = {
+        "meal_plans": frappe.db.count("WAFD Meal Plan", {"project": project.name}),
+        "total_quantity": sum(
+            cint(x.quantity) for x in frappe.get_all(
+                "WAFD Meal Plan", filters={"project": project.name, "status": ["!=", "ملغي / Cancelled"]}, fields=["quantity"]
             )
-        if not allocated:
-            base, remainder = divmod(total_beneficiaries, len(hotel_rows))
-            hotel_counts = [base + (1 if idx < remainder else 0) for idx in range(len(hotel_rows))]
-        elif allocated < total_beneficiaries:
-            hotel_counts[-1] += total_beneficiaries - allocated
-
-        current_date = service_start
-        while current_date <= service_end:
-            for hotel_row, guests in zip(hotel_rows, hotel_counts):
-                quantity = cint(guests * multiplier)
-                if quantity <= 0:
-                    continue
-                filters = {
-                    "project": project.name,
-                    "hotel": hotel_row.hotel,
-                    "service_date": current_date,
-                    "meal_type": service.service_type,
-                    "source_service_row": service.name,
-                }
-                if frappe.db.exists("WAFD Meal Plan", filters):
-                    skipped += 1
-                    continue
-                doc = frappe.get_doc({
-                    "doctype": "WAFD Meal Plan",
-                    **filters,
-                    "quantity": quantity,
-                    "service_time": service.service_time,
-                    "menu_name": service.meal_name or service.service_type,
-                    "recipe": service.recipe,
-                    "unit_price": flt(service.unit_price),
-                    "status": "مسودة / Draft",
-                })
-                doc.insert()
-                created += 1
-            current_date = getdate(add_days(current_date, 1))
-    return {"created": created, "skipped": skipped}
+        ),
+    }
+    frappe.db.set_value(
+        project.doctype,
+        project.name,
+        {
+            "meal_plans_created": totals["meal_plans"],
+            "last_operation_plan_at": now_datetime(),
+            "status": "تخطيط / Planning" if project.status == "مسودة / Draft" else project.status,
+        },
+        update_modified=True,
+    )
+    return {
+        "created": created,
+        "skipped": skipped,
+        "created_quantity": total_quantity,
+        "totals": totals,
+        "warnings": list(dict.fromkeys(warnings)),
+        "derived_from_services": bool(project.services),
+    }
 
 
 @frappe.whitelist()

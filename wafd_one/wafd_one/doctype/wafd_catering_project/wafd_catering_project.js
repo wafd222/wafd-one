@@ -43,20 +43,33 @@ frappe.ui.form.on("WAFD Catering Project", {
             });
         }, __("Operations"));
 
-        frm.add_custom_button(__("Generate Meal Plans"), () => {
+        frm.add_custom_button(__("إنشاء خطط الوجبات تلقائياً / Generate Meal Plans"), () => {
             frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",
+                method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.get_meal_plan_preview",
                 args: { project_name: frm.doc.name },
                 freeze: true,
-                freeze_message: __("Generating meal plans..."),
+                freeze_message: __("Preparing meal schedule preview..."),
                 callback(r) {
-                    const result = r.message || {};
-                    frappe.msgprint(__("Created {0} meal plans; skipped {1} existing plans.", [result.created || 0, result.skipped || 0]));
+                    const x = r.message || {};
+                    const source = x.derived_from_services
+                        ? __("Project service rows")
+                        : __("Project dates and first/last meal");
+                    const message = `
+                        <p><b>${__("Source")}</b>: ${source}</p>
+                        <p>${__("Days")}: <b>${x.day_count || 0}</b></p>
+                        <p>${__("Hotels")}: <b>${x.hotel_count || 0}</b></p>
+                        <p>${__("Meal-plan records")}: <b>${x.plan_count || 0}</b></p>
+                        <p>${__("Total planned meals")}: <b>${format_number(x.total_quantity || 0)}</b></p>
+                        <p>${__("Continue and create only missing plans?")}</p>`;
+                    frappe.confirm(message, () => generate_meal_plans(frm));
                 }
             });
         }, __("Operations"));
 
-        frm.add_custom_button(__("Meal Plan"), () => frappe.new_doc("WAFD Meal Plan", { project: frm.doc.name }), __("Create"));
+        if ((frm.doc.meal_plans_created || 0) > 0 || frm.doc.status !== "مسودة / Draft") {
+            frm.add_custom_button(__("خطة وجبة يدوية / Manual Meal Plan"), () =>
+                frappe.new_doc("WAFD Meal Plan", { project: frm.doc.name }), __("Create"));
+        }
         frm.add_custom_button(__("Delivery Trip"), () => frappe.new_doc("WAFD Delivery Trip", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Cost"), () => frappe.new_doc("WAFD Project Cost", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Revenue"), () => frappe.new_doc("WAFD Project Revenue", { project: frm.doc.name }), __("Create"));
@@ -85,6 +98,32 @@ frappe.ui.form.on("WAFD Catering Project", {
         });
     }
 });
+
+function generate_meal_plans(frm) {
+    frappe.call({
+        method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",
+        args: { project_name: frm.doc.name },
+        freeze: true,
+        freeze_message: __("Generating meal plans..."),
+        callback(r) {
+            const result = r.message || {};
+            const totals = result.totals || {};
+            const warnings = (result.warnings || []).slice(0, 10)
+                .map(x => `<li>${frappe.utils.escape_html(x)}</li>`).join("");
+            frappe.msgprint({
+                title: __("Meal Plans Generated"),
+                indicator: warnings ? "orange" : "green",
+                message: `
+                    <p>${__("Created records")}: <b>${result.created || 0}</b></p>
+                    <p>${__("Skipped existing records")}: <b>${result.skipped || 0}</b></p>
+                    <p>${__("Current plan records")}: <b>${totals.meal_plans || 0}</b></p>
+                    <p>${__("Current planned meals")}: <b>${format_number(totals.total_quantity || 0)}</b></p>
+                    ${warnings ? `<hr><p><b>${__("Recipes still required before production")}</b></p><ul>${warnings}</ul>` : ""}`
+            });
+            frm.reload_doc();
+        }
+    });
+}
 
 frappe.ui.form.on("WAFD Project Service", {
     service_start_date: recalculate,

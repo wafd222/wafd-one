@@ -1,4 +1,5 @@
 import frappe
+from wafd_one import __version__
 
 CORE_DOCTYPES = (
     "WAFD Contract", "WAFD Catering Project", "WAFD Daily Meal Plan",
@@ -7,27 +8,48 @@ CORE_DOCTYPES = (
     "WAFD Invoice", "WAFD Payment", "WAFD Kitchen", "WAFD Warehouse",
 )
 
+
+def _count(doctype):
+    return frappe.db.count(doctype) if frappe.db.exists("DocType", doctype) else 0
+
+
+def _active_kitchens():
+    if not frappe.db.exists("DocType", "WAFD Kitchen"):
+        return 0
+    meta = frappe.get_meta("WAFD Kitchen")
+    if meta.has_field("status"):
+        return frappe.db.count("WAFD Kitchen", {"status": "نشط / Active"})
+    if meta.has_field("is_active"):
+        return frappe.db.count("WAFD Kitchen", {"is_active": 1})
+    return frappe.db.count("WAFD Kitchen")
+
+
 @frappe.whitelist()
 def get_release_readiness():
     missing = [name for name in CORE_DOCTYPES if not frappe.db.exists("DocType", name)]
+    kitchens = _active_kitchens()
+    warehouses = _count("WAFD Warehouse")
+    recipes = _count("WAFD Recipe")
+    hotels = _count("WAFD Hotel")
+    missions = _count("WAFD Mission")
     checks = [
-        {"label": "Core metadata", "ok": not missing, "detail": ", ".join(missing) if missing else "All operational DocTypes are installed"},
-        {"label": "Main kitchen", "ok": bool(frappe.db.exists("WAFD Kitchen", {"is_active": 1})), "detail": "At least one active kitchen is required"},
-        {"label": "Warehouses", "ok": frappe.db.count("WAFD Warehouse") > 0, "detail": f"{frappe.db.count('WAFD Warehouse')} warehouse records"},
-        {"label": "Recipes", "ok": frappe.db.count("WAFD Recipe") > 0, "detail": f"{frappe.db.count('WAFD Recipe')} recipes"},
-        {"label": "Hotels", "ok": frappe.db.count("WAFD Hotel") > 0, "detail": f"{frappe.db.count('WAFD Hotel')} hotels"},
-        {"label": "Missions", "ok": frappe.db.count("WAFD Mission") > 0, "detail": f"{frappe.db.count('WAFD Mission')} missions/clients"},
+        {"label": "النماذج التشغيلية", "ok": not missing, "detail": "جميع النماذج الأساسية مثبتة" if not missing else "مفقود: " + ", ".join(missing)},
+        {"label": "المطبخ المسؤول", "ok": kitchens > 0, "detail": f"عدد المطابخ النشطة: {kitchens}"},
+        {"label": "المستودعات والثلاجات", "ok": warehouses > 0, "detail": f"عدد السجلات: {warehouses}"},
+        {"label": "الوصفات", "ok": recipes > 0, "detail": f"عدد الوصفات: {recipes}"},
+        {"label": "الفنادق", "ok": hotels > 0, "detail": f"عدد الفنادق: {hotels}"},
+        {"label": "البعثات والعملاء", "ok": missions > 0, "detail": f"عدد السجلات: {missions}"},
     ]
     return {
-        "version": "10.0.0 RC1",
+        "version": __version__,
         "ready": all(row["ok"] for row in checks),
         "checks": checks,
         "counts": {
-            "contracts": frappe.db.count("WAFD Contract"),
-            "projects": frappe.db.count("WAFD Catering Project"),
-            "daily_plans": frappe.db.count("WAFD Daily Meal Plan"),
-            "production_batches": frappe.db.count("WAFD Production Batch"),
-            "deliveries": frappe.db.count("WAFD Delivery Proof"),
-            "invoices": frappe.db.count("WAFD Invoice"),
+            "contracts": _count("WAFD Contract"),
+            "projects": _count("WAFD Catering Project"),
+            "daily_plans": _count("WAFD Daily Meal Plan"),
+            "production_batches": _count("WAFD Production Batch"),
+            "deliveries": _count("WAFD Delivery Proof"),
+            "invoices": _count("WAFD Invoice"),
         },
     }

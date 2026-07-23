@@ -15,3 +15,5 @@ body{background:var(--wafd-bg)}
 .list-row:hover{background:#fbfaf7!important}
 .indicator-pill{border-radius:999px!important}
 @media(max-width:768px){.form-column{padding-left:8px!important;padding-right:8px!important}.page-head{position:sticky;top:0;z-index:20}}
+/* Final usability polish */
+.layout-main-section{max-width:1600px;margin-inline:auto}.page-head .page-head-content{max-width:1600px;margin-inline:auto}.form-layout{padding-bottom:24px}.form-section{margin-bottom:10px}.form-section .section-head{font-size:14px;padding-top:10px;padding-bottom:8px}.control-label{font-weight:600}.form-control,.input-with-feedback,.control-input input,.control-input select{min-height:36px}.grid-heading-row{background:#f4f1e9!important;font-weight:700}.grid-row:hover{background:#fbfaf7}.btn{transition:all .15s ease}.btn:hover{transform:translateY(-1px)}

@@ -63,6 +63,18 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "vehicle_capacity",
+   "fieldtype": "Int",
+   "label": "سعة المركبة / Vehicle Capacity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity_utilization_percent",
+   "fieldtype": "Percent",
+   "label": "استغلال السعة / Capacity Utilization",
+   "read_only": 1
+  },
+  {
    "fieldname": "driver",
    "fieldtype": "Link",
    "label": "السائق / Driver",

@@ -1,0 +1,165 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "format:PRC-{YYYY}-{#####}",
+  "creation": "2026-07-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "project",
+    "warehouse",
+    "planning_date",
+    "service_date_from",
+    "service_date_to",
+    "status",
+    "items_section",
+    "items",
+    "totals_section",
+    "total_required_value",
+    "total_shortage_value",
+    "shortage_items_count",
+    "generated_purchase_orders",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع / Warehouse",
+      "options": "WAFD Warehouse",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "planning_date",
+      "fieldtype": "Date",
+      "label": "تاريخ التخطيط / Planning Date",
+      "reqd": 1,
+      "default": "Today",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "service_date_from",
+      "fieldtype": "Date",
+      "label": "الخدمة من / Service From",
+      "reqd": 1
+    },
+    {
+      "fieldname": "service_date_to",
+      "fieldtype": "Date",
+      "label": "الخدمة إلى / Service To",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nتم الحساب / Calculated\nأوامر شراء منشأة / Purchase Orders Created\nمغلق / Closed",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "items_section",
+      "fieldtype": "Section Break",
+      "label": "الاحتياجات / Requirements"
+    },
+    {
+      "fieldname": "items",
+      "fieldtype": "Table",
+      "label": "تفاصيل الاحتياجات / Requirement Details",
+      "options": "WAFD Procurement Plan Item",
+      "reqd": 1
+    },
+    {
+      "fieldname": "totals_section",
+      "fieldtype": "Section Break",
+      "label": "الإجماليات / Totals"
+    },
+    {
+      "fieldname": "total_required_value",
+      "fieldtype": "Currency",
+      "label": "قيمة الاحتياج / Required Value",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_shortage_value",
+      "fieldtype": "Currency",
+      "label": "قيمة العجز / Shortage Value",
+      "read_only": 1
+    },
+    {
+      "fieldname": "shortage_items_count",
+      "fieldtype": "Int",
+      "label": "عدد الأصناف الناقصة / Shortage Items",
+      "read_only": 1
+    },
+    {
+      "fieldname": "generated_purchase_orders",
+      "fieldtype": "Small Text",
+      "label": "أوامر الشراء المنشأة / Generated Purchase Orders",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-22 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Procurement Plan",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Operations Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "WAFD Storekeeper",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

@@ -163,3 +163,135 @@ def get_daily_operations_control(service_date=None, project=None):
         "capacity_utilization_percent": capacity.utilization_percent,
         "open_alerts": frappe.db.count("WAFD Operations Alert", {"status": ["!=", "مغلق / Closed"], **({"project": project} if project else {})}),
     }
+
+
+
+def _available_stock(ingredient: str, warehouse: str | None = None) -> tuple[float, float]:
+    filters = {"ingredient": ingredient}
+    if warehouse:
+        filters["warehouse"] = warehouse
+    rows = frappe.get_all(
+        "WAFD Stock Balance", filters=filters,
+        fields=["actual_quantity", "reserved_quantity", "available_quantity"],
+    )
+    actual = sum(flt(row.actual_quantity) for row in rows)
+    reserved = sum(flt(row.reserved_quantity) for row in rows)
+    available = sum(flt(row.available_quantity) for row in rows)
+    if not rows:
+        return 0.0, 0.0
+    if not available and actual:
+        available = max(actual - reserved, 0)
+    return available, reserved
+
+
+def _project_material_requirements(project_name: str, date_from, date_to) -> dict[str, dict]:
+    plans = frappe.get_all(
+        "WAFD Meal Plan",
+        filters={
+            "project": project_name,
+            "service_date": ["between", [date_from, date_to]],
+            "status": ["not in", ["ملغي / Cancelled", "تم التسليم / Delivered"]],
+        },
+        fields=["name", "recipe", "quantity"],
+    )
+    requirements: dict[str, dict] = {}
+    for plan in plans:
+        if not plan.recipe or cint(plan.quantity) <= 0:
+            continue
+        recipe = frappe.get_doc("WAFD Recipe", plan.recipe)
+        yield_qty = flt(recipe.yield_quantity)
+        if yield_qty <= 0:
+            frappe.throw(f"الوصفة {recipe.name} لا تحتوي على عدد حصص صالح / Recipe yield is invalid")
+        factor = flt(plan.quantity) / yield_qty
+        waste = 1 + flt(recipe.waste_percent) / 100
+        for row in recipe.items or []:
+            qty = flt(row.quantity) * factor * waste
+            current = requirements.setdefault(row.ingredient, {"required_quantity": 0.0, "uom": row.uom})
+            current["required_quantity"] += qty
+    return requirements
+
+
+@frappe.whitelist()
+def create_procurement_plan(project_name: str, service_date_from, service_date_to, warehouse: str | None = None):
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("write")
+    warehouse = warehouse or project.default_warehouse
+    if not warehouse:
+        frappe.throw("حدد المستودع الافتراضي للمشروع / Set the project's default warehouse")
+    if get_datetime(service_date_to).date() < get_datetime(service_date_from).date():
+        frappe.throw("نطاق التاريخ غير صحيح / Invalid date range")
+
+    requirements = _project_material_requirements(project.name, service_date_from, service_date_to)
+    if not requirements:
+        frappe.throw("لا توجد خطط وجبات بوصفات صالحة ضمن الفترة / No valid meal plans in the selected period")
+
+    existing = frappe.db.get_value("WAFD Procurement Plan", {
+        "project": project.name, "warehouse": warehouse,
+        "service_date_from": service_date_from, "service_date_to": service_date_to,
+        "status": ["!=", "مغلق / Closed"],
+    }, "name")
+    doc = frappe.get_doc("WAFD Procurement Plan", existing) if existing else frappe.new_doc("WAFD Procurement Plan")
+    if existing and doc.status == "أوامر شراء منشأة / Purchase Orders Created":
+        frappe.throw("تم إنشاء أوامر شراء لهذه الخطة؛ أغلقها وأنشئ خطة جديدة / Purchase orders already created")
+    doc.project = project.name
+    doc.warehouse = warehouse
+    doc.planning_date = nowdate()
+    doc.service_date_from = service_date_from
+    doc.service_date_to = service_date_to
+    doc.status = "تم الحساب / Calculated"
+    doc.set("items", [])
+    for ingredient, data in sorted(requirements.items()):
+        available, reserved = _available_stock(ingredient, warehouse)
+        shortage = max(flt(data["required_quantity"]) - available, 0)
+        ing = frappe.db.get_value("WAFD Ingredient", ingredient, ["uom", "default_supplier", "latest_market_cost", "standard_cost"], as_dict=True) or {}
+        cost = flt(ing.get("latest_market_cost")) or flt(ing.get("standard_cost"))
+        doc.append("items", {
+            "ingredient": ingredient, "uom": ing.get("uom") or data.get("uom"),
+            "required_quantity": data["required_quantity"], "available_quantity": available,
+            "reserved_quantity": reserved, "shortage_quantity": shortage,
+            "default_supplier": ing.get("default_supplier"), "unit_cost": cost, "amount": shortage * cost,
+        })
+    doc.save()
+    return {"name": doc.name, "shortage_items": doc.shortage_items_count, "shortage_value": doc.total_shortage_value}
+
+
+@frappe.whitelist()
+def create_purchase_orders_from_plan(plan_name: str):
+    plan = frappe.get_doc("WAFD Procurement Plan", plan_name)
+    plan.check_permission("write")
+    if plan.status == "أوامر شراء منشأة / Purchase Orders Created":
+        return {"purchase_orders": [x.strip() for x in (plan.generated_purchase_orders or "").splitlines() if x.strip()], "created": False}
+    grouped: dict[str, list] = {}
+    missing = []
+    for row in plan.items or []:
+        if flt(row.shortage_quantity) <= 0:
+            continue
+        supplier = row.default_supplier or frappe.db.get_value("WAFD Ingredient", row.ingredient, "default_supplier")
+        if not supplier:
+            missing.append(row.ingredient)
+            continue
+        grouped.setdefault(supplier, []).append(row)
+    if missing:
+        frappe.throw("حدد المورد الافتراضي للمكونات التالية: " + ", ".join(missing))
+    if not grouped:
+        frappe.throw("لا يوجد عجز يحتاج إلى أوامر شراء / No shortages require purchasing")
+
+    created = []
+    for supplier, rows in grouped.items():
+        po = frappe.get_doc({
+            "doctype": "WAFD Purchase Order", "supplier": supplier, "project": plan.project,
+            "order_date": nowdate(), "expected_date": plan.service_date_from,
+            "warehouse": plan.warehouse, "tax_rate": 15, "status": "مسودة / Draft",
+            "notes": f"Generated from procurement plan {plan.name}", "items": [],
+        })
+        for row in rows:
+            po.append("items", {"ingredient": row.ingredient, "quantity": row.shortage_quantity,
+                                "uom": row.uom, "rate": row.unit_cost, "received_quantity": 0})
+        po.insert()
+        created.append(po.name)
+        for row in rows:
+            frappe.db.set_value("WAFD Procurement Plan Item", row.name, "purchase_order", po.name, update_modified=False)
+    plan.generated_purchase_orders = "\n".join(created)
+    plan.status = "أوامر شراء منشأة / Purchase Orders Created"
+    plan.save()
+    return {"purchase_orders": created, "created": True}

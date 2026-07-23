@@ -28,8 +28,8 @@ class WAFDStockMovement(Document):
             seen.add(row.ingredient)
             if flt(row.unit_cost) < 0:
                 frappe.throw("تكلفة الوحدة لا يمكن أن تكون سالبة / Unit cost cannot be negative")
-            ingredient = frappe.db.get_value("WAFD Ingredient", row.ingredient, ["is_active", "uom"], as_dict=True)
-            if not ingredient or not ingredient.is_active:
+            ingredient = frappe.db.get_value("WAFD Ingredient", row.ingredient, ["status", "uom"], as_dict=True)
+            if not ingredient or ingredient.status == "غير نشط / Inactive":
                 frappe.throw(f"المكون غير نشط: {row.ingredient} / Ingredient is inactive")
             if not row.uom:
                 row.uom = ingredient.uom

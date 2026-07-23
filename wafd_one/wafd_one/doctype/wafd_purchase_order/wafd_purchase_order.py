@@ -43,9 +43,9 @@ class WAFDPurchaseOrder(Document):
             if flt(row.received_quantity) > flt(row.quantity):
                 frappe.throw(f"الكمية المستلمة تتجاوز المطلوبة للصنف {row.ingredient} / Received quantity exceeds ordered quantity")
             ingredient = frappe.db.get_value(
-                "WAFD Ingredient", row.ingredient, ["is_active", "uom"], as_dict=True
+                "WAFD Ingredient", row.ingredient, ["status", "uom"], as_dict=True
             )
-            if not ingredient or not ingredient.is_active:
+            if not ingredient or ingredient.status == "غير نشط / Inactive":
                 frappe.throw(f"المكون غير نشط: {row.ingredient} / Ingredient is inactive")
             if not row.uom:
                 row.uom = ingredient.uom

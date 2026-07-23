@@ -29,6 +29,7 @@ class WAFDProductionBatch(Document):
         if cint(self.box_count) and cint(self.units_per_box) and packed > cint(self.box_count) * cint(self.units_per_box):
             frappe.throw("الكمية المغلفة تتجاوز سعة الصناديق / Packed quantity exceeds box capacity")
         self.actual_yield_percent = (flt(produced) / flt(planned) * 100) if planned else 0
+        self.completion_percent = (flt(packed) / flt(planned) * 100) if planned else 0
 
     def _sync_from_meal_plan(self):
         if not self.meal_plan:
@@ -310,7 +311,11 @@ def release_food_safety_batch(batch_name):
     unverified = [row.name for row in checks if row.verification_status != "تم التحقق / Verified"]
     if unverified:
         frappe.throw("توجد فحوص لم يتم التحقق منها: " + ", ".join(unverified) + " / Unverified CCP checks exist")
-    unresolved = [row.name for row in checks if row.compliance_status == "غير مطابق / Noncompliant"]
+    unresolved = [
+        row.name for row in checks
+        if row.compliance_status == "غير مطابق / Noncompliant"
+        and row.verification_status != "تم التحقق / Verified"
+    ]
     if unresolved:
         frappe.throw("لا يمكن الإفراج مع وجود انحرافات غير مطابقة: " + ", ".join(unresolved) + " / Noncompliant CCP checks block release")
     batch.db_set({

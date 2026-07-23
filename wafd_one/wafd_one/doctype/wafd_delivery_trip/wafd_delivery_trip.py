@@ -25,6 +25,7 @@ class WAFDDeliveryTrip(Document):
         self._validate_resource(self.vehicle, self.driver)
         self._validate_food_safety_release()
         self._validate_times()
+        self._calculate_trip_metrics()
 
         if self.status == "في الطريق / In Transit":
             self.actual_departure = self.actual_departure or loading.dispatch_time or now_datetime()
@@ -36,6 +37,22 @@ class WAFDDeliveryTrip(Document):
             frappe.throw("سبب التأخير مطلوب / Delay reason is required")
         if self.status == "تم التسليم / Delivered" and not frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
             frappe.throw("لا يمكن اعتماد الرحلة مسلمة دون إثبات تسليم / Delivery proof is required")
+
+
+    def _calculate_trip_metrics(self):
+        self.delay_minutes = 0
+        self.transit_duration_minutes = 0
+        self.on_time_status = "غير محدد / Not Set"
+        if self.actual_departure and self.actual_arrival:
+            seconds = (get_datetime(self.actual_arrival) - get_datetime(self.actual_departure)).total_seconds()
+            self.transit_duration_minutes = max(int(seconds // 60), 0)
+        comparison_time = self.actual_arrival
+        if not comparison_time and self.status in ("في الطريق / In Transit", "متأخرة / Delayed"):
+            comparison_time = now_datetime()
+        if self.planned_arrival and comparison_time:
+            minutes = int((get_datetime(comparison_time) - get_datetime(self.planned_arrival)).total_seconds() // 60)
+            self.delay_minutes = max(minutes, 0)
+            self.on_time_status = "متأخر / Delayed" if minutes > 0 else "في الوقت / On Time"
 
     def _validate_resource(self, vehicle_name, driver_name):
         vehicle = frappe.db.get_value("WAFD Vehicle", vehicle_name, ["status", "capacity_meals", "registration_expiry", "insurance_expiry"], as_dict=True)

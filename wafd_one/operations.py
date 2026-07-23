@@ -191,3 +191,85 @@ def get_project_operations_summary(project_name):
     counts["remaining_meals"] = cint(project.remaining_meals)
     counts["progress_percent"] = project.progress_percent or 0
     return counts
+
+
+def refresh_operational_statuses():
+    """Refresh delay indicators without requiring users to open each document."""
+    current = now_datetime()
+
+    batches = frappe.get_all(
+        "WAFD Production Batch",
+        filters={
+            "status": ["not in", ["جاهز / Ready", "مكتمل / Completed", "موقوف / Stopped"]],
+            "service_deadline": ["is", "set"],
+        },
+        fields=["name", "service_deadline"],
+    )
+    delayed_batches = 0
+    for row in batches:
+        if row.service_deadline and frappe.utils.get_datetime(row.service_deadline) < current:
+            frappe.db.set_value(
+                "WAFD Production Batch", row.name, "schedule_status", "متأخر / Delayed", update_modified=False
+            )
+            delayed_batches += 1
+
+    trips = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={
+            "status": ["in", ["مخططة / Planned", "تم التحميل / Loaded", "في الطريق / In Transit"]],
+            "planned_arrival": ["is", "set"],
+        },
+        fields=["name", "planned_arrival"],
+    )
+    delayed_trips = 0
+    for row in trips:
+        if row.planned_arrival and frappe.utils.get_datetime(row.planned_arrival) < current:
+            planned_arrival = frappe.utils.get_datetime(row.planned_arrival)
+            minutes = max(int((current - planned_arrival).total_seconds() // 60), 0)
+            frappe.db.set_value(
+                "WAFD Delivery Trip",
+                row.name,
+                {
+                    "status": "متأخرة / Delayed",
+                    "delay_reason": "تجاوز وقت الوصول المخطط تلقائياً / Planned arrival time exceeded automatically",
+                    "delay_minutes": minutes,
+                    "on_time_status": "متأخر / Delayed",
+                },
+                update_modified=False,
+            )
+            delayed_trips += 1
+
+    return {"delayed_batches": delayed_batches, "delayed_trips": delayed_trips}
+
+
+@frappe.whitelist()
+def get_operations_dashboard(project_name=None):
+    """Return lightweight live KPIs for operations managers."""
+    filters = {"project": project_name} if project_name else {}
+    result = {
+        "meal_plans": frappe.db.count("WAFD Meal Plan", filters),
+        "production_batches": frappe.db.count("WAFD Production Batch", filters),
+        "packaging_records": frappe.db.count("WAFD Packaging Record", filters),
+        "loading_records": frappe.db.count("WAFD Loading Record", filters),
+        "delivery_trips": frappe.db.count("WAFD Delivery Trip", filters),
+        "delivery_proofs": frappe.db.count("WAFD Delivery Proof", filters),
+    }
+    result["delayed_production"] = frappe.db.count(
+        "WAFD Production Batch", {**filters, "schedule_status": "متأخر / Delayed"}
+    )
+    result["at_risk_production"] = frappe.db.count(
+        "WAFD Production Batch", {**filters, "schedule_status": "معرض للتأخير / At Risk"}
+    )
+    result["delayed_trips"] = frappe.db.count(
+        "WAFD Delivery Trip", {**filters, "status": "متأخرة / Delayed"}
+    )
+    delivered = frappe.db.sql(
+        """select coalesce(sum(received_quantity),0), coalesce(sum(rejected_quantity),0)
+        from `tabWAFD Delivery Proof` where (%s is null or project=%s)""",
+        (project_name, project_name),
+    )[0]
+    result["accepted_quantity"] = cint(delivered[0])
+    result["rejected_quantity"] = cint(delivered[1])
+    total = result["accepted_quantity"] + result["rejected_quantity"]
+    result["acceptance_percent"] = (result["accepted_quantity"] / total * 100) if total else 0
+    return result

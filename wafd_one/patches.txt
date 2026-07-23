@@ -86,3 +86,10 @@ wafd_one.patches.v7_1_0.execute
 
 
 wafd_one.patches.v7_2_0.execute
+wafd_one.patches.v7_3_0.execute
+
+wafd_one.patches.v7_4_0.execute
+
+
+wafd_one.patches.v7_5_0.execute
+wafd_one.patches.v7_6_0.execute

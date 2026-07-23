@@ -55,7 +55,7 @@ doc_events = {
         "WAFD Production Batch", "WAFD Purchase Order", "WAFD Stock Movement",
         "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
         "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
-        "WAFD Project Revenue", "WAFD Approval Request",
+        "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan",
     )
 }
 
@@ -64,5 +64,10 @@ scheduler_events = {
     "daily": [
         "wafd_one.finance.refresh_overdue_invoices",
         "wafd_one.costing.daily_costing_refresh",
+        "wafd_one.executive.refresh_executive_alerts",
+    ],
+    "hourly": [
+        "wafd_one.operations.refresh_operational_statuses",
+        "wafd_one.quality.refresh_food_safety_alerts",
     ]
 }

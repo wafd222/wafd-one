@@ -46,8 +46,13 @@ class WAFDLoadingRecord(Document):
                 frappe.throw("المركبة غير موجودة / Vehicle not found")
             if vehicle.status in ("صيانة / Maintenance", "غير نشطة / Inactive"):
                 frappe.throw("المركبة غير متاحة للتحميل / Vehicle is not available")
+            self.vehicle_capacity = cint(vehicle.capacity_meals)
+            self.capacity_utilization_percent = (flt(quantity) / flt(vehicle.capacity_meals) * 100) if cint(vehicle.capacity_meals) else 0
             if cint(vehicle.capacity_meals) and quantity > cint(vehicle.capacity_meals):
                 frappe.throw("كمية التحميل تتجاوز سعة المركبة / Loaded quantity exceeds vehicle capacity")
+        if not self.vehicle:
+            self.vehicle_capacity = 0
+            self.capacity_utilization_percent = 0
         if self.driver:
             driver_status = frappe.db.get_value("WAFD Driver", self.driver, "status")
             if driver_status in ("إجازة / Leave", "غير نشط / Inactive"):

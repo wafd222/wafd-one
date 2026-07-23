@@ -1,184 +1,203 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:WAFD-DELIVERY-TRIP-{#####}",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "project",
-    "meal_plan",
-    "loading_record",
-    "trip_date",
-    "vehicle",
-    "driver",
-    "hotel",
-    "quantity",
-    "planned_departure",
-    "actual_departure",
-    "planned_arrival",
-    "actual_arrival",
-    "status",
-    "delay_reason",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "المشروع / Project",
-      "options": "WAFD Catering Project",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "meal_plan",
-      "fieldtype": "Link",
-      "label": "خطة الوجبة / Meal Plan",
-      "options": "WAFD Meal Plan",
-      "reqd": 1
-    },
-    {
-      "fieldname": "loading_record",
-      "fieldtype": "Link",
-      "label": "سجل التحميل / Loading Record",
-      "options": "WAFD Loading Record"
-    },
-    {
-      "fieldname": "trip_date",
-      "fieldtype": "Date",
-      "label": "تاريخ الرحلة / Trip Date",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "vehicle",
-      "fieldtype": "Link",
-      "label": "المركبة / Vehicle",
-      "options": "WAFD Vehicle",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "driver",
-      "fieldtype": "Link",
-      "label": "السائق / Driver",
-      "options": "WAFD Driver",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "hotel",
-      "fieldtype": "Link",
-      "label": "الفندق / Hotel",
-      "options": "WAFD Hotel",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "quantity",
-      "fieldtype": "Int",
-      "label": "الكمية / Quantity",
-      "reqd": 1,
-      "non_negative": 1
-    },
-    {
-      "fieldname": "planned_departure",
-      "fieldtype": "Datetime",
-      "label": "المغادرة المخططة / Planned Departure"
-    },
-    {
-      "fieldname": "actual_departure",
-      "fieldtype": "Datetime",
-      "label": "المغادرة الفعلية / Actual Departure"
-    },
-    {
-      "fieldname": "planned_arrival",
-      "fieldtype": "Datetime",
-      "label": "الوصول المخطط / Planned Arrival"
-    },
-    {
-      "fieldname": "actual_arrival",
-      "fieldtype": "Datetime",
-      "label": "الوصول الفعلي / Actual Arrival"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "مخططة / Planned\nتم التحميل / Loaded\nفي الطريق / In Transit\nوصلت / Arrived\nتم التسليم / Delivered\nمتأخرة / Delayed\nملغية / Cancelled",
-      "default": "مخططة / Planned",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "delay_reason",
-      "fieldtype": "Small Text",
-      "label": "سبب التأخير / Delay Reason"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Delivery Trip",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Driver",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-DELIVERY-TRIP-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "meal_plan",
+  "loading_record",
+  "trip_date",
+  "vehicle",
+  "driver",
+  "hotel",
+  "quantity",
+  "planned_departure",
+  "actual_departure",
+  "planned_arrival",
+  "actual_arrival",
+  "status",
+  "delay_reason",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_plan",
+   "fieldtype": "Link",
+   "label": "خطة الوجبة / Meal Plan",
+   "options": "WAFD Meal Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loading_record",
+   "fieldtype": "Link",
+   "label": "سجل التحميل / Loading Record",
+   "options": "WAFD Loading Record"
+  },
+  {
+   "fieldname": "trip_date",
+   "fieldtype": "Date",
+   "label": "تاريخ الرحلة / Trip Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "المركبة / Vehicle",
+   "options": "WAFD Vehicle",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "السائق / Driver",
+   "options": "WAFD Driver",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hotel",
+   "fieldtype": "Link",
+   "label": "الفندق / Hotel",
+   "options": "WAFD Hotel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "الكمية / Quantity",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "planned_departure",
+   "fieldtype": "Datetime",
+   "label": "المغادرة المخططة / Planned Departure"
+  },
+  {
+   "fieldname": "actual_departure",
+   "fieldtype": "Datetime",
+   "label": "المغادرة الفعلية / Actual Departure"
+  },
+  {
+   "fieldname": "planned_arrival",
+   "fieldtype": "Datetime",
+   "label": "الوصول المخطط / Planned Arrival"
+  },
+  {
+   "fieldname": "actual_arrival",
+   "fieldtype": "Datetime",
+   "label": "الوصول الفعلي / Actual Arrival"
+  },
+  {
+   "fieldname": "on_time_status",
+   "fieldtype": "Select",
+   "label": "حالة الالتزام / On-time Status",
+   "options": "غير محدد / Not Set\nفي الوقت / On Time\nمتأخر / Delayed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delay_minutes",
+   "fieldtype": "Int",
+   "label": "دقائق التأخير / Delay Minutes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transit_duration_minutes",
+   "fieldtype": "Int",
+   "label": "مدة الرحلة بالدقائق / Transit Duration (Minutes)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مخططة / Planned\nتم التحميل / Loaded\nفي الطريق / In Transit\nوصلت / Arrived\nتم التسليم / Delivered\nمتأخرة / Delayed\nملغية / Cancelled",
+   "default": "مخططة / Planned",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delay_reason",
+   "fieldtype": "Small Text",
+   "label": "سبب التأخير / Delay Reason"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Delivery Trip",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Driver",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

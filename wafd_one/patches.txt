@@ -103,3 +103,7 @@ wafd_one.patches.v8_2_0.execute
 
 
 wafd_one.patches.v8_3_0.execute
+
+wafd_one.patches.v8_4_0.execute
+
+wafd_one.patches.v8_4_1.execute

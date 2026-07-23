@@ -1,3 +1,27 @@
+// WAFD Meal Plan is an internal operational record from v8.4 onward.
+// Users plan from WAFD Daily Meal Plan; this DocType remains for compatibility
+// with production, loading, delivery, invoicing and historical records.
+frappe.ui.form.on("WAFD Meal Plan", {
+    onload(frm) {
+        if (frm.is_new() && !frappe.route_options?.allow_internal_meal_plan) {
+            frappe.msgprint({
+                title: __("Use Daily Meal Planning"),
+                indicator: "blue",
+                message: __("Individual meal records are generated automatically from WAFD Daily Meal Plan. Open the project and use Generate Daily Plans.")
+            });
+        }
+    },
+    refresh(frm) {
+        if (frm.is_new() && !frappe.route_options?.allow_internal_meal_plan) {
+            frm.disable_save();
+            frm.add_custom_button(__("Open Daily Meal Plans"), () => {
+                const filters = frm.doc.project ? { project: frm.doc.project } : {};
+                frappe.set_route("List", "WAFD Daily Meal Plan", filters);
+            });
+        }
+    }
+});
+
 frappe.ui.form.on("WAFD Meal Plan", {
     refresh(frm) {
         configure_hotel_query(frm);

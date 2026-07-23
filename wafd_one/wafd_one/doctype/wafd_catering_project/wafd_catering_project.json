@@ -576,8 +576,9 @@
   "is_submittable": 0,
   "links": [
     {
-      "link_doctype": "WAFD Meal Plan",
-      "link_fieldname": "project"
+      "link_doctype": "WAFD Daily Meal Plan",
+      "link_fieldname": "project",
+      "group": "التخطيط اليومي / Daily Planning"
     },
     {
       "link_doctype": "WAFD Delivery Trip",

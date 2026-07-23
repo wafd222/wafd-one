@@ -4,7 +4,7 @@ frappe.ui.form.on("WAFD Catering Project", {
 
         frm.add_custom_button(__("Generate Operation Plan"), () => {
             frappe.confirm(
-                __("Create meal plans and production batches for this project? Delivery trips are created after loading."),
+                __("Create consolidated daily plans and production batches for this project? Delivery trips are created after loading."),
                 () => frappe.call({
                     method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_operation_plan",
                     args: { project_name: frm.doc.name },
@@ -18,10 +18,10 @@ frappe.ui.form.on("WAFD Catering Project", {
                             title: __("Operation Plan Created"),
                             indicator: warnings ? "orange" : "green",
                             message: `
-                                <p>${__("Meal plans: {0} created, {1} existing.", [result.meal_plans_created || 0, result.meal_plans_skipped || 0])}</p>
+                                <p>${__("Daily meal rows: {0} created, {1} existing.", [result.meal_plans_created || 0, result.meal_plans_skipped || 0])}</p>
                                 <p>${__("Production batches: {0} created, {1} existing.", [result.batches_created || 0, result.batches_skipped || 0])}</p>
                                 <p>${__("Delivery trips are created after loading. Existing trips: {0}.", [result.trips_skipped || 0])}</p>
-                                <p><b>${__("Current totals")}</b>: ${totals.meal_plans || 0} / ${totals.production_batches || 0} / ${totals.delivery_trips || 0}</p>
+                                <p><b>${__("Current totals")}</b>: ${totals.daily_plans || 0} / ${totals.production_batches || 0} / ${totals.delivery_trips || 0}</p>
                                 ${warnings ? `<hr><ul>${warnings}</ul>` : ""}
                             `
                         });
@@ -42,34 +42,6 @@ frappe.ui.form.on("WAFD Catering Project", {
                 }
             });
         }, __("Operations"));
-
-        frm.add_custom_button(__("إنشاء خطط الوجبات تلقائياً / Generate Meal Plans"), () => {
-            frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.get_meal_plan_preview",
-                args: { project_name: frm.doc.name },
-                freeze: true,
-                freeze_message: __("Preparing meal schedule preview..."),
-                callback(r) {
-                    const x = r.message || {};
-                    const source = x.derived_from_services
-                        ? __("Project service rows")
-                        : __("Project dates and first/last meal");
-                    const message = `
-                        <p><b>${__("Source")}</b>: ${source}</p>
-                        <p>${__("Days")}: <b>${x.day_count || 0}</b></p>
-                        <p>${__("Hotels")}: <b>${x.hotel_count || 0}</b></p>
-                        <p>${__("Meal-plan records")}: <b>${x.plan_count || 0}</b></p>
-                        <p>${__("Total planned meals")}: <b>${format_number(x.total_quantity || 0)}</b></p>
-                        <p>${__("Continue and create only missing plans?")}</p>`;
-                    frappe.confirm(message, () => generate_meal_plans(frm));
-                }
-            });
-        }, __("Operations"));
-
-        if ((frm.doc.meal_plans_created || 0) > 0 || frm.doc.status !== "مسودة / Draft") {
-            frm.add_custom_button(__("خطة وجبة يدوية / Manual Meal Plan"), () =>
-                frappe.new_doc("WAFD Meal Plan", { project: frm.doc.name }), __("Create"));
-        }
         frm.add_custom_button(__("Delivery Trip"), () => frappe.new_doc("WAFD Delivery Trip", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Cost"), () => frappe.new_doc("WAFD Project Cost", { project: frm.doc.name }), __("Create"));
         frm.add_custom_button(__("Project Revenue"), () => frappe.new_doc("WAFD Project Revenue", { project: frm.doc.name }), __("Create"));
@@ -98,32 +70,6 @@ frappe.ui.form.on("WAFD Catering Project", {
         });
     }
 });
-
-function generate_meal_plans(frm) {
-    frappe.call({
-        method: "wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project.generate_meal_plans",
-        args: { project_name: frm.doc.name },
-        freeze: true,
-        freeze_message: __("Generating meal plans..."),
-        callback(r) {
-            const result = r.message || {};
-            const totals = result.totals || {};
-            const warnings = (result.warnings || []).slice(0, 10)
-                .map(x => `<li>${frappe.utils.escape_html(x)}</li>`).join("");
-            frappe.msgprint({
-                title: __("Meal Plans Generated"),
-                indicator: warnings ? "orange" : "green",
-                message: `
-                    <p>${__("Created records")}: <b>${result.created || 0}</b></p>
-                    <p>${__("Skipped existing records")}: <b>${result.skipped || 0}</b></p>
-                    <p>${__("Current plan records")}: <b>${totals.meal_plans || 0}</b></p>
-                    <p>${__("Current planned meals")}: <b>${format_number(totals.total_quantity || 0)}</b></p>
-                    ${warnings ? `<hr><p><b>${__("Recipes still required before production")}</b></p><ul>${warnings}</ul>` : ""}`
-            });
-            frm.reload_doc();
-        }
-    });
-}
 
 frappe.ui.form.on("WAFD Project Service", {
     service_start_date: recalculate,
@@ -245,7 +191,7 @@ frappe.ui.form.on("WAFD Catering Project", {
     refresh(frm) {
         if (frm.is_new()) return;
 
-        frm.add_custom_button(__("Generate Daily Meal Plans"), () => {
+        frm.add_custom_button(__("إنشاء الخطط اليومية / Generate Daily Plans"), () => {
             frappe.call({
                 method: "wafd_one.daily_planning.generate_daily_plans",
                 args: { project_name: frm.doc.name },
@@ -266,7 +212,11 @@ frappe.ui.form.on("WAFD Catering Project", {
             });
         }, __("Operations"));
 
-        frm.add_custom_button(__("Daily Planning Summary"), () => {
+        frm.add_custom_button(__("فتح الخطط اليومية / Open Daily Plans"), () => {
+            frappe.set_route("List", "WAFD Daily Meal Plan", { project: frm.doc.name });
+        }, __("Operations"));
+
+        frm.add_custom_button(__("ملخص التخطيط اليومي / Daily Planning Summary"), () => {
             frappe.call({
                 method: "wafd_one.daily_planning.get_daily_plan_summary",
                 args: { project_name: frm.doc.name },
@@ -275,7 +225,7 @@ frappe.ui.form.on("WAFD Catering Project", {
                     const statusRows = Object.entries(x.by_status || {})
                         .map(([key, value]) => `<li>${frappe.utils.escape_html(key)}: <b>${value}</b></li>`).join("");
                     frappe.msgprint({
-                        title: __("Daily Planning Summary"),
+                        title: __("ملخص التخطيط اليومي / Daily Planning Summary"),
                         message: `${__("Daily Plans")}: <b>${x.plans || 0}</b><br>
                                   ${__("Total Meals")}: <b>${format_number(x.total_quantity || 0)}</b><br>
                                   ${__("Missing Recipes")}: <b>${x.missing_recipes || 0}</b><br>

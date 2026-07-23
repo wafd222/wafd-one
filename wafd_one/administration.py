@@ -41,6 +41,7 @@ RESET_ORDER = [
     "WAFD Production Batch",
     "WAFD Stock Movement",
     "WAFD Purchase Order",
+    "WAFD Daily Meal Plan",
     "WAFD Meal Plan",
     "WAFD Contract",
     "WAFD Catering Project",

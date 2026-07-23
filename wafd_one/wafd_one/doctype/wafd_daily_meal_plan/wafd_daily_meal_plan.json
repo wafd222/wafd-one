@@ -8,40 +8,207 @@
  "title_field": "plan_title",
  "search_fields": "project,hotel,service_date,kitchen,status",
  "field_order": [
-  "plan_title", "project", "hotel", "service_date", "status", "operations_section",
-  "kitchen", "source_warehouse", "meals_section", "meals", "summary_section",
-  "total_quantity", "total_value", "estimated_cost", "estimated_profit",
-  "estimated_margin_percent", "readiness_section", "missing_recipe_count",
-  "production_batch_count", "notes"
+  "plan_title",
+  "project",
+  "hotel",
+  "service_date",
+  "status",
+  "operations_section",
+  "kitchen",
+  "source_warehouse",
+  "meals_section",
+  "meals",
+  "summary_section",
+  "total_quantity",
+  "total_value",
+  "estimated_cost",
+  "estimated_profit",
+  "estimated_margin_percent",
+  "readiness_section",
+  "missing_recipe_count",
+  "production_batch_count",
+  "notes"
  ],
  "fields": [
-  {"fieldname":"plan_title","fieldtype":"Data","label":"عنوان الخطة اليومية / Daily Plan Title","reqd":1,"in_list_view":1},
-  {"fieldname":"project","fieldtype":"Link","label":"المشروع / Project","options":"WAFD Catering Project","reqd":1,"in_list_view":1},
-  {"fieldname":"hotel","fieldtype":"Link","label":"الفندق / Hotel","options":"WAFD Hotel","reqd":1,"in_list_view":1},
-  {"fieldname":"service_date","fieldtype":"Date","label":"تاريخ الخدمة / Service Date","reqd":1,"in_list_view":1},
-  {"fieldname":"status","fieldtype":"Select","label":"الحالة / Status","options":"مسودة / Draft\nجاهزة للاعتماد / Ready for Approval\nمعتمدة / Approved\nقيد الإنتاج / In Production\nجاهزة / Ready\nتم التسليم / Delivered\nملغاة / Cancelled","default":"مسودة / Draft","in_list_view":1},
-  {"fieldname":"operations_section","fieldtype":"Section Break","label":"التشغيل / Operations"},
-  {"fieldname":"kitchen","fieldtype":"Link","label":"المطبخ المسؤول / Responsible Kitchen","options":"WAFD Kitchen"},
-  {"fieldname":"source_warehouse","fieldtype":"Link","label":"مستودع الصرف / Source Warehouse","options":"WAFD Warehouse"},
-  {"fieldname":"meals_section","fieldtype":"Section Break","label":"وجبات اليوم / Daily Meals"},
-  {"fieldname":"meals","fieldtype":"Table","label":"الوجبات / Meals","options":"WAFD Daily Meal Plan Item","reqd":1},
-  {"fieldname":"summary_section","fieldtype":"Section Break","label":"الملخص المالي والتشغيلي / Operational and Financial Summary"},
-  {"fieldname":"total_quantity","fieldtype":"Int","label":"إجمالي الوجبات / Total Meals","read_only":1},
-  {"fieldname":"total_value","fieldtype":"Currency","label":"إجمالي القيمة / Total Value","read_only":1},
-  {"fieldname":"estimated_cost","fieldtype":"Currency","label":"التكلفة التقديرية / Estimated Cost","read_only":1},
-  {"fieldname":"estimated_profit","fieldtype":"Currency","label":"الربح التقديري / Estimated Profit","read_only":1},
-  {"fieldname":"estimated_margin_percent","fieldtype":"Percent","label":"هامش الربح التقديري / Estimated Margin","read_only":1},
-  {"fieldname":"readiness_section","fieldtype":"Section Break","label":"جاهزية الإنتاج / Production Readiness"},
-  {"fieldname":"missing_recipe_count","fieldtype":"Int","label":"وجبات بدون وصفة / Meals Missing Recipe","read_only":1},
-  {"fieldname":"production_batch_count","fieldtype":"Int","label":"دفعات الإنتاج / Production Batches","read_only":1},
-  {"fieldname":"notes","fieldtype":"Small Text","label":"ملاحظات / Notes"}
+  {
+   "fieldname": "plan_title",
+   "fieldtype": "Data",
+   "label": "عنوان الخطة اليومية / Daily Plan Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hotel",
+   "fieldtype": "Link",
+   "label": "الفندق / Hotel",
+   "options": "WAFD Hotel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_date",
+   "fieldtype": "Date",
+   "label": "تاريخ الخدمة / Service Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مسودة / Draft\nجاهزة للاعتماد / Ready for Approval\nمعتمدة / Approved\nقيد الإنتاج / In Production\nجاهزة / Ready\nتم التسليم / Delivered\nملغاة / Cancelled",
+   "default": "مسودة / Draft",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "operations_section",
+   "fieldtype": "Section Break",
+   "label": "التشغيل / Operations"
+  },
+  {
+   "fieldname": "kitchen",
+   "fieldtype": "Link",
+   "label": "المطبخ المسؤول / Responsible Kitchen",
+   "options": "WAFD Kitchen"
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "مستودع الصرف / Source Warehouse",
+   "options": "WAFD Warehouse"
+  },
+  {
+   "fieldname": "meals_section",
+   "fieldtype": "Section Break",
+   "label": "وجبات اليوم / Daily Meals"
+  },
+  {
+   "fieldname": "meals",
+   "fieldtype": "Table",
+   "label": "الوجبات / Meals",
+   "options": "WAFD Daily Meal Plan Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "الملخص المالي والتشغيلي / Operational and Financial Summary"
+  },
+  {
+   "fieldname": "total_quantity",
+   "fieldtype": "Int",
+   "label": "إجمالي الوجبات / Total Meals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_value",
+   "fieldtype": "Currency",
+   "label": "إجمالي القيمة / Total Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "التكلفة التقديرية / Estimated Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_profit",
+   "fieldtype": "Currency",
+   "label": "الربح التقديري / Estimated Profit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_margin_percent",
+   "fieldtype": "Percent",
+   "label": "هامش الربح التقديري / Estimated Margin",
+   "read_only": 1
+  },
+  {
+   "fieldname": "readiness_section",
+   "fieldtype": "Section Break",
+   "label": "جاهزية الإنتاج / Production Readiness"
+  },
+  {
+   "fieldname": "missing_recipe_count",
+   "fieldtype": "Int",
+   "label": "وجبات بدون وصفة / Meals Missing Recipe",
+   "read_only": 1
+  },
+  {
+   "fieldname": "production_batch_count",
+   "fieldtype": "Int",
+   "label": "دفعات الإنتاج / Production Batches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
  ],
  "permissions": [
-  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"email":1,"export":1,"print":1,"report":1,"share":1},
-  {"role":"WAFD Operations Manager","read":1,"write":1,"create":1,"delete":1,"email":1,"export":1,"print":1,"report":1,"share":1},
-  {"role":"WAFD Project Manager","read":1,"write":1,"create":1,"email":1,"export":1,"print":1,"report":1,"share":1},
-  {"role":"WAFD Production Supervisor","read":1,"write":1,"create":1,"email":1,"export":1,"print":1,"report":1,"share":1}
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Project Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
  ],
- "sort_field":"service_date",
- "sort_order":"DESC"
+ "sort_field": "service_date",
+ "sort_order": "DESC",
+ "creation": "2026-07-23 13:45:00.000000",
+ "modified": "2026-07-23 13:45:00.000000",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
 }

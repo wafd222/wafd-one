@@ -6,27 +6,117 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "meal_type", "quantity", "service_time", "menu_name", "recipe", "unit_price",
-  "estimated_unit_cost", "total_value", "estimated_cost", "estimated_profit",
-  "estimated_margin_percent", "meal_plan", "production_batch", "notes"
+  "meal_type",
+  "quantity",
+  "service_time",
+  "menu_name",
+  "recipe",
+  "unit_price",
+  "estimated_unit_cost",
+  "total_value",
+  "estimated_cost",
+  "estimated_profit",
+  "estimated_margin_percent",
+  "meal_plan",
+  "production_batch",
+  "notes"
  ],
  "fields": [
-  {"fieldname":"meal_type","fieldtype":"Select","label":"نوع الوجبة / Meal Type","options":"إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break","reqd":1,"in_list_view":1},
-  {"fieldname":"quantity","fieldtype":"Int","label":"الكمية / Quantity","reqd":1,"in_list_view":1},
-  {"fieldname":"service_time","fieldtype":"Time","label":"وقت الخدمة / Service Time","in_list_view":1},
-  {"fieldname":"menu_name","fieldtype":"Data","label":"اسم المنيو / Menu Name"},
-  {"fieldname":"recipe","fieldtype":"Link","label":"الوصفة / Recipe","options":"WAFD Recipe","in_list_view":1},
-  {"fieldname":"unit_price","fieldtype":"Currency","label":"سعر البيع للوحدة / Unit Price"},
-  {"fieldname":"estimated_unit_cost","fieldtype":"Currency","label":"التكلفة التقديرية للوحدة / Est. Unit Cost","read_only":1},
-  {"fieldname":"total_value","fieldtype":"Currency","label":"إجمالي القيمة / Total Value","read_only":1},
-  {"fieldname":"estimated_cost","fieldtype":"Currency","label":"التكلفة التقديرية / Estimated Cost","read_only":1},
-  {"fieldname":"estimated_profit","fieldtype":"Currency","label":"الربح التقديري / Estimated Profit","read_only":1},
-  {"fieldname":"estimated_margin_percent","fieldtype":"Percent","label":"هامش الربح / Estimated Margin","read_only":1},
-  {"fieldname":"meal_plan","fieldtype":"Link","label":"خطة الوجبة التشغيلية / Operational Meal Plan","options":"WAFD Meal Plan","read_only":1},
-  {"fieldname":"production_batch","fieldtype":"Link","label":"دفعة الإنتاج / Production Batch","options":"WAFD Production Batch","read_only":1},
-  {"fieldname":"notes","fieldtype":"Data","label":"ملاحظات / Notes"}
+  {
+   "fieldname": "meal_type",
+   "fieldtype": "Select",
+   "label": "نوع الوجبة / Meal Type",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "الكمية / Quantity",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_time",
+   "fieldtype": "Time",
+   "label": "وقت الخدمة / Service Time",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "menu_name",
+   "fieldtype": "Data",
+   "label": "اسم المنيو / Menu Name"
+  },
+  {
+   "fieldname": "recipe",
+   "fieldtype": "Link",
+   "label": "الوصفة / Recipe",
+   "options": "WAFD Recipe",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "unit_price",
+   "fieldtype": "Currency",
+   "label": "سعر البيع للوحدة / Unit Price"
+  },
+  {
+   "fieldname": "estimated_unit_cost",
+   "fieldtype": "Currency",
+   "label": "التكلفة التقديرية للوحدة / Est. Unit Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_value",
+   "fieldtype": "Currency",
+   "label": "إجمالي القيمة / Total Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "التكلفة التقديرية / Estimated Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_profit",
+   "fieldtype": "Currency",
+   "label": "الربح التقديري / Estimated Profit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_margin_percent",
+   "fieldtype": "Percent",
+   "label": "هامش الربح / Estimated Margin",
+   "read_only": 1
+  },
+  {
+   "fieldname": "meal_plan",
+   "fieldtype": "Link",
+   "label": "خطة الوجبة التشغيلية / Operational Meal Plan",
+   "options": "WAFD Meal Plan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "production_batch",
+   "fieldtype": "Link",
+   "label": "دفعة الإنتاج / Production Batch",
+   "options": "WAFD Production Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Data",
+   "label": "ملاحظات / Notes"
+  }
  ],
  "permissions": [],
  "sort_field": "idx",
- "sort_order": "ASC"
+ "sort_order": "ASC",
+ "creation": "2026-07-23 13:45:00.000000",
+ "modified": "2026-07-23 13:45:00.000000",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
 }

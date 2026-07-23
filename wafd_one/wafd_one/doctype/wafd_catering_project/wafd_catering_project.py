@@ -385,75 +385,60 @@ def generate_meal_plans(project_name, replace_existing=0):
 
 @frappe.whitelist()
 def generate_operation_plan(project_name):
-    """Create the operational documents for a catering project without duplicating existing records."""
+    """Create daily plans first, then production batches from approved rows.
+
+    WAFD Daily Meal Plan is the user-facing source of truth. Individual WAFD
+    Meal Plan records are generated internally only to preserve compatibility
+    with production, delivery and invoicing documents.
+    """
     project = frappe.get_doc("WAFD Catering Project", project_name)
     project.check_permission("write")
-
     if project.status in ("مكتمل / Completed", "ملغي / Cancelled"):
         frappe.throw("لا يمكن إنشاء خطة تشغيل لمشروع مكتمل أو ملغي / Cannot plan a completed or cancelled project")
 
-    meal_result = generate_meal_plans(project.name)
-    meal_plans = frappe.get_all(
-        "WAFD Meal Plan",
-        filters={"project": project.name, "status": ["!=", "ملغي / Cancelled"]},
-        fields=["name", "hotel", "service_date", "service_time", "quantity", "recipe"],
-        order_by="service_date asc, service_time asc",
+    from wafd_one.daily_planning import generate_daily_plans
+    from wafd_one.wafd_one.doctype.wafd_daily_meal_plan.wafd_daily_meal_plan import create_production_batches
+
+    daily_result = generate_daily_plans(project.name)
+    daily_names = frappe.get_all(
+        "WAFD Daily Meal Plan",
+        filters={"project": project.name, "status": ["not in", ["ملغاة / Cancelled", "تم التسليم / Delivered"]]},
+        pluck="name",
+        order_by="service_date asc",
     )
-
-    batches_created = 0
-    batches_skipped = 0
-    # Delivery trips are intentionally not created here. A trip must be linked
-    # to a completed loading record and is created later from that record.
-    trips_created = 0
-    trips_skipped = frappe.db.count("WAFD Delivery Trip", {"project": project.name})
+    batches_created = batches_skipped = 0
     warnings = []
-
-    for plan in meal_plans:
-        batch_name = frappe.db.get_value("WAFD Production Batch", {"meal_plan": plan.name}, "name")
-        if batch_name:
-            batches_skipped += 1
-        else:
-            if not plan.recipe:
-                warnings.append(f"{plan.name}: لا توجد وصفة / Recipe is missing")
-            else:
-                batch = frappe.get_doc({
-                    "doctype": "WAFD Production Batch",
-                    "project": project.name,
-                    "meal_plan": plan.name,
-                    "recipe": plan.recipe,
-                    "source_warehouse": project.default_source_warehouse,
-                    "batch_date": plan.service_date,
-                    "planned_quantity": plan.quantity,
-                    "status": "مخطط / Planned",
-                })
-                batch.insert()
-                batches_created += 1
+    for name in daily_names:
+        daily = frappe.get_doc("WAFD Daily Meal Plan", name)
+        if daily.missing_recipe_count:
+            warnings.append(f"{daily.name}: توجد وجبات بلا وصفة / Meals are missing recipes")
+            continue
+        result = create_production_batches(daily.name)
+        batches_created += cint(result.get("created"))
+        batches_skipped += cint(result.get("skipped"))
 
     totals = {
+        "daily_plans": frappe.db.count("WAFD Daily Meal Plan", {"project": project.name}),
         "meal_plans": frappe.db.count("WAFD Meal Plan", {"project": project.name}),
         "production_batches": frappe.db.count("WAFD Production Batch", {"project": project.name}),
         "delivery_trips": frappe.db.count("WAFD Delivery Trip", {"project": project.name}),
     }
-    frappe.db.set_value(
-        project.doctype,
-        project.name,
-        {
-            "meal_plans_created": totals["meal_plans"],
-            "production_batches_created": totals["production_batches"],
-            "delivery_trips_created": totals["delivery_trips"],
-            "last_operation_plan_at": now_datetime(),
-            "status": "تخطيط / Planning" if project.status == "مسودة / Draft" else project.status,
-        },
-        update_modified=True,
-    )
-
+    frappe.db.set_value(project.doctype, project.name, {
+        "meal_plans_created": totals["meal_plans"],
+        "production_batches_created": totals["production_batches"],
+        "delivery_trips_created": totals["delivery_trips"],
+        "last_operation_plan_at": now_datetime(),
+        "status": "تخطيط / Planning" if project.status == "مسودة / Draft" else project.status,
+    }, update_modified=True)
     return {
-        "meal_plans_created": meal_result.get("created", 0),
-        "meal_plans_skipped": meal_result.get("skipped", 0),
+        "meal_plans_created": cint(daily_result.get("created")),
+        "meal_plans_skipped": cint(daily_result.get("updated")) + cint(daily_result.get("skipped")),
+        "daily_plans_created": cint(daily_result.get("created")),
+        "daily_plans_updated": cint(daily_result.get("updated")),
         "batches_created": batches_created,
         "batches_skipped": batches_skipped,
-        "trips_created": trips_created,
-        "trips_skipped": trips_skipped,
+        "trips_created": 0,
+        "trips_skipped": totals["delivery_trips"],
         "totals": totals,
         "warnings": list(dict.fromkeys(warnings)),
     }

@@ -28,6 +28,7 @@
   "production_supervisor",
   "start_time",
   "end_time",
+  "completion_percent",
   "status",
   "notes",
   "cooking_start_time",

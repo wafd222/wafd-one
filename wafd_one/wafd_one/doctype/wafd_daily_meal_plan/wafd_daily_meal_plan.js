@@ -1,7 +1,18 @@
 frappe.ui.form.on("WAFD Daily Meal Plan", {
     refresh(frm) {
-        if (frm.is_new()) return;
-        frm.add_custom_button(__("Create Production Batches"), () => {
+        if (frm.is_new()) {
+            if (frm.doc.project && !frm.doc.service_date) {
+                frappe.db.get_value("WAFD Catering Project", frm.doc.project, ["primary_hotel", "default_kitchen", "default_source_warehouse"])
+                    .then(r => {
+                        const x = r.message || {};
+                        if (!frm.doc.hotel && x.primary_hotel) frm.set_value("hotel", x.primary_hotel);
+                        if (!frm.doc.kitchen && x.default_kitchen) frm.set_value("kitchen", x.default_kitchen);
+                        if (!frm.doc.source_warehouse && x.default_source_warehouse) frm.set_value("source_warehouse", x.default_source_warehouse);
+                    });
+            }
+            return;
+        }
+        if (!frm.doc.missing_recipe_count && frm.doc.status !== "تم التسليم / Delivered") frm.add_custom_button(__("Create Production Batches"), () => {
             frappe.confirm(__("Create one production batch for every meal in this daily plan?"), () => {
                 frappe.call({
                     method: "wafd_one.wafd_one.doctype.wafd_daily_meal_plan.wafd_daily_meal_plan.create_production_batches",

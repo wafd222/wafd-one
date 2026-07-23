@@ -18,6 +18,9 @@
   "actual_departure",
   "planned_arrival",
   "actual_arrival",
+  "on_time_status",
+  "delay_minutes",
+  "transit_duration_minutes",
   "status",
   "delay_reason",
   "notes"

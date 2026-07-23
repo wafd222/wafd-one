@@ -1,473 +1,481 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:contract_title",
- "creation": "2026-07-13 00:00:00.000000",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "contract_information_section",
-  "contract_title",
-  "contract_number",
-  "contract_type",
-  "project_type",
-  "status",
-  "mission",
-  "hotel",
-  "project",
-  "signing_date",
-  "start_date",
-  "end_date",
-  "duration_days",
-  "first_meal",
-  "last_meal",
-  "guest_information_section",
-  "beneficiary_count",
-  "vip_count",
-  "children_count",
-  "service_model",
-  "services_section",
-  "services",
-  "financial_details_section",
-  "currency",
-  "services_subtotal",
-  "discount_amount",
-  "tax_rate",
-  "tax_amount",
-  "contract_value",
-  "advance_percent",
-  "advance_amount",
-  "outstanding_contract_amount",
-  "payment_method",
-  "payment_due_days",
-  "payment_terms",
-  "delivery_details_section",
-  "delivery_location",
-  "contact_person",
-  "contact_phone",
-  "delivery_window",
-  "delivery_instructions",
-  "hotel_notes",
-  "internal_operations_section",
-  "project_manager",
-  "operations_manager",
-  "delivery_supervisor",
-  "default_kitchen",
-  "operation_priority",
-  "operations_defaults_section",
-  "default_source_warehouse",
-  "operations_defaults_column",
-  "default_vehicle",
-  "default_driver",
-  "attachments_section",
-  "attachment",
-  "undertaking_attachment",
-  "terms_attachment",
-  "customer_attachment"
- ],
- "fields": [
-  {
-   "fieldname": "contract_title",
-   "fieldtype": "Data",
-   "label": "عنوان العقد / Contract Title",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "mission",
-   "fieldtype": "Link",
-   "label": "البعثة / العميل",
-   "options": "WAFD Mission"
-  },
-  {
-   "fieldname": "hotel",
-   "fieldtype": "Link",
-   "label": "الفندق الرئيسي / Primary Hotel",
-   "options": "WAFD Hotel",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "project",
-   "fieldtype": "Link",
-   "label": "المشروع / Project",
-   "options": "WAFD Catering Project",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "contract_number",
-   "fieldtype": "Data",
-   "label": "رقم العقد / Contract Number",
-   "unique": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "signing_date",
-   "fieldtype": "Date",
-   "label": "تاريخ التوقيع / Signing Date"
-  },
-  {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "تاريخ البداية / Start Date"
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "تاريخ النهاية / End Date"
-  },
-  {
-   "fieldname": "beneficiary_count",
-   "fieldtype": "Int",
-   "label": "عدد المستفيدين / Beneficiary Count",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "contract_value",
-   "fieldtype": "Currency",
-   "label": "قيمة العقد / Contract Value",
-   "reqd": 1,
-   "non_negative": 1
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Select",
-   "label": "العملة / Currency",
-   "options": "SAR\nUSD",
-   "default": "SAR"
-  },
-  {
-   "fieldname": "payment_terms",
-   "fieldtype": "Small Text",
-   "label": "شروط السداد / Payment Terms"
-  },
-  {
-   "fieldname": "attachment",
-   "fieldtype": "Attach",
-   "label": "ملف العقد / Contract File"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "الحالة / Status",
-   "options": "مسودة / Draft\nساري / Active\nمنتهي / Expired\nملغي / Cancelled",
-   "default": "مسودة / Draft",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "project_type",
-   "fieldtype": "Select",
-   "label": "نوع المشروع / Project Type",
-   "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nفعاليات / Events\nأخرى / Other",
-   "default": "إعاشة فندقية / Hotel Catering"
-  },
-  {
-   "fieldname": "services_section",
-   "fieldtype": "Section Break",
-   "label": "الخدمات والوجبات / Services and Meals"
-  },
-  {
-   "fieldname": "services",
-   "fieldtype": "Table",
-   "label": "الخدمات / Services",
-   "options": "WAFD Project Service"
-  },
-  {
-   "fieldname": "operations_defaults_section",
-   "fieldtype": "Section Break",
-   "label": "إعدادات التشغيل الافتراضية / Operational Defaults"
-  },
-  {
-   "fieldname": "default_source_warehouse",
-   "fieldtype": "Link",
-   "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
-   "options": "WAFD Warehouse"
-  },
-  {
-   "fieldname": "operations_defaults_column",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "default_vehicle",
-   "fieldtype": "Link",
-   "label": "المركبة الافتراضية / Default Vehicle",
-   "options": "WAFD Vehicle"
-  },
-  {
-   "fieldname": "default_driver",
-   "fieldtype": "Link",
-   "label": "السائق الافتراضي / Default Driver",
-   "options": "WAFD Driver"
-  },
-  {
-   "fieldname": "contract_information_section",
-   "fieldtype": "Section Break",
-   "label": "بيانات العقد / Contract Information"
-  },
-  {
-   "fieldname": "contract_type",
-   "fieldtype": "Select",
-   "label": "نوع العقد / Contract Type",
-   "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nموسمي / Seasonal\nدائم / Long-term\nفعالية / Event\nأخرى / Other",
-   "default": "إعاشة فندقية / Hotel Catering"
-  },
-  {
-   "fieldname": "duration_days",
-   "fieldtype": "Int",
-   "label": "مدة التشغيل بالأيام / Operation Days",
-   "read_only": 1
-  },
-  {
-   "fieldname": "first_meal",
-   "fieldtype": "Select",
-   "label": "أول وجبة / First Meal",
-   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nأخرى / Other"
-  },
-  {
-   "fieldname": "last_meal",
-   "fieldtype": "Select",
-   "label": "آخر وجبة / Last Meal",
-   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nأخرى / Other"
-  },
-  {
-   "fieldname": "guest_information_section",
-   "fieldtype": "Section Break",
-   "label": "بيانات المستفيدين / Guest Information"
-  },
-  {
-   "fieldname": "vip_count",
-   "fieldtype": "Int",
-   "label": "عدد كبار الشخصيات / VIP Guests",
-   "default": "0"
-  },
-  {
-   "fieldname": "children_count",
-   "fieldtype": "Int",
-   "label": "عدد الأطفال / Children",
-   "default": "0"
-  },
-  {
-   "fieldname": "service_model",
-   "fieldtype": "Select",
-   "label": "نموذج تقديم الخدمة / Service Model",
-   "options": "وجبات مغلفة / Boxed Meals\nبوفيه / Buffet\nتقديم فندقي / Hotel Service\nضيافة / Hospitality\nمختلط / Mixed\nأخرى / Other"
-  },
-  {
-   "fieldname": "financial_details_section",
-   "fieldtype": "Section Break",
-   "label": "التفاصيل المالية / Financial Details"
-  },
-  {
-   "fieldname": "services_subtotal",
-   "fieldtype": "Currency",
-   "label": "إجمالي الخدمات قبل الخصم / Services Subtotal",
-   "read_only": 1
-  },
-  {
-   "fieldname": "discount_amount",
-   "fieldtype": "Currency",
-   "label": "الخصم / Discount",
-   "default": "0"
-  },
-  {
-   "fieldname": "tax_rate",
-   "fieldtype": "Percent",
-   "label": "نسبة الضريبة / VAT Rate",
-   "default": "15"
-  },
-  {
-   "fieldname": "tax_amount",
-   "fieldtype": "Currency",
-   "label": "قيمة الضريبة / VAT Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "advance_percent",
-   "fieldtype": "Percent",
-   "label": "نسبة الدفعة المقدمة / Advance Percent",
-   "default": "0"
-  },
-  {
-   "fieldname": "advance_amount",
-   "fieldtype": "Currency",
-   "label": "قيمة الدفعة المقدمة / Advance Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "outstanding_contract_amount",
-   "fieldtype": "Currency",
-   "label": "الرصيد التعاقدي المتبقي / Contract Balance",
-   "read_only": 1
-  },
-  {
-   "fieldname": "payment_method",
-   "fieldtype": "Select",
-   "label": "طريقة السداد / Payment Method",
-   "options": "تحويل بنكي / Bank Transfer\nنقدي / Cash\nشيك / Cheque\nآجل / Credit\nمختلط / Mixed"
-  },
-  {
-   "fieldname": "payment_due_days",
-   "fieldtype": "Int",
-   "label": "مدة الاستحقاق بالأيام / Payment Due Days",
-   "default": "30"
-  },
-  {
-   "fieldname": "delivery_details_section",
-   "fieldtype": "Section Break",
-   "label": "التسليم والتواصل / Delivery and Contact"
-  },
-  {
-   "fieldname": "delivery_location",
-   "fieldtype": "Small Text",
-   "label": "موقع التسليم / Delivery Location"
-  },
-  {
-   "fieldname": "contact_person",
-   "fieldtype": "Data",
-   "label": "مسؤول التواصل / Contact Person"
-  },
-  {
-   "fieldname": "contact_phone",
-   "fieldtype": "Data",
-   "label": "رقم التواصل / Contact Phone",
-   "options": "Phone"
-  },
-  {
-   "fieldname": "delivery_window",
-   "fieldtype": "Data",
-   "label": "نافذة التسليم / Delivery Window",
-   "description": "مثال: قبل الوجبة بـ 45 دقيقة / Example: 45 minutes before service"
-  },
-  {
-   "fieldname": "delivery_instructions",
-   "fieldtype": "Small Text",
-   "label": "تعليمات التسليم / Delivery Instructions"
-  },
-  {
-   "fieldname": "hotel_notes",
-   "fieldtype": "Small Text",
-   "label": "ملاحظات الفندق / Hotel Notes"
-  },
-  {
-   "fieldname": "internal_operations_section",
-   "fieldtype": "Section Break",
-   "label": "الإدارة والتشغيل الداخلي / Internal Operations"
-  },
-  {
-   "fieldname": "project_manager",
-   "fieldtype": "Link",
-   "label": "مدير المشروع / Project Manager",
-   "options": "User"
-  },
-  {
-   "fieldname": "operations_manager",
-   "fieldtype": "Link",
-   "label": "مدير العمليات / Operations Manager",
-   "options": "User"
-  },
-  {
-   "fieldname": "delivery_supervisor",
-   "fieldtype": "Link",
-   "label": "مشرف التوصيل / Delivery Supervisor",
-   "options": "User"
-  },
-  {
-   "fieldname": "default_kitchen",
-   "fieldtype": "Data",
-   "label": "المطبخ المسؤول / Responsible Kitchen"
-  },
-  {
-   "fieldname": "operation_priority",
-   "fieldtype": "Select",
-   "label": "أولوية التشغيل / Operation Priority",
-   "options": "عادية / Normal\nعاجلة / Urgent\nVIP / VIP",
-   "default": "عادية / Normal"
-  },
-  {
-   "fieldname": "attachments_section",
-   "fieldtype": "Section Break",
-   "label": "المرفقات / Attachments"
-  },
-  {
-   "fieldname": "undertaking_attachment",
-   "fieldtype": "Attach",
-   "label": "ملف التعهد / Undertaking File"
-  },
-  {
-   "fieldname": "terms_attachment",
-   "fieldtype": "Attach",
-   "label": "الشروط والملاحق / Terms and Annexes"
-  },
-  {
-   "fieldname": "customer_attachment",
-   "fieldtype": "Attach",
-   "label": "ملفات العميل / Customer File"
-  }
- ],
- "index_web_pages_for_search": 0,
- "istable": 0,
- "is_submittable": 0,
- "links": [
-  {
-   "group": "المستندات / Documents",
-   "link_doctype": "WAFD Hotel Undertaking",
-   "link_fieldname": "contract"
-  }
- ],
- "modified": "2026-07-17 21:00:00.000000",
- "modified_by": "Administrator",
- "module": "WAFD ONE",
- "name": "WAFD Contract",
- "owner": "Administrator",
- "permissions": [
-  {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Operations Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Project Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "WAFD Finance User",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  }
- ],
- "sort_field": "creation",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1,
- "title_field": "contract_title"
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:contract_title",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "contract_information_section",
+    "contract_title",
+    "contract_number",
+    "contract_type",
+    "project_type",
+    "status",
+    "mission",
+    "hotel",
+    "project",
+    "signing_date",
+    "start_date",
+    "end_date",
+    "duration_days",
+    "first_meal",
+    "last_meal",
+    "guest_information_section",
+    "beneficiary_count",
+    "vip_count",
+    "children_count",
+    "service_model",
+    "services_section",
+    "services",
+    "financial_details_section",
+    "currency",
+    "services_subtotal",
+    "discount_amount",
+    "tax_rate",
+    "tax_amount",
+    "grand_total",
+    "contract_value",
+    "advance_percent",
+    "advance_amount",
+    "outstanding_contract_amount",
+    "payment_method",
+    "payment_due_days",
+    "payment_terms",
+    "delivery_details_section",
+    "delivery_location",
+    "contact_person",
+    "contact_phone",
+    "delivery_window",
+    "delivery_instructions",
+    "hotel_notes",
+    "internal_operations_section",
+    "project_manager",
+    "operations_manager",
+    "delivery_supervisor",
+    "default_kitchen",
+    "operation_priority",
+    "operations_defaults_section",
+    "default_source_warehouse",
+    "operations_defaults_column",
+    "default_vehicle",
+    "default_driver",
+    "attachments_section",
+    "attachment",
+    "undertaking_attachment",
+    "terms_attachment",
+    "customer_attachment"
+  ],
+  "fields": [
+    {
+      "fieldname": "contract_title",
+      "fieldtype": "Data",
+      "label": "عنوان العقد / Contract Title",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "mission",
+      "fieldtype": "Link",
+      "label": "البعثة / العميل",
+      "options": "WAFD Mission"
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق الرئيسي / Primary Hotel",
+      "options": "WAFD Hotel",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "المشروع / Project",
+      "options": "WAFD Catering Project",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "contract_number",
+      "fieldtype": "Data",
+      "label": "رقم العقد / Contract Number",
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "signing_date",
+      "fieldtype": "Date",
+      "label": "تاريخ التوقيع / Signing Date"
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "تاريخ البداية / Start Date"
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "تاريخ النهاية / End Date"
+    },
+    {
+      "fieldname": "beneficiary_count",
+      "fieldtype": "Int",
+      "label": "عدد المستفيدين / Beneficiary Count",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "contract_value",
+      "fieldtype": "Currency",
+      "label": "قيمة العقد قبل الضريبة / Contract Value Before VAT",
+      "reqd": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "currency",
+      "fieldtype": "Select",
+      "label": "العملة / Currency",
+      "options": "SAR\nUSD",
+      "default": "SAR"
+    },
+    {
+      "fieldname": "payment_terms",
+      "fieldtype": "Small Text",
+      "label": "شروط السداد / Payment Terms"
+    },
+    {
+      "fieldname": "attachment",
+      "fieldtype": "Attach",
+      "label": "ملف العقد / Contract File"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "مسودة / Draft\nساري / Active\nمنتهي / Expired\nملغي / Cancelled",
+      "default": "مسودة / Draft",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "project_type",
+      "fieldtype": "Select",
+      "label": "نوع المشروع / Project Type",
+      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nفعاليات / Events\nأخرى / Other",
+      "default": "إعاشة فندقية / Hotel Catering"
+    },
+    {
+      "fieldname": "services_section",
+      "fieldtype": "Section Break",
+      "label": "الخدمات والوجبات / Services and Meals"
+    },
+    {
+      "fieldname": "services",
+      "fieldtype": "Table",
+      "label": "الخدمات / Services",
+      "options": "WAFD Project Service"
+    },
+    {
+      "fieldname": "operations_defaults_section",
+      "fieldtype": "Section Break",
+      "label": "إعدادات التشغيل الافتراضية / Operational Defaults"
+    },
+    {
+      "fieldname": "default_source_warehouse",
+      "fieldtype": "Link",
+      "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "operations_defaults_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "default_vehicle",
+      "fieldtype": "Link",
+      "label": "المركبة الافتراضية / Default Vehicle",
+      "options": "WAFD Vehicle"
+    },
+    {
+      "fieldname": "default_driver",
+      "fieldtype": "Link",
+      "label": "السائق الافتراضي / Default Driver",
+      "options": "WAFD Driver"
+    },
+    {
+      "fieldname": "contract_information_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات العقد / Contract Information"
+    },
+    {
+      "fieldname": "contract_type",
+      "fieldtype": "Select",
+      "label": "نوع العقد / Contract Type",
+      "options": "حج / Hajj\nعمرة / Umrah\nرمضان / Ramadan\nإعاشة فندقية / Hotel Catering\nموسمي / Seasonal\nدائم / Long-term\nفعالية / Event\nأخرى / Other",
+      "default": "إعاشة فندقية / Hotel Catering"
+    },
+    {
+      "fieldname": "duration_days",
+      "fieldtype": "Int",
+      "label": "مدة التشغيل بالأيام / Operation Days",
+      "read_only": 1
+    },
+    {
+      "fieldname": "first_meal",
+      "fieldtype": "Select",
+      "label": "أول وجبة / First Meal",
+      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nأخرى / Other"
+    },
+    {
+      "fieldname": "last_meal",
+      "fieldtype": "Select",
+      "label": "آخر وجبة / Last Meal",
+      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nأخرى / Other"
+    },
+    {
+      "fieldname": "guest_information_section",
+      "fieldtype": "Section Break",
+      "label": "بيانات المستفيدين / Guest Information"
+    },
+    {
+      "fieldname": "vip_count",
+      "fieldtype": "Int",
+      "label": "عدد كبار الشخصيات / VIP Guests",
+      "default": "0"
+    },
+    {
+      "fieldname": "children_count",
+      "fieldtype": "Int",
+      "label": "عدد الأطفال / Children",
+      "default": "0"
+    },
+    {
+      "fieldname": "service_model",
+      "fieldtype": "Select",
+      "label": "نموذج تقديم الخدمة / Service Model",
+      "options": "وجبات مغلفة / Boxed Meals\nبوفيه / Buffet\nتقديم فندقي / Hotel Service\nضيافة / Hospitality\nمختلط / Mixed\nأخرى / Other"
+    },
+    {
+      "fieldname": "financial_details_section",
+      "fieldtype": "Section Break",
+      "label": "التفاصيل المالية / Financial Details"
+    },
+    {
+      "fieldname": "services_subtotal",
+      "fieldtype": "Currency",
+      "label": "إجمالي الخدمات قبل الخصم / Services Subtotal",
+      "read_only": 1
+    },
+    {
+      "fieldname": "discount_amount",
+      "fieldtype": "Currency",
+      "label": "الخصم / Discount",
+      "default": "0"
+    },
+    {
+      "fieldname": "tax_rate",
+      "fieldtype": "Percent",
+      "label": "نسبة الضريبة / VAT Rate",
+      "default": "15"
+    },
+    {
+      "fieldname": "tax_amount",
+      "fieldtype": "Currency",
+      "label": "قيمة الضريبة / VAT Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "grand_total",
+      "fieldtype": "Currency",
+      "label": "الإجمالي شامل الضريبة / Grand Total",
+      "read_only": 1
+    },
+    {
+      "fieldname": "advance_percent",
+      "fieldtype": "Percent",
+      "label": "نسبة الدفعة المقدمة / Advance Percent",
+      "default": "0"
+    },
+    {
+      "fieldname": "advance_amount",
+      "fieldtype": "Currency",
+      "label": "قيمة الدفعة المقدمة من الإجمالي / Advance Amount from Grand Total",
+      "read_only": 1
+    },
+    {
+      "fieldname": "outstanding_contract_amount",
+      "fieldtype": "Currency",
+      "label": "الرصيد التعاقدي المتبقي / Contract Balance",
+      "read_only": 1
+    },
+    {
+      "fieldname": "payment_method",
+      "fieldtype": "Select",
+      "label": "طريقة السداد / Payment Method",
+      "options": "تحويل بنكي / Bank Transfer\nنقدي / Cash\nشيك / Cheque\nآجل / Credit\nمختلط / Mixed"
+    },
+    {
+      "fieldname": "payment_due_days",
+      "fieldtype": "Int",
+      "label": "مدة الاستحقاق بالأيام / Payment Due Days",
+      "default": "30"
+    },
+    {
+      "fieldname": "delivery_details_section",
+      "fieldtype": "Section Break",
+      "label": "التسليم والتواصل / Delivery and Contact"
+    },
+    {
+      "fieldname": "delivery_location",
+      "fieldtype": "Small Text",
+      "label": "موقع التسليم / Delivery Location"
+    },
+    {
+      "fieldname": "contact_person",
+      "fieldtype": "Data",
+      "label": "مسؤول التواصل / Contact Person"
+    },
+    {
+      "fieldname": "contact_phone",
+      "fieldtype": "Data",
+      "label": "رقم التواصل / Contact Phone",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "delivery_window",
+      "fieldtype": "Data",
+      "label": "نافذة التسليم / Delivery Window",
+      "description": "مثال: قبل الوجبة بـ 45 دقيقة / Example: 45 minutes before service"
+    },
+    {
+      "fieldname": "delivery_instructions",
+      "fieldtype": "Small Text",
+      "label": "تعليمات التسليم / Delivery Instructions"
+    },
+    {
+      "fieldname": "hotel_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات الفندق / Hotel Notes"
+    },
+    {
+      "fieldname": "internal_operations_section",
+      "fieldtype": "Section Break",
+      "label": "الإدارة والتشغيل الداخلي / Internal Operations"
+    },
+    {
+      "fieldname": "project_manager",
+      "fieldtype": "Link",
+      "label": "مدير المشروع / Project Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "operations_manager",
+      "fieldtype": "Link",
+      "label": "مدير العمليات / Operations Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "delivery_supervisor",
+      "fieldtype": "Link",
+      "label": "مشرف التوصيل / Delivery Supervisor",
+      "options": "User"
+    },
+    {
+      "fieldname": "default_kitchen",
+      "fieldtype": "Link",
+      "label": "المطبخ المسؤول / Responsible Kitchen",
+      "options": "WAFD Kitchen"
+    },
+    {
+      "fieldname": "operation_priority",
+      "fieldtype": "Select",
+      "label": "أولوية التشغيل / Operation Priority",
+      "options": "عادية / Normal\nعاجلة / Urgent\nVIP / VIP",
+      "default": "عادية / Normal"
+    },
+    {
+      "fieldname": "attachments_section",
+      "fieldtype": "Section Break",
+      "label": "المرفقات / Attachments"
+    },
+    {
+      "fieldname": "undertaking_attachment",
+      "fieldtype": "Attach",
+      "label": "ملف التعهد / Undertaking File"
+    },
+    {
+      "fieldname": "terms_attachment",
+      "fieldtype": "Attach",
+      "label": "الشروط والملاحق / Terms and Annexes"
+    },
+    {
+      "fieldname": "customer_attachment",
+      "fieldtype": "Attach",
+      "label": "ملفات العميل / Customer File"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [
+    {
+      "group": "المستندات / Documents",
+      "link_doctype": "WAFD Hotel Undertaking",
+      "link_fieldname": "contract"
+    }
+  ],
+  "modified": "2026-07-17 21:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Contract",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Project Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Finance User",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "contract_title"
 }

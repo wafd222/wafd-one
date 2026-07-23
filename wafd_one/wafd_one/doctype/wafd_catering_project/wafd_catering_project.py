@@ -30,7 +30,7 @@ class WAFDCateringProject(Document):
              "contract_type", "service_model", "first_meal", "last_meal", "vip_count", "children_count",
              "delivery_location", "contact_person", "contact_phone", "delivery_window", "delivery_instructions",
              "project_manager", "operations_manager", "delivery_supervisor", "default_kitchen", "operation_priority",
-             "tax_rate", "tax_amount", "discount_amount", "advance_amount"],
+             "tax_rate", "tax_amount", "grand_total", "discount_amount", "advance_amount"],
             as_dict=True,
         )
         if not values:
@@ -40,7 +40,7 @@ class WAFDCateringProject(Document):
             "contract_type", "service_model", "first_meal", "last_meal", "vip_count", "children_count",
             "delivery_location", "contact_person", "contact_phone", "delivery_window", "delivery_instructions",
             "project_manager", "operations_manager", "delivery_supervisor", "default_kitchen", "operation_priority",
-            "tax_rate", "tax_amount", "discount_amount", "advance_amount",
+            "tax_rate", "tax_amount", "grand_total", "discount_amount", "advance_amount",
         )
         for fieldname in sync_fields:
             if self.get(fieldname) in (None, "", 0) and values.get(fieldname) not in (None, ""):

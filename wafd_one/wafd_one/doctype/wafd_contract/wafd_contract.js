@@ -1,5 +1,6 @@
 frappe.ui.form.on("WAFD Contract", {
     refresh(frm) {
+        calculate_contract(frm);
         if (frm.is_new()) return;
 
         if (!frm.doc.project) {
@@ -13,7 +14,7 @@ frappe.ui.form.on("WAFD Contract", {
                         if (r.message?.name) frappe.set_route("Form", "WAFD Catering Project", r.message.name);
                     }
                 });
-            }, __("التشغيل / Operations"));
+            });
         }
 
         frm.add_custom_button(__("تفعيل وبناء خطة التشغيل / Activate & Build Operations"), () => {
@@ -46,6 +47,7 @@ frappe.ui.form.on("WAFD Contract", {
     start_date: calculate_contract,
     end_date: calculate_contract,
     beneficiary_count: calculate_contract,
+    contract_value: calculate_contract,
     discount_amount: calculate_contract,
     tax_rate: calculate_contract,
     advance_percent: calculate_contract,
@@ -98,13 +100,17 @@ function calculate_contract(frm) {
         frm.set_value("duration_days", frappe.datetime.get_day_diff(frm.doc.end_date, frm.doc.start_date) + 1);
     }
     const subtotal = (frm.doc.services || []).reduce((sum, row) => sum + flt(row.estimated_revenue), 0);
-    const taxable = Math.max(subtotal - flt(frm.doc.discount_amount), 0);
+    // Contract Value means the agreed amount before VAT. Services subtotal is
+    // used only when no manual contract value has been entered.
+    const baseValue = flt(frm.doc.contract_value || subtotal);
+    const taxable = Math.max(baseValue - flt(frm.doc.discount_amount), 0);
     const tax = taxable * flt(frm.doc.tax_rate) / 100;
-    const total = taxable + tax;
-    const advance = total * flt(frm.doc.advance_percent) / 100;
+    const grandTotal = taxable + tax;
+    const advance = grandTotal * flt(frm.doc.advance_percent) / 100;
     frm.set_value("services_subtotal", subtotal);
+    if (!flt(frm.doc.contract_value) && subtotal) frm.set_value("contract_value", subtotal);
     frm.set_value("tax_amount", tax);
-    if (!frm.doc.contract_value || frm.doc.__islocal) frm.set_value("contract_value", total);
-    frm.set_value("advance_amount", flt(frm.doc.contract_value || total) * flt(frm.doc.advance_percent) / 100);
-    frm.set_value("outstanding_contract_amount", Math.max(flt(frm.doc.contract_value || total) - advance, 0));
+    frm.set_value("grand_total", grandTotal);
+    frm.set_value("advance_amount", advance);
+    frm.set_value("outstanding_contract_amount", Math.max(grandTotal - advance, 0));
 }

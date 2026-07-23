@@ -60,14 +60,16 @@ class WAFDContract(Document):
             row.estimated_revenue = flt(row.total_meals) * flt(row.unit_price)
             total_value += flt(row.estimated_revenue)
         self.services_subtotal = total_value
-        taxable = max(total_value - flt(self.discount_amount), 0)
+        # Contract Value is the agreed amount before VAT. When it is empty, use
+        # the services subtotal. This makes manual contracts and itemised
+        # contracts follow the same financial rule.
+        if not flt(self.contract_value) and total_value:
+            self.contract_value = total_value
+        taxable = max(flt(self.contract_value) - flt(self.discount_amount), 0)
         self.tax_amount = taxable * flt(self.tax_rate) / 100
-        calculated_total = taxable + flt(self.tax_amount)
-        # Preserve a manually agreed contract value when entered. Otherwise derive it.
-        if not flt(self.contract_value) and calculated_total:
-            self.contract_value = calculated_total
-        self.advance_amount = flt(self.contract_value) * flt(self.advance_percent) / 100
-        self.outstanding_contract_amount = max(flt(self.contract_value) - flt(self.advance_amount), 0)
+        self.grand_total = taxable + flt(self.tax_amount)
+        self.advance_amount = flt(self.grand_total) * flt(self.advance_percent) / 100
+        self.outstanding_contract_amount = max(flt(self.grand_total) - flt(self.advance_amount), 0)
 
     def _validate_linked_project(self):
         if not self.project:
@@ -114,6 +116,7 @@ class WAFDContract(Document):
             "operation_priority": self.operation_priority,
             "tax_rate": self.tax_rate,
             "tax_amount": self.tax_amount,
+            "grand_total": self.grand_total,
             "discount_amount": self.discount_amount,
             "advance_amount": self.advance_amount,
         }
@@ -170,8 +173,6 @@ def create_project_from_contract(contract_name):
         frappe.throw("حدد البعثة أو العميل أولاً / Select the mission or customer first")
     if not contract.start_date or not contract.end_date:
         frappe.throw("حدد تاريخ بداية ونهاية العقد / Set contract start and end dates")
-    if not contract.services:
-        frappe.throw("أضف خدمة أو وجبة واحدة على الأقل / Add at least one service or meal")
     if not contract.hotel:
         frappe.throw("حدد الفندق الرئيسي قبل إنشاء المشروع / Select the primary hotel before creating the project")
 
@@ -209,6 +210,7 @@ def create_project_from_contract(contract_name):
         "operation_priority": contract.operation_priority,
         "tax_rate": contract.tax_rate,
         "tax_amount": contract.tax_amount,
+        "grand_total": contract.grand_total,
         "discount_amount": contract.discount_amount,
         "advance_amount": contract.advance_amount,
         "status": "مسودة / Draft",

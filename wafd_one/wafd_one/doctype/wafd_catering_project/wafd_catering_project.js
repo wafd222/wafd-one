@@ -240,3 +240,50 @@ frappe.ui.form.on("WAFD Catering Project", {
         }
     }
 });
+
+frappe.ui.form.on("WAFD Catering Project", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+
+        frm.add_custom_button(__("Generate Daily Meal Plans"), () => {
+            frappe.call({
+                method: "wafd_one.daily_planning.generate_daily_plans",
+                args: { project_name: frm.doc.name },
+                freeze: true,
+                freeze_message: __("Building consolidated daily meal plans..."),
+                callback(r) {
+                    const x = r.message || {};
+                    frappe.msgprint({
+                        title: __("Daily Meal Plans Ready"),
+                        indicator: x.skipped ? "orange" : "green",
+                        message: `${__("Created")}: <b>${x.created || 0}</b><br>
+                                  ${__("Updated")}: <b>${x.updated || 0}</b><br>
+                                  ${__("Protected/Skipped")}: <b>${x.skipped || 0}</b><br>
+                                  ${__("Total Daily Plans")}: <b>${x.daily_plans || 0}</b>`
+                    });
+                    frappe.set_route("List", "WAFD Daily Meal Plan", { project: frm.doc.name });
+                }
+            });
+        }, __("Operations"));
+
+        frm.add_custom_button(__("Daily Planning Summary"), () => {
+            frappe.call({
+                method: "wafd_one.daily_planning.get_daily_plan_summary",
+                args: { project_name: frm.doc.name },
+                callback(r) {
+                    const x = r.message || {};
+                    const statusRows = Object.entries(x.by_status || {})
+                        .map(([key, value]) => `<li>${frappe.utils.escape_html(key)}: <b>${value}</b></li>`).join("");
+                    frappe.msgprint({
+                        title: __("Daily Planning Summary"),
+                        message: `${__("Daily Plans")}: <b>${x.plans || 0}</b><br>
+                                  ${__("Total Meals")}: <b>${format_number(x.total_quantity || 0)}</b><br>
+                                  ${__("Missing Recipes")}: <b>${x.missing_recipes || 0}</b><br>
+                                  ${__("Production Batches")}: <b>${x.production_batches || 0}</b><br>
+                                  <ul>${statusRows}</ul>`
+                    });
+                }
+            });
+        }, __("Operations"));
+    }
+});

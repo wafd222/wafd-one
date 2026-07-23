@@ -23,12 +23,17 @@ after_migrate = "wafd_one.setup.after_migrate"
 
 page_js = {
     "wafd-one-dashboard": "public/js/wafd_one_dashboard.js",
+    "wafd-launch-center": "public/js/wafd_launch_center.js",
 }
 
 page_css = {
     "wafd-document-studio": "wafd_one/page/wafd_document_studio/wafd_document_studio.css",
+    "wafd-launch-center": "public/css/wafd_launch_center.css",
 }
-app_include_css = ["/assets/wafd_one/css/wafd_one_dashboard.css"]
+app_include_css = [
+    "/assets/wafd_one/css/wafd_one_dashboard.css",
+    "/assets/wafd_one/css/wafd_one_enterprise.css",
+]
 
 
 doctype_js = {
@@ -38,6 +43,7 @@ doctype_js = {
     "WAFD Catering Project": "public/js/document_studio_form.js",
     "WAFD Production Batch": "public/js/document_studio_form.js",
     "WAFD Meal Plan": "public/js/document_studio_form.js",
+    "WAFD Daily Meal Plan": "public/js/document_studio_form.js",
     "WAFD Loading Record": "public/js/document_studio_form.js",
     "WAFD Delivery Proof": "public/js/document_studio_form.js",
     "WAFD Mission": "public/js/document_studio_form.js",
@@ -55,7 +61,7 @@ doc_events = {
         "WAFD Production Batch", "WAFD Purchase Order", "WAFD Stock Movement",
         "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
         "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
-        "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan",
+        "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan", "WAFD Daily Meal Plan", "WAFD Kitchen",
     )
 }
 

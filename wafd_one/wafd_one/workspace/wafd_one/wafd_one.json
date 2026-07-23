@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — منظومة إدارة وتشغيل الإعاشة\",\"level\":2,\"col\":12},\"id\":\"wafd-block-01\"},{\"type\":\"paragraph\",\"data\":{\"text\":\"إدارة الدورة الكاملة من البعثة والعقد وحتى الإنتاج والتسليم والفوترة والتحصيل. <br><a href=\\\"/app/wafd-one-dashboard\\\"><b>فتح لوحة WAFD ONE الكاملة</b></a>\",\"col\":12},\"id\":\"wafd-block-02\"},{\"type\":\"header\",\"data\":{\"text\":\"إدارة المشاريع والعملاء\",\"level\":4,\"col\":12},\"id\":\"wafd-block-03\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المشاريع\",\"col\":3},\"id\":\"wafd-block-04\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البعثات والعملاء\",\"col\":3},\"id\":\"wafd-block-05\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الفنادق\",\"col\":3},\"id\":\"wafd-block-06\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"العقود\",\"col\":3},\"id\":\"wafd-block-07\"},{\"type\":\"header\",\"data\":{\"text\":\"تخطيط الوجبات والتكلفة\",\"level\":4,\"col\":12},\"id\":\"wafd-block-08\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الخطط اليومية\",\"col\":4},\"id\":\"wafd-block-09\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"الوصفات\",\"col\":4},\"id\":\"wafd-block-10\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"مكونات الأغذية\",\"col\":4},\"id\":\"wafd-block-11\"},{\"type\":\"header\",\"data\":{\"text\":\"المستندات والتعهدات\",\"level\":4,\"col\":12},\"id\":\"wafd-docs-header\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"تعهدات الفنادق\",\"col\":4},\"id\":\"wafd-undertaking-shortcut\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إعدادات الطباعة\",\"col\":4},\"id\":\"wafd-print-settings-shortcut\"},{\"type\":\"header\",\"data\":{\"text\":\"الإدارة والصيانة\",\"level\":4,\"col\":12},\"id\":\"wafd-block-admin-01\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"إدارة WAFD ONE\",\"col\":4},\"id\":\"wafd-admin-console-shortcut\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"استوديو المستندات\",\"col\":4}}]",
+  "content": "[{\"id\": \"wafd-launch-center-shortcut\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"مركز الإطلاق والتجربة\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"WAFD ONE — منظومة إدارة وتشغيل الإعاشة\", \"level\": 2, \"col\": 12}, \"id\": \"wafd-block-01\"}, {\"type\": \"paragraph\", \"data\": {\"text\": \"إدارة الدورة الكاملة من البعثة والعقد وحتى الإنتاج والتسليم والفوترة والتحصيل. <br><a href=\\\"/app/wafd-one-dashboard\\\"><b>فتح لوحة WAFD ONE الكاملة</b></a>\", \"col\": 12}, \"id\": \"wafd-block-02\"}, {\"type\": \"header\", \"data\": {\"text\": \"إدارة المشاريع والعملاء\", \"level\": 4, \"col\": 12}, \"id\": \"wafd-block-03\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"المشاريع\", \"col\": 3}, \"id\": \"wafd-block-04\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"البعثات والعملاء\", \"col\": 3}, \"id\": \"wafd-block-05\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"الفنادق\", \"col\": 3}, \"id\": \"wafd-block-06\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"العقود\", \"col\": 3}, \"id\": \"wafd-block-07\"}, {\"type\": \"header\", \"data\": {\"text\": \"تخطيط الوجبات والتكلفة\", \"level\": 4, \"col\": 12}, \"id\": \"wafd-block-08\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"الخطط اليومية\", \"col\": 4}, \"id\": \"wafd-block-09\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"الوصفات\", \"col\": 4}, \"id\": \"wafd-block-10\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"مكونات الأغذية\", \"col\": 4}, \"id\": \"wafd-block-11\"}, {\"type\": \"header\", \"data\": {\"text\": \"المستندات والتعهدات\", \"level\": 4, \"col\": 12}, \"id\": \"wafd-docs-header\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"تعهدات الفنادق\", \"col\": 4}, \"id\": \"wafd-undertaking-shortcut\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"إعدادات الطباعة\", \"col\": 4}, \"id\": \"wafd-print-settings-shortcut\"}, {\"type\": \"header\", \"data\": {\"text\": \"الإدارة والصيانة\", \"level\": 4, \"col\": 12}, \"id\": \"wafd-block-admin-01\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"إدارة WAFD ONE\", \"col\": 4}, \"id\": \"wafd-admin-console-shortcut\"}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"استوديو المستندات\", \"col\": 4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -11,6 +11,16 @@
   "is_hidden": 0,
   "label": "WAFD ONE",
   "links": [
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "مركز الإطلاق والتجربة",
+      "link_count": 0,
+      "link_to": "wafd-launch-center",
+      "link_type": "Page",
+      "onboard": 0,
+      "type": "Link"
+    },
     {
       "hidden": 0,
       "is_query_report": 0,
@@ -164,6 +174,13 @@
   "roles": [],
   "sequence_id": 1.0,
   "shortcuts": [
+    {
+      "color": "Gold",
+      "doc_view": "",
+      "label": "مركز الإطلاق والتجربة",
+      "link_to": "wafd-launch-center",
+      "type": "Page"
+    },
     {
       "color": "Blue",
       "doc_view": "List",

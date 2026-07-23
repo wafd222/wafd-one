@@ -18,48 +18,15 @@ ROLES = (
 )
 
 # Ordered to load child tables and independent masters before linked parents.
-ALL_DOCTYPE_FILES = (
-    "wafd_meal_plan_item",
-    "wafd_invoice_item",
-    "wafd_production_material",
-    "wafd_project_hotel",
-    "wafd_project_service",
-    "wafd_purchase_order_item",
-    "wafd_recipe_item",
-    "wafd_stock_movement_item",
-    "wafd_food_safety_settings",
-    "wafd_finance_settings",
-    "wafd_governance_settings",
-    "wafd_approval_request",
-    "wafd_audit_event",
-    "wafd_ccp_check",
-    "wafd_data_source",
-    "wafd_driver",
-    "wafd_hotel",
-    "wafd_mission",
-    "wafd_supplier",
-    "wafd_vehicle",
-    "wafd_warehouse",
-    "wafd_ingredient",
-    "wafd_recipe",
-    "wafd_catering_project",
-    "wafd_contract",
-    "wafd_meal_plan",
-    "wafd_packaging_record",
-    "wafd_loading_record",
-    "wafd_production_batch",
-    "wafd_delivery_trip",
-    "wafd_delivery_proof",
-    "wafd_quality_inspection",
-    "wafd_complaint",
-    "wafd_invoice",
-    "wafd_project_cost",
-    "wafd_project_revenue",
-    "wafd_payment",
-    "wafd_purchase_order",
-    "wafd_stock_balance",
-    "wafd_stock_movement",
+ALL_DOCTYPE_FILES = tuple(
+    sorted(
+        path.name
+        for path in (Path(__file__).resolve().parent / "wafd_one" / "doctype").iterdir()
+        if path.is_dir() and not path.name.startswith("__")
+        and (path / f"{path.name}.json").exists()
+    )
 )
+
 
 # Backward-compatible Phase 1 subset used by historical repair patches.
 PHASE_ONE_DOCTYPE_FILES = (
@@ -308,6 +275,7 @@ def ensure_administration_page():
         "wafd_administration_console",
         force=True,
     )
+    frappe.reload_doc("wafd_one", "page", "wafd_launch_center", force=True)
     if not frappe.db.exists("Page", page_name):
         frappe.throw("WAFD Administration Console Page was not created during synchronization.")
     page = frappe.get_doc("Page", page_name)

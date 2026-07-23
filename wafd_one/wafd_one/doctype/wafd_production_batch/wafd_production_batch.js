@@ -1,4 +1,7 @@
 frappe.ui.form.on("WAFD Production Batch", {
+    setup(frm) {
+        frm.set_query("warehouse", "source_warehouses", () => ({ filters: { status: "نشط / Active" } }));
+    },
     refresh(frm) {
         if (frm.is_new()) return;
 
@@ -43,7 +46,11 @@ frappe.ui.form.on("WAFD Production Batch", {
 
         add_action(frm, __("Create Material Issue"),
             "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_material_issue",
-            { batch_name: frm.doc.name }, result => frappe.set_route("Form", "WAFD Stock Movement", result.name));
+            { batch_name: frm.doc.name }, result => {
+                const names = [...(result.created || []), ...(result.existing || [])];
+                frappe.msgprint(`${__("Material issue documents")}: ${result.count || names.length}`);
+                if (result.primary) frappe.set_route("Form", "WAFD Stock Movement", result.primary);
+            });
 
         add_action(frm, __("Quality Inspection"),
             "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_quality_inspection",

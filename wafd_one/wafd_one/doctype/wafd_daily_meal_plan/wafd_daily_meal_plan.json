@@ -15,6 +15,7 @@
   "status",
   "operations_section",
   "kitchen",
+  "source_warehouses",
   "source_warehouse",
   "meals_section",
   "meals",
@@ -80,10 +81,19 @@
    "options": "WAFD Kitchen"
   },
   {
+   "fieldname": "source_warehouses",
+   "fieldtype": "Table",
+   "label": "مصادر الصرف / Source Warehouses",
+   "options": "WAFD Source Warehouse Row",
+   "reqd": 1
+  },
+  {
    "fieldname": "source_warehouse",
    "fieldtype": "Link",
-   "label": "مستودع الصرف / Source Warehouse",
-   "options": "WAFD Warehouse"
+   "label": "مستودع الصرف القديم / Legacy Source Warehouse",
+   "options": "WAFD Warehouse",
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "meals_section",
@@ -206,7 +216,7 @@
  "sort_field": "service_date",
  "sort_order": "DESC",
  "creation": "2026-07-23 13:45:00.000000",
- "modified": "2026-07-23 13:45:00.000000",
+ "modified": "2026-07-23 15:30:00.000000",
  "owner": "Administrator",
  "modified_by": "Administrator",
  "docstatus": 0,

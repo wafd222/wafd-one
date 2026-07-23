@@ -8,8 +8,10 @@
  "field_order": [
   "project",
   "meal_plan",
+  "daily_plan",
   "recipe",
   "source_warehouse",
+  "source_warehouses",
   "material_issue",
   "quality_status",
   "traceability_section",
@@ -39,6 +41,7 @@
   "units_per_box",
   "packaging_supervisor",
   "material_requirements",
+  "material_allocations",
   "materials_status",
   "total_material_cost",
   "packaging_record"
@@ -61,6 +64,14 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "daily_plan",
+   "fieldtype": "Link",
+   "label": "الخطة اليومية / Daily Plan",
+   "options": "WAFD Daily Meal Plan",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
    "fieldname": "recipe",
    "fieldtype": "Link",
    "label": "الوصفة / Recipe",
@@ -70,13 +81,19 @@
   {
    "fieldname": "source_warehouse",
    "fieldtype": "Link",
-   "label": "مستودع الصرف / Source Warehouse",
+   "label": "مستودع الصرف الرئيسي / Primary Source Warehouse",
    "options": "WAFD Warehouse"
+  },
+  {
+   "fieldname": "source_warehouses",
+   "fieldtype": "Table",
+   "label": "مصادر الصرف / Source Warehouses",
+   "options": "WAFD Source Warehouse Row"
   },
   {
    "fieldname": "material_issue",
    "fieldtype": "Link",
-   "label": "حركة صرف المواد / Material Issue",
+   "label": "أول حركة صرف / Primary Material Issue",
    "options": "WAFD Stock Movement",
    "read_only": 1
   },
@@ -207,6 +224,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "material_allocations",
+   "fieldtype": "Table",
+   "label": "توزيع المواد على المستودعات / Material Warehouse Allocation",
+   "options": "WAFD Material Allocation",
+   "read_only": 1
+  },
+  {
    "fieldname": "materials_status",
    "fieldtype": "Select",
    "label": "حالة المواد / Materials Status",
@@ -282,7 +306,7 @@
  "istable": 0,
  "is_submittable": 0,
  "links": [],
- "modified": "2026-07-20 00:00:00.000000",
+ "modified": "2026-07-23 15:30:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Production Batch",

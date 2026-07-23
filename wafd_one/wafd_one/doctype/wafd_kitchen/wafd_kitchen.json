@@ -1,129 +1,136 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "field:kitchen_name",
-  "creation": "2026-07-23 12:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "kitchen_name",
-    "status",
-    "location",
-    "daily_capacity",
-    "production_lines",
-    "manager",
-    "default_warehouse",
-    "working_hours",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "kitchen_name",
-      "fieldtype": "Data",
-      "label": "اسم المطبخ / Kitchen Name",
-      "reqd": 1,
-      "unique": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "نشط / Active\nغير نشط / Inactive",
-      "default": "نشط / Active",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "location",
-      "fieldtype": "Data",
-      "label": "الموقع / Location",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "daily_capacity",
-      "fieldtype": "Int",
-      "label": "الطاقة الإنتاجية اليومية / Daily Capacity",
-      "description": "عدد الوجبات في اليوم / Meals per day",
-      "default": "0",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "production_lines",
-      "fieldtype": "Int",
-      "label": "عدد خطوط الإنتاج / Production Lines",
-      "default": "1"
-    },
-    {
-      "fieldname": "manager",
-      "fieldtype": "Link",
-      "label": "مدير المطبخ / Kitchen Manager",
-      "options": "User"
-    },
-    {
-      "fieldname": "default_warehouse",
-      "fieldtype": "Link",
-      "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
-      "options": "WAFD Warehouse"
-    },
-    {
-      "fieldname": "working_hours",
-      "fieldtype": "Data",
-      "label": "ساعات العمل / Working Hours"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Small Text",
-      "label": "ملاحظات / Notes"
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-23 12:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Kitchen",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Production Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1,
-  "title_field": "kitchen_name"
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:kitchen_name",
+ "creation": "2026-07-23 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kitchen_name",
+  "status",
+  "location",
+  "daily_capacity",
+  "production_lines",
+  "manager",
+  "default_warehouse",
+  "source_warehouses",
+  "working_hours",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "kitchen_name",
+   "fieldtype": "Data",
+   "label": "اسم المطبخ / Kitchen Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "نشط / Active\nغير نشط / Inactive",
+   "default": "نشط / Active",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "الموقع / Location",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "daily_capacity",
+   "fieldtype": "Int",
+   "label": "الطاقة الإنتاجية اليومية / Daily Capacity",
+   "description": "عدد الوجبات في اليوم / Meals per day",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "production_lines",
+   "fieldtype": "Int",
+   "label": "عدد خطوط الإنتاج / Production Lines",
+   "default": "1"
+  },
+  {
+   "fieldname": "manager",
+   "fieldtype": "Link",
+   "label": "مدير المطبخ / Kitchen Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
+   "options": "WAFD Warehouse"
+  },
+  {
+   "fieldname": "source_warehouses",
+   "fieldtype": "Table",
+   "label": "مصادر الصرف الافتراضية / Default Source Warehouses",
+   "options": "WAFD Source Warehouse Row"
+  },
+  {
+   "fieldname": "working_hours",
+   "fieldtype": "Data",
+   "label": "ساعات العمل / Working Hours"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-23 15:40:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Kitchen",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "kitchen_name"
 }

@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import date
 
 import frappe
+
+from wafd_one.rc14_catalog import ADDITIONAL_INGREDIENTS, ADDITIONAL_RECIPES, PACKAGING_MATERIALS, PACKAGING_PROFILES
 from frappe.utils import now_datetime
 
 ACTIVE = "نشط / Active"
@@ -316,6 +318,7 @@ NATIONALITY_INGREDIENTS = [
     ("خبز توست", "TOAST", "أخرى / Other", "حبة / Piece", 0.35, 500, "مورد المخبوزات"),
 ]
 INGREDIENTS.extend(NATIONALITY_INGREDIENTS)
+INGREDIENTS.extend(ADDITIONAL_INGREDIENTS)
 
 
 WAREHOUSES = [
@@ -666,6 +669,7 @@ def load_reference_master_data() -> dict[str, int]:
 
     recipe_specs = [(name, category, "عام / General", "جميع البعثات", items) for name, category, items in RECIPES]
     recipe_specs.extend(NATIONALITY_RECIPES)
+    recipe_specs.extend(ADDITIONAL_RECIPES)
     for recipe_name, category, cuisine, nationalities, items in recipe_specs:
         existing = _exists("WAFD Recipe", "recipe_name", recipe_name)
         if existing:
@@ -706,6 +710,21 @@ def load_reference_master_data() -> dict[str, int]:
 
     erp_counts = install_erpnext_inventory_masters()
     counts.update({key: counts.get(key, 0) + value for key, value in erp_counts.items()})
+
+    # Packaging catalogue and reusable profiles.
+    if frappe.db.exists("DocType", "WAFD Packaging Material"):
+        for name, code, category, cost, units in PACKAGING_MATERIALS:
+            if not frappe.db.exists("WAFD Packaging Material", code):
+                _insert("WAFD Packaging Material", {"material_code": code, "material_name": name, "category": category, "unit_cost": cost, "units_per_pack": units, "warehouse": "مستودع التغليف", "is_active": 1})
+    if frappe.db.exists("DocType", "WAFD Packaging Profile"):
+        for name, meal_type, service_type, units_per_box, rows in PACKAGING_PROFILES:
+            if frappe.db.exists("WAFD Packaging Profile", name):
+                continue
+            doc = frappe.get_doc({"doctype":"WAFD Packaging Profile", "profile_name":name, "meal_type":meal_type, "service_type":service_type, "units_per_box":units_per_box, "label_template":"المشروع: {project} | الدفعة: {batch} | الكمية: {quantity}", "is_active":1})
+            for code, qty in rows:
+                if frappe.db.exists("WAFD Packaging Material", code):
+                    doc.append("materials", {"packaging_material":code, "quantity_per_meal":qty})
+            doc.insert(ignore_permissions=True)
 
     # Inventory quantities are operational facts and are never fabricated.
     # The installer creates Item masters and zero placeholders only. Opening

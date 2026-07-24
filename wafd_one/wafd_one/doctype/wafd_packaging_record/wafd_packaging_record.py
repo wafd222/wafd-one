@@ -6,6 +6,7 @@ from frappe.utils import cint, flt, now_datetime, nowdate
 class WAFDPackagingRecord(Document):
     def validate(self):
         self._sync_batch()
+        self._apply_packaging_profile()
         self._validate_quantities()
         self._derive_status()
         self._validate_gate()
@@ -34,6 +35,20 @@ class WAFDPackagingRecord(Document):
             self.supervisor = frappe.session.user
         if cint(self.units_per_box) > 0 and cint(self.packed_quantity) > 0 and not cint(self.box_count):
             self.box_count = (cint(self.packed_quantity) + cint(self.units_per_box) - 1) // cint(self.units_per_box)
+
+
+    def _apply_packaging_profile(self):
+        if not self.packaging_profile:
+            return
+        values = frappe.db.get_value("WAFD Packaging Profile", self.packaging_profile, ["units_per_box", "total_cost_per_meal", "label_template"], as_dict=True)
+        if not values:
+            return
+        if not self.units_per_box:
+            self.units_per_box = cint(values.units_per_box)
+        self.packaging_cost_per_meal = flt(values.total_cost_per_meal)
+        self.total_packaging_cost = flt(self.packaging_cost_per_meal) * cint(self.packed_quantity or self.planned_quantity)
+        if not self.label_text:
+            self.label_text = (values.label_template or "").replace("{project}", self.project or "").replace("{batch}", self.production_batch or "").replace("{quantity}", str(cint(self.packed_quantity or self.planned_quantity)))
 
     def _validate_quantities(self):
         planned = cint(self.planned_quantity)

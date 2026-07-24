@@ -287,6 +287,8 @@ def create_production_batches(daily_plan_name):
     if daily.missing_recipe_count:
         frappe.throw("حدد وصفة لكل وجبة قبل إنشاء الإنتاج / Select a recipe for every meal")
     created = skipped = 0
+    batch_names = []
+    meal_plan_names = []
     for row in daily.meals:
         plan_name = row.meal_plan
         if not plan_name:
@@ -324,8 +326,10 @@ def create_production_batches(daily_plan_name):
             batch.insert(ignore_permissions=True)
             batch_name = batch.name
             created += 1
+        batch_names.append(batch_name)
+        meal_plan_names.append(plan_name)
         frappe.db.set_value(row.doctype, row.name, {"meal_plan": plan_name, "production_batch": batch_name}, update_modified=False)
     daily.reload()
     daily.status = "قيد الإنتاج / In Production"
     daily.save(ignore_permissions=True)
-    return {"created": created, "skipped": skipped, "total": len(daily.meals), "name": daily.name}
+    return {"created": created, "skipped": skipped, "total": len(daily.meals), "name": daily.name, "batch_names": batch_names, "meal_plan_names": meal_plan_names}

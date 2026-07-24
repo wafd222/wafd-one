@@ -237,3 +237,41 @@ frappe.ui.form.on("WAFD Catering Project", {
         }, __("Operations"));
     }
 });
+
+frappe.ui.form.on("WAFD Catering Project", {
+    refresh(frm) {
+        if (frm.is_new()) return;
+        frm.add_custom_button(__("متابعة الخطوة التالية / Continue Next Step"), () => {
+            frappe.call({
+                method: "wafd_one.operations.get_next_operational_action",
+                args: { project_name: frm.doc.name },
+                freeze: true,
+                freeze_message: __("Checking the next operational step..."),
+                callback(r) {
+                    const action = r.message || {};
+                    if (action.method) {
+                        frappe.call({
+                            method: action.method,
+                            args: action.method_args || {},
+                            freeze: true,
+                            callback(result) {
+                                if (action.step === "invoice" && result.message) {
+                                    frappe.set_route("Form", "WAFD Invoice", result.message);
+                                } else if (action.route) {
+                                    frappe.set_route(...action.route);
+                                } else {
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+                        return;
+                    }
+                    if (action.route) {
+                        frappe.show_alert({ message: action.label || __("Opening next step"), indicator: action.step === "complete" ? "green" : "blue" });
+                        frappe.set_route(...action.route);
+                    }
+                }
+            });
+        }, __("Operations"));
+    }
+});

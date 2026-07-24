@@ -24,7 +24,11 @@ frappe.ui.form.on("WAFD Daily Meal Plan", {
                         callback(r) {
                             const x = r.message || {};
                             frappe.msgprint(`${__("Created")}: ${x.created || 0}<br>${__("Existing")}: ${x.skipped || 0}`);
-                            frm.reload_doc();
+                            if ((x.batch_names || []).length) {
+                                frappe.set_route("Form", "WAFD Production Batch", x.batch_names[0]);
+                            } else {
+                                frm.reload_doc();
+                            }
                         }
                     });
                 });

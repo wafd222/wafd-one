@@ -273,3 +273,172 @@ def get_operations_dashboard(project_name=None):
     total = result["accepted_quantity"] + result["rejected_quantity"]
     result["acceptance_percent"] = (result["accepted_quantity"] / total * 100) if total else 0
     return result
+
+@frappe.whitelist()
+def get_next_operational_action(project_name):
+    """Return the first incomplete step in the end-to-end project workflow.
+
+    This is intentionally read-only. It never approves quality, dispatches a
+    vehicle, accepts a delivery, invoices, or confirms a payment on behalf of
+    the user. It only identifies and opens the next document requiring review.
+    """
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("read")
+
+    daily = frappe.db.get_value(
+        "WAFD Daily Meal Plan", {"project": project.name},
+        ["name", "status", "service_date"], as_dict=True,
+        order_by="service_date asc, creation asc",
+    )
+    if not daily:
+        return {
+            "step": "daily_plan", "label": "إنشاء الخطط اليومية / Generate Daily Plans",
+            "method": "wafd_one.daily_planning.generate_daily_plans",
+            "method_args": {"project_name": project.name},
+            "route": ["List", "WAFD Daily Meal Plan", {"project": project.name}],
+        }
+
+    batch = frappe.db.get_value(
+        "WAFD Production Batch", {"project": project.name},
+        ["name", "status", "quality_status", "produced_quantity", "planned_quantity"],
+        as_dict=True, order_by="batch_date asc, creation asc",
+    )
+    if not batch:
+        return {
+            "step": "production", "label": "إنشاء دفعات الإنتاج / Create Production Batches",
+            "doctype": "WAFD Daily Meal Plan", "name": daily.name,
+            "route": ["Form", "WAFD Daily Meal Plan", daily.name],
+        }
+
+    incomplete_batch = frappe.db.get_value(
+        "WAFD Production Batch",
+        {"project": project.name, "status": ["not in", ["جاهز / Ready", "مكتمل / Completed"]]},
+        ["name", "status", "quality_status"], as_dict=True,
+        order_by="batch_date asc, creation asc",
+    )
+    if incomplete_batch:
+        return {
+            "step": "production", "label": "متابعة الإنتاج والجودة / Continue Production & Quality",
+            "doctype": "WAFD Production Batch", "name": incomplete_batch.name,
+            "route": ["Form", "WAFD Production Batch", incomplete_batch.name],
+        }
+
+    packaging = frappe.db.get_value(
+        "WAFD Packaging Record", {"project": project.name, "status": ["!=", "مكتمل / Completed"]},
+        ["name", "status"], as_dict=True, order_by="packaging_date asc, creation asc",
+    )
+    if packaging:
+        return {
+            "step": "packaging", "label": "استكمال التغليف / Complete Packaging",
+            "doctype": "WAFD Packaging Record", "name": packaging.name,
+            "route": ["Form", "WAFD Packaging Record", packaging.name],
+        }
+
+    batch_without_packaging = frappe.db.sql(
+        """select pb.name from `tabWAFD Production Batch` pb
+           left join `tabWAFD Packaging Record` pr on pr.production_batch=pb.name
+           where pb.project=%s and pb.quality_status='ناجح / Passed' and pr.name is null
+           order by pb.batch_date asc, pb.creation asc limit 1""",
+        (project.name,), as_dict=True,
+    )
+    if batch_without_packaging:
+        name = batch_without_packaging[0].name
+        return {
+            "step": "packaging", "label": "إنشاء سجل التغليف / Create Packaging Record",
+            "doctype": "WAFD Production Batch", "name": name,
+            "route": ["Form", "WAFD Production Batch", name],
+        }
+
+    loading = frappe.db.get_value(
+        "WAFD Loading Record", {"project": project.name, "status": ["!=", "خرجت / Dispatched"]},
+        ["name", "status"], as_dict=True, order_by="loading_date asc, creation asc",
+    )
+    if loading:
+        return {
+            "step": "loading", "label": "استكمال التحميل / Complete Loading",
+            "doctype": "WAFD Loading Record", "name": loading.name,
+            "route": ["Form", "WAFD Loading Record", loading.name],
+        }
+
+    packaging_without_loading = frappe.db.sql(
+        """select pr.name from `tabWAFD Packaging Record` pr
+           left join `tabWAFD Loading Record` lr on lr.packaging_record=pr.name
+           where pr.project=%s and pr.status='مكتمل / Completed' and lr.name is null
+           order by pr.packaging_date asc, pr.creation asc limit 1""",
+        (project.name,), as_dict=True,
+    )
+    if packaging_without_loading:
+        name = packaging_without_loading[0].name
+        return {
+            "step": "loading", "label": "إنشاء سجل التحميل / Create Loading Record",
+            "doctype": "WAFD Packaging Record", "name": name,
+            "route": ["Form", "WAFD Packaging Record", name],
+        }
+
+    trip = frappe.db.get_value(
+        "WAFD Delivery Trip",
+        {"project": project.name, "status": ["not in", ["تم التسليم / Delivered", "ملغية / Cancelled"]]},
+        ["name", "status"], as_dict=True, order_by="trip_date asc, creation asc",
+    )
+    if trip:
+        return {
+            "step": "delivery", "label": "متابعة رحلة التوصيل / Continue Delivery Trip",
+            "doctype": "WAFD Delivery Trip", "name": trip.name,
+            "route": ["Form", "WAFD Delivery Trip", trip.name],
+        }
+
+    loading_without_trip = frappe.db.sql(
+        """select lr.name from `tabWAFD Loading Record` lr
+           left join `tabWAFD Delivery Trip` dt on dt.loading_record=lr.name and dt.status!='ملغية / Cancelled'
+           where lr.project=%s and lr.status in ('تم التحميل / Loaded','خرجت / Dispatched') and dt.name is null
+           order by lr.loading_date asc, lr.creation asc limit 1""",
+        (project.name,), as_dict=True,
+    )
+    if loading_without_trip:
+        name = loading_without_trip[0].name
+        return {
+            "step": "delivery", "label": "إنشاء رحلة التوصيل / Create Delivery Trip",
+            "doctype": "WAFD Loading Record", "name": name,
+            "route": ["Form", "WAFD Loading Record", name],
+        }
+
+    trip_without_proof = frappe.db.sql(
+        """select dt.name from `tabWAFD Delivery Trip` dt
+           left join `tabWAFD Delivery Proof` dp on dp.delivery_trip=dt.name
+           where dt.project=%s and dt.status in ('وصلت / Arrived','متأخرة / Delayed','في الطريق / In Transit')
+             and dp.name is null
+           order by dt.trip_date asc, dt.creation asc limit 1""",
+        (project.name,), as_dict=True,
+    )
+    if trip_without_proof:
+        name = trip_without_proof[0].name
+        return {
+            "step": "proof", "label": "إثبات التسليم / Record Delivery Proof",
+            "doctype": "WAFD Delivery Trip", "name": name,
+            "route": ["Form", "WAFD Delivery Trip", name],
+        }
+
+    from wafd_one.finance import get_uninvoiced_delivery_items
+    billable = get_uninvoiced_delivery_items(project.name)
+    if billable:
+        return {
+            "step": "invoice", "label": "إنشاء فاتورة من التسليم / Create Delivery Invoice",
+            "method": "wafd_one.finance.create_invoice_from_deliveries",
+            "method_args": {"project_name": project.name},
+        }
+
+    invoice = frappe.db.get_value(
+        "WAFD Invoice", {"project": project.name, "status": ["not in", ["مدفوعة / Paid", "ملغاة / Cancelled"]]},
+        ["name", "status", "balance"], as_dict=True, order_by="invoice_date asc, creation asc",
+    )
+    if invoice:
+        return {
+            "step": "payment", "label": "تسجيل التحصيل / Register Payment",
+            "doctype": "WAFD Invoice", "name": invoice.name,
+            "route": ["Form", "WAFD Invoice", invoice.name],
+        }
+
+    return {
+        "step": "complete", "label": "الدورة مكتملة / Workflow Complete",
+        "route": ["Form", "WAFD Catering Project", project.name],
+    }

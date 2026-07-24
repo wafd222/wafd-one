@@ -1,4 +1,4 @@
-# WAFD ONE 10.0.0rc9
+# WAFD ONE 10.0.0rc10
 
 - Removes empty Source Warehouse child rows before validation.
 - Automatically loads project or kitchen warehouse defaults into daily plans.

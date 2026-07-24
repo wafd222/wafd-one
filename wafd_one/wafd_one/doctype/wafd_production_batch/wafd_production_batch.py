@@ -102,7 +102,29 @@ class WAFDProductionBatch(Document):
             self.source_warehouse = rows[0].warehouse
         return rows
 
+    def _ensure_recipe_source_warehouses(self):
+        """Add the appropriate WAFD warehouse for every recipe ingredient category.
+
+        This keeps mixed recipes (dry, chilled, frozen and vegetables) from being
+        diagnosed against a single warehouse only. Existing user-selected sources
+        remain first and are never removed.
+        """
+        if not self.recipe:
+            return
+        from wafd_one.master_data import CATEGORY_WAREHOUSE_MAP
+        existing = {row.warehouse for row in (self.source_warehouses or []) if row.warehouse}
+        recipe = frappe.get_doc("WAFD Recipe", self.recipe)
+        priority = max([cint(row.priority) for row in (self.source_warehouses or [])] or [0])
+        for item in recipe.items:
+            category = frappe.db.get_value("WAFD Ingredient", item.ingredient, "category")
+            warehouse = CATEGORY_WAREHOUSE_MAP.get(category)
+            if warehouse and frappe.db.exists("WAFD Warehouse", warehouse) and warehouse not in existing:
+                priority += 1
+                self.append("source_warehouses", {"warehouse": warehouse, "priority": priority, "is_default": 0})
+                existing.add(warehouse)
+
     def _calculate_material_requirements(self):
+        self._ensure_recipe_source_warehouses()
         previous_movements = {(row.ingredient, row.warehouse): row.stock_movement for row in (self.material_allocations or []) if row.stock_movement}
         self.set("material_requirements", [])
         self.set("material_allocations", [])

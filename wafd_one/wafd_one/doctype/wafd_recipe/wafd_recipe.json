@@ -14,6 +14,8 @@
     "cost_per_portion",
     "instructions",
     "cuisine",
+    "suitable_nationalities",
+    "mission_menu_notes",
     "calories_per_portion",
     "allergens",
     "food_safety_notes",
@@ -224,6 +226,17 @@
       "fieldtype": "Datetime",
       "label": "تاريخ احتساب التكلفة / Costed On",
       "read_only": 1
+    },
+    {
+      "fieldname": "suitable_nationalities",
+      "fieldtype": "Small Text",
+      "label": "الجنسيات المناسبة / Suitable Nationalities",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "mission_menu_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات قائمة البعثة / Mission Menu Notes"
     }
   ],
   "index_web_pages_for_search": 0,

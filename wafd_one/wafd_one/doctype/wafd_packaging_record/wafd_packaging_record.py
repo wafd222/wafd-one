@@ -32,6 +32,8 @@ class WAFDPackagingRecord(Document):
             self.packed_quantity = quantity
         if not self.supervisor:
             self.supervisor = frappe.session.user
+        if cint(self.units_per_box) > 0 and cint(self.packed_quantity) > 0 and not cint(self.box_count):
+            self.box_count = (cint(self.packed_quantity) + cint(self.units_per_box) - 1) // cint(self.units_per_box)
 
     def _validate_quantities(self):
         planned = cint(self.planned_quantity)

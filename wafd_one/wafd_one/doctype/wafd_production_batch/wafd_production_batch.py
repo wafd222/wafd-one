@@ -117,8 +117,27 @@ class WAFDProductionBatch(Document):
             remaining = flt(req["quantity"])
             available_total = 0
             for source in sources:
-                balance = frappe.db.get_value("WAFD Stock Balance", {"warehouse": source.warehouse, "ingredient": req["ingredient"]}, ["available_quantity", "average_cost"], as_dict=True) or {}
-                available = max(flt(balance.get("available_quantity")), 0)
+                balance = frappe.db.get_value(
+                    "WAFD Stock Balance",
+                    {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
+                    ["actual_quantity", "reserved_quantity", "available_quantity", "average_cost"],
+                    as_dict=True,
+                ) or {}
+                # available_quantity can be stale on legacy/imported rows. Always derive a
+                # safe live value from actual minus reserved when those fields are present.
+                actual = flt(balance.get("actual_quantity"))
+                reserved = flt(balance.get("reserved_quantity"))
+                stored_available = flt(balance.get("available_quantity"))
+                derived_available = max(actual - reserved, 0)
+                available = derived_available if ("actual_quantity" in balance or "reserved_quantity" in balance) else max(stored_available, 0)
+                if balance and abs(stored_available - derived_available) > 0.000001:
+                    frappe.db.set_value(
+                        "WAFD Stock Balance",
+                        {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
+                        "available_quantity",
+                        derived_available,
+                        update_modified=False,
+                    )
                 available_total += available
                 allocated = min(remaining, available)
                 if allocated > 0:
@@ -223,6 +242,34 @@ def _recipe_requirements(batch):
             "unit_cost": flt(row.unit_cost),
         })
     return recipe, requirements
+
+
+@frappe.whitelist()
+def get_stock_diagnostics(batch_name):
+    """Return precise reasons for zero availability without guessing stock."""
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("read")
+    batch._calculate_material_requirements()
+    sources = [row.warehouse for row in batch._source_rows()]
+    missing = []
+    zero = []
+    for row in batch.material_requirements:
+        balances = frappe.get_all(
+            "WAFD Stock Balance",
+            filters={"warehouse": ["in", sources], "ingredient": row.ingredient},
+            fields=["warehouse", "actual_quantity", "reserved_quantity", "available_quantity"],
+        ) if sources else []
+        if not balances:
+            missing.append(row.ingredient)
+        elif sum(max(flt(x.actual_quantity) - flt(x.reserved_quantity), 0) for x in balances) <= 0:
+            zero.append(row.ingredient)
+    return {
+        "sources": sources,
+        "missing_balance_rows": missing,
+        "zero_balance_items": zero,
+        "materials_status": batch.materials_status,
+        "available": not missing and not zero,
+    }
 
 
 @frappe.whitelist()

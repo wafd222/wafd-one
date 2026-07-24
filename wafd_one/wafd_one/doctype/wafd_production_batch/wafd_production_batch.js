@@ -28,6 +28,25 @@ frappe.ui.form.on("WAFD Production Batch", {
             "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.refresh_material_requirements",
             { batch_name: frm.doc.name }, () => frm.reload_doc());
 
+        frm.add_custom_button(__("Stock Diagnostics"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.get_stock_diagnostics",
+                args: { batch_name: frm.doc.name }, freeze: true,
+                callback(r) {
+                    if (!r.message) return;
+                    const d = r.message;
+                    const sources = (d.sources || []).join("<br>") || __("No source warehouse configured");
+                    const missing = (d.missing_balance_rows || []).join("<br>") || __("None");
+                    const zero = (d.zero_balance_items || []).join("<br>") || __("None");
+                    frappe.msgprint({
+                        title: __("Stock Diagnostics"),
+                        indicator: d.available ? "green" : "orange",
+                        message: `<b>${__("Source Warehouses")}</b><br>${sources}<hr><b>${__("Items without stock balance rows")}</b><br>${missing}<hr><b>${__("Items with zero available balance")}</b><br>${zero}`
+                    });
+                }
+            });
+        }, __("Operations"));
+
         frm.add_custom_button(__("Check Materials"), () => {
             frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.check_material_availability",

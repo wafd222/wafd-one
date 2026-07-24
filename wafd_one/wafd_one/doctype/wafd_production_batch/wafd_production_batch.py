@@ -203,7 +203,12 @@ class WAFDProductionBatch(Document):
 
     def _validate_workflow(self):
         active = ("تحضير / Preparing", "طبخ / Cooking", "تغليف / Packaging", "جاهز / Ready", "مكتمل / Completed")
-        if self.status in active:
+        previous = self.get_doc_before_save() if not self.is_new() else None
+        entering_active = self.status in active and (not previous or previous.status not in active)
+        # Only validate stock movement prerequisites when the document is actually
+        # transitioning into production. Normal saves while still Planned must never
+        # be blocked, otherwise the user cannot save the batch and create the issue.
+        if entering_active:
             movements = {row.stock_movement for row in (self.material_allocations or []) if row.stock_movement}
             if not movements:
                 frappe.throw("يجب إنشاء حركات صرف المواد قبل بدء الإنتاج / Material issues must be created before production")
@@ -332,6 +337,44 @@ def check_material_availability(batch_name):
         "allocations": [row.as_dict() for row in batch.material_allocations],
         "shortages": shortages, "available": not shortages,
     }
+
+
+@frappe.whitelist()
+def start_production(batch_name):
+    """Start production without leaving the form in an unsaved deadlock state."""
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    if batch.status != "مخطط / Planned":
+        return {"name": batch.name, "status": batch.status, "started": False}
+    batch._calculate_material_requirements()
+    movements = {row.stock_movement for row in (batch.material_allocations or []) if row.stock_movement}
+    if not movements:
+        frappe.throw("يجب إنشاء حركات صرف المواد قبل بدء الإنتاج / Material issues must be created before production")
+    unposted = [name for name in movements if frappe.db.get_value("WAFD Stock Movement", name, "status") != "مرحلة / Posted"]
+    if unposted:
+        frappe.throw("يجب ترحيل جميع حركات الصرف أولاً: " + ", ".join(unposted) + " / Post all material issues first")
+    batch.status = "تحضير / Preparing"
+    batch.start_time = batch.start_time or now_datetime()
+    batch.save()
+    return {"name": batch.name, "status": batch.status, "started": True}
+
+
+@frappe.whitelist()
+def complete_production(batch_name, produced_quantity=None, rejected_quantity=None):
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    if batch.status not in ("تحضير / Preparing", "طبخ / Cooking"):
+        frappe.throw("يمكن إكمال الإنتاج فقط بعد بدء الدفعة / Production can only be completed after it starts")
+    if produced_quantity is not None:
+        batch.produced_quantity = cint(produced_quantity)
+    elif not cint(batch.produced_quantity):
+        batch.produced_quantity = cint(batch.planned_quantity)
+    if rejected_quantity is not None:
+        batch.rejected_quantity = cint(rejected_quantity)
+    batch.status = "جاهز / Ready"
+    batch.end_time = now_datetime()
+    batch.save()
+    return {"name": batch.name, "status": batch.status, "completed": True}
 
 
 @frappe.whitelist()

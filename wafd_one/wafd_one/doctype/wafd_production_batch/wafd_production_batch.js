@@ -82,20 +82,31 @@ frappe.ui.form.on("WAFD Production Batch", {
             });
 
         if (frm.doc.status === "مخطط / Planned") {
-            frm.add_custom_button(__("Start Production"), () => {
-                frm.set_value("status", "تحضير / Preparing");
-                frm.set_value("start_time", frappe.datetime.now_datetime());
-                frm.save();
-            }, __("Operations"));
+            add_action(frm, __("Start Production"),
+                "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.start_production",
+                { batch_name: frm.doc.name }, () => frm.reload_doc());
         }
 
         if (["تحضير / Preparing", "طبخ / Cooking"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Complete Production"), () => {
-                const produced = frm.doc.produced_quantity || frm.doc.planned_quantity;
-                frm.set_value("produced_quantity", produced);
-                frm.set_value("status", "جاهز / Ready");
-                frm.set_value("end_time", frappe.datetime.now_datetime());
-                frm.save();
+                const dialog = new frappe.ui.Dialog({
+                    title: __("Complete Production"),
+                    fields: [
+                        { fieldname: "produced_quantity", fieldtype: "Int", label: __("Produced Qty"), reqd: 1, default: frm.doc.produced_quantity || frm.doc.planned_quantity },
+                        { fieldname: "rejected_quantity", fieldtype: "Int", label: __("Rejected Qty"), default: frm.doc.rejected_quantity || 0 }
+                    ],
+                    primary_action_label: __("Complete"),
+                    primary_action(values) {
+                        dialog.hide();
+                        frappe.call({
+                            method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.complete_production",
+                            args: { batch_name: frm.doc.name, produced_quantity: values.produced_quantity, rejected_quantity: values.rejected_quantity },
+                            freeze: true,
+                            callback() { frm.reload_doc(); }
+                        });
+                    }
+                });
+                dialog.show();
             }, __("Operations"));
         }
 

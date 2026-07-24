@@ -25,23 +25,33 @@ class WAFDDailyMealPlan(Document):
         if self.hotel and allowed and self.hotel not in allowed:
             frappe.throw("الفندق غير مرتبط بالمشروع / Hotel is not linked to the project")
         self.kitchen = self.kitchen or project.default_kitchen
+        self._remove_blank_source_rows()
         if not self.source_warehouses:
-            project_sources = list(getattr(project, "source_warehouses", []) or [])
+            project_sources = _valid_source_rows(getattr(project, "source_warehouses", []) or [])
             if not project_sources and self.kitchen:
                 kitchen = frappe.get_doc("WAFD Kitchen", self.kitchen)
-                project_sources = list(getattr(kitchen, "source_warehouses", []) or [])
+                project_sources = _valid_source_rows(getattr(kitchen, "source_warehouses", []) or [])
                 if not project_sources and getattr(kitchen, "default_warehouse", None):
                     project_sources = [{"warehouse": kitchen.default_warehouse, "priority": 1, "is_default": 1}]
             if not project_sources and getattr(project, "default_source_warehouse", None):
                 project_sources = [{"warehouse": project.default_source_warehouse, "priority": 1, "is_default": 1}]
+            if not project_sources:
+                fallback = _first_active_warehouse()
+                if fallback:
+                    project_sources = [{"warehouse": fallback, "priority": 1, "is_default": 1}]
             for source in project_sources:
                 getter = source.get if isinstance(source, dict) else lambda key, default=None: getattr(source, key, default)
+                warehouse = getter("warehouse")
+                if not warehouse:
+                    continue
                 self.append("source_warehouses", {
-                    "warehouse": getter("warehouse"), "priority": getter("priority", 1),
+                    "warehouse": warehouse, "priority": getter("priority", 1),
                     "material_category": getter("material_category"), "is_default": getter("is_default", 0),
                     "allocation_percent": getter("allocation_percent"), "notes": getter("notes"),
                 })
         self.source_warehouse = self.source_warehouse or getattr(project, "default_source_warehouse", None)
+        if not self.source_warehouse and self.source_warehouses:
+            self.source_warehouse = self.source_warehouses[0].warehouse
         if not self.plan_title and self.service_date and self.hotel:
             self.plan_title = f"{project.project_name} - {self.hotel} - {self.service_date}"
 
@@ -58,8 +68,15 @@ class WAFDDailyMealPlan(Document):
             frappe.throw(f"توجد خطة يومية لنفس المشروع والفندق والتاريخ: {duplicate} / Duplicate daily plan exists")
 
 
+    def _remove_blank_source_rows(self):
+        valid_rows = [row for row in (self.source_warehouses or []) if getattr(row, "warehouse", None)]
+        if len(valid_rows) != len(self.source_warehouses or []):
+            self.set("source_warehouses", valid_rows)
+
     def _validate_source_warehouses(self):
-        # Preserve backward compatibility while making the table authoritative.
+        # Blank child rows can be created by the grid UI. Remove them before
+        # enforcing the warehouse requirement or applying automatic defaults.
+        self._remove_blank_source_rows()
         if self.source_warehouse and not self.source_warehouses:
             self.append("source_warehouses", {"warehouse": self.source_warehouse, "priority": 1, "is_default": 1})
         if not self.source_warehouses:
@@ -138,6 +155,19 @@ def _row_value(row, fieldname, default=None):
     return getattr(row, fieldname, default)
 
 
+def _valid_source_rows(rows):
+    return [row for row in (rows or []) if _row_value(row, "warehouse")]
+
+
+def _first_active_warehouse():
+    return frappe.db.get_value(
+        "WAFD Warehouse",
+        {"status": "نشط / Active"},
+        "name",
+        order_by="creation asc",
+    )
+
+
 @frappe.whitelist()
 def get_project_plan_defaults(project_name, service_date=None):
     """Return complete daily-plan defaults from the linked contract.
@@ -210,9 +240,18 @@ def get_project_plan_defaults(project_name, service_date=None):
         })
 
     sources = []
-    project_sources = list(getattr(project, "source_warehouses", []) or [])
+    project_sources = _valid_source_rows(getattr(project, "source_warehouses", []) or [])
     if not project_sources and getattr(project, "default_source_warehouse", None):
         project_sources = [{"warehouse": project.default_source_warehouse, "priority": 1, "is_default": 1}]
+    if not project_sources and project.default_kitchen:
+        kitchen = frappe.get_doc("WAFD Kitchen", project.default_kitchen)
+        project_sources = _valid_source_rows(getattr(kitchen, "source_warehouses", []) or [])
+        if not project_sources and getattr(kitchen, "default_warehouse", None):
+            project_sources = [{"warehouse": kitchen.default_warehouse, "priority": 1, "is_default": 1}]
+    if not project_sources:
+        fallback = _first_active_warehouse()
+        if fallback:
+            project_sources = [{"warehouse": fallback, "priority": 1, "is_default": 1}]
     for source in project_sources:
         warehouse = _row_value(source, "warehouse")
         if warehouse:
@@ -235,7 +274,7 @@ def get_project_plan_defaults(project_name, service_date=None):
         "requested_date_adjusted": bool(requested_date and selected_date and requested_date != selected_date),
         "plan_title": title,
         "kitchen": project.default_kitchen,
-        "source_warehouse": project.default_source_warehouse,
+        "source_warehouse": project.default_source_warehouse or (sources[0]["warehouse"] if sources else None),
         "source_warehouses": sources,
         "meals": meals,
     }

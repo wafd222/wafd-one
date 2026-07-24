@@ -69,7 +69,16 @@ function load_project_defaults(frm, force_meals) {
                 frm.refresh_field("meals");
             }
 
-            const shouldLoadSources = force_meals || !frm.doc.source_warehouses || !frm.doc.source_warehouses.length;
+            const validSources = (frm.doc.source_warehouses || []).filter(row => row.warehouse);
+            if (validSources.length !== (frm.doc.source_warehouses || []).length) {
+                frm.clear_table("source_warehouses");
+                validSources.forEach(item => {
+                    const row = frm.add_child("source_warehouses");
+                    Object.assign(row, item);
+                });
+                frm.refresh_field("source_warehouses");
+            }
+            const shouldLoadSources = force_meals || !validSources.length;
             if (shouldLoadSources && (x.source_warehouses || []).length) {
                 frm.clear_table("source_warehouses");
                 (x.source_warehouses || []).forEach(item => {

@@ -336,9 +336,165 @@ def _insert(doctype: str, values: dict):
     return doc
 
 
+
+
+UOM_MAP = {
+    "كجم / Kg": "Kg",
+    "جرام / Gram": "Gram",
+    "لتر / Liter": "Litre",
+    "مل / ML": "Millilitre",
+    "حبة / Piece": "Nos",
+    "كرتون / Carton": "Carton",
+    "صندوق / Box": "Box",
+}
+
+ITEM_GROUP_MAP = {
+    "لحوم / Meat": "WAFD Meat",
+    "دواجن / Poultry": "WAFD Poultry",
+    "أرز وحبوب / Rice & Grains": "WAFD Rice and Grains",
+    "خضار / Vegetables": "WAFD Vegetables",
+    "ألبان / Dairy": "WAFD Dairy",
+    "مشروبات / Beverages": "WAFD Beverages",
+    "تغليف / Packaging": "WAFD Packaging",
+    "أخرى / Other": "WAFD Other Materials",
+}
+
+CATEGORY_WAREHOUSE_MAP = {
+    "أرز وحبوب / Rice & Grains": "المستودع الجاف 1 - الأرز والحبوب",
+    "تغليف / Packaging": "مستودع التغليف",
+    "مشروبات / Beverages": "مستودع المشروبات",
+    "ألبان / Dairy": "غرفة التبريد 1 - الألبان",
+    "خضار / Vegetables": "غرفة التبريد 2 - الخضار",
+    "دواجن / Poultry": "غرفة التجميد 1 - الدواجن",
+    "لحوم / Meat": "غرفة التجميد 2 - اللحوم",
+    "أخرى / Other": "المستودع الجاف 2 - البهارات والبقوليات",
+}
+
+
+def _default_company() -> str | None:
+    if not frappe.db.exists("DocType", "Company"):
+        return None
+    company = frappe.defaults.get_global_default("company")
+    if company and frappe.db.exists("Company", company):
+        return company
+    return frappe.db.get_value("Company", {}, "name", order_by="creation asc")
+
+
+def _ensure_uom(name: str, must_be_whole_number: int = 0) -> bool:
+    if frappe.db.exists("UOM", name):
+        return False
+    _insert("UOM", {"uom_name": name, "must_be_whole_number": must_be_whole_number})
+    return True
+
+
+def _ensure_item_group(name: str) -> bool:
+    if frappe.db.exists("Item Group", name):
+        return False
+    parent = "All Item Groups" if frappe.db.exists("Item Group", "All Item Groups") else None
+    values = {"item_group_name": name, "is_group": 0}
+    if parent:
+        values["parent_item_group"] = parent
+    _insert("Item Group", values)
+    return True
+
+
+def _erp_warehouse_name(warehouse_name: str, company: str) -> str | None:
+    return frappe.db.get_value("Warehouse", {"warehouse_name": warehouse_name, "company": company}, "name")
+
+
+def _ensure_erp_warehouse(warehouse_name: str, company: str) -> bool:
+    if _erp_warehouse_name(warehouse_name, company):
+        return False
+    abbr = frappe.db.get_value("Company", company, "abbr")
+    root_name = f"WAFD Warehouses - {abbr}" if abbr else "WAFD Warehouses"
+    root = frappe.db.get_value("Warehouse", {"warehouse_name": "WAFD Warehouses", "company": company}, "name")
+    if not root:
+        doc = _insert("Warehouse", {
+            "warehouse_name": "WAFD Warehouses",
+            "company": company,
+            "is_group": 1,
+        })
+        root = doc.name
+    _insert("Warehouse", {
+        "warehouse_name": warehouse_name,
+        "company": company,
+        "parent_warehouse": root,
+        "is_group": 0,
+    })
+    return True
+
+
+def install_erpnext_inventory_masters() -> dict[str, int]:
+    """Create missing ERPNext Item/UOM/Item Group/Warehouse masters safely.
+
+    No stock quantity is fabricated. Zero WAFD balance rows are created only as
+    explicit placeholders until an approved opening count or stock movement is posted.
+    """
+    result = {
+        "erp_uoms": 0,
+        "erp_item_groups": 0,
+        "erp_items": 0,
+        "erp_warehouses": 0,
+        "stock_balance_placeholders": 0,
+    }
+    required = ("UOM", "Item Group", "Item", "Warehouse", "Company")
+    if not all(frappe.db.exists("DocType", dt) for dt in required):
+        return result
+
+    for source, erp_uom in UOM_MAP.items():
+        whole = 1 if erp_uom in {"Nos", "Carton", "Box"} else 0
+        result["erp_uoms"] += int(_ensure_uom(erp_uom, whole))
+
+    for group in sorted(set(ITEM_GROUP_MAP.values())):
+        result["erp_item_groups"] += int(_ensure_item_group(group))
+
+    company = _default_company()
+    if company:
+        for warehouse_name, _warehouse_type, _location in WAREHOUSES:
+            result["erp_warehouses"] += int(_ensure_erp_warehouse(warehouse_name, company))
+
+    for name, code, category, source_uom, cost, minimum, _supplier in INGREDIENTS:
+        erp_uom = UOM_MAP.get(source_uom, "Nos")
+        item_group = ITEM_GROUP_MAP.get(category, "WAFD Other Materials")
+        if not frappe.db.exists("Item", code):
+            _insert("Item", {
+                "item_code": code,
+                "item_name": name,
+                "description": f"{name} - WAFD ONE inventory master",
+                "item_group": item_group,
+                "stock_uom": erp_uom,
+                "is_stock_item": 1,
+                "include_item_in_manufacturing": 1,
+                "standard_rate": cost,
+                "disabled": 0,
+            })
+            result["erp_items"] += 1
+
+        preferred_warehouse = CATEGORY_WAREHOUSE_MAP.get(category, WAREHOUSES[0][0])
+        if frappe.db.exists("WAFD Warehouse", preferred_warehouse) and not frappe.db.exists(
+            "WAFD Stock Balance", {"warehouse": preferred_warehouse, "ingredient": name}
+        ):
+            _insert("WAFD Stock Balance", {
+                "warehouse": preferred_warehouse,
+                "ingredient": name,
+                "uom": source_uom,
+                "actual_quantity": 0,
+                "reserved_quantity": 0,
+                "available_quantity": 0,
+                "average_cost": cost,
+                "stock_value": 0,
+                "count_status": "غير مجرود / Not Counted",
+                "stock_source_note": "Placeholder created by WAFD master-data installer. Enter approved opening stock through a stock movement or physical count.",
+            })
+            result["stock_balance_placeholders"] += 1
+
+    return result
+
 def load_reference_master_data() -> dict[str, int]:
     """Create missing WAFD reference data without touching existing records."""
-    counts = {"missions": 0, "hotels": 0, "suppliers": 0, "ingredients": 0, "warehouses": 0, "recipes": 0, "stock_balances": 0}
+    counts = {"missions": 0, "hotels": 0, "suppliers": 0, "ingredients": 0, "warehouses": 0, "recipes": 0, "stock_balances": 0,
+              "erp_uoms": 0, "erp_item_groups": 0, "erp_items": 0, "erp_warehouses": 0,
+              "stock_balance_placeholders": 0}
 
     for name, country in MISSIONS:
         if not _exists("WAFD Mission", "mission_name", name):
@@ -396,8 +552,10 @@ def load_reference_master_data() -> dict[str, int]:
         recipe.insert(ignore_permissions=True)
         counts["recipes"] += 1
 
-    # Inventory quantities are operational facts and must never be fabricated.
-    # Warehouses and ingredient masters are created, but opening balances are
-    # entered only after a physical count or an approved stock movement.
+    erp_counts = install_erpnext_inventory_masters()
+    counts.update({key: counts.get(key, 0) + value for key, value in erp_counts.items()})
 
+    # Inventory quantities are operational facts and are never fabricated.
+    # The installer creates Item masters and zero placeholders only. Opening
+    # quantities must come from an approved physical count or stock movement.
     return counts

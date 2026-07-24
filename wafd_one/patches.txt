@@ -114,3 +114,6 @@ wafd_one.patches.v10_0_0_rc1.execute
 
 
 wafd_one.patches.v10_0_0_rc3.execute
+
+
+wafd_one.patches.v10_0_0_rc4.execute

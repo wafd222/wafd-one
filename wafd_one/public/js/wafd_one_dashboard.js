@@ -1,6 +1,8 @@
 frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   frappe.ui.make_app_page({ parent: wrapper, title: __("WAFD ONE"), single_column: true });
   const $root = $(wrapper).find(".layout-main-section").attr("dir", "rtl");
+  const today = frappe.datetime.get_today();
+  const currentUser = frappe.user.full_name() || frappe.session.user;
 
   $root.html(`
     <div class="wafd-dashboard wafd-dashboard-final">
@@ -8,27 +10,27 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <div class="wafd-brand">
           <img src="/assets/wafd_one/images/wafd-almadinah-official.png" alt="WAFD ONE">
           <div>
-            <span>إدارة وتشغيل خدمات الإعاشة</span>
+            <span>شركة وفد المدينة لخدمات الإعاشة</span>
             <h1>WAFD ONE</h1>
-            <p>لوحة يومية مبسطة من العقد حتى التحصيل.</p>
+            <p>لوحة تشغيل يومية مبسطة من العقد حتى التحصيل.</p>
           </div>
         </div>
-        <div class="wafd-hero-actions">
+        <div class="wafd-hero-meta">
+          <div><small>المستخدم</small><b>${frappe.utils.escape_html(currentUser)}</b></div>
+          <div><small>التاريخ</small><b>${frappe.datetime.str_to_user(today)}</b></div>
           <button class="btn btn-light" data-route="wafd-launch-center">فحص الجاهزية</button>
-          <button class="btn btn-light" data-new="WAFD Contract">عقد جديد</button>
-          <button class="btn btn-gold" data-new="WAFD Catering Project">مشروع جديد</button>
         </div>
       </section>
 
-      <section class="wafd-quick wafd-quick-final">
-        <button data-new="WAFD Daily Meal Plan">+ خطة يومية</button>
-        <button data-new="WAFD Production Batch">+ دفعة إنتاج</button>
-        <button data-new="WAFD Delivery Trip">+ رحلة توصيل</button>
-        <button data-new="WAFD Invoice">+ فاتورة</button>
+      <section class="wafd-primary-actions">
+        <button data-new="WAFD Contract"><span>عقد جديد</span><small>بدء دورة تشغيل</small></button>
+        <button data-new="WAFD Catering Project"><span>مشروع جديد</span><small>إدارة المشروع</small></button>
+        <button data-new="WAFD Daily Meal Plan"><span>خطة يومية</span><small>تخطيط الوجبات</small></button>
+        <button data-new="WAFD Delivery Trip"><span>رحلة توصيل</span><small>التسليم والمتابعة</small></button>
       </section>
 
-      <section class="wafd-filter">
-        <div><b>الفترة التشغيلية</b><small>عرض مؤشرات الفترة المحددة</small></div>
+      <section class="wafd-toolbar">
+        <div><b>الفترة التشغيلية</b><small>تحديث المؤشرات حسب التاريخ</small></div>
         <input type="date" class="form-control wafd-from">
         <input type="date" class="form-control wafd-to">
         <button class="btn btn-dark wafd-refresh">تحديث</button>
@@ -44,16 +46,11 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       <section class="wafd-alerts"></section>
 
       <section class="wafd-panels wafd-panels-final">
-        <article><h3>المشاريع الحالية</h3><div class="wafd-projects"></div></article>
-        <article><h3>التوصيلات القادمة</h3><div class="wafd-deliveries"></div></article>
-        <article><h3>الفواتير المتأخرة</h3><div class="wafd-invoices"></div></article>
+        <article><div class="panel-head"><h3>المشاريع الحالية</h3><button data-list="WAFD Catering Project">عرض الكل</button></div><div class="wafd-projects"></div></article>
+        <article><div class="panel-head"><h3>التوصيلات القادمة</h3><button data-list="WAFD Delivery Trip">عرض الكل</button></div><div class="wafd-deliveries"></div></article>
       </section>
-
-      <div class="wafd-title">الوحدات الأساسية</div>
-      <section class="wafd-grid wafd-grid-final"></section>
     </div>`);
 
-  const today = frappe.datetime.get_today();
   $root.find(".wafd-to").val(today);
   $root.find(".wafd-from").val(frappe.datetime.add_days(today, -29));
 
@@ -68,18 +65,6 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   ];
   $root.find(".wafd-flow").html(flow.map((item, index) => `
     <button data-list="${item[2]}"><i>${item[0]}</i><span>${item[1]}</span>${index < flow.length - 1 ? "<em>←</em>" : ""}</button>
-  `).join(""));
-
-  const units = [
-    ["العقود", "WAFD Contract"], ["المشاريع", "WAFD Catering Project"],
-    ["الخطط اليومية", "WAFD Daily Meal Plan"], ["دفعات الإنتاج", "WAFD Production Batch"],
-    ["فحص الجودة", "WAFD Quality Inspection"], ["التغليف", "WAFD Packaging Record"],
-    ["التحميل", "WAFD Loading Record"], ["رحلات التوصيل", "WAFD Delivery Trip"],
-    ["الفواتير", "WAFD Invoice"], ["التحصيلات", "WAFD Payment"],
-    ["الفنادق", "WAFD Hotel"], ["الوصفات", "WAFD Recipe"],
-  ];
-  $root.find(".wafd-grid").html(units.map((item) => `
-    <button data-list="${item[1]}"><span>${item[0]}</span><b>فتح</b></button>
   `).join(""));
 
   $root.on("click", "[data-route]", function () { frappe.set_route($(this).data("route")); });
@@ -105,9 +90,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     const kpis = [
       ["المشاريع النشطة", data.active_projects || 0, "تشغيل"],
       ["الوجبات المخططة", data.planned_meals || 0, "تخطيط"],
-      ["الوجبات المنتجة", data.produced_meals || 0, "إنتاج"],
       ["الوجبات المسلّمة", data.delivered_meals || 0, "توصيل"],
-      ["نسبة التسليم", `${flt(data.delivery_rate || 0).toFixed(1)}%`, "أداء"],
       ["المستحقات", money(data.receivables), "مالي"],
     ];
     $root.find(".wafd-kpis").html(kpis.map((item) => `
@@ -126,19 +109,14 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     `).join(""));
 
     const projects = data.projects || [];
-    $root.find(".wafd-projects").html(projects.length ? `<table><tr><th>المشروع</th><th>التقدم</th><th>المسلّم</th></tr>${projects.slice(0, 8).map((row) => `
+    $root.find(".wafd-projects").html(projects.length ? `<table><tr><th>المشروع</th><th>التقدم</th><th>المسلّم</th></tr>${projects.slice(0, 6).map((row) => `
       <tr data-doctype="WAFD Catering Project" data-docname="${escape(row.name)}"><td>${escape(row.project_name || row.name)}</td><td><div class="bar"><i style="width:${Math.min(100, flt(row.progress_percent || 0))}%"></i></div>${flt(row.progress_percent || 0).toFixed(0)}%</td><td>${escape(row.delivered_meals || 0)} / ${escape(row.total_meals || 0)}</td></tr>
     `).join("")}</table>` : empty("لا توجد مشاريع حالية."));
 
     const deliveries = data.upcoming_deliveries || [];
-    $root.find(".wafd-deliveries").html(deliveries.length ? `<table><tr><th>التاريخ</th><th>الفندق</th><th>الكمية</th></tr>${deliveries.slice(0, 8).map((row) => `
+    $root.find(".wafd-deliveries").html(deliveries.length ? `<table><tr><th>التاريخ</th><th>الفندق</th><th>الكمية</th></tr>${deliveries.slice(0, 6).map((row) => `
       <tr data-doctype="WAFD Delivery Trip" data-docname="${escape(row.name)}"><td>${escape(row.trip_date)}</td><td>${escape(row.hotel)}</td><td>${escape(row.quantity)}</td></tr>
     `).join("")}</table>` : empty("لا توجد توصيلات قادمة."));
-
-    const invoices = data.overdue_invoices || [];
-    $root.find(".wafd-invoices").html(invoices.length ? `<table><tr><th>الفاتورة</th><th>الاستحقاق</th><th>الرصيد</th></tr>${invoices.slice(0, 8).map((row) => `
-      <tr data-doctype="WAFD Invoice" data-docname="${escape(row.name)}"><td>${escape(row.name)}</td><td>${escape(row.due_date)}</td><td>${money(row.balance)}</td></tr>
-    `).join("")}</table>` : empty("لا توجد فواتير متأخرة."));
   }
 
   load();

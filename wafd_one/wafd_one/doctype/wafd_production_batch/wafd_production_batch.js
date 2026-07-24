@@ -81,8 +81,26 @@ frappe.ui.form.on("WAFD Production Batch", {
                 }
             });
 
-        if (frm.doc.quality_status === "ناجح / Passed") {
-            add_action(frm, __("Create Packaging Record"),
+        if (frm.doc.status === "مخطط / Planned") {
+            frm.add_custom_button(__("Start Production"), () => {
+                frm.set_value("status", "تحضير / Preparing");
+                frm.set_value("start_time", frappe.datetime.now_datetime());
+                frm.save();
+            }, __("Operations"));
+        }
+
+        if (["تحضير / Preparing", "طبخ / Cooking"].includes(frm.doc.status)) {
+            frm.add_custom_button(__("Complete Production"), () => {
+                const produced = frm.doc.produced_quantity || frm.doc.planned_quantity;
+                frm.set_value("produced_quantity", produced);
+                frm.set_value("status", "جاهز / Ready");
+                frm.set_value("end_time", frappe.datetime.now_datetime());
+                frm.save();
+            }, __("Operations"));
+        }
+
+        if (frm.doc.quality_status === "ناجح / Passed" && frm.doc.food_safety_release_status === "مفرج / Released") {
+            add_action(frm, __("Approve & Create Packaging"),
                 "wafd_one.operations.create_packaging_record",
                 { batch_name: frm.doc.name }, result => {
                     if (result.name) {

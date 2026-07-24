@@ -29,7 +29,8 @@ class WAFDProductionBatch(Document):
         if cint(self.box_count) and cint(self.units_per_box) and packed > cint(self.box_count) * cint(self.units_per_box):
             frappe.throw("الكمية المغلفة تتجاوز سعة الصناديق / Packed quantity exceeds box capacity")
         self.actual_yield_percent = (flt(produced) / flt(planned) * 100) if planned else 0
-        self.completion_percent = (flt(packed) / flt(planned) * 100) if planned else 0
+        self.completion_percent = (flt(produced) / flt(planned) * 100) if planned else 0
+        self.remaining_quantity = max(planned - produced - rejected, 0)
 
     def _sync_from_meal_plan(self):
         if not self.meal_plan:
@@ -179,9 +180,15 @@ class WAFDProductionBatch(Document):
             has_shortage = has_shortage or shortage > 0
             amount = flt(req["quantity"]) * flt(req["unit_cost"])
             self.total_material_cost += amount
+            issued_quantity = 0
+            for allocation in (self.material_allocations or []):
+                if allocation.ingredient != req["ingredient"] or not allocation.stock_movement:
+                    continue
+                if frappe.db.get_value("WAFD Stock Movement", allocation.stock_movement, "status") == "مرحلة / Posted":
+                    issued_quantity += flt(allocation.allocated_quantity)
             self.append("material_requirements", {
                 "ingredient": req["ingredient"], "required_quantity": req["quantity"], "uom": req["uom"],
-                "available_quantity": available_total, "shortage_quantity": shortage,
+                "available_quantity": available_total, "issued_quantity": issued_quantity, "shortage_quantity": shortage,
                 "unit_cost": req["unit_cost"], "amount": amount,
                 "availability_status": "ناقص / Shortage" if shortage else "متوفر / Available",
             })

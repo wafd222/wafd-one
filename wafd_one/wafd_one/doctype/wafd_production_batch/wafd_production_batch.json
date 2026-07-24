@@ -14,23 +14,17 @@
   "source_warehouses",
   "material_issue",
   "quality_status",
-  "traceability_section",
-  "traceability_code",
-  "food_safety_release_status",
-  "released_by",
-  "released_on",
   "batch_date",
-  "service_deadline",
-  "schedule_status",
   "planned_quantity",
   "produced_quantity",
   "rejected_quantity",
   "actual_yield_percent",
+  "completion_percent",
+  "remaining_quantity",
   "kitchen",
   "production_supervisor",
   "start_time",
   "end_time",
-  "completion_percent",
   "status",
   "notes",
   "cooking_start_time",
@@ -44,7 +38,15 @@
   "material_allocations",
   "materials_status",
   "total_material_cost",
-  "packaging_record"
+  "packaging_record",
+  "service_deadline",
+  "schedule_status",
+  "delay_reason",
+  "traceability_section",
+  "traceability_code",
+  "food_safety_release_status",
+  "released_by",
+  "released_on"
  ],
  "fields": [
   {
@@ -141,6 +143,12 @@
    "fieldname": "completion_percent",
    "fieldtype": "Percent",
    "label": "نسبة الإنجاز / Completion Percent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remaining_quantity",
+   "fieldtype": "Int",
+   "label": "الكمية المتبقية / Remaining Qty",
    "read_only": 1
   },
   {
@@ -265,6 +273,12 @@
    "options": "في الوقت / On Time\nمعرض للتأخير / At Risk\nمتأخر / Delayed",
    "default": "في الوقت / On Time",
    "read_only": 1
+  },
+  {
+   "fieldname": "delay_reason",
+   "fieldtype": "Small Text",
+   "label": "سبب التأخير / Delay Reason",
+   "depends_on": "eval:doc.schedule_status=='متأخر / Delayed' || doc.schedule_status=='معرض للتأخير / At Risk'"
   },
   {
    "fieldname": "traceability_section",

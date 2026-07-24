@@ -53,7 +53,9 @@ function load_project_defaults(frm, force_meals) {
             const x = r.message || {};
             const assignments = [];
             if (!frm.doc.hotel && x.hotel) assignments.push(frm.set_value("hotel", x.hotel));
-            if (!frm.doc.service_date && x.service_date) assignments.push(frm.set_value("service_date", x.service_date));
+            if (x.service_date && (!frm.doc.service_date || x.requested_date_adjusted)) {
+                assignments.push(frm.set_value("service_date", x.service_date));
+            }
             if (!frm.doc.plan_title && x.plan_title) assignments.push(frm.set_value("plan_title", x.plan_title));
             if (!frm.doc.kitchen && x.kitchen) assignments.push(frm.set_value("kitchen", x.kitchen));
 
@@ -86,8 +88,11 @@ function load_project_defaults(frm, force_meals) {
                     frm.set_value("plan_title", x.plan_title || `${frm.doc.project} - ${x.hotel} - ${frm.doc.service_date}`);
                 }
             });
+            if (x.requested_date_adjusted) {
+                frappe.show_alert({ message: __(`Service date adjusted to ${x.service_date}`), indicator: "orange" });
+            }
             if (shouldLoadMeals && !(x.meals || []).length) {
-                frappe.msgprint(__("No contract meals are active for the selected date."));
+                frappe.msgprint(__("No contract meals are available. Check the linked contract services."));
             } else if (force_meals) {
                 frappe.show_alert({ message: __(`${(x.meals || []).length} contract meals loaded`), indicator: "green" });
             }

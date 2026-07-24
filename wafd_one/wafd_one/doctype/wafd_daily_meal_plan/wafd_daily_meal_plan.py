@@ -140,44 +140,65 @@ def _row_value(row, fieldname, default=None):
 
 @frappe.whitelist()
 def get_project_plan_defaults(project_name, service_date=None):
-    """Return complete daily-plan defaults from the linked project/contract.
+    """Return complete daily-plan defaults from the linked contract.
 
-    One daily row is returned for every contract service active on the selected
-    date. Quantity is daily quantity, not the total across the whole contract.
+    The linked contract is authoritative for dates and services. If a stale or
+    out-of-range date reaches the form, the function safely moves it to the
+    first valid service day instead of returning a misleading empty plan.
     """
     project = frappe.get_doc("WAFD Catering Project", project_name)
     project.check_permission("read")
 
-    selected_date = getdate(service_date or project.start_date) if (service_date or project.start_date) else None
-    services = list(project.services or [])
-    if not services and project.contract:
-        contract = frappe.get_doc("WAFD Contract", project.contract)
-        services = list(contract.services or [])
+    contract = frappe.get_doc("WAFD Contract", project.contract) if project.contract else None
+    services = list((contract.services if contract else None) or project.services or [])
+
+    range_start = (contract.start_date if contract else None) or project.start_date
+    range_end = (contract.end_date if contract else None) or project.end_date
+    requested_date = getdate(service_date) if service_date else None
+    selected_date = requested_date or (getdate(range_start) if range_start else None)
+
+    def service_window(row):
+        start = _row_value(row, "service_start_date") or range_start
+        end = _row_value(row, "service_end_date") or range_end
+        return (getdate(start) if start else None, getdate(end) if end else None)
+
+    def active_on(row, day):
+        if not day:
+            return True
+        start, end = service_window(row)
+        return not ((start and day < start) or (end and day > end))
+
+    # Correct stale project/default dates by selecting the earliest day on
+    # which at least one contract service is active.
+    if selected_date and services and not any(active_on(row, selected_date) for row in services):
+        candidates = []
+        for row in services:
+            start, end = service_window(row)
+            candidate = start or (getdate(range_start) if range_start else None)
+            if candidate and (not end or candidate <= end):
+                candidates.append(candidate)
+        if candidates:
+            selected_date = min(candidates)
+    elif not selected_date and services:
+        candidates = [service_window(row)[0] for row in services if service_window(row)[0]]
+        selected_date = min(candidates) if candidates else None
 
     meals = []
     for service in services:
-        start_date = _row_value(service, "service_start_date") or project.start_date
-        end_date = _row_value(service, "service_end_date") or project.end_date
-        if selected_date:
-            if start_date and selected_date < getdate(start_date):
-                continue
-            if end_date and selected_date > getdate(end_date):
-                continue
-
+        if selected_date and not active_on(service, selected_date):
+            continue
         meal_type = MEAL_TYPE_MAP.get(_row_value(service, "service_type"), _row_value(service, "service_type"))
-        # Daily quantity = beneficiaries x meals per person for this service.
-        beneficiaries = cint(_row_value(service, "beneficiaries")) or cint(project.beneficiary_count)
+        beneficiaries = cint(_row_value(service, "beneficiaries")) or cint(
+            (contract.beneficiary_count if contract else None) or project.beneficiary_count
+        )
         multiplier = flt(_row_value(service, "meals_per_person_per_day")) or 1
         quantity = cint(beneficiaries * multiplier)
         if not meal_type or quantity <= 0:
             continue
-
         recipe_name = _row_value(service, "recipe")
-        recipe = None
-        if recipe_name:
-            recipe = frappe.db.get_value(
-                "WAFD Recipe", recipe_name, ["recipe_name", "cost_per_portion"], as_dict=True
-            )
+        recipe = frappe.db.get_value(
+            "WAFD Recipe", recipe_name, ["recipe_name", "cost_per_portion"], as_dict=True
+        ) if recipe_name else None
         meals.append({
             "meal_type": meal_type,
             "quantity": quantity,
@@ -204,15 +225,14 @@ def get_project_plan_defaults(project_name, service_date=None):
                 "notes": _row_value(source, "notes"),
             })
 
-    hotel = project.primary_hotel
-    title = None
-    if selected_date:
-        title = f"{project.project_name} - {hotel or ''} - {selected_date}".strip(" -")
+    hotel = (contract.hotel if contract else None) or project.primary_hotel
+    title = f"{project.project_name} - {hotel or ''} - {selected_date}".strip(" -") if selected_date else None
     return {
         "project": project.name,
         "contract": project.contract,
         "hotel": hotel,
         "service_date": str(selected_date) if selected_date else None,
+        "requested_date_adjusted": bool(requested_date and selected_date and requested_date != selected_date),
         "plan_title": title,
         "kitchen": project.default_kitchen,
         "source_warehouse": project.default_source_warehouse,

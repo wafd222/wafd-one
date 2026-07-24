@@ -22,9 +22,6 @@
   "second_party_cr",
   "second_party_representative",
   "links_section",
-  "project",
-  "contract",
-  "mission",
   "hotel",
   "service_section",
   "nationality",
@@ -81,7 +78,7 @@
   {
    "fieldname": "company_section",
    "fieldtype": "Section Break",
-   "label": "الطرف الأول — شركة وفد المدينة / First Party"
+   "label": "بيانات شركة وفد المدينة / WAFD Company Details"
   },
   {
    "fieldname": "company_name",
@@ -127,48 +124,54 @@
   {
    "fieldname": "party_section",
    "fieldtype": "Section Break",
-   "label": "الطرف الثاني / Second Party"
+   "label": "بيانات الشركة أو العميل / Client Company Details"
   },
   {
    "fieldname": "second_party_name",
    "fieldtype": "Data",
-   "label": "اسم الطرف الثاني / Second Party Name",
+   "label": "اسم الشركة أو المؤسسة / Company or Establishment Name",
    "reqd": 1,
    "in_list_view": 1
   },
   {
    "fieldname": "second_party_cr",
    "fieldtype": "Data",
-   "label": "السجل التجاري للطرف الثاني / Second Party CR"
+   "label": "السجل التجاري للشركة / Company CR"
   },
   {
    "fieldname": "second_party_representative",
    "fieldtype": "Data",
-   "label": "ممثل الطرف الثاني / Second Party Representative"
+   "label": "ممثل الشركة / Company Representative"
   },
   {
    "fieldname": "links_section",
    "fieldtype": "Section Break",
-   "label": "الربط بالنظام / System Links"
+   "label": "الفندق / Hotel"
   },
   {
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "المشروع / Project",
    "options": "WAFD Catering Project",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "contract",
    "fieldtype": "Link",
    "label": "العقد / Contract",
-   "options": "WAFD Contract"
+   "options": "WAFD Contract",
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "mission",
    "fieldtype": "Link",
    "label": "البعثة أو العميل / Mission or Client",
-   "options": "WAFD Mission"
+   "options": "WAFD Mission",
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "hotel",

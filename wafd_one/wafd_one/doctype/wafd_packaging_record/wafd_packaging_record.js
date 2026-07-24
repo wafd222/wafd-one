@@ -7,6 +7,15 @@ frappe.ui.form.on("WAFD Packaging Record", {
         populate_from_batch(frm, true);
     },
 
+    use_hot_cabinets(frm) {
+        if (!frm.doc.use_hot_cabinets) {
+            frm.clear_table("hot_cabinet_allocations");
+            frm.set_value("hot_cabinet_count", 0);
+            frm.set_value("hot_cabinet_sandwich_total", 0);
+            frm.refresh_field("hot_cabinet_allocations");
+        }
+    },
+
     refresh(frm) {
         if (!frm.is_new() && frm.doc.box_manifest) {
             frm.add_custom_button(__("Show Box Manifest"), () => {
@@ -61,4 +70,26 @@ function populate_from_batch(frm, force = false) {
 
 function cint(value) {
     return parseInt(value || 0, 10) || 0;
+}
+
+frappe.ui.form.on("WAFD Hot Cabinet Allocation", {
+    hot_cabinet(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (!row.hot_cabinet) return;
+        frappe.db.get_value("WAFD Hot Cabinet", row.hot_cabinet, ["capacity", "status"]).then(r => {
+            const d = r.message || {};
+            frappe.model.set_value(cdt, cdn, "capacity", cint(d.capacity));
+            if (["صيانة / Maintenance", "غير نشط / Inactive"].includes(d.status)) {
+                frappe.msgprint(__("هذا السخان غير متاح للاستخدام"));
+            }
+        });
+    },
+    sandwich_count(frm) { update_hot_cabinet_totals(frm); },
+    hot_cabinet_allocations_remove(frm) { update_hot_cabinet_totals(frm); }
+});
+
+function update_hot_cabinet_totals(frm) {
+    const rows = frm.doc.hot_cabinet_allocations || [];
+    frm.set_value("hot_cabinet_count", rows.length);
+    frm.set_value("hot_cabinet_sandwich_total", rows.reduce((sum, row) => sum + cint(row.sandwich_count), 0));
 }

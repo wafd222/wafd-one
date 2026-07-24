@@ -31,41 +31,18 @@ class WAFDHotelUndertaking(Document):
             frappe.throw(_("عدد المستفيدين يجب أن يكون أكبر من صفر / Beneficiary count must be greater than zero"))
 
     def _fill_linked_data(self):
-        if self.project:
-            project = frappe.get_doc("WAFD Catering Project", self.project)
-            self.contract = self.contract or project.contract
-            self.mission = self.mission or project.mission
-            self.hotel = self.hotel or project.primary_hotel
-            self.beneficiary_count = self.beneficiary_count or project.beneficiary_count
-            self.start_date = self.start_date or project.start_date
-            self.end_date = self.end_date or project.end_date
-        if self.contract:
-            contract = frappe.get_doc("WAFD Contract", self.contract)
-            self.mission = self.mission or contract.mission
-            self.hotel = self.hotel or contract.hotel
-            self.beneficiary_count = self.beneficiary_count or contract.beneficiary_count
-            self.start_date = self.start_date or contract.start_date
-            self.end_date = self.end_date or contract.end_date
-            self.second_party_name = self.second_party_name or contract.contract_title
-        if self.mission and not self.nationality:
-            mission = frappe.get_doc("WAFD Mission", self.mission)
-            self.nationality = mission.country or ""
-            self.second_party_name = self.second_party_name or mission.mission_name
+        """The undertaking is intentionally linked only to the selected hotel.
+
+        Client/company, dates, meals, beneficiary count and nationality remain
+        explicit user inputs so this optional document never changes operational
+        workflows or inherits unrelated project data.
+        """
+        if self.hotel:
+            self.supply_location = self._get_hotel_name() or self.supply_location
 
     def _fill_meals(self):
-        if self.meal_types:
-            return
-        if self.project:
-            rows = frappe.get_all("WAFD Meal Plan", filters={"project": self.project, "status": ["!=", "ملغي / Cancelled"]}, fields=["meal_type"], limit_page_length=20)
-            values=[]
-            for row in rows:
-                value=(row.meal_type or "").strip()
-                if value and value not in values:
-                    values.append(value)
-            if values:
-                self.meal_types="\n".join(values)
-                return
-        self.meal_types=DEFAULT_MEALS
+        if not self.meal_types:
+            self.meal_types = DEFAULT_MEALS
 
     def _get_hotel_name(self):
         if not self.hotel:

@@ -10,6 +10,7 @@ class WAFDPackagingRecord(Document):
         self._validate_quantities()
         self._derive_status()
         self._build_box_manifest()
+        self._validate_hot_cabinets()
         self._validate_gate()
 
     def _sync_batch(self):
@@ -108,6 +109,41 @@ class WAFDPackagingRecord(Document):
             remaining = max(remaining - qty, 0)
         self.box_manifest = "\n".join(lines)
         self.ready_for_loading = 1 if self.status == "جاهز للتحميل / Ready for Loading" else 0
+
+    def _validate_hot_cabinets(self):
+        """Validate optional hot cabinets without making them a workflow gate."""
+        if not cint(self.use_hot_cabinets):
+            self.hot_cabinet_count = 0
+            self.hot_cabinet_sandwich_total = 0
+            return
+
+        rows = self.get("hot_cabinet_allocations") or []
+        if not rows:
+            frappe.throw("أضف سخاناً واحداً على الأقل أو ألغِ خيار استخدام السخانات / Add at least one cabinet or disable the option")
+
+        seen = set()
+        total = 0
+        for row in rows:
+            if row.hot_cabinet in seen:
+                frappe.throw(f"تم تكرار السخان {row.hot_cabinet} / Duplicate hot cabinet")
+            seen.add(row.hot_cabinet)
+            values = frappe.db.get_value("WAFD Hot Cabinet", row.hot_cabinet, ["capacity", "status"], as_dict=True)
+            if not values:
+                frappe.throw(f"السخان غير موجود: {row.hot_cabinet}")
+            row.capacity = cint(values.capacity)
+            qty = cint(row.sandwich_count)
+            if qty <= 0:
+                frappe.throw("عدد السفندشات داخل كل سخان يجب أن يكون أكبر من صفر")
+            if qty > cint(values.capacity):
+                frappe.throw(f"عدد السفندشات في {row.hot_cabinet} يتجاوز سعته ({values.capacity})")
+            if values.status in ("صيانة / Maintenance", "غير نشط / Inactive"):
+                frappe.throw(f"السخان {row.hot_cabinet} غير متاح للاستخدام")
+            total += qty
+
+        if total > cint(self.packed_quantity):
+            frappe.throw("إجمالي السفندشات داخل السخانات يتجاوز الكمية المغلفة")
+        self.hot_cabinet_count = len(rows)
+        self.hot_cabinet_sandwich_total = total
 
     def _validate_gate(self):
         quality = frappe.db.get_value("WAFD Production Batch", self.production_batch, "quality_status")

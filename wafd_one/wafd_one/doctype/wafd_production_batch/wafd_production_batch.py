@@ -378,6 +378,104 @@ def complete_production(batch_name, produced_quantity=None, rejected_quantity=No
 
 
 @frappe.whitelist()
+def prepare_uat_test_stock(batch_name, buffer_percent=25):
+    """Create and post clearly-labelled test receipt movements for current shortages.
+
+    This is an explicit UAT helper, never an automatic migration. It adds only the
+    quantity required by the selected production batch plus a small configurable
+    buffer, and records every addition through auditable WAFD Stock Movements.
+    """
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+
+    allowed_roles = {"System Manager", "WAFD Operations Manager", "WAFD Storekeeper"}
+    if not allowed_roles.intersection(set(frappe.get_roles())):
+        frappe.throw("هذه الأداة مخصصة لمسؤول النظام أو العمليات أو المستودع / This UAT stock tool requires an authorized role")
+
+    if batch.status != "مخطط / Planned":
+        frappe.throw("يمكن تجهيز مخزون الاختبار للدفعات المخططة فقط / UAT stock can only be prepared for Planned batches")
+
+    buffer_percent = max(0, min(flt(buffer_percent), 100))
+    batch._calculate_material_requirements()
+    shortages = [row for row in batch.material_requirements if flt(row.shortage_quantity) > 0]
+    if not shortages:
+        return {"created": [], "posted": [], "count": 0, "already_available": True}
+
+    from wafd_one.master_data import CATEGORY_WAREHOUSE_MAP
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import post_movement
+
+    source_names = {row.warehouse for row in (batch.source_warehouses or []) if row.warehouse}
+    priority = max([cint(row.priority) for row in (batch.source_warehouses or [])] or [0])
+    grouped = {}
+
+    for req in shortages:
+        ingredient = frappe.db.get_value(
+            "WAFD Ingredient", req.ingredient, ["category", "uom"], as_dict=True
+        ) or {}
+        warehouse = CATEGORY_WAREHOUSE_MAP.get(ingredient.get("category")) or batch.source_warehouse
+        if not warehouse or not frappe.db.exists("WAFD Warehouse", warehouse):
+            frappe.throw(f"لا يوجد مستودع اختبار مناسب للصنف {req.ingredient} / No suitable UAT warehouse for ingredient")
+
+        if warehouse not in source_names:
+            priority += 1
+            batch.append("source_warehouses", {"warehouse": warehouse, "priority": priority, "is_default": 0})
+            source_names.add(warehouse)
+
+        shortage = flt(req.shortage_quantity)
+        buffer_qty = shortage * buffer_percent / 100
+        receipt_qty = shortage + buffer_qty
+        # Preserve fractional recipe quantities while ensuring a useful minimum buffer.
+        if buffer_percent and buffer_qty < 0.1:
+            receipt_qty = shortage + 0.1
+
+        grouped.setdefault(warehouse, []).append({
+            "ingredient": req.ingredient,
+            "quantity": receipt_qty,
+            "uom": req.uom or ingredient.get("uom"),
+            "unit_cost": flt(req.unit_cost),
+        })
+
+    batch.save(ignore_permissions=True)
+    created = []
+    posted = []
+    for warehouse, items in grouped.items():
+        movement = frappe.get_doc({
+            "doctype": "WAFD Stock Movement",
+            "movement_type": "استلام / Receipt",
+            "posting_date": now_datetime(),
+            "project": batch.project,
+            "production_batch": batch.name,
+            "target_warehouse": warehouse,
+            "reference_type": "WAFD Production Batch",
+            "reference_name": batch.name,
+            "status": "مسودة / Draft",
+            "notes": f"UAT TEST STOCK ONLY — مخزون اختبار مؤقت للدفعة {batch.name}; buffer={buffer_percent}%",
+        })
+        for item in items:
+            movement.append("items", item)
+        movement.insert(ignore_permissions=True)
+        created.append(movement.name)
+        result = post_movement(movement.name)
+        if result.get("posted") or frappe.db.get_value("WAFD Stock Movement", movement.name, "status") == "مرحلة / Posted":
+            posted.append(movement.name)
+
+    batch.reload()
+    batch._calculate_material_requirements()
+    batch.save(ignore_permissions=True)
+    remaining = [row.ingredient for row in batch.material_requirements if flt(row.shortage_quantity) > 0]
+    if remaining:
+        frappe.throw("تم إنشاء مخزون الاختبار لكن بقي عجز في: " + ", ".join(remaining) + " / UAT stock was posted but shortages remain")
+
+    return {
+        "created": created,
+        "posted": posted,
+        "count": len(posted),
+        "already_available": False,
+        "materials_status": batch.materials_status,
+    }
+
+
+@frappe.whitelist()
 def create_material_issue(batch_name):
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")

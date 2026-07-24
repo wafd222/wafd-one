@@ -47,6 +47,41 @@ frappe.ui.form.on("WAFD Production Batch", {
             });
         }, __("Operations"));
 
+        if (frm.doc.status === "مخطط / Planned") {
+            frm.add_custom_button(__("Prepare UAT Test Stock"), () => {
+                frappe.confirm(
+                    __("This will create and post clearly labelled TEST stock receipts only for this batch shortages. Continue?"),
+                    () => {
+                        const dialog = new frappe.ui.Dialog({
+                            title: __("Prepare UAT Test Stock"),
+                            fields: [
+                                { fieldname: "buffer_percent", fieldtype: "Percent", label: __("Test Buffer %"), default: 25 }
+                            ],
+                            primary_action_label: __("Create Test Stock"),
+                            primary_action(values) {
+                                dialog.hide();
+                                frappe.call({
+                                    method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.prepare_uat_test_stock",
+                                    args: { batch_name: frm.doc.name, buffer_percent: values.buffer_percent || 0 },
+                                    freeze: true,
+                                    freeze_message: __("Creating and posting UAT test stock..."),
+                                    callback(r) {
+                                        if (!r.message) return;
+                                        const message = r.message.already_available
+                                            ? __("Materials are already available; no test receipt was needed.")
+                                            : `${__("Posted test receipt movements")}: ${r.message.count || 0}`;
+                                        frappe.msgprint({ title: __("UAT Stock Ready"), indicator: "green", message });
+                                        frm.reload_doc();
+                                    }
+                                });
+                            }
+                        });
+                        dialog.show();
+                    }
+                );
+            }, __("Operations"));
+        }
+
         frm.add_custom_button(__("Check Materials"), () => {
             frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.check_material_availability",

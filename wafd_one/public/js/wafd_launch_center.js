@@ -6,7 +6,7 @@ frappe.pages["wafd-launch-center"].on_page_load = function (wrapper) {
     <div class="wafd-launch wafd-launch-final">
       <div class="launch-hero">
         <div><small>النسخة المرشحة للتجربة</small><h1>مركز جاهزية WAFD ONE</h1><p>فحص مختصر للبيانات الأساسية قبل بدء التجربة التشغيلية.</p></div>
-        <div class="launch-hero-buttons"><button class="btn btn-light" data-route="wafd-one-dashboard">لوحة التشغيل</button><button class="btn btn-light refresh-ready">إعادة الفحص</button></div>
+        <div class="launch-hero-buttons"><button class="btn btn-light" data-route="wafd-one-dashboard">لوحة التشغيل</button><button class="btn btn-light" data-list="WAFD Catering Project">المشاريع</button><button class="btn btn-light" data-new="WAFD Catering Project">مشروع جديد</button><button class="btn btn-light refresh-ready">إعادة الفحص</button></div>
       </div>
       <div class="launch-status"></div>
       <div class="launch-counts"></div>
@@ -24,6 +24,7 @@ frappe.pages["wafd-launch-center"].on_page_load = function (wrapper) {
 
   $main.on("click", "[data-route]", function () { frappe.set_route($(this).data("route")); });
   $main.on("click", "[data-list]", function () { frappe.set_route("List", $(this).data("list")); });
+  $main.on("click", "[data-new]", function () { frappe.new_doc($(this).data("new")); });
   $main.on("click", ".refresh-ready", load);
 
   function load() {

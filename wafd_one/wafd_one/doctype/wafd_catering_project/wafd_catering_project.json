@@ -657,5 +657,7 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1,
- "title_field": "project_name"
+ "title_field": "project_name",
+ "search_fields": "project_name,project_code,contract,mission,primary_hotel",
+ "description": "مشروع WAFD التشغيلي المرتبط بالعقد / WAFD operational project linked to a contract"
 }

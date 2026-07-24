@@ -4,7 +4,7 @@ frappe.ui.form.on("WAFD Contract", {
         if (frm.is_new()) return;
 
         if (!frm.doc.project) {
-            frm.add_custom_button(__("إنشاء المشروع / Create Project"), () => {
+            frm.add_custom_button(__("إنشاء المشروع الآن / Create Project Now"), () => {
                 frappe.call({
                     method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.create_project_from_contract",
                     args: { contract_name: frm.doc.name },
@@ -14,7 +14,11 @@ frappe.ui.form.on("WAFD Contract", {
                         if (r.message?.name) frappe.set_route("Form", "WAFD Catering Project", r.message.name);
                     }
                 });
-            });
+            }, __("المشروع / Project"));
+        } else {
+            frm.add_custom_button(__("فتح المشروع / Open Project"), () => {
+                frappe.set_route("Form", "WAFD Catering Project", frm.doc.project);
+            }, __("المشروع / Project"));
         }
 
         frm.add_custom_button(__("تفعيل وبناء خطة التشغيل / Activate & Build Operations"), () => {

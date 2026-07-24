@@ -33,6 +33,7 @@ page_css = {
 app_include_css = [
     "/assets/wafd_one/css/wafd_one_dashboard.css",
     "/assets/wafd_one/css/wafd_one_enterprise.css",
+    "/assets/wafd_one/css/wafd_launch_center.css",
 ]
 
 

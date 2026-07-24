@@ -28,6 +28,9 @@
     "packaging_cost_per_meal",
     "total_packaging_cost",
     "label_text",
+    "tracking_code",
+    "box_manifest",
+    "ready_for_loading",
     "package_type",
     "label_verified",
     "section_break_3",
@@ -83,7 +86,7 @@
       "fieldname": "status",
       "label": "الحالة / Status",
       "fieldtype": "Select",
-      "options": "مخطط / Planned\nقيد التغليف / In Progress\nمكتمل / Completed\nموقوف / Stopped",
+      "options": "مخطط / Planned\nقيد التغليف / In Progress\nمكتمل / Completed\nموقوف / Stopped\nجاهز للتحميل / Ready for Loading",
       "reqd": 1,
       "default": "مخطط / Planned"
     },
@@ -189,6 +192,25 @@
       "fieldname": "label_text",
       "label": "بيانات الملصق / Label Text",
       "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "tracking_code",
+      "label": "رمز التتبع / Tracking Code",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "box_manifest",
+      "label": "كشف الصناديق / Box Manifest",
+      "fieldtype": "Long Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "ready_for_loading",
+      "label": "جاهز للتحميل / Ready for Loading",
+      "fieldtype": "Check",
+      "read_only": 1
     }
   ],
   "permissions": [

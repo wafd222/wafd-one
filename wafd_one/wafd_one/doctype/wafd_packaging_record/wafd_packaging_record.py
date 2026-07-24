@@ -9,6 +9,7 @@ class WAFDPackagingRecord(Document):
         self._apply_packaging_profile()
         self._validate_quantities()
         self._derive_status()
+        self._build_box_manifest()
         self._validate_gate()
 
     def _sync_batch(self):
@@ -78,7 +79,7 @@ class WAFDPackagingRecord(Document):
         processed = cint(self.packed_quantity) + cint(self.rejected_quantity)
 
         if planned > 0 and processed == planned:
-            self.status = "مكتمل / Completed"
+            self.status = "جاهز للتحميل / Ready for Loading" if self.label_verified else "مكتمل / Completed"
             self.start_time = self.start_time or now_datetime()
             self.end_time = self.end_time or now_datetime()
         elif processed > 0:
@@ -89,9 +90,28 @@ class WAFDPackagingRecord(Document):
             self.status = "مخطط / Planned"
             self.end_time = None
 
+    def _build_box_manifest(self):
+        if not self.tracking_code:
+            self.tracking_code = frappe.generate_hash(length=12).upper()
+        boxes = cint(self.box_count)
+        units = cint(self.units_per_box)
+        packed = cint(self.packed_quantity)
+        if boxes <= 0 and units > 0 and packed > 0:
+            boxes = (packed + units - 1) // units
+            self.box_count = boxes
+        lines = []
+        remaining = packed
+        for number in range(1, boxes + 1):
+            qty = min(units or remaining, remaining) if remaining > 0 else 0
+            code = f"{self.tracking_code}-{number:03d}"
+            lines.append(f"{number}/{boxes} | {code} | Qty {qty}")
+            remaining = max(remaining - qty, 0)
+        self.box_manifest = "\n".join(lines)
+        self.ready_for_loading = 1 if self.status == "جاهز للتحميل / Ready for Loading" else 0
+
     def _validate_gate(self):
         quality = frappe.db.get_value("WAFD Production Batch", self.production_batch, "quality_status")
-        if self.status in ("قيد التغليف / In Progress", "مكتمل / Completed") and quality != "ناجح / Passed":
+        if self.status in ("قيد التغليف / In Progress", "مكتمل / Completed", "جاهز للتحميل / Ready for Loading") and quality != "ناجح / Passed":
             frappe.throw("لا يمكن بدء التغليف قبل نجاح فحص الجودة / Quality inspection must pass before packaging")
 
     def on_update(self):
@@ -103,7 +123,7 @@ class WAFDPackagingRecord(Document):
             "packaging_end_time": self.end_time,
             "packaging_supervisor": self.supervisor,
         }
-        if self.status == "مكتمل / Completed":
+        if self.status in ("مكتمل / Completed", "جاهز للتحميل / Ready for Loading"):
             values["status"] = "جاهز / Ready"
         elif self.status == "قيد التغليف / In Progress":
             values["status"] = "قيد الإنتاج / In Production"

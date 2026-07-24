@@ -60,8 +60,8 @@ def create_loading_record(packaging_name):
     if packaging.status != original_status:
         packaging.save()
 
-    if packaging.status != "مكتمل / Completed":
-        frappe.throw("يجب إكمال سجل التغليف أولاً / Complete the packaging record first")
+    if packaging.status not in ("مكتمل / Completed", "جاهز للتحميل / Ready for Loading"):
+        frappe.throw("يجب إكمال سجل التغليف والتحقق من الملصقات أولاً / Complete packaging and verify box labels first")
     if cint(packaging.packed_quantity) <= 0:
         frappe.throw("الكمية المغلفة يجب أن تكون أكبر من صفر / Packed quantity must be greater than zero")
     plan = frappe.get_doc("WAFD Meal Plan", packaging.meal_plan)

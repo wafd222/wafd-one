@@ -11,8 +11,10 @@ class WAFDLoadingRecord(Document):
         packaging._derive_status()
         if packaging.status != original_status:
             packaging.save(ignore_permissions=True)
-        if packaging.status != "مكتمل / Completed":
+        if packaging.status not in ("مكتمل / Completed", "جاهز للتحميل / Ready for Loading"):
             frappe.throw("يجب إكمال التغليف قبل التحميل / Packaging must be completed before loading")
+        if not packaging.label_verified:
+            frappe.throw("يجب التحقق من ملصقات الصناديق قبل التحميل / Box labels must be verified before loading")
 
         self.project = packaging.project
         self.meal_plan = packaging.meal_plan

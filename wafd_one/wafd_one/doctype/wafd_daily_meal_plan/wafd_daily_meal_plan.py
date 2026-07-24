@@ -121,6 +121,106 @@ class WAFDDailyMealPlan(Document):
         self.status = "جاهزة للاعتماد / Ready for Approval" if not self.missing_recipe_count else "مسودة / Draft"
 
 
+MEAL_TYPE_MAP = {
+    "إفطار / Breakfast": "إفطار / Breakfast",
+    "غداء / Lunch": "غداء / Lunch",
+    "عشاء / Dinner": "عشاء / Dinner",
+    "سحور / Suhoor": "سحور / Suhoor",
+    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+    "إفطار صائم / Iftar": "إفطار صائم / Iftar",
+    "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
+}
+
+
+def _row_value(row, fieldname, default=None):
+    if isinstance(row, dict):
+        return row.get(fieldname, default)
+    return getattr(row, fieldname, default)
+
+
+@frappe.whitelist()
+def get_project_plan_defaults(project_name, service_date=None):
+    """Return complete daily-plan defaults from the linked project/contract.
+
+    One daily row is returned for every contract service active on the selected
+    date. Quantity is daily quantity, not the total across the whole contract.
+    """
+    project = frappe.get_doc("WAFD Catering Project", project_name)
+    project.check_permission("read")
+
+    selected_date = getdate(service_date or project.start_date) if (service_date or project.start_date) else None
+    services = list(project.services or [])
+    if not services and project.contract:
+        contract = frappe.get_doc("WAFD Contract", project.contract)
+        services = list(contract.services or [])
+
+    meals = []
+    for service in services:
+        start_date = _row_value(service, "service_start_date") or project.start_date
+        end_date = _row_value(service, "service_end_date") or project.end_date
+        if selected_date:
+            if start_date and selected_date < getdate(start_date):
+                continue
+            if end_date and selected_date > getdate(end_date):
+                continue
+
+        meal_type = MEAL_TYPE_MAP.get(_row_value(service, "service_type"), _row_value(service, "service_type"))
+        # Daily quantity = beneficiaries x meals per person for this service.
+        beneficiaries = cint(_row_value(service, "beneficiaries")) or cint(project.beneficiary_count)
+        multiplier = flt(_row_value(service, "meals_per_person_per_day")) or 1
+        quantity = cint(beneficiaries * multiplier)
+        if not meal_type or quantity <= 0:
+            continue
+
+        recipe_name = _row_value(service, "recipe")
+        recipe = None
+        if recipe_name:
+            recipe = frappe.db.get_value(
+                "WAFD Recipe", recipe_name, ["recipe_name", "cost_per_portion"], as_dict=True
+            )
+        meals.append({
+            "meal_type": meal_type,
+            "quantity": quantity,
+            "service_time": _row_value(service, "service_time"),
+            "menu_name": _row_value(service, "meal_name") or (recipe.recipe_name if recipe else meal_type),
+            "recipe": recipe_name,
+            "unit_price": flt(_row_value(service, "unit_price")),
+            "estimated_unit_cost": flt(recipe.cost_per_portion) if recipe else 0,
+        })
+
+    sources = []
+    project_sources = list(getattr(project, "source_warehouses", []) or [])
+    if not project_sources and getattr(project, "default_source_warehouse", None):
+        project_sources = [{"warehouse": project.default_source_warehouse, "priority": 1, "is_default": 1}]
+    for source in project_sources:
+        warehouse = _row_value(source, "warehouse")
+        if warehouse:
+            sources.append({
+                "warehouse": warehouse,
+                "priority": cint(_row_value(source, "priority")) or 1,
+                "material_category": _row_value(source, "material_category"),
+                "is_default": cint(_row_value(source, "is_default")),
+                "allocation_percent": flt(_row_value(source, "allocation_percent")),
+                "notes": _row_value(source, "notes"),
+            })
+
+    hotel = project.primary_hotel
+    title = None
+    if selected_date:
+        title = f"{project.project_name} - {hotel or ''} - {selected_date}".strip(" -")
+    return {
+        "project": project.name,
+        "contract": project.contract,
+        "hotel": hotel,
+        "service_date": str(selected_date) if selected_date else None,
+        "plan_title": title,
+        "kitchen": project.default_kitchen,
+        "source_warehouse": project.default_source_warehouse,
+        "source_warehouses": sources,
+        "meals": meals,
+    }
+
+
 @frappe.whitelist()
 def create_production_batches(daily_plan_name):
     daily = frappe.get_doc("WAFD Daily Meal Plan", daily_plan_name)

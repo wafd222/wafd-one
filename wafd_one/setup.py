@@ -17,15 +17,55 @@ ROLES = (
     "WAFD Auditor",
 )
 
-# Ordered to load child tables and independent masters before linked parents.
-ALL_DOCTYPE_FILES = tuple(
-    sorted(
-        path.name
-        for path in (Path(__file__).resolve().parent / "wafd_one" / "doctype").iterdir()
-        if path.is_dir() and not path.name.startswith("__")
-        and (path / f"{path.name}.json").exists()
-    )
-)
+DOCTYPE_ROOT = Path(__file__).resolve().parent / "wafd_one" / "doctype"
+
+
+def _ordered_doctype_files():
+    """Return deterministic metadata order with child tables before their parents.
+
+    Alphabetical loading is not dependency-safe on a fresh site because a parent
+    DocType may reference a child table that has not been imported yet.  Build a
+    small dependency graph from Table/Table MultiSelect fields and topologically
+    order the app metadata.  Any unexpected cycle falls back deterministically
+    instead of blocking migration.
+    """
+    definitions = {}
+    name_to_file = {}
+    for path in sorted(DOCTYPE_ROOT.iterdir()):
+        source = path / f"{path.name}.json"
+        if not path.is_dir() or path.name.startswith("__") or not source.exists():
+            continue
+        with source.open(encoding="utf-8") as handle:
+            data = json.load(handle)
+        definitions[path.name] = data
+        if data.get("name"):
+            name_to_file[data["name"]] = path.name
+
+    dependencies = {file_name: set() for file_name in definitions}
+    for file_name, data in definitions.items():
+        for field in data.get("fields", []):
+            if field.get("fieldtype") not in ("Table", "Table MultiSelect"):
+                continue
+            target_file = name_to_file.get(field.get("options"))
+            if target_file and target_file != file_name:
+                dependencies[file_name].add(target_file)
+
+    ordered = []
+    pending = {name: set(values) for name, values in dependencies.items()}
+    while pending:
+        ready = sorted(name for name, values in pending.items() if not values)
+        if not ready:
+            # Defensive fallback for any future circular metadata relationship.
+            ready = [sorted(pending)[0]]
+        for name in ready:
+            ordered.append(name)
+            pending.pop(name, None)
+        for values in pending.values():
+            values.difference_update(ready)
+    return tuple(ordered)
+
+
+ALL_DOCTYPE_FILES = _ordered_doctype_files()
 
 
 # Backward-compatible Phase 1 subset used by historical repair patches.

@@ -152,7 +152,7 @@ class WAFDProductionBatch(Document):
         all_required_issued = True
 
         for req in requirements:
-            required_quantity = flt(req["quantity"])
+            required_quantity = flt(req.get("required_quantity") or req.get("quantity"))
             remaining = required_quantity
             available_total = 0
             issued_quantity = 0
@@ -475,15 +475,36 @@ def _recipe_requirements(batch):
         frappe.throw("كمية إنتاج الوصفة يجب أن تكون أكبر من صفر / Recipe yield must be greater than zero")
     if not recipe.items:
         frappe.throw("الوصفة لا تحتوي على مكونات / Recipe has no ingredients")
-    factor = flt(batch.planned_quantity) / yield_quantity
+    planned_quantity = flt(batch.planned_quantity)
+    if planned_quantity <= 0:
+        frappe.throw("الكمية المخططة يجب أن تكون أكبر من صفر / Planned quantity must be greater than zero")
+
+    factor = planned_quantity / yield_quantity
     requirements = []
+    invalid_rows = []
     for row in recipe.items:
+        source_quantity = flt(row.get("quantity"))
+        if not row.ingredient or source_quantity <= 0:
+            invalid_rows.append(row.ingredient or f"Row {row.idx}")
+            continue
+        required_quantity = source_quantity * factor
         requirements.append({
             "ingredient": row.ingredient,
-            "quantity": flt(row.quantity) * factor,
+            # Canonical field used by production requirements. Keep the legacy
+            # alias temporarily so older callers remain compatible.
+            "required_quantity": required_quantity,
+            "quantity": required_quantity,
+            "source_quantity": source_quantity,
             "uom": row.uom,
             "unit_cost": flt(row.unit_cost),
         })
+
+    if not requirements:
+        detail = ", ".join(invalid_rows) if invalid_rows else "—"
+        frappe.throw(
+            "لم يتم استخراج أي كمية موجبة من مكونات الوصفة. المكونات غير الصالحة: " + detail
+            + " / No positive recipe ingredient quantities were extracted. Invalid rows: " + detail
+        )
     return recipe, requirements
 
 
@@ -744,6 +765,16 @@ def create_material_issue(batch_name):
         frappe.throw("المخزون الإجمالي غير كافٍ / Combined stock is insufficient:<br>" + "<br>".join(lines))
     positive_requirements = [row for row in batch.material_requirements if flt(row.required_quantity) > 0]
     if not positive_requirements:
+        # Read the recipe directly before reporting bad data. This distinguishes
+        # genuine invalid recipe quantities from a failed child-table mapping.
+        _, direct_requirements = _recipe_requirements(batch)
+        direct_positive = [row for row in direct_requirements if flt(row.get("required_quantity")) > 0]
+        if direct_positive:
+            frappe.throw(
+                "تمت قراءة كميات موجبة من الوصفة، لكن لم تُنشأ احتياجات المواد. أعد تحديث الاحتياجات "
+                "أو راجع ترحيل حقول دفعة الإنتاج / Positive recipe quantities were read, but material "
+                "requirements were not generated; refresh requirements or review the Production Batch field migration"
+            )
         frappe.throw(
             "مكونات الوصفة لا تحتوي على كميات موجبة. راجع كميات المكونات وإنتاجية الوصفة "
             "/ Recipe ingredients do not contain positive quantities; review recipe quantities and yield"

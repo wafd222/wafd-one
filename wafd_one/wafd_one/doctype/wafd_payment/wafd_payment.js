@@ -1,4 +1,15 @@
 frappe.ui.form.on("WAFD Payment", {
+    refresh(frm) {
+        frm.page.clear_primary_action();
+        if (frm.is_new() || frm.doc.status === "مسودة / Draft") {
+            frm.page.set_primary_action(__("اعتماد التحصيل / Confirm Payment"), async () => {
+                await frm.set_value("status", "معتمد / Confirmed");
+                await frm.save();
+                frappe.show_alert({ message: __("Payment confirmed"), indicator: "green" });
+                if (frm.doc.invoice) frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice);
+            });
+        }
+    },
     invoice(frm) {
         if (!frm.doc.invoice) return;
         frappe.call({

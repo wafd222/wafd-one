@@ -1,4 +1,4 @@
-# WAFD ONE 10.0.0 RC23
+# WAFD ONE 10.0.0 RC24
 
 Production governance, approvals, auditability, operations, food safety and financial intelligence.
 

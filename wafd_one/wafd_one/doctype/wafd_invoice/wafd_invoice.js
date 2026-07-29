@@ -79,18 +79,8 @@ frappe.ui.form.on("WAFD Invoice", {
         }
 
         if (flt(frm.doc.balance) > 0) {
-            frm.add_custom_button(__("Register Payment"), () => {
-                frappe.new_doc("WAFD Payment", {
-                    invoice: frm.doc.name,
-                    project: frm.doc.project,
-                    invoice_total: frm.doc.grand_total,
-                    previously_paid: frm.doc.paid_amount,
-                    outstanding_before: frm.doc.balance,
-                    payment_date: frappe.datetime.get_today(),
-                    amount: frm.doc.balance,
-                    status: "مسودة / Draft"
-                });
-            }, __("Operations"));
+            frm.page.set_primary_action(__("تسجيل التحصيل / Register Payment"), () => open_payment(frm));
+            frm.add_custom_button(__("Register Payment"), () => open_payment(frm), __("Operations"));
         }
     },
 
@@ -147,4 +137,18 @@ function wafd_recalculate_item_subtotal(frm) {
     if (frm.doc.billing_basis !== "الكميات المسلمة / Delivered Quantities") return;
     const subtotal = (frm.doc.items || []).reduce((total, row) => total + flt(row.amount), 0);
     frm.set_value("subtotal", subtotal).then(() => wafd_recalculate_invoice(frm));
+}
+
+
+function open_payment(frm) {
+    frappe.new_doc("WAFD Payment", {
+        invoice: frm.doc.name,
+        project: frm.doc.project,
+        invoice_total: frm.doc.grand_total,
+        previously_paid: frm.doc.paid_amount,
+        outstanding_before: frm.doc.balance,
+        payment_date: frappe.datetime.get_today(),
+        amount: frm.doc.balance,
+        status: "مسودة / Draft"
+    });
 }

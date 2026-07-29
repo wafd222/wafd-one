@@ -158,28 +158,12 @@ frappe.ui.form.on("WAFD Production Batch", {
                 "wafd_one.operations.create_packaging_record",
                 { batch_name: frm.doc.name }, result => route_to_packaging(result));
         }
+
+        add_guided_production_action(frm);
     },
 
     meal_plan(frm) {
         populate_from_meal_plan(frm, true);
-    },
-
-    after_save(frm) {
-        // Move automatically only when the operational safety gates are complete.
-        // Draft production saves remain on the batch because stock issue and quality
-        // must not be bypassed.
-        if (frm.__wafd_advancing) return;
-        const ready = ["جاهز / Ready", "مكتمل / Completed"].includes(frm.doc.status);
-        const released = frm.doc.quality_status === "ناجح / Passed" && frm.doc.food_safety_release_status === "مفرج / Released";
-        if (!ready || !released) return;
-        frm.__wafd_advancing = true;
-        frappe.call({
-            method: "wafd_one.operations.create_packaging_record",
-            args: { batch_name: frm.doc.name },
-            freeze: true,
-            callback(r) { route_to_packaging(r.message || {}); },
-            always() { frm.__wafd_advancing = false; }
-        });
     },
 
     status(frm) {
@@ -248,4 +232,83 @@ function add_action(frm, label, method, args, on_success) {
             }
         });
     }, __("Operations"));
+}
+
+
+function add_guided_production_action(frm) {
+    frm.page.clear_primary_action();
+    if (frm.is_new()) return;
+
+    if (frm.doc.status === "مخطط / Planned") {
+        frm.page.set_primary_action(__("بدء الإنتاج / Start Production"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.start_production",
+                args: { batch_name: frm.doc.name },
+                freeze: true,
+                callback() { frm.reload_doc(); }
+            });
+        });
+        return;
+    }
+
+    if (["تحضير / Preparing", "طبخ / Cooking"].includes(frm.doc.status)) {
+        frm.page.set_primary_action(__("إنهاء الإنتاج / Complete Production"), () => {
+            const dialog = new frappe.ui.Dialog({
+                title: __("Complete Production"),
+                fields: [
+                    { fieldname: "produced_quantity", fieldtype: "Int", label: __("Produced Qty"), reqd: 1, default: frm.doc.produced_quantity || frm.doc.planned_quantity },
+                    { fieldname: "rejected_quantity", fieldtype: "Int", label: __("Rejected Qty"), default: frm.doc.rejected_quantity || 0 }
+                ],
+                primary_action_label: __("Complete"),
+                primary_action(values) {
+                    dialog.hide();
+                    frappe.call({
+                        method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.complete_production",
+                        args: { batch_name: frm.doc.name, produced_quantity: values.produced_quantity, rejected_quantity: values.rejected_quantity },
+                        freeze: true,
+                        callback() { frm.reload_doc(); }
+                    });
+                }
+            });
+            dialog.show();
+        });
+        return;
+    }
+
+    if (frm.doc.quality_status !== "ناجح / Passed") {
+        frm.page.set_primary_action(__("فحص الجودة / Quality Inspection"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_quality_inspection",
+                args: { batch_name: frm.doc.name },
+                freeze: true,
+                callback(r) {
+                    const result = r.message || {};
+                    if (result.name) frappe.set_route("Form", "WAFD Quality Inspection", result.name);
+                    else if (result.values) frappe.new_doc("WAFD Quality Inspection", result.values);
+                }
+            });
+        });
+        return;
+    }
+
+    if (frm.doc.food_safety_release_status !== "مفرج / Released") {
+        frm.page.set_primary_action(__("الإفراج الغذائي / Release Food Safety"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.release_food_safety_batch",
+                args: { batch_name: frm.doc.name },
+                freeze: true,
+                callback() { frm.reload_doc(); }
+            });
+        });
+        return;
+    }
+
+    frm.page.set_primary_action(__("اعتماد الإنتاج والانتقال للتغليف / Approve & Continue to Packaging"), () => {
+        frappe.call({
+            method: "wafd_one.operations.create_packaging_record",
+            args: { batch_name: frm.doc.name },
+            freeze: true,
+            callback(r) { route_to_packaging(r.message || {}); }
+        });
+    });
 }

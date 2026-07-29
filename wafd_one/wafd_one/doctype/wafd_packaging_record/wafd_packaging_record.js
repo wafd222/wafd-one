@@ -16,23 +16,6 @@ frappe.ui.form.on("WAFD Packaging Record", {
         }
     },
 
-    after_save(frm) {
-        if (frm.__wafd_advancing) return;
-        if (!["مكتمل / Completed", "جاهز للتحميل / Ready for Loading"].includes(frm.doc.status)) return;
-        frm.__wafd_advancing = true;
-        frappe.call({
-            method: "wafd_one.operations.create_loading_record",
-            args: { packaging_name: frm.doc.name },
-            freeze: true,
-            callback(r) {
-                const result = r.message || {};
-                if (result.name) frappe.set_route("Form", "WAFD Loading Record", result.name);
-                else if (result.values) frappe.new_doc("WAFD Loading Record", result.values);
-            },
-            always() { frm.__wafd_advancing = false; }
-        });
-    },
-
     refresh(frm) {
         if (!frm.is_new() && frm.doc.box_manifest) {
             frm.add_custom_button(__("Show Box Manifest"), () => {
@@ -43,6 +26,7 @@ frappe.ui.form.on("WAFD Packaging Record", {
             populate_from_batch(frm);
             return;
         }
+        add_guided_packaging_action(frm);
         if (["مكتمل / Completed", "جاهز للتحميل / Ready for Loading"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Create Loading Record"), () => {
                 frappe.call({
@@ -109,4 +93,30 @@ function update_hot_cabinet_totals(frm) {
     const rows = frm.doc.hot_cabinet_allocations || [];
     frm.set_value("hot_cabinet_count", rows.length);
     frm.set_value("hot_cabinet_sandwich_total", rows.reduce((sum, row) => sum + cint(row.sandwich_count), 0));
+}
+
+
+function add_guided_packaging_action(frm) {
+    frm.page.clear_primary_action();
+    if (frm.is_new()) return;
+    frm.page.set_primary_action(__("اعتماد التغليف والانتقال للتحميل / Approve & Continue to Loading"), async () => {
+        if (!frm.doc.label_verified) {
+            frappe.msgprint(__("تحقق من ملصقات الصناديق أولاً ثم فعّل حقل التحقق / Verify box labels first."));
+            return;
+        }
+        if (!cint(frm.doc.packed_quantity)) {
+            await frm.set_value("packed_quantity", cint(frm.doc.planned_quantity));
+        }
+        await frm.save();
+        frappe.call({
+            method: "wafd_one.operations.create_loading_record",
+            args: { packaging_name: frm.doc.name },
+            freeze: true,
+            callback(r) {
+                const result = r.message || {};
+                if (result.name) frappe.set_route("Form", "WAFD Loading Record", result.name);
+                else if (result.values) frappe.new_doc("WAFD Loading Record", result.values);
+            }
+        });
+    });
 }

@@ -2,8 +2,16 @@ frappe.ui.form.on("WAFD Production Batch", {
     setup(frm) {
         frm.set_query("warehouse", "source_warehouses", () => ({ filters: { status: "نشط / Active" } }));
     },
+
+    onload(frm) {
+        if (frm.is_new() && frm.doc.meal_plan) populate_from_meal_plan(frm);
+    },
+
     refresh(frm) {
-        if (frm.is_new()) return;
+        if (frm.is_new()) {
+            if (frm.doc.meal_plan) populate_from_meal_plan(frm);
+            return;
+        }
 
         frm.add_custom_button(__("New CCP Check"), () => {
             frappe.new_doc("WAFD CCP Check", {
@@ -148,23 +156,29 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.quality_status === "ناجح / Passed" && frm.doc.food_safety_release_status === "مفرج / Released") {
             add_action(frm, __("Approve & Create Packaging"),
                 "wafd_one.operations.create_packaging_record",
-                { batch_name: frm.doc.name }, result => {
-                    if (result.name) {
-                        frappe.set_route("Form", "WAFD Packaging Record", result.name);
-                    } else if (result.values) {
-                        frappe.new_doc("WAFD Packaging Record", result.values);
-                    }
-                });
+                { batch_name: frm.doc.name }, result => route_to_packaging(result));
         }
     },
 
     meal_plan(frm) {
-        if (!frm.doc.meal_plan) return;
-        frappe.db.get_value("WAFD Meal Plan", frm.doc.meal_plan, ["project", "recipe", "quantity"]).then(r => {
-            if (!r.message) return;
-            frm.set_value("project", r.message.project);
-            frm.set_value("recipe", r.message.recipe);
-            frm.set_value("planned_quantity", r.message.quantity);
+        populate_from_meal_plan(frm, true);
+    },
+
+    after_save(frm) {
+        // Move automatically only when the operational safety gates are complete.
+        // Draft production saves remain on the batch because stock issue and quality
+        // must not be bypassed.
+        if (frm.__wafd_advancing) return;
+        const ready = ["جاهز / Ready", "مكتمل / Completed"].includes(frm.doc.status);
+        const released = frm.doc.quality_status === "ناجح / Passed" && frm.doc.food_safety_release_status === "مفرج / Released";
+        if (!ready || !released) return;
+        frm.__wafd_advancing = true;
+        frappe.call({
+            method: "wafd_one.operations.create_packaging_record",
+            args: { batch_name: frm.doc.name },
+            freeze: true,
+            callback(r) { route_to_packaging(r.message || {}); },
+            always() { frm.__wafd_advancing = false; }
         });
     },
 
@@ -177,6 +191,51 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.status === "مكتمل / Completed" && !frm.doc.end_time) frm.set_value("end_time", now);
     }
 });
+
+function populate_from_meal_plan(frm, force = false) {
+    if (!frm.doc.meal_plan || frm.__wafd_loading_plan) return;
+    if (!force && frm.doc.recipe && frm.doc.batch_date && (frm.doc.material_requirements || []).length) return;
+    frm.__wafd_loading_plan = true;
+    frappe.call({
+        method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.get_meal_plan_defaults",
+        args: { meal_plan: frm.doc.meal_plan },
+        freeze: true,
+        freeze_message: __("Loading production requirements..."),
+        callback(r) {
+            const d = r.message || {};
+            ["project", "daily_plan", "recipe", "batch_date", "planned_quantity", "kitchen", "source_warehouse", "materials_status", "total_material_cost"].forEach(field => {
+                if (d[field] !== undefined) frm.set_value(field, d[field]);
+            });
+            set_child_rows(frm, "source_warehouses", d.source_warehouses || []);
+            set_child_rows(frm, "material_requirements", d.material_requirements || []);
+            set_child_rows(frm, "material_allocations", d.material_allocations || []);
+            frm.refresh_fields();
+            const shortages = (d.material_requirements || []).filter(row => Number(row.shortage_quantity || 0) > 0).length;
+            frappe.show_alert({
+                message: shortages ? `${__("Requirements loaded; shortages")}: ${shortages}` : __("Production requirements loaded"),
+                indicator: shortages ? "orange" : "green"
+            });
+        },
+        always() { frm.__wafd_loading_plan = false; }
+    });
+}
+
+function set_child_rows(frm, fieldname, rows) {
+    frm.clear_table(fieldname);
+    rows.forEach(values => {
+        const row = frm.add_child(fieldname);
+        Object.keys(values).forEach(key => { row[key] = values[key]; });
+    });
+    frm.refresh_field(fieldname);
+}
+
+function route_to_packaging(result) {
+    if (result.name) {
+        frappe.set_route("Form", "WAFD Packaging Record", result.name);
+    } else if (result.values) {
+        frappe.new_doc("WAFD Packaging Record", result.values);
+    }
+}
 
 function add_action(frm, label, method, args, on_success) {
     frm.add_custom_button(label, () => {

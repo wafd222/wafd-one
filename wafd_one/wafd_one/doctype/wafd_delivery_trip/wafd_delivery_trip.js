@@ -1,4 +1,21 @@
 frappe.ui.form.on("WAFD Delivery Trip", {
+    after_save(frm) {
+        if (frm.__wafd_advancing) return;
+        if (!["وصلت / Arrived", "متأخرة / Delayed"].includes(frm.doc.status)) return;
+        frm.__wafd_advancing = true;
+        frappe.call({
+            method: "wafd_one.operations.create_delivery_proof",
+            args: { trip_name: frm.doc.name },
+            freeze: true,
+            callback(r) {
+                const result = r.message || {};
+                if (result.name) frappe.set_route("Form", "WAFD Delivery Proof", result.name);
+                else if (result.values) frappe.new_doc("WAFD Delivery Proof", result.values);
+            },
+            always() { frm.__wafd_advancing = false; }
+        });
+    },
+
     refresh(frm) {
         if (frm.is_new()) return;
         if (["مخططة / Planned", "تم التحميل / Loaded"].includes(frm.doc.status)) {

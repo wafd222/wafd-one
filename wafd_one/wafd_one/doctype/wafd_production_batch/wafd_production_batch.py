@@ -255,6 +255,116 @@ class WAFDProductionBatch(Document):
             frappe.db.set_value("WAFD Meal Plan", self.meal_plan, "status", status, update_modified=False)
 
 
+
+@frappe.whitelist()
+def get_meal_plan_defaults(meal_plan):
+    """Return complete production defaults for immediate form population.
+
+    The production document still validates and recalculates everything on save;
+    this endpoint gives the operator an accurate preview before saving.
+    """
+    if not meal_plan:
+        return {}
+    plan = frappe.get_doc("WAFD Meal Plan", meal_plan)
+    plan.check_permission("read")
+    if plan.status == "ملغي / Cancelled":
+        frappe.throw("لا يمكن إنشاء إنتاج لخطة ملغاة / Cannot produce a cancelled meal plan")
+
+    daily_plan = frappe.db.get_value(
+        "WAFD Daily Meal Plan Item",
+        {"meal_plan": plan.name, "parenttype": "WAFD Daily Meal Plan"},
+        "parent",
+    )
+    values = {
+        "project": plan.project,
+        "daily_plan": daily_plan,
+        "recipe": plan.recipe,
+        "batch_date": plan.service_date,
+        "planned_quantity": cint(plan.quantity),
+        "kitchen": None,
+        "source_warehouse": None,
+        "source_warehouses": [],
+        "material_requirements": [],
+        "material_allocations": [],
+        "materials_status": "لم تحسب / Not Calculated",
+        "total_material_cost": 0,
+    }
+
+    if daily_plan:
+        daily = frappe.get_doc("WAFD Daily Meal Plan", daily_plan)
+        values["kitchen"] = daily.kitchen
+        values["source_warehouse"] = daily.source_warehouse
+        values["source_warehouses"] = [
+            {
+                "warehouse": row.warehouse,
+                "priority": row.priority,
+                "material_category": row.material_category,
+                "is_default": row.is_default,
+                "allocation_percent": row.allocation_percent,
+                "notes": row.notes,
+            }
+            for row in daily.source_warehouses
+            if row.warehouse
+        ]
+
+    preview = frappe.get_doc({
+        "doctype": "WAFD Production Batch",
+        "project": values["project"],
+        "meal_plan": plan.name,
+        "daily_plan": values["daily_plan"],
+        "recipe": values["recipe"],
+        "batch_date": values["batch_date"],
+        "planned_quantity": values["planned_quantity"],
+        "kitchen": values["kitchen"],
+        "source_warehouse": values["source_warehouse"],
+        "status": "مخطط / Planned",
+    })
+    for row in values["source_warehouses"]:
+        preview.append("source_warehouses", row)
+    preview._calculate_material_requirements()
+
+    values["source_warehouse"] = preview.source_warehouse
+    values["source_warehouses"] = [
+        {
+            "warehouse": row.warehouse,
+            "priority": row.priority,
+            "material_category": row.material_category,
+            "is_default": row.is_default,
+            "allocation_percent": row.allocation_percent,
+            "notes": row.notes,
+        }
+        for row in preview.source_warehouses
+    ]
+    values["material_requirements"] = [
+        {
+            "ingredient": row.ingredient,
+            "required_quantity": row.required_quantity,
+            "uom": row.uom,
+            "available_quantity": row.available_quantity,
+            "issued_quantity": row.issued_quantity,
+            "shortage_quantity": row.shortage_quantity,
+            "unit_cost": row.unit_cost,
+            "amount": row.amount,
+            "availability_status": row.availability_status,
+        }
+        for row in preview.material_requirements
+    ]
+    values["material_allocations"] = [
+        {
+            "ingredient": row.ingredient,
+            "warehouse": row.warehouse,
+            "allocated_quantity": row.allocated_quantity,
+            "uom": row.uom,
+            "available_before": row.available_before,
+            "unit_cost": row.unit_cost,
+            "amount": row.amount,
+        }
+        for row in preview.material_allocations
+    ]
+    values["materials_status"] = preview.materials_status
+    values["total_material_cost"] = preview.total_material_cost
+    return values
+
 def _recipe_requirements(batch):
     if not batch.recipe:
         frappe.throw("حدد الوصفة أولاً / Select a recipe first")

@@ -134,7 +134,11 @@ class WAFDProductionBatch(Document):
                 frappe.throw(f"ترتيب أوقات الإنتاج غير صحيح بين {previous_name} و {fieldname} / Production timeline is out of order")
             previous_name, previous_value = fieldname, current_value
         if self.end_time and self.service_deadline and get_datetime(self.end_time) > get_datetime(self.service_deadline):
-            frappe.throw("وقت انتهاء الإنتاج بعد موعد الخدمة / Production end time is after service deadline")
+            # A late completion must remain visible in reports, but it must not
+            # block recording the real operational result or the next workflow
+            # stages. The deadline is therefore a warning/status, not a hard
+            # validation failure.
+            self.schedule_status = "متأخر / Delayed"
 
     def _source_rows(self):
         rows = [row for row in (self.source_warehouses or []) if row.warehouse]
@@ -691,7 +695,21 @@ def complete_production(batch_name, produced_quantity=None, rejected_quantity=No
     batch.status = "جاهز / Ready"
     batch.end_time = now_datetime()
     batch.save()
-    return {"name": batch.name, "status": batch.status, "completed": True}
+    delayed = bool(
+        batch.end_time and batch.service_deadline
+        and get_datetime(batch.end_time) > get_datetime(batch.service_deadline)
+    )
+    return {
+        "name": batch.name,
+        "status": batch.status,
+        "completed": True,
+        "delayed": delayed,
+        "schedule_status": batch.schedule_status,
+        "warning": (
+            "اكتمل الإنتاج بعد موعد الخدمة وتم تسجيل الحالة كمتأخر / "
+            "Production completed after the service deadline and was recorded as delayed"
+        ) if delayed else None,
+    }
 
 
 @frappe.whitelist()

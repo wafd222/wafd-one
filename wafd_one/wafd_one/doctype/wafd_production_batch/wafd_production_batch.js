@@ -145,7 +145,19 @@ frappe.ui.form.on("WAFD Production Batch", {
                             method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.complete_production",
                             args: { batch_name: frm.doc.name, produced_quantity: values.produced_quantity, rejected_quantity: values.rejected_quantity },
                             freeze: true,
-                            callback() { frm.reload_doc(); }
+                            callback(r) {
+                                const result = r.message || {};
+                                if (result.delayed && result.warning) {
+                                    frappe.msgprint({
+                                        title: __("Production Completed — Delayed"),
+                                        indicator: "orange",
+                                        message: result.warning
+                                    });
+                                } else {
+                                    frappe.show_alert({ message: __("Production completed"), indicator: "green" });
+                                }
+                                frm.reload_doc();
+                            }
                         });
                     }
                 });

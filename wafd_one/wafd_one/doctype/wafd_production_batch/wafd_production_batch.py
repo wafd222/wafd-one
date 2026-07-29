@@ -229,6 +229,53 @@ class WAFDProductionBatch(Document):
                     if remaining <= 0:
                         break
 
+                # Stock may physically exist in a different warehouse than the
+                # recipe category default. Search all remaining WAFD stock balances
+                # and add the real warehouse as a source instead of producing an
+                # empty allocation table. User-selected sources keep their priority.
+                if remaining > 0:
+                    configured = {row.warehouse for row in sources if row.warehouse}
+                    fallback_balances = frappe.get_all(
+                        "WAFD Stock Balance",
+                        filters={"ingredient": req["ingredient"]},
+                        fields=["warehouse", "actual_quantity", "reserved_quantity", "available_quantity", "average_cost"],
+                        order_by="available_quantity desc, modified desc",
+                    )
+                    next_priority = max([cint(row.priority) for row in sources] or [0])
+                    for balance in fallback_balances:
+                        warehouse = balance.get("warehouse")
+                        if not warehouse or warehouse in configured:
+                            continue
+                        actual = flt(balance.get("actual_quantity"))
+                        reserved = flt(balance.get("reserved_quantity"))
+                        stored_available = flt(balance.get("available_quantity"))
+                        available = max(actual - reserved, 0) if (actual or reserved) else max(stored_available, 0)
+                        if available <= 0:
+                            continue
+                        next_priority += 1
+                        source_row = self.append("source_warehouses", {
+                            "warehouse": warehouse,
+                            "priority": next_priority,
+                            "is_default": 0,
+                        })
+                        sources.append(source_row)
+                        configured.add(warehouse)
+                        available_total += available
+                        allocated = min(remaining, available)
+                        unit_cost = flt(balance.get("average_cost")) or flt(req["unit_cost"])
+                        self.append("material_allocations", {
+                            "ingredient": req["ingredient"],
+                            "warehouse": warehouse,
+                            "allocated_quantity": allocated,
+                            "uom": req["uom"],
+                            "available_before": available,
+                            "unit_cost": unit_cost,
+                            "amount": allocated * unit_cost,
+                        })
+                        remaining -= allocated
+                        if remaining <= 0:
+                            break
+
             shortage = max(remaining, 0)
             has_shortage = has_shortage or shortage > 0
             all_required_issued = all_required_issued and issued_quantity + 0.000001 >= required_quantity
@@ -695,8 +742,21 @@ def create_material_issue(batch_name):
     if shortages:
         lines = [f"{r.ingredient}: مطلوب {r.required_quantity}, متاح {r.available_quantity}" for r in shortages]
         frappe.throw("المخزون الإجمالي غير كافٍ / Combined stock is insufficient:<br>" + "<br>".join(lines))
+    positive_requirements = [row for row in batch.material_requirements if flt(row.required_quantity) > 0]
+    if not positive_requirements:
+        frappe.throw(
+            "مكونات الوصفة لا تحتوي على كميات موجبة. راجع كميات المكونات وإنتاجية الوصفة "
+            "/ Recipe ingredients do not contain positive quantities; review recipe quantities and yield"
+        )
     if not batch.material_allocations:
-        frappe.throw("لا توجد تخصيصات صرف / No material allocations were generated")
+        # Rebuild once from live balances, including warehouses outside the
+        # category defaults. This also repairs older batches created before RC26.
+        batch._calculate_material_requirements()
+    if not batch.material_allocations:
+        frappe.throw(
+            "تعذر توزيع المواد على المستودعات رغم عدم تسجيل عجز. استخدم تشخيص المخزون وراجع وحدات الأصناف "
+            "/ Materials could not be allocated; run Stock Diagnostics and verify ingredient units"
+        )
     # Persist allocation child rows before linking generated stock movements.
     batch.save(ignore_permissions=True)
     batch.reload()

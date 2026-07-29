@@ -4,6 +4,51 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime
 
 
+def _resolve_meal_plan_recipe(meal_plan, daily_plan=None):
+    """Resolve a meal-plan recipe without guessing between ambiguous recipes.
+
+    Resolution order is deliberately strict: direct plan link, linked daily-plan
+    row, exact recipe document name, then an exact active recipe_name match.
+    This repairs legacy/imported plans whose recipe link was not populated while
+    preventing an unrelated recipe from being selected silently.
+    """
+    if not meal_plan:
+        return None
+    plan = meal_plan if getattr(meal_plan, "doctype", None) == "WAFD Meal Plan" else frappe.get_doc("WAFD Meal Plan", meal_plan)
+    if plan.recipe and frappe.db.exists("WAFD Recipe", plan.recipe):
+        return plan.recipe
+
+    filters = {"meal_plan": plan.name, "parenttype": "WAFD Daily Meal Plan", "recipe": ["is", "set"]}
+    if daily_plan:
+        filters["parent"] = daily_plan
+    rows = frappe.get_all(
+        "WAFD Daily Meal Plan Item", filters=filters, fields=["recipe"],
+        order_by="idx asc", limit_page_length=2,
+    )
+    daily_recipes = list(dict.fromkeys(row.recipe for row in rows if row.recipe and frappe.db.exists("WAFD Recipe", row.recipe)))
+    if len(daily_recipes) == 1:
+        return daily_recipes[0]
+
+    menu_name = (plan.menu_name or "").strip()
+    if not menu_name:
+        main_items = [row.meal_name.strip() for row in (plan.items or []) if row.meal_name and row.category == "رئيسي / Main"]
+        if len(main_items) == 1:
+            menu_name = main_items[0]
+    if not menu_name:
+        return None
+
+    if frappe.db.exists("WAFD Recipe", menu_name):
+        status = frappe.db.get_value("WAFD Recipe", menu_name, "status")
+        if status == "نشطة / Active":
+            return menu_name
+
+    matches = frappe.get_all(
+        "WAFD Recipe", filters={"recipe_name": menu_name, "status": "نشطة / Active"},
+        pluck="name", limit_page_length=2,
+    )
+    return matches[0] if len(matches) == 1 else None
+
+
 class WAFDProductionBatch(Document):
     def validate(self):
         self._ensure_traceability_code()
@@ -46,7 +91,11 @@ class WAFDProductionBatch(Document):
         if self.project and self.project != values.project:
             frappe.throw("المشروع لا يطابق خطة الوجبة / Project does not match the meal plan")
         self.project = values.project
-        self.recipe = values.recipe
+        resolved_recipe = values.recipe or _resolve_meal_plan_recipe(self.meal_plan, self.daily_plan)
+        if resolved_recipe:
+            self.recipe = resolved_recipe
+            if not values.recipe:
+                frappe.db.set_value("WAFD Meal Plan", self.meal_plan, "recipe", resolved_recipe, update_modified=False)
         self.batch_date = self.batch_date or values.service_date
         if not self.planned_quantity:
             self.planned_quantity = cint(values.quantity)
@@ -152,7 +201,7 @@ class WAFDProductionBatch(Document):
         all_required_issued = True
 
         for req in requirements:
-            required_quantity = flt(req.get("required_quantity") or req.get("quantity"))
+            required_quantity = flt(req["quantity"])
             remaining = required_quantity
             available_total = 0
             issued_quantity = 0
@@ -377,7 +426,7 @@ def get_meal_plan_defaults(meal_plan):
     values = {
         "project": plan.project,
         "daily_plan": daily_plan,
-        "recipe": plan.recipe,
+        "recipe": plan.recipe or _resolve_meal_plan_recipe(plan, daily_plan),
         "batch_date": plan.service_date,
         "planned_quantity": cint(plan.quantity),
         "kitchen": None,
@@ -465,8 +514,15 @@ def get_meal_plan_defaults(meal_plan):
     return values
 
 def _recipe_requirements(batch):
+    if not batch.recipe and batch.meal_plan:
+        batch.recipe = _resolve_meal_plan_recipe(batch.meal_plan, batch.daily_plan)
+        if batch.recipe:
+            frappe.db.set_value("WAFD Meal Plan", batch.meal_plan, "recipe", batch.recipe, update_modified=False)
     if not batch.recipe:
-        frappe.throw("حدد الوصفة أولاً / Select a recipe first")
+        frappe.throw(
+            "تعذر تحديد الوصفة من خطة الوجبة. افتح خطة الوجبة وحدد الوصفة أو اجعل اسم القائمة مطابقاً تماماً لاسم وصفة نشطة "
+            "/ Recipe could not be resolved from the meal plan; select it on the plan or use an exact active recipe name"
+        )
     recipe = frappe.get_doc("WAFD Recipe", batch.recipe)
     if recipe.status != "نشطة / Active":
         frappe.throw("الوصفة غير نشطة / Recipe is inactive")
@@ -475,36 +531,15 @@ def _recipe_requirements(batch):
         frappe.throw("كمية إنتاج الوصفة يجب أن تكون أكبر من صفر / Recipe yield must be greater than zero")
     if not recipe.items:
         frappe.throw("الوصفة لا تحتوي على مكونات / Recipe has no ingredients")
-    planned_quantity = flt(batch.planned_quantity)
-    if planned_quantity <= 0:
-        frappe.throw("الكمية المخططة يجب أن تكون أكبر من صفر / Planned quantity must be greater than zero")
-
-    factor = planned_quantity / yield_quantity
+    factor = flt(batch.planned_quantity) / yield_quantity
     requirements = []
-    invalid_rows = []
     for row in recipe.items:
-        source_quantity = flt(row.get("quantity"))
-        if not row.ingredient or source_quantity <= 0:
-            invalid_rows.append(row.ingredient or f"Row {row.idx}")
-            continue
-        required_quantity = source_quantity * factor
         requirements.append({
             "ingredient": row.ingredient,
-            # Canonical field used by production requirements. Keep the legacy
-            # alias temporarily so older callers remain compatible.
-            "required_quantity": required_quantity,
-            "quantity": required_quantity,
-            "source_quantity": source_quantity,
+            "quantity": flt(row.quantity) * factor,
             "uom": row.uom,
             "unit_cost": flt(row.unit_cost),
         })
-
-    if not requirements:
-        detail = ", ".join(invalid_rows) if invalid_rows else "—"
-        frappe.throw(
-            "لم يتم استخراج أي كمية موجبة من مكونات الوصفة. المكونات غير الصالحة: " + detail
-            + " / No positive recipe ingredient quantities were extracted. Invalid rows: " + detail
-        )
     return recipe, requirements
 
 
@@ -554,8 +589,11 @@ def refresh_material_requirements(batch_name):
 def check_material_availability(batch_name):
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("read")
+    batch._sync_from_meal_plan()
     if not batch.recipe:
-        frappe.throw("حدد الوصفة أولاً / Select recipe first")
+        frappe.throw(
+            "تعذر تحديد الوصفة من خطة الوجبة / Recipe could not be resolved from the meal plan"
+        )
     batch._calculate_material_requirements()
     shortages = [
         {"ingredient": row.ingredient, "quantity": row.required_quantity,
@@ -765,16 +803,6 @@ def create_material_issue(batch_name):
         frappe.throw("المخزون الإجمالي غير كافٍ / Combined stock is insufficient:<br>" + "<br>".join(lines))
     positive_requirements = [row for row in batch.material_requirements if flt(row.required_quantity) > 0]
     if not positive_requirements:
-        # Read the recipe directly before reporting bad data. This distinguishes
-        # genuine invalid recipe quantities from a failed child-table mapping.
-        _, direct_requirements = _recipe_requirements(batch)
-        direct_positive = [row for row in direct_requirements if flt(row.get("required_quantity")) > 0]
-        if direct_positive:
-            frappe.throw(
-                "تمت قراءة كميات موجبة من الوصفة، لكن لم تُنشأ احتياجات المواد. أعد تحديث الاحتياجات "
-                "أو راجع ترحيل حقول دفعة الإنتاج / Positive recipe quantities were read, but material "
-                "requirements were not generated; refresh requirements or review the Production Batch field migration"
-            )
         frappe.throw(
             "مكونات الوصفة لا تحتوي على كميات موجبة. راجع كميات المكونات وإنتاجية الوصفة "
             "/ Recipe ingredients do not contain positive quantities; review recipe quantities and yield"

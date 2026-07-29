@@ -125,7 +125,7 @@ frappe.ui.form.on("WAFD Production Batch", {
             });
 
         if (frm.doc.status === "مخطط / Planned") {
-            add_action(frm, __("Start Production"),
+            add_action(frm, __("Issue Materials & Start Production"),
                 "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.start_production",
                 { batch_name: frm.doc.name }, () => frm.reload_doc());
         }
@@ -240,12 +240,22 @@ function add_guided_production_action(frm) {
     if (frm.is_new()) return;
 
     if (frm.doc.status === "مخطط / Planned") {
-        frm.page.set_primary_action(__("بدء الإنتاج / Start Production"), () => {
+        frm.page.set_primary_action(__("صرف المواد وبدء الإنتاج / Issue Materials & Start Production"), () => {
             frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.start_production",
                 args: { batch_name: frm.doc.name },
                 freeze: true,
-                callback() { frm.reload_doc(); }
+                freeze_message: __("Checking stock, posting material issues and starting production..."),
+                callback(r) {
+                    const result = r.message || {};
+                    if (result.started) {
+                        frappe.show_alert({
+                            message: `${__("Production started")}: ${result.movement_count || 0} ${__("material issue movement(s) posted")}`,
+                            indicator: "green"
+                        }, 6);
+                    }
+                    frm.reload_doc();
+                }
             });
         });
         return;

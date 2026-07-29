@@ -126,7 +126,20 @@ class WAFDProductionBatch(Document):
 
     def _calculate_material_requirements(self):
         self._ensure_recipe_source_warehouses()
-        previous_movements = {(row.ingredient, row.warehouse): row.stock_movement for row in (self.material_allocations or []) if row.stock_movement}
+        previous_allocations = [
+            {
+                "ingredient": row.ingredient,
+                "warehouse": row.warehouse,
+                "allocated_quantity": flt(row.allocated_quantity),
+                "uom": row.uom,
+                "available_before": flt(row.available_before),
+                "unit_cost": flt(row.unit_cost),
+                "amount": flt(row.amount),
+                "stock_movement": row.stock_movement,
+            }
+            for row in (self.material_allocations or [])
+            if row.ingredient and row.warehouse
+        ]
         self.set("material_requirements", [])
         self.set("material_allocations", [])
         self.total_material_cost = 0
@@ -136,65 +149,104 @@ class WAFDProductionBatch(Document):
         sources = self._source_rows()
         _, requirements = _recipe_requirements(self)
         has_shortage = False
+        all_required_issued = True
+
         for req in requirements:
-            remaining = flt(req["quantity"])
+            required_quantity = flt(req["quantity"])
+            remaining = required_quantity
             available_total = 0
-            for source in sources:
-                balance = frappe.db.get_value(
-                    "WAFD Stock Balance",
-                    {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
-                    ["actual_quantity", "reserved_quantity", "available_quantity", "average_cost"],
-                    as_dict=True,
-                ) or {}
-                # available_quantity can be stale on legacy/imported rows. Always derive a
-                # safe live value from actual minus reserved when those fields are present.
-                actual = flt(balance.get("actual_quantity"))
-                reserved = flt(balance.get("reserved_quantity"))
-                stored_available = flt(balance.get("available_quantity"))
-                derived_available = max(actual - reserved, 0)
-                available = derived_available if ("actual_quantity" in balance or "reserved_quantity" in balance) else max(stored_available, 0)
-                if balance and abs(stored_available - derived_available) > 0.000001:
-                    frappe.db.set_value(
-                        "WAFD Stock Balance",
-                        {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
-                        "available_quantity",
-                        derived_available,
-                        update_modified=False,
-                    )
-                available_total += available
-                allocated = min(remaining, available)
-                if allocated > 0:
-                    unit_cost = flt(balance.get("average_cost")) or flt(req["unit_cost"])
-                    self.append("material_allocations", {
-                        "ingredient": req["ingredient"], "warehouse": source.warehouse,
-                        "allocated_quantity": allocated, "uom": req["uom"],
-                        "available_before": available, "unit_cost": unit_cost,
-                        "amount": allocated * unit_cost,
-                        "stock_movement": previous_movements.get((req["ingredient"], source.warehouse))
-                            or (self.material_issue if source.warehouse == self.source_warehouse else None),
-                    })
-                    remaining -= allocated
+            issued_quantity = 0
+
+            # Preserve allocations already consumed by posted issue movements. Once
+            # stock has been issued it is no longer in warehouse balance, but it still
+            # satisfies this production requirement and must not become a false shortage.
+            for old in previous_allocations:
+                if old["ingredient"] != req["ingredient"] or not old["stock_movement"]:
+                    continue
+                if frappe.db.get_value("WAFD Stock Movement", old["stock_movement"], "status") != "مرحلة / Posted":
+                    continue
+                issued = min(old["allocated_quantity"], remaining)
+                if issued <= 0:
+                    continue
+                self.append("material_allocations", {
+                    "ingredient": old["ingredient"],
+                    "warehouse": old["warehouse"],
+                    "allocated_quantity": issued,
+                    "uom": old["uom"] or req["uom"],
+                    "available_before": old["available_before"],
+                    "unit_cost": old["unit_cost"] or flt(req["unit_cost"]),
+                    "amount": issued * (old["unit_cost"] or flt(req["unit_cost"])),
+                    "stock_movement": old["stock_movement"],
+                })
+                issued_quantity += issued
+                remaining -= issued
                 if remaining <= 0:
                     break
+
+            # Allocate only the not-yet-issued remainder from current live stock.
+            if remaining > 0:
+                for source in sources:
+                    balance = frappe.db.get_value(
+                        "WAFD Stock Balance",
+                        {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
+                        ["actual_quantity", "reserved_quantity", "available_quantity", "average_cost"],
+                        as_dict=True,
+                    ) or {}
+                    actual = flt(balance.get("actual_quantity"))
+                    reserved = flt(balance.get("reserved_quantity"))
+                    stored_available = flt(balance.get("available_quantity"))
+                    derived_available = max(actual - reserved, 0)
+                    available = derived_available if ("actual_quantity" in balance or "reserved_quantity" in balance) else max(stored_available, 0)
+                    if balance and abs(stored_available - derived_available) > 0.000001:
+                        frappe.db.set_value(
+                            "WAFD Stock Balance",
+                            {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
+                            "available_quantity",
+                            derived_available,
+                            update_modified=False,
+                        )
+                    available_total += available
+                    allocated = min(remaining, available)
+                    if allocated > 0:
+                        unit_cost = flt(balance.get("average_cost")) or flt(req["unit_cost"])
+                        old_match = next((
+                            x for x in previous_allocations
+                            if x["ingredient"] == req["ingredient"] and x["warehouse"] == source.warehouse
+                            and x["stock_movement"]
+                            and frappe.db.get_value("WAFD Stock Movement", x["stock_movement"], "status") != "مرحلة / Posted"
+                        ), None)
+                        self.append("material_allocations", {
+                            "ingredient": req["ingredient"],
+                            "warehouse": source.warehouse,
+                            "allocated_quantity": allocated,
+                            "uom": req["uom"],
+                            "available_before": available,
+                            "unit_cost": unit_cost,
+                            "amount": allocated * unit_cost,
+                            "stock_movement": old_match["stock_movement"] if old_match else None,
+                        })
+                        remaining -= allocated
+                    if remaining <= 0:
+                        break
+
             shortage = max(remaining, 0)
             has_shortage = has_shortage or shortage > 0
-            amount = flt(req["quantity"]) * flt(req["unit_cost"])
+            all_required_issued = all_required_issued and issued_quantity + 0.000001 >= required_quantity
+            amount = required_quantity * flt(req["unit_cost"])
             self.total_material_cost += amount
-            issued_quantity = 0
-            for allocation in (self.material_allocations or []):
-                if allocation.ingredient != req["ingredient"] or not allocation.stock_movement:
-                    continue
-                if frappe.db.get_value("WAFD Stock Movement", allocation.stock_movement, "status") == "مرحلة / Posted":
-                    issued_quantity += flt(allocation.allocated_quantity)
             self.append("material_requirements", {
-                "ingredient": req["ingredient"], "required_quantity": req["quantity"], "uom": req["uom"],
-                "available_quantity": available_total, "issued_quantity": issued_quantity, "shortage_quantity": shortage,
-                "unit_cost": req["unit_cost"], "amount": amount,
-                "availability_status": "ناقص / Shortage" if shortage else "متوفر / Available",
+                "ingredient": req["ingredient"],
+                "required_quantity": required_quantity,
+                "uom": req["uom"],
+                "available_quantity": available_total,
+                "issued_quantity": issued_quantity,
+                "shortage_quantity": shortage,
+                "unit_cost": req["unit_cost"],
+                "amount": amount,
+                "availability_status": "مصروف / Issued" if issued_quantity + 0.000001 >= required_quantity else ("ناقص / Shortage" if shortage else "متوفر / Available"),
             })
-        movements = {row.stock_movement for row in self.material_allocations if row.stock_movement}
-        posted = movements and all(frappe.db.get_value("WAFD Stock Movement", name, "status") == "مرحلة / Posted" for name in movements)
-        if posted and not has_shortage:
+
+        if all_required_issued and requirements:
             self.materials_status = "مصروفة / Issued"
         elif not sources:
             self.materials_status = "لم تحسب / Not Calculated"
@@ -451,22 +503,71 @@ def check_material_availability(batch_name):
 
 @frappe.whitelist()
 def start_production(batch_name):
-    """Start production without leaving the form in an unsaved deadlock state."""
+    """Create, post and link material issues, then start production atomically.
+
+    The operator uses one guided action. Existing linked draft issues are posted,
+    missing issues are generated from the current material allocations, and any
+    genuine stock shortage still blocks the operation before stock is changed.
+    """
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")
     if batch.status != "مخطط / Planned":
-        return {"name": batch.name, "status": batch.status, "started": False}
+        return {"name": batch.name, "status": batch.status, "started": False, "already_started": True}
+
+    # Recalculate against live balances first. create_material_issue performs the
+    # same safeguard and refuses to create documents when any shortage exists.
     batch._calculate_material_requirements()
-    movements = {row.stock_movement for row in (batch.material_allocations or []) if row.stock_movement}
-    if not movements:
-        frappe.throw("يجب إنشاء حركات صرف المواد قبل بدء الإنتاج / Material issues must be created before production")
-    unposted = [name for name in movements if frappe.db.get_value("WAFD Stock Movement", name, "status") != "مرحلة / Posted"]
+    shortages = [row for row in batch.material_requirements if flt(row.shortage_quantity) > 0]
+    if shortages:
+        lines = [f"{row.ingredient}: مطلوب {row.required_quantity}, متاح {row.available_quantity}" for row in shortages]
+        frappe.throw("لا يمكن بدء الإنتاج لوجود عجز فعلي في المخزون / Production cannot start because stock is insufficient:<br>" + "<br>".join(lines))
+
+    issue_result = create_material_issue(batch.name)
+    movement_names = list(dict.fromkeys([
+        *(issue_result.get("created") or []),
+        *(issue_result.get("existing") or []),
+    ]))
+    if not movement_names:
+        frappe.throw("تعذر إنشاء حركات صرف المواد / Material issue documents could not be created")
+
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import post_movement
+
+    posted = []
+    already_posted = []
+    for movement_name in movement_names:
+        status = frappe.db.get_value("WAFD Stock Movement", movement_name, "status")
+        if status == "مرحلة / Posted":
+            already_posted.append(movement_name)
+            continue
+        result = post_movement(movement_name)
+        if result.get("posted"):
+            posted.append(movement_name)
+        else:
+            already_posted.append(movement_name)
+
+    unposted = [name for name in movement_names if frappe.db.get_value("WAFD Stock Movement", name, "status") != "مرحلة / Posted"]
     if unposted:
-        frappe.throw("يجب ترحيل جميع حركات الصرف أولاً: " + ", ".join(unposted) + " / Post all material issues first")
+        frappe.throw("لم تكتمل عملية صرف المواد / Material issuing was not completed")
+
+    # Use a direct update after the stock transaction. A normal save recalculates
+    # live warehouse availability; the recalculation now also preserves issued
+    # allocations, but db_set keeps this transition compact and atomic.
+    batch.db_set({
+        "status": "تحضير / Preparing",
+        "start_time": batch.start_time or now_datetime(),
+        "materials_status": "مصروفة / Issued",
+        "material_issue": movement_names[0],
+    }, update_modified=True)
     batch.status = "تحضير / Preparing"
-    batch.start_time = batch.start_time or now_datetime()
-    batch.save()
-    return {"name": batch.name, "status": batch.status, "started": True}
+    return {
+        "name": batch.name,
+        "status": batch.status,
+        "started": True,
+        "created_movements": issue_result.get("created") or [],
+        "posted_movements": posted,
+        "already_posted_movements": already_posted,
+        "movement_count": len(movement_names),
+    }
 
 
 @frappe.whitelist()

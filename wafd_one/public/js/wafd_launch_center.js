@@ -5,7 +5,7 @@ frappe.pages["wafd-launch-center"].on_page_load = function (wrapper) {
   $main.html(`
     <div class="wafd-launch wafd-launch-final">
       <div class="launch-hero">
-        <div><small>النسخة المرشحة للتجربة</small><h1>مركز جاهزية WAFD ONE</h1><p>فحص مختصر للبيانات الأساسية قبل بدء التجربة التشغيلية.</p></div>
+        <div><small>صفحة فحص النظام</small><h1>مركز جاهزية WAFD ONE</h1><p>فحص البيانات الأساسية وحالة النظام قبل التشغيل اليومي.</p></div>
         <div class="launch-hero-buttons"><button class="btn btn-light" data-route="wafd-one-dashboard">لوحة التشغيل</button><button class="btn btn-light" data-list="WAFD Catering Project">المشاريع</button><button class="btn btn-light" data-new="WAFD Catering Project">مشروع جديد</button><button class="btn btn-light refresh-ready">إعادة الفحص</button></div>
       </div>
       <div class="launch-status"></div>
@@ -32,7 +32,7 @@ frappe.pages["wafd-launch-center"].on_page_load = function (wrapper) {
       const data = response.message || {};
       const checks = data.checks || [];
       $main.find(".launch-status").html(`
-        <div class="ready-head ${data.ready ? "ok" : "warn"}"><strong>${data.ready ? "البيانات الأساسية جاهزة للتجربة" : "توجد ملاحظات يجب استكمالها"}</strong><span>${data.version || ""}</span></div>
+        <div class="ready-head ${data.ready ? "ok" : "warn"}"><strong>${data.ready ? "البيانات الأساسية جاهزة للتشغيل" : "توجد ملاحظات يجب استكمالها"}</strong><span>${data.version || ""}</span></div>
         <div class="ready-list">${checks.map((row) => `<div class="ready-row"><i class="${row.ok ? "ok" : "bad"}">${row.ok ? "✓" : "!"}</i><div><b>${frappe.utils.escape_html(row.label || "")}</b><small>${frappe.utils.escape_html(row.detail || "")}</small></div></div>`).join("")}</div>`);
       const counts = data.counts || {};
       const cards = { العقود: counts.contracts || 0, المشاريع: counts.projects || 0, "الخطط اليومية": counts.daily_plans || 0, "دفعات الإنتاج": counts.production_batches || 0, التسليمات: counts.deliveries || 0, الفواتير: counts.invoices || 0 };

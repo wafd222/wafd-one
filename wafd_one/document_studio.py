@@ -315,12 +315,30 @@ def _remove_trailing_blank_pages(pdf_bytes):
         frappe.log_error(frappe.get_traceback(), "WAFD PDF blank-page cleanup")
         return pdf_bytes
 
+def render_pdf_bytes(template_name, doctype=None, docname=None):
+    """Render a Document Studio template and return cleaned PDF bytes.
+
+    This is the single PDF path used by both preview downloads and approved
+    undertaking attachments, so the two outputs cannot drift apart.
+    """
+    html = _render(template_name, doctype, docname)
+    pdf = get_pdf(html, options={
+        "page-size": "A4",
+        "margin-top": "0mm",
+        "margin-right": "0mm",
+        "margin-bottom": "0mm",
+        "margin-left": "0mm",
+        "disable-smart-shrinking": None,
+        "print-media-type": None,
+        "encoding": "UTF-8",
+    })
+    return _remove_trailing_blank_pages(pdf)
+
+
 @frappe.whitelist()
 def download_pdf(template_name, doctype=None, docname=None):
     _check_access()
-    html = _render(template_name, doctype, docname)
-    pdf = get_pdf(html, options={"page-size": "A4", "margin-top": "0mm", "margin-right": "0mm", "margin-bottom": "0mm", "margin-left": "0mm", "disable-smart-shrinking": None})
-    pdf = _remove_trailing_blank_pages(pdf)
+    pdf = render_pdf_bytes(template_name, doctype, docname)
     frappe.local.response.filename = f"{frappe.scrub(template_name)}.pdf"
     frappe.local.response.filecontent = pdf
     frappe.local.response.type = "pdf"

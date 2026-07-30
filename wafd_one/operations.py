@@ -86,6 +86,8 @@ def create_loading_record(packaging_name):
             "loading_date": now_datetime(),
             "quantity": packaging.packed_quantity,
             "box_count": packaging.box_count,
+            "hot_cabinet_count": cint(packaging.hot_cabinet_count),
+            "hot_cabinet_sandwich_total": cint(packaging.hot_cabinet_sandwich_total),
             "vehicle": project.default_vehicle,
             "driver": project.default_driver,
             "status": "قيد التحميل / Loading",
@@ -442,3 +444,41 @@ def get_next_operational_action(project_name):
         "step": "complete", "label": "الدورة مكتملة / Workflow Complete",
         "route": ["Form", "WAFD Catering Project", project.name],
     }
+
+
+@frappe.whitelist()
+def create_delivery_note(trip_name):
+    trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
+    trip.check_permission("write")
+    if trip.status not in ("وصلت / Arrived", "تم التسليم / Delivered"):
+        frappe.throw("يجب وصول الرحلة أو تسجيل التسليم أولاً / Trip must arrive before creating the delivery note")
+    existing = frappe.db.get_value("WAFD Delivery Note", {"delivery_trip": trip.name}, "name")
+    if existing:
+        return {"name": existing, "created": False}
+    loading = frappe.get_doc("WAFD Loading Record", trip.loading_record) if trip.loading_record else None
+    return {"created": True, "values": {
+        "delivery_trip": trip.name, "project": trip.project, "meal_plan": trip.meal_plan,
+        "loading_record": trip.loading_record, "hotel": trip.hotel, "vehicle": trip.vehicle,
+        "driver": trip.driver, "delivery_time": trip.actual_arrival or now_datetime(),
+        "delivered_quantity": trip.quantity, "box_count": cint(loading.box_count) if loading else 0,
+        "hot_cabinet_count": cint(getattr(loading, "hot_cabinet_count", 0)) if loading else 0,
+        "status": "تم التسليم / Delivered"}}
+
+@frappe.whitelist()
+def create_receiving_note(delivery_note_name):
+    note = frappe.get_doc("WAFD Delivery Note", delivery_note_name)
+    note.check_permission("write")
+    if note.status != "تم التسليم / Delivered":
+        frappe.throw("يجب اعتماد سند التسليم أولاً / Delivery note must be marked delivered first")
+    if cint(note.delivered_quantity) <= 0:
+        frappe.throw("الكمية المسلمة يجب أن تكون أكبر من صفر / Delivered quantity must be greater than zero")
+    existing = frappe.db.get_value("WAFD Receiving Note", {"delivery_note": note.name}, "name")
+    if existing:
+        return {"name": existing, "created": False}
+    return {"created": True, "values": {
+        "delivery_trip": note.delivery_trip, "delivery_note": note.name, "project": note.project,
+        "meal_plan": note.meal_plan, "loading_record": note.loading_record, "hotel": note.hotel,
+        "vehicle": note.vehicle, "driver": note.driver, "receipt_time": now_datetime(),
+        "delivered_quantity": note.delivered_quantity, "received_quantity": note.delivered_quantity,
+        "rejected_quantity": 0, "receiver_name": note.receiver_name,
+        "receiver_title": note.receiver_title, "status": "مسودة / Draft"}}

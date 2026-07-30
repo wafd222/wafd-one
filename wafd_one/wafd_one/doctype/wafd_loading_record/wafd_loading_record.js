@@ -2,6 +2,8 @@ frappe.ui.form.on("WAFD Loading Record", {
     refresh(frm) {
         if (frm.is_new()) return;
         add_guided_loading_action(frm);
+        frm.add_custom_button(__("معاينة المستند"), () => open_loading_pdf(frm), __("Print & Documents"));
+        frm.add_custom_button(__("طباعة PDF"), () => open_loading_pdf(frm), __("Print & Documents"));
         if (["تم التحميل / Loaded", "خرجت / Dispatched"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Create Delivery Trip"), () => {
                 frappe.call({
@@ -37,3 +39,5 @@ function add_guided_loading_action(frm) {
         });
     });
 }
+
+async function open_loading_pdf(frm){const r=await frappe.call({method:"wafd_one.document_studio.get_default_template",args:{reference_doctype:frm.doctype}});if(!r.message){frappe.msgprint(__("لا يوجد قالب طباعة مفعل"));return;}const q=new URLSearchParams({template_name:r.message,doctype:frm.doctype,docname:frm.doc.name});window.open(`/api/method/wafd_one.document_studio.download_pdf?${q.toString()}`,"_blank");}

@@ -22,6 +22,9 @@
   "second_party_cr",
   "second_party_representative",
   "links_section",
+  "project",
+  "contract",
+  "mission",
   "hotel",
   "service_section",
   "nationality",
@@ -36,6 +39,8 @@
   "approval_section",
   "authorized_signatory",
   "signatory_title",
+  "include_signature",
+  "include_stamp",
   "signature_image",
   "company_stamp",
   "pdf_section",
@@ -260,6 +265,18 @@
    "fieldtype": "Data",
    "label": "صفة الموقّع / Signatory Title",
    "default": "المدير العام / General Manager"
+  },
+  {
+   "fieldname": "include_signature",
+   "label": "إظهار توقيع الشركة / Include Company Signature",
+   "fieldtype": "Check",
+   "default": 0
+  },
+  {
+   "fieldname": "include_stamp",
+   "label": "إظهار ختم الشركة / Include Company Stamp",
+   "fieldtype": "Check",
+   "default": 0
   },
   {
    "fieldname": "signature_image",

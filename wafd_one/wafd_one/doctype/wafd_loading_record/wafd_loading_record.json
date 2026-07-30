@@ -23,6 +23,8 @@
   "packaging_record",
   "hotel",
   "box_count",
+  "hot_cabinet_sandwich_total",
+  "hot_cabinet_count",
   "temperature_at_loading",
   "dispatch_time"
  ],
@@ -137,6 +139,20 @@
    "fieldname": "box_count",
    "label": "عدد الصناديق / Box Count",
    "fieldtype": "Int"
+  },
+  {
+   "fieldname": "hot_cabinet_count",
+   "label": "عدد سخانات الهوت كابن / Hot Cabinets",
+   "fieldtype": "Int",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "hot_cabinet_sandwich_total",
+   "label": "إجمالي السفندشات داخل السخانات / Sandwiches in Hot Cabinets",
+   "fieldtype": "Int",
+   "read_only": 1,
+   "default": "0"
   },
   {
    "fieldname": "temperature_at_loading",

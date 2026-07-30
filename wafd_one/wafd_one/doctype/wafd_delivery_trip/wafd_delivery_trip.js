@@ -1,6 +1,12 @@
 frappe.ui.form.on("WAFD Delivery Trip", {    refresh(frm) {
         if (frm.is_new()) return;
         add_guided_trip_action(frm);
+        if (["وصلت / Arrived", "تم التسليم / Delivered"].includes(frm.doc.status)) {
+            frm.add_custom_button(__("إنشاء / فتح سند التسليم"), () => frappe.call({
+                method: "wafd_one.operations.create_delivery_note", args: {trip_name: frm.doc.name}, freeze: true,
+                callback(r) { const x=r.message||{}; if(x.name) frappe.set_route("Form","WAFD Delivery Note",x.name); else if(x.values) frappe.new_doc("WAFD Delivery Note",x.values); }
+            }), __("Operations"));
+        }
         frm.add_custom_button(__("Create / Open Delivery Receipt"), () => {
             const createProof = () => frappe.call({
                 method: "wafd_one.operations.create_delivery_proof",

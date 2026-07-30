@@ -150,3 +150,6 @@ wafd_one.patches.v10_0_0_rc33.execute
 wafd_one.patches.v10_0_0_rc35.execute
 
 wafd_one.patches.v10_0_0_rc36.execute
+
+
+wafd_one.patches.v10_0_0_rc37.execute

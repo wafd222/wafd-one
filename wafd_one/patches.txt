@@ -163,3 +163,6 @@ wafd_one.patches.v10_0_0_rc40.execute
 wafd_one.patches.v10_0_0_rc41.execute
 
 wafd_one.patches.v10_0_0_rc42.execute
+
+
+wafd_one.patches.v10_0_0_rc43.execute

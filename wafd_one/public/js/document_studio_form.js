@@ -2,7 +2,7 @@
   const supported = [
     'WAFD Hotel Undertaking', 'WAFD Contract', 'WAFD Invoice',
     'WAFD Catering Project', 'WAFD Production Batch', 'WAFD Meal Plan',
-    'WAFD Loading Record', 'WAFD Delivery Proof', 'WAFD Mission'
+    'WAFD Packaging Record', 'WAFD Loading Record', 'WAFD Delivery Proof', 'WAFD Mission'
   ];
 
   supported.forEach((doctype) => {

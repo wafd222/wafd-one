@@ -45,6 +45,7 @@ doctype_js = {
     "WAFD Production Batch": "public/js/document_studio_form.js",
     "WAFD Meal Plan": "public/js/document_studio_form.js",
     "WAFD Daily Meal Plan": "public/js/document_studio_form.js",
+    "WAFD Packaging Record": "public/js/document_studio_form.js",
     "WAFD Loading Record": "public/js/document_studio_form.js",
     "WAFD Delivery Proof": "public/js/document_studio_form.js",
     "WAFD Mission": "public/js/document_studio_form.js",

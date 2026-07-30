@@ -17,6 +17,14 @@ def main() -> None:
     init_text = (ROOT / "wafd_one/__init__.py").read_text(encoding="utf-8")
     assert f'__version__ = "{version}"' in init_text
     assert (ROOT / f"RELEASE_NOTES_{version}.md").exists()
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    display_version = version.replace("rc", " RC")
+    assert display_version in readme, f"README does not identify the current release: {display_version}"
+    cache_artifacts = [
+        path for path in ROOT.rglob("*")
+        if path.name == "__pycache__" or path.suffix == ".pyc"
+    ]
+    assert not cache_artifacts, f"Python cache artifacts must not be distributed: {cache_artifacts[:5]}"
 
     for path in ROOT.rglob("*.py"):
         if any(part.startswith(".") for part in path.relative_to(ROOT).parts):
@@ -74,6 +82,19 @@ def main() -> None:
     assert "frappe.utils" not in html
     setup_text = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
     assert "ensure_hotel_undertaking_print_format()" in setup_text
+
+    # Validate the professional invoice template against the actual parent and child DocTypes.
+    invoice_meta = next(doc for _, doc in json_docs if doc.get("name") == "WAFD Invoice")
+    invoice_item_meta = next(doc for _, doc in json_docs if doc.get("name") == "WAFD Invoice Item")
+    invoice_fields = {"name"} | {field.get("fieldname") for field in invoice_meta.get("fields", [])}
+    item_fields = {"name"} | {field.get("fieldname") for field in invoice_item_meta.get("fields", [])}
+    invoice_patch = (ROOT / "wafd_one/patches/v10_0_0_rc33/execute.py").read_text(encoding="utf-8")
+    doc_refs = set(re.findall(r"doc\.([A-Za-z_][A-Za-z0-9_]*)", invoice_patch))
+    row_refs = set(re.findall(r"row\.([A-Za-z_][A-Za-z0-9_]*)", invoice_patch))
+    allowed_doc_helpers = {"items", "canvas_json", "custom_css", "direction", "document_category", "enabled", "is_default", "margin_bottom_mm", "margin_left_mm", "margin_right_mm", "margin_top_mm", "orientation", "page_size", "save", "template_title"}
+    assert doc_refs <= invoice_fields | allowed_doc_helpers, f"Unknown invoice template fields: {sorted(doc_refs - invoice_fields - allowed_doc_helpers)}"
+    assert row_refs <= item_fields, f"Unknown invoice item template fields: {sorted(row_refs - item_fields)}"
+    assert 'بدّل هذا النص بالكامل' not in invoice_patch, "Placeholder invoice text is still present"
 
     print(f"WAFD ONE {version} release validation passed")
 

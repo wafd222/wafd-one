@@ -2,6 +2,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import flt, get_datetime, now_datetime, getdate
 
+from wafd_one.uom import canonical_uom, uom_matches
+
 
 class WAFDStockMovement(Document):
     def validate(self):
@@ -31,10 +33,11 @@ class WAFDStockMovement(Document):
             ingredient = frappe.db.get_value("WAFD Ingredient", row.ingredient, ["status", "uom"], as_dict=True)
             if not ingredient or ingredient.status == "غير نشط / Inactive":
                 frappe.throw(f"المكون غير نشط: {row.ingredient} / Ingredient is inactive")
-            if not row.uom:
-                row.uom = ingredient.uom
-            elif ingredient.uom and row.uom != ingredient.uom:
+            if row.uom and ingredient.uom and not uom_matches(row.uom, ingredient.uom):
                 frappe.throw(f"وحدة الصنف {row.ingredient} يجب أن تكون {ingredient.uom} / Ingredient UOM mismatch")
+            # Always persist the ingredient master UOM. This also repairs legacy
+            # values such as ``Kg`` versus ``كجم / Kg`` without changing quantity.
+            row.uom = canonical_uom(ingredient.uom or row.uom)
             if row.production_date and row.expiry_date and getdate(row.production_date) > getdate(row.expiry_date):
                 frappe.throw(f"تاريخ إنتاج {row.ingredient} بعد تاريخ الانتهاء / Production date cannot be after expiry date")
             if self.movement_type == "استلام / Receipt" and row.expiry_date and getdate(row.expiry_date) <= getdate(self.posting_date):
@@ -57,7 +60,7 @@ class WAFDStockMovement(Document):
                 if row.ingredient not in ordered:
                     frappe.throw(f"الصنف {row.ingredient} غير موجود في أمر الشراء / Item is not in the purchase order")
                 po_row = ordered[row.ingredient]
-                if row.uom and po_row.uom and row.uom != po_row.uom:
+                if row.uom and po_row.uom and not uom_matches(row.uom, po_row.uom):
                     frappe.throw(f"وحدة استلام {row.ingredient} لا تطابق أمر الشراء / Receipt UOM mismatch")
                 remaining = flt(po_row.quantity) - flt(posted.get(row.ingredient, 0))
                 if flt(row.quantity) > remaining + 0.000001:
@@ -104,11 +107,15 @@ def _get_balance(warehouse, ingredient, uom=None, for_update=False):
     name = frappe.db.get_value("WAFD Stock Balance", {"warehouse": warehouse, "ingredient": ingredient}, "name")
     if name:
         doc = frappe.get_doc("WAFD Stock Balance", name)
+        ingredient_uom = frappe.db.get_value("WAFD Ingredient", ingredient, "uom")
+        if ingredient_uom and uom_matches(doc.uom, ingredient_uom):
+            doc.uom = canonical_uom(ingredient_uom)
         if for_update:
             frappe.db.sql("select name from `tabWAFD Stock Balance` where name=%s for update", name)
             doc.reload()
         return doc
-    return frappe.get_doc({"doctype": "WAFD Stock Balance", "warehouse": warehouse, "ingredient": ingredient, "uom": uom, "actual_quantity": 0, "reserved_quantity": 0, "average_cost": 0})
+    ingredient_uom = frappe.db.get_value("WAFD Ingredient", ingredient, "uom")
+    return frappe.get_doc({"doctype": "WAFD Stock Balance", "warehouse": warehouse, "ingredient": ingredient, "uom": canonical_uom(ingredient_uom or uom), "actual_quantity": 0, "reserved_quantity": 0, "average_cost": 0})
 
 
 def _add_stock(warehouse, row, posting_date):

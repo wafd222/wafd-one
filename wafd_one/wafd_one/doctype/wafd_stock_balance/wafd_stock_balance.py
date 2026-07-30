@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import flt
+from wafd_one.uom import canonical_uom, uom_matches
 
 
 class WAFDStockBalance(Document):
@@ -14,10 +15,9 @@ class WAFDStockBalance(Document):
         if flt(self.average_cost) < 0:
             frappe.throw("متوسط التكلفة لا يمكن أن يكون سالباً / Average cost cannot be negative")
         ingredient_uom = frappe.db.get_value("WAFD Ingredient", self.ingredient, "uom")
-        if not self.uom:
-            self.uom = ingredient_uom
-        elif ingredient_uom and self.uom != ingredient_uom:
+        if self.uom and ingredient_uom and not uom_matches(self.uom, ingredient_uom):
             frappe.throw("وحدة رصيد المخزون لا تطابق وحدة المكون / Stock balance UOM mismatch")
+        self.uom = canonical_uom(ingredient_uom or self.uom)
         self.available_quantity = self.actual_quantity - self.reserved_quantity
         self.stock_value = self.actual_quantity * flt(self.average_cost)
         duplicate = frappe.db.get_value(

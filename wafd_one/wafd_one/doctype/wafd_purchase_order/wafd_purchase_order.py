@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, now_datetime
+from wafd_one.uom import canonical_uom, uom_matches
 
 
 CANCELLED = "ملغي / Cancelled"
@@ -47,12 +48,11 @@ class WAFDPurchaseOrder(Document):
             )
             if not ingredient or ingredient.status == "غير نشط / Inactive":
                 frappe.throw(f"المكون غير نشط: {row.ingredient} / Ingredient is inactive")
-            if not row.uom:
-                row.uom = ingredient.uom
-            elif ingredient.uom and row.uom != ingredient.uom:
+            if row.uom and ingredient.uom and not uom_matches(row.uom, ingredient.uom):
                 frappe.throw(
                     f"وحدة الصنف {row.ingredient} يجب أن تكون {ingredient.uom} / Ingredient UOM mismatch"
                 )
+            row.uom = canonical_uom(ingredient.uom or row.uom)
 
     def _calculate_totals(self):
         subtotal = 0

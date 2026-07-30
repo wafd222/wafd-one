@@ -19,3 +19,18 @@ frappe.ui.form.on("WAFD Stock Movement", {
         }, __("Stock"));
     }
 });
+
+frappe.ui.form.on("WAFD Stock Movement Item", {
+    ingredient(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (!row.ingredient) {
+            frappe.model.set_value(cdt, cdn, "uom", "");
+            return;
+        }
+        frappe.db.get_value("WAFD Ingredient", row.ingredient, "uom").then((r) => {
+            if (r.message && r.message.uom) {
+                frappe.model.set_value(cdt, cdn, "uom", r.message.uom);
+            }
+        });
+    },
+});

@@ -36,7 +36,10 @@
     {
       "fieldname": "uom",
       "fieldtype": "Data",
-      "label": "الوحدة / UOM"
+      "label": "الوحدة / UOM",
+      "read_only": 1,
+      "fetch_from": "ingredient.uom",
+      "fetch_if_empty": 0
     },
     {
       "fieldname": "unit_cost",

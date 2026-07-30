@@ -52,7 +52,7 @@ class WAFDHotelUndertaking(Document):
     def _validate_for_issue(self):
         self._fill_linked_data(); self._fill_meals()
         required = {
-            "hotel": "الفندق / Hotel", "second_party_name": "الطرف الثاني / Second Party",
+            "hotel": "الفندق / Hotel",
             "beneficiary_count": "عدد المستفيدين / Beneficiary Count", "meal_types": "الوجبات / Meals",
             "start_date": "تاريخ البداية / Start Date", "end_date": "تاريخ النهاية / End Date",
         }
@@ -77,8 +77,8 @@ def approve_and_generate_pdf(name):
         frappe.throw(_("لا يمكن إصدار PDF لتعهد ملغي / Cannot generate a PDF for a cancelled undertaking"))
     html = frappe.get_print("WAFD Hotel Undertaking", doc.name, print_format=PRINT_FORMAT, as_pdf=False, no_letterhead=1)
     pdf_content = get_pdf(html, options={
-        "page-size": "A4", "margin-top": "7mm", "margin-right": "9mm",
-        "margin-bottom": "7mm", "margin-left": "9mm",
+        "page-size": "A4", "margin-top": "0mm", "margin-right": "0mm",
+        "margin-bottom": "0mm", "margin-left": "0mm",
         "disable-smart-shrinking": "", "print-media-type": "", "encoding": "UTF-8",
     })
     filename=f"{doc.name}.pdf"

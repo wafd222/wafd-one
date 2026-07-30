@@ -157,7 +157,7 @@ def compile_template(template):
     return f"""<!doctype html><html><head><meta charset="utf-8"><style>
 @page {{ size:{template.page_size} {template.orientation.lower()}; margin:0; }}
 html,body{{margin:0;padding:0;background:white;}}
-.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:{height_mm}mm;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:{direction};font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid;}}
+.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:1110px;max-height:1110px;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:{direction};font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}}
 .wds-print-block table{{border-collapse:collapse;}}
 {css}
 </style></head><body><div class="wds-print-page">{''.join(items)}</div></body></html>"""

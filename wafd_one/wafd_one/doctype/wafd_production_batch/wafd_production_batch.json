@@ -176,7 +176,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "الحالة / Status",
-   "options": "مخطط / Planned\nتحضير / Preparing\nطبخ / Cooking\nتغليف / Packaging\nجاهز / Ready\nمكتمل / Completed\nموقوف / Stopped",
+   "options": "مخطط / Planned\nتحضير / Preparing\nطبخ / Cooking\nبانتظار الجودة / Awaiting Quality\nتغليف / Packaging\nجاهز / Ready\nمكتمل / Completed\nموقوف / Stopped",
    "default": "مخطط / Planned",
    "in_list_view": 1
   },

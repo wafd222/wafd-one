@@ -14,10 +14,15 @@ frappe.ui.form.on("WAFD Production Batch", {
         }
 
         frm.add_custom_button(__("New CCP Check"), () => {
-            frappe.new_doc("WAFD CCP Check", {
-                production_batch: frm.doc.name,
-                check_time: frappe.datetime.now_datetime(),
-                inspector: frappe.session.user
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.prepare_ccp_check",
+                args: { batch_name: frm.doc.name },
+                freeze: true,
+                callback(r) {
+                    const result = r.message || {};
+                    if (result.name) frappe.set_route("Form", "WAFD CCP Check", result.name);
+                    else if (result.values) frappe.new_doc("WAFD CCP Check", result.values);
+                }
             });
         }, __("Food Safety"));
 
@@ -156,7 +161,14 @@ frappe.ui.form.on("WAFD Production Batch", {
                                 } else {
                                     frappe.show_alert({ message: __("Production completed"), indicator: "green" });
                                 }
-                                frm.reload_doc();
+                                const quality = result.quality_inspection || {};
+                                if (quality.name) {
+                                    frappe.set_route("Form", "WAFD Quality Inspection", quality.name);
+                                } else if (quality.values) {
+                                    frappe.new_doc("WAFD Quality Inspection", quality.values);
+                                } else {
+                                    frm.reload_doc();
+                                }
                             }
                         });
                     }
@@ -314,12 +326,16 @@ function add_guided_production_action(frm) {
     }
 
     if (frm.doc.food_safety_release_status !== "مفرج / Released") {
-        frm.page.set_primary_action(__("الإفراج الغذائي / Release Food Safety"), () => {
+        frm.page.set_primary_action(__("تسجيل قياس سلامة الغذاء / Record Food Safety Measurement"), () => {
             frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.release_food_safety_batch",
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.prepare_ccp_check",
                 args: { batch_name: frm.doc.name },
                 freeze: true,
-                callback() { frm.reload_doc(); }
+                callback(r) {
+                    const result = r.message || {};
+                    if (result.name) frappe.set_route("Form", "WAFD CCP Check", result.name);
+                    else if (result.values) frappe.new_doc("WAFD CCP Check", result.values);
+                }
             });
         });
         return;

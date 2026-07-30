@@ -354,7 +354,7 @@ class WAFDProductionBatch(Document):
             self.materials_status = "عجز / Shortage" if has_shortage else "متوفرة / Available"
 
     def _validate_workflow(self):
-        active = ("تحضير / Preparing", "طبخ / Cooking", "تغليف / Packaging", "جاهز / Ready", "مكتمل / Completed")
+        active = ("تحضير / Preparing", "طبخ / Cooking", "بانتظار الجودة / Awaiting Quality", "تغليف / Packaging", "جاهز / Ready", "مكتمل / Completed")
         previous = self.get_doc_before_save() if not self.is_new() else None
         entering_active = self.status in active and (not previous or previous.status not in active)
         # Only validate stock movement prerequisites when the document is actually
@@ -692,13 +692,14 @@ def complete_production(batch_name, produced_quantity=None, rejected_quantity=No
         batch.produced_quantity = cint(batch.planned_quantity)
     if rejected_quantity is not None:
         batch.rejected_quantity = cint(rejected_quantity)
-    batch.status = "جاهز / Ready"
+    batch.status = "بانتظار الجودة / Awaiting Quality"
     batch.end_time = now_datetime()
     batch.save()
     delayed = bool(
         batch.end_time and batch.service_deadline
         and get_datetime(batch.end_time) > get_datetime(batch.service_deadline)
     )
+    quality_step = create_quality_inspection(batch.name)
     return {
         "name": batch.name,
         "status": batch.status,
@@ -709,6 +710,8 @@ def complete_production(batch_name, produced_quantity=None, rejected_quantity=No
             "اكتمل الإنتاج بعد موعد الخدمة وتم تسجيل الحالة كمتأخر / "
             "Production completed after the service deadline and was recorded as delayed"
         ) if delayed else None,
+        "next_step": "quality_inspection",
+        "quality_inspection": quality_step,
     }
 
 
@@ -912,6 +915,87 @@ def _open_noncompliant_ccp_checks(batch_name):
     )
 
 
+
+@frappe.whitelist()
+def prepare_ccp_check(batch_name, ccp_type="الطهي / Cooking"):
+    """Open an existing CCP check or prepare a new check with safe defaults.
+
+    The measured value is intentionally left for the inspector. Limits are read
+    from the configurable food-safety settings so the user only records the
+    actual measurement during normal operation.
+    """
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    existing = frappe.db.get_value(
+        "WAFD CCP Check",
+        {"production_batch": batch.name, "ccp_type": ccp_type},
+        "name",
+    )
+    if existing:
+        return {"name": existing, "created": False}
+
+    settings = frappe.get_single("WAFD Food Safety Settings")
+    minimum_limit = None
+    maximum_limit = None
+    if ccp_type == "الطهي / Cooking":
+        minimum_limit = settings.minimum_cooking_temperature
+    elif ccp_type == "الحفظ الساخن / Hot Holding":
+        minimum_limit = settings.minimum_hot_holding_temperature
+    elif ccp_type == "الحفظ البارد / Cold Holding":
+        maximum_limit = settings.maximum_cold_holding_temperature
+
+    return {
+        "created": True,
+        "values": {
+            "production_batch": batch.name,
+            "ccp_type": ccp_type,
+            "check_time": now_datetime(),
+            "inspector": frappe.session.user,
+            "unit": "°C",
+            "minimum_limit": minimum_limit,
+            "maximum_limit": maximum_limit,
+        },
+    }
+
+
+@frappe.whitelist()
+def verify_ccp_and_release(check_name):
+    """Verify a compliant CCP measurement and release its production batch.
+
+    This endpoint is deliberately conservative: non-compliant measurements are
+    never verified or released automatically, and quality must already have
+    passed before the food-safety release can be issued.
+    """
+    check = frappe.get_doc("WAFD CCP Check", check_name)
+    check.check_permission("write")
+    allowed = {"System Manager", "WAFD Operations Manager", "WAFD Quality Inspector"}
+    if not allowed.intersection(set(frappe.get_roles())):
+        frappe.throw("لا تملك صلاحية اعتماد فحص سلامة الغذاء / You are not authorized to verify this food-safety check")
+    if check.compliance_status != "مطابق / Compliant":
+        return {"verified": False, "released": False, "noncompliant": True, "batch_name": check.production_batch}
+
+    if check.verification_status != "تم التحقق / Verified":
+        frappe.db.set_value(
+            "WAFD CCP Check",
+            check.name,
+            {
+                "verification_status": "تم التحقق / Verified",
+                "verified_by": frappe.session.user,
+                "verified_on": now_datetime(),
+            },
+            update_modified=True,
+        )
+
+    release_result = release_food_safety_batch(check.production_batch)
+    return {
+        "verified": True,
+        "released": bool(release_result.get("released") or frappe.db.get_value(
+            "WAFD Production Batch", check.production_batch, "food_safety_release_status"
+        ) == "مفرج / Released"),
+        "batch_name": check.production_batch,
+        "traceability_code": release_result.get("traceability_code"),
+    }
+
 @frappe.whitelist()
 def release_food_safety_batch(batch_name):
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
@@ -940,6 +1024,7 @@ def release_food_safety_batch(batch_name):
         "food_safety_release_status": "مفرج / Released",
         "released_by": frappe.session.user,
         "released_on": now_datetime(),
+        "status": "جاهز / Ready",
     }, update_modified=True)
     return {"name": batch.name, "released": True, "traceability_code": batch.traceability_code}
 

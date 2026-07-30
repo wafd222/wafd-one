@@ -8,6 +8,32 @@ WEBSITE = "www.wafdalmadinah.com"
 
 
 def _save_template(reference_doctype, title, category, canvas, is_default=1):
+    # Keep patch migrations compatible with the Select options defined on
+    # WAFD Document Template. Older aliases are normalized here so a typo or
+    # legacy value can never stop bench migrate.
+    category_aliases = {
+        "Undertaking": "Hotel Undertaking",
+        "Loading": "Loading Order",
+        "Delivery": "Delivery Note",
+    }
+    category = category_aliases.get(category, category)
+
+    allowed_categories = {
+        "Hotel Undertaking",
+        "Contract",
+        "Quotation",
+        "Invoice",
+        "Operation Order",
+        "Production Order",
+        "Preparation Order",
+        "Loading Order",
+        "Delivery Note",
+        "Certificate",
+        "Report",
+        "Other",
+    }
+    if category not in allowed_categories:
+        category = "Other"
     name = frappe.db.get_value(
         "WAFD Document Template",
         {"reference_doctype": reference_doctype, "enabled": 1, "is_default": 1},

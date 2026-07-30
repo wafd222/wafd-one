@@ -1,5 +1,6 @@
 import json
 from html import escape
+from jinja2 import Environment, TemplateSyntaxError
 import frappe
 from frappe.utils.pdf import get_pdf
 
@@ -144,8 +145,12 @@ def compile_template(template):
             f"background:{background};opacity:{opacity};transform:rotate({rotation}deg);{formatting}{style}"
         )
         if btype in {"image", "logo", "stamp", "signature"}:
-            src = escape(str(block.get("src") or getattr(template, btype, "") or ""), quote=True)
-            content = f'<img src="{src}" alt="" style="width:100%;height:100%;object-fit:contain">' if src else ""
+            raw_src = str(block.get("src") or getattr(template, btype, "") or "")
+            if "{{" in raw_src or "{%" in raw_src:
+                src = _assert_safe_markup(raw_src, frappe._("image source"))
+            else:
+                src = escape(raw_src, quote=True)
+            content = f"<img src='{src}' alt='' style='width:100%;height:100%;object-fit:contain'>" if src else ""
         elif btype == "line":
             content = '<div style="border-top:1px solid #222;margin-top:50%"></div>'
         elif btype == "qr":
@@ -154,13 +159,18 @@ def compile_template(template):
             content = _assert_safe_markup(block.get("html") or "", frappe._("document element"))
         items.append(f'<div class="wds-print-block" style="{base}">{content}</div>')
     css = _assert_safe_markup(template.custom_css or "", frappe._("custom CSS"))
-    return f"""<!doctype html><html><head><meta charset="utf-8"><style>
+    compiled = f"""<!doctype html><html><head><meta charset="utf-8"><style>
 @page {{ size:{template.page_size} {template.orientation.lower()}; margin:0; }}
 html,body{{margin:0;padding:0;background:white;}}
-.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:1110px;max-height:1110px;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:{direction};font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}}
+.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:1040px;max-height:1040px;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:{direction};font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}}
 .wds-print-block table{{border-collapse:collapse;}}
 {css}
 </style></head><body><div class="wds-print-page">{''.join(items)}</div></body></html>"""
+    try:
+        Environment().parse(compiled)
+    except TemplateSyntaxError as exc:
+        frappe.throw(frappe._("Invalid Jinja template at line {0}: {1}").format(exc.lineno, exc.message))
+    return compiled
 
 
 @frappe.whitelist()

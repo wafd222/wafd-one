@@ -129,19 +129,21 @@
   {
    "fieldname": "second_party_name",
    "fieldtype": "Data",
-   "label": "اسم الشركة أو المؤسسة / Company or Establishment Name",
-   "reqd": 1,
+   "label": "البعثة أو العميل (اختياري) / Mission or Client (Optional)",
+   "reqd": 0,
    "in_list_view": 1
   },
   {
    "fieldname": "second_party_cr",
    "fieldtype": "Data",
-   "label": "السجل التجاري للشركة / Company CR"
+   "label": "السجل التجاري للشركة / Company CR",
+   "hidden": 1
   },
   {
    "fieldname": "second_party_representative",
    "fieldtype": "Data",
-   "label": "ممثل الشركة / Company Representative"
+   "label": "ممثل الشركة / Company Representative",
+   "hidden": 1
   },
   {
    "fieldname": "links_section",
@@ -349,5 +351,6 @@
  "sort_order": "DESC",
  "states": [],
  "title_field": "second_party_name",
- "track_changes": 1
+ "track_changes": 1,
+ "quick_entry": 1
 }

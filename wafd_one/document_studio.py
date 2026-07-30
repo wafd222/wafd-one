@@ -3,6 +3,8 @@ from html import escape
 from jinja2 import Environment, TemplateSyntaxError
 import frappe
 from frappe.utils.pdf import get_pdf
+from io import BytesIO
+from pypdf import PdfReader, PdfWriter
 
 ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Project Manager"}
 ALLOWED_PAGE_SIZES = {"A4", "A5", "Letter"}
@@ -162,7 +164,7 @@ def compile_template(template):
     compiled = f"""<!doctype html><html><head><meta charset="utf-8"><style>
 @page {{ size:{template.page_size} {template.orientation.lower()}; margin:0; }}
 html,body{{margin:0;padding:0;background:white;}}
-.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:1040px;max-height:1040px;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:{direction};font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}}
+.wds-print-page{{position:relative;box-sizing:border-box;width:{width_mm}mm;height:1040px;max-height:1040px;padding:{_num(template.margin_top_mm,10)}mm {_num(template.margin_right_mm,10)}mm {_num(template.margin_bottom_mm,10)}mm {_num(template.margin_left_mm,10)}mm;direction:ltr;font-family:Arial,"Noto Naskh Arabic",sans-serif;overflow:hidden;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}}
 .wds-print-block table{{border-collapse:collapse;}}
 {css}
 </style></head><body><div class="wds-print-page">{''.join(items)}</div></body></html>"""
@@ -284,11 +286,41 @@ def preview_html(template_name, doctype=None, docname=None):
     frappe.local.response.content_type = "text/html; charset=utf-8"
 
 
+
+def _page_has_visible_content(page):
+    text = (page.extract_text() or "").strip()
+    if text:
+        return True
+    resources = page.get("/Resources") or {}
+    xobjects = resources.get("/XObject") if hasattr(resources, "get") else None
+    return bool(xobjects)
+
+
+def _remove_trailing_blank_pages(pdf_bytes):
+    """Remove only genuinely empty trailing pages produced by wkhtmltopdf rounding."""
+    try:
+        reader = PdfReader(BytesIO(pdf_bytes))
+        keep = len(reader.pages)
+        while keep > 1 and not _page_has_visible_content(reader.pages[keep - 1]):
+            keep -= 1
+        if keep == len(reader.pages):
+            return pdf_bytes
+        writer = PdfWriter()
+        for page in reader.pages[:keep]:
+            writer.add_page(page)
+        output = BytesIO()
+        writer.write(output)
+        return output.getvalue()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD PDF blank-page cleanup")
+        return pdf_bytes
+
 @frappe.whitelist()
 def download_pdf(template_name, doctype=None, docname=None):
     _check_access()
     html = _render(template_name, doctype, docname)
-    pdf = get_pdf(html, options={"page-size": "A4", "margin-top": "0mm", "margin-right": "0mm", "margin-bottom": "0mm", "margin-left": "0mm", "print-media-type": None})
+    pdf = get_pdf(html, options={"page-size": "A4", "margin-top": "0mm", "margin-right": "0mm", "margin-bottom": "0mm", "margin-left": "0mm", "disable-smart-shrinking": None})
+    pdf = _remove_trailing_blank_pages(pdf)
     frappe.local.response.filename = f"{frappe.scrub(template_name)}.pdf"
     frappe.local.response.filecontent = pdf
     frappe.local.response.type = "pdf"

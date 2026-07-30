@@ -278,7 +278,7 @@ def preview_html(template_name, doctype=None, docname=None):
 def download_pdf(template_name, doctype=None, docname=None):
     _check_access()
     html = _render(template_name, doctype, docname)
-    pdf = get_pdf(html)
+    pdf = get_pdf(html, options={"page-size": "A4", "margin-top": "0mm", "margin-right": "0mm", "margin-bottom": "0mm", "margin-left": "0mm", "print-media-type": None})
     frappe.local.response.filename = f"{frappe.scrub(template_name)}.pdf"
     frappe.local.response.filecontent = pdf
     frappe.local.response.type = "pdf"

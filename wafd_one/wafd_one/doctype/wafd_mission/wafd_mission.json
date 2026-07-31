@@ -1,0 +1,174 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:mission_name",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "mission_name",
+    "country",
+    "contact_person",
+    "mobile",
+    "email",
+    "address",
+    "official_name",
+    "mission_type",
+    "hajj_season",
+    "source_section",
+    "source_authority",
+    "source_url",
+    "verification_status",
+    "last_verified_on",
+    "source_notes",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "mission_name",
+      "fieldtype": "Data",
+      "label": "اسم البعثة / Mission Name",
+      "reqd": 1,
+      "in_list_view": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "country",
+      "fieldtype": "Data",
+      "label": "الدولة / Country",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "contact_person",
+      "fieldtype": "Data",
+      "label": "مسؤول التواصل / Contact Person"
+    },
+    {
+      "fieldname": "mobile",
+      "fieldtype": "Data",
+      "label": "الجوال / Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "label": "البريد الإلكتروني / Email",
+      "options": "Email"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "العنوان / Address"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "official_name",
+      "fieldtype": "Data",
+      "label": "الاسم الرسمي / Official Name"
+    },
+    {
+      "fieldname": "mission_type",
+      "fieldtype": "Select",
+      "label": "النوع / Type",
+      "options": "مكتب شؤون حجاج / Hajj Affairs Office\nبعثة حج / Hajj Mission\nجهة تنظيمية / Regulatory Body\nغير محدد / Unspecified",
+      "default": "مكتب شؤون حجاج / Hajj Affairs Office"
+    },
+    {
+      "fieldname": "hajj_season",
+      "fieldtype": "Data",
+      "label": "موسم الحج المرجعي / Reference Hajj Season"
+    },
+    {
+      "fieldname": "source_section",
+      "fieldtype": "Section Break",
+      "label": "المصدر والتحقق / Source & Verification",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_authority",
+      "fieldtype": "Data",
+      "label": "الجهة المصدر / Source Authority"
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_verified_on",
+      "fieldtype": "Date",
+      "label": "آخر تحقق / Last Verified On"
+    },
+    {
+      "fieldname": "source_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات المصدر / Source Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-19 15:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Mission",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Project Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "mission_name"
+}

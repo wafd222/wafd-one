@@ -1,0 +1,76 @@
+{
+  "actions": [],
+  "creation": "2026-07-17 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "meal_plan",
+    "service_date",
+    "hotel",
+    "meal_type",
+    "delivered_quantity",
+    "unit_price",
+    "amount"
+  ],
+  "fields": [
+    {
+      "fieldname": "meal_plan",
+      "fieldtype": "Link",
+      "label": "خطة الوجبة / Meal Plan",
+      "options": "WAFD Meal Plan",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "service_date",
+      "fieldtype": "Date",
+      "label": "تاريخ الخدمة / Service Date",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "hotel",
+      "fieldtype": "Link",
+      "label": "الفندق / Hotel",
+      "options": "WAFD Hotel",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "meal_type",
+      "fieldtype": "Data",
+      "label": "نوع الوجبة / Meal Type",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "delivered_quantity",
+      "fieldtype": "Int",
+      "label": "الكمية المسلمة / Delivered Qty",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "unit_price",
+      "fieldtype": "Currency",
+      "label": "سعر الوحدة / Unit Price",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "الإجمالي / Amount",
+      "read_only": 1,
+      "in_list_view": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "modified": "2026-07-17 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Invoice Item",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": []
+}

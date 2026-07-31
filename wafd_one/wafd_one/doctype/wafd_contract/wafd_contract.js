@@ -100,12 +100,10 @@ function calculate_service(frm, cdt, cdn) {
 }
 
 function calculate_contract(frm) {
-    // WAFD Project Service is shared by contracts and catering projects.
-    // Child-table events from this file can therefore fire while the parent
-    // form is a WAFD Catering Project. Contract-only totals must never be
-    // written to that form because fields such as services_subtotal do not
-    // exist there.
-    if (frm.doctype !== "WAFD Contract") return;
+    // The child table can also be embedded in other forms. Only run contract
+    // totals when the current parent is actually WAFD Contract and the target
+    // fields exist, otherwise Frappe raises "field does not exist" errors.
+    if (frm.doctype !== "WAFD Contract" || !frm.fields_dict.services_subtotal) return;
 
     if (frm.doc.start_date && frm.doc.end_date) {
         frm.set_value("duration_days", frappe.datetime.get_day_diff(frm.doc.end_date, frm.doc.start_date) + 1);

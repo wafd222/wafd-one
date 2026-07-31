@@ -500,6 +500,14 @@ def ensure_hotel_undertaking_print_format():
 
 def ensure_madinah_hotels_400():
     """Add all missing records from the reviewed 400-row file without deletion."""
+    # Some historical sites remove standard records during orphan cleanup.
+    # Re-synchronize the canonical DocType before querying or inserting data.
+    if not frappe.db.exists("DocType", "WAFD Hotel"):
+        frappe.reload_doc("wafd_one", "doctype", "wafd_hotel", force=True, reset_permissions=True)
+    if not frappe.db.exists("DocType", "WAFD Hotel"):
+        frappe.log_error("WAFD Hotel DocType is unavailable; hotel catalogue installation skipped.", "WAFD ONE migration")
+        return {"catalogue_count": 0, "installed_count": 0, "skipped": True}
+
     import csv
     from frappe.utils import nowdate
     path = Path(__file__).resolve().parent / "reference_data" / "madinah_hotels_400_ota_review.csv"
@@ -556,6 +564,12 @@ def ensure_madinah_hotels_400():
 
 def ensure_madinah_central_and_nearby_hotels():
     """Install/update official central-map hotels and verified properties within 2 km; never delete user data."""
+    if not frappe.db.exists("DocType", "WAFD Hotel"):
+        frappe.reload_doc("wafd_one", "doctype", "wafd_hotel", force=True, reset_permissions=True)
+    if not frappe.db.exists("DocType", "WAFD Hotel"):
+        frappe.log_error("WAFD Hotel DocType is unavailable; central hotel catalogue skipped.", "WAFD ONE migration")
+        return {"catalogue_count": 0, "installed_or_updated": 0, "skipped": True}
+
     import csv
     from frappe.utils import nowdate
     path = Path(__file__).resolve().parent / "reference_data" / "madinah_central_and_nearby_hotels_2026.csv"
@@ -639,6 +653,9 @@ def ensure_madinah_central_and_nearby_hotels():
     return {"catalogue_count": len(rows), "installed_or_updated": installed}
 
 def after_migrate():
+    # Restore any standard WAFD records removed by Frappe's orphan cleanup
+    # before post-migration data installers and workspace rebuilds run.
+    sync_all_doctypes()
     ensure_hotel_undertaking_print_format()
     ensure_madinah_hotels_400()
     ensure_madinah_central_and_nearby_hotels()

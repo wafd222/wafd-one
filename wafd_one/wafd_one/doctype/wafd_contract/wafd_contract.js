@@ -229,9 +229,10 @@ function open_contract_cleanup_dialog(frm, options) {
             });
             dialog.show();
             if (blockers.length) {
+                // Keep the confirmation field editable so the dialog never appears broken.
+                // The destructive action remains disabled until dependency analysis is safe.
                 dialog.get_primary_btn().prop("disabled", true);
-                dialog.set_value("confirmation", "");
-                dialog.fields_dict.confirmation.df.read_only = 1;
+                dialog.fields_dict.confirmation.df.description = __("يمكنك كتابة عبارة التأكيد، لكن زر التنفيذ سيظل معطلاً حتى تُحل التعارضات غير التابعة للعقد.");
                 dialog.fields_dict.confirmation.refresh();
             }
         }

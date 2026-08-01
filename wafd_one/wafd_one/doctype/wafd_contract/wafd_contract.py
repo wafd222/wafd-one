@@ -541,12 +541,80 @@ def _stock_reversal_preflight(records):
         "balance_effects": balance_effects,
     }
 
+
+def _is_test_contract(contract):
+    """Return True only for clearly marked test/UAT contracts.
+
+    Legacy unlinked stock movements may be auto-adopted only for these
+    contracts, never for ordinary operational contracts.
+    """
+    text = " ".join([
+        str(contract.name or ""),
+        str(contract.get("contract_number") or ""),
+        str(contract.get("contract_title") or ""),
+    ]).upper()
+    markers = ("TEST", "UAT", "DEMO", "تجريب", "اختبار")
+    return any(marker in text for marker in markers)
+
+
+def _expand_test_contract_legacy_stock_dependencies(contract, records, max_rounds=6):
+    """Adopt safe legacy, unlinked stock consumers for a test contract.
+
+    Older data may contain Issue/Waste/Transfer movements without project,
+    production batch, or reference fields. If such a movement is the exact
+    later consumer blocking reversal of a clearly marked TEST/UAT contract,
+    include it automatically and rerun the preflight. Movements linked to any
+    other project/batch/reference are never adopted.
+    """
+    if not _is_test_contract(contract):
+        return _stock_reversal_preflight(records)
+
+    records.setdefault("WAFD Stock Movement", [])
+    included = set(records["WAFD Stock Movement"])
+    analysis = _stock_reversal_preflight(records)
+
+    for _ in range(max_rounds):
+        if analysis.get("safe"):
+            break
+        candidates = []
+        for blocker in analysis.get("blockers") or []:
+            for dep in blocker.get("dependencies") or []:
+                name = dep.get("name") if isinstance(dep, dict) else getattr(dep, "name", None)
+                if not name or name in included:
+                    continue
+                project = dep.get("project") if isinstance(dep, dict) else getattr(dep, "project", None)
+                batch = dep.get("production_batch") if isinstance(dep, dict) else getattr(dep, "production_batch", None)
+                ref_type = dep.get("reference_type") if isinstance(dep, dict) else getattr(dep, "reference_type", None)
+                ref_name = dep.get("reference_name") if isinstance(dep, dict) else getattr(dep, "reference_name", None)
+                movement_type = dep.get("movement_type") if isinstance(dep, dict) else getattr(dep, "movement_type", None)
+                if project or batch or ref_type or ref_name:
+                    continue
+                if movement_type not in ("صرف / Issue", "هالك / Waste", "تحويل / Transfer"):
+                    continue
+                candidates.append(name)
+        if not candidates:
+            break
+        included.update(candidates)
+        marks = ",".join(["%s"] * len(included))
+        records["WAFD Stock Movement"] = frappe.db.sql_list(
+            f"select name from `tabWAFD Stock Movement` where name in ({marks}) "
+            "order by posting_date desc, creation desc",
+            tuple(sorted(included)),
+        )
+        analysis = _stock_reversal_preflight(records)
+
+    analysis["legacy_unlinked_movements_adopted"] = [
+        name for name in records.get("WAFD Stock Movement", [])
+        if name not in set(_discover_contract_stock_movements({k:v for k,v in records.items() if k != "WAFD Stock Movement"}, contract.project))
+    ]
+    return analysis
+
 @frappe.whitelist()
 def preview_contract_purge(contract_name):
     """Preview exactly what the one-click test-contract purge will remove."""
     _check_contract_purge_permission()
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _stock_reversal_preflight(records)
+    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
     return {
         "contract": contract.name,
         "title": contract.contract_title,
@@ -592,7 +660,7 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         frappe.throw("اكتب DELETE للتأكيد / Type DELETE to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _stock_reversal_preflight(records)
+    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
     if not stock_analysis["safe"]:
         frappe.throw(
             "تعذر تنفيذ الحذف لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح معاينة الحذف لمعرفة الأصناف والحركات التابعة. "
@@ -652,7 +720,7 @@ def reset_contract_test_data(contract_name, confirmation=""):
         frappe.throw("اكتب RESET للتأكيد / Type RESET to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _stock_reversal_preflight(records)
+    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
     if not stock_analysis["safe"]:
         frappe.throw(
             "تعذرت إعادة التهيئة لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح المعاينة لمعرفة الأصناف والحركات التابعة. "

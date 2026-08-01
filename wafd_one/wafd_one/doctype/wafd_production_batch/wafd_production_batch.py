@@ -814,6 +814,50 @@ def prepare_uat_test_stock(batch_name, buffer_percent=25):
 
 
 @frappe.whitelist()
+def add_shortage_stock(batch_name, additions, reason=None):
+    """Post authorized shortage receipts from the production screen and recheck live balances."""
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("write")
+    allowed_roles = {"System Manager", "WAFD Operations Manager", "WAFD Storekeeper"}
+    if not allowed_roles.intersection(set(frappe.get_roles())):
+        frappe.throw("الإضافة المباشرة للمخزون متاحة للمدير أو مسؤول المستودع فقط / Direct stock addition requires an authorized role")
+    additions = frappe.parse_json(additions) if isinstance(additions, str) else (additions or [])
+    if not additions:
+        frappe.throw("لم يتم تحديد كميات للإضافة / No stock quantities were provided")
+    from wafd_one.master_data import preferred_warehouse_for_ingredient
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import post_movement
+    grouped = {}
+    for row in additions:
+        qty = flt(row.get("quantity"))
+        if qty <= 0: continue
+        ingredient_name = row.get("ingredient")
+        ingredient = frappe.db.get_value("WAFD Ingredient", ingredient_name, ["ingredient_name", "category", "uom", "preferred_warehouse"], as_dict=True) or {}
+        warehouse = row.get("warehouse") or ingredient.get("preferred_warehouse") or preferred_warehouse_for_ingredient(ingredient.get("ingredient_name") or ingredient_name, ingredient.get("category")) or batch.source_warehouse
+        if not warehouse or not frappe.db.exists("WAFD Warehouse", warehouse):
+            frappe.throw(f"لا يوجد مستودع مخصص للصنف {ingredient_name} / No assigned warehouse for {ingredient_name}")
+        grouped.setdefault(warehouse, []).append({
+            "ingredient": ingredient_name,
+            "quantity": qty,
+            "uom": row.get("uom") or ingredient.get("uom"),
+            "unit_cost": flt(row.get("unit_cost")),
+        })
+    posted=[]
+    for warehouse, items in grouped.items():
+        movement=frappe.get_doc({
+            "doctype":"WAFD Stock Movement", "movement_type":"استلام / Receipt",
+            "posting_date":now_datetime(), "project":batch.project, "production_batch":batch.name,
+            "target_warehouse":warehouse, "reference_type":"WAFD Production Batch", "reference_name":batch.name,
+            "status":"مسودة / Draft", "notes": reason or f"إضافة فورية لمعالجة عجز الإنتاج للدفعة {batch.name}"
+        })
+        for item in items: movement.append("items", item)
+        movement.insert(ignore_permissions=True)
+        post_movement(movement.name); posted.append(movement.name)
+    batch.reload(); batch._calculate_material_requirements(); batch.save(ignore_permissions=True)
+    remaining=[row.as_dict() for row in batch.material_requirements if flt(row.shortage_quantity)>0]
+    return {"posted":posted, "remaining":remaining, "available":not remaining}
+
+
+@frappe.whitelist()
 def create_material_issue(batch_name):
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")

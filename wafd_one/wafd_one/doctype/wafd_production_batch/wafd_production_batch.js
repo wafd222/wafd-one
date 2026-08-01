@@ -266,6 +266,13 @@ function add_guided_production_action(frm) {
     if (frm.doc.status === "مخطط / Planned") {
         frm.page.set_primary_action(__("صرف المواد وبدء الإنتاج / Issue Materials & Start Production"), () => {
             frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.check_material_availability",
+                args: { batch_name: frm.doc.name },
+                freeze: true,
+                callback(check) {
+                    const availability = check.message || {};
+                    if (!availability.available) { show_shortage_resolution_dialog(frm, availability.shortages || []); return; }
+                    frappe.call({
                 method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.start_production",
                 args: { batch_name: frm.doc.name },
                 freeze: true,
@@ -279,6 +286,8 @@ function add_guided_production_action(frm) {
                         }, 6);
                     }
                     frm.reload_doc();
+                }
+            });
                 }
             });
         });
@@ -349,4 +358,60 @@ function add_guided_production_action(frm) {
             callback(r) { route_to_packaging(r.message || {}); }
         });
     });
+}
+
+
+function show_shortage_resolution_dialog(frm, shortages) {
+    const rows = shortages.map((x, i) => ({
+        ingredient: x.ingredient,
+        warehouse: x.warehouse || "",
+        required: flt(x.quantity || x.required_quantity),
+        available: flt(x.available_quantity),
+        shortage: flt(x.shortage_quantity),
+        quantity: flt(x.shortage_quantity),
+        uom: x.uom || "",
+        unit_cost: 0
+    }));
+    const dialog = new frappe.ui.Dialog({
+        title: __("معالجة عجز المخزون / Resolve Stock Shortage"),
+        size: "extra-large",
+        fields: [
+            { fieldname:"notice", fieldtype:"HTML", options:`<div class="alert alert-warning">${__("يمكن لمسؤول المخزون إضافة العجز فورًا بحركة استلام موثقة، أو فتح الأصناف لمعالجتها يدويًا.")}</div>` },
+            { fieldname:"items", fieldtype:"Table", label:__("الأصناف الناقصة"), cannot_add_rows:1, cannot_delete_rows:1,
+              fields:[
+                {fieldname:"ingredient",fieldtype:"Link",options:"WAFD Ingredient",label:__("الصنف"),in_list_view:1,read_only:1},
+                {fieldname:"required",fieldtype:"Float",label:__("المطلوب"),in_list_view:1,read_only:1},
+                {fieldname:"available",fieldtype:"Float",label:__("المتاح"),in_list_view:1,read_only:1},
+                {fieldname:"shortage",fieldtype:"Float",label:__("العجز"),in_list_view:1,read_only:1},
+                {fieldname:"quantity",fieldtype:"Float",label:__("الكمية المضافة"),in_list_view:1,reqd:1},
+                {fieldname:"unit_cost",fieldtype:"Currency",label:__("تكلفة الوحدة"),in_list_view:1},
+                {fieldname:"uom",fieldtype:"Data",label:__("الوحدة"),in_list_view:1,read_only:1}
+              ]},
+            { fieldname:"reason", fieldtype:"Small Text", label:__("سبب الإضافة"), default:__("إضافة فورية لمعالجة عجز دفعة الإنتاج") }
+        ],
+        primary_action_label: __("إضافة للمخزون وإعادة الفحص"),
+        primary_action(values) {
+            dialog.hide();
+            frappe.call({
+                method:"wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.add_shortage_stock",
+                args:{batch_name:frm.doc.name, additions:values.items, reason:values.reason},
+                freeze:true, freeze_message:__("جارٍ تسجيل الاستلام وإعادة فحص المخزون..."),
+                callback(r){
+                    const result=r.message||{};
+                    if(result.available){
+                        frappe.show_alert({message:__("تمت إضافة الكميات وأصبح المخزون كافيًا"),indicator:"green"},6);
+                        frm.reload_doc();
+                    } else {
+                        frappe.msgprint({title:__("ما زال هناك عجز"),indicator:"orange",message:__("تم تسجيل الإضافة، لكن بقي عجز في بعض الأصناف. أعد المحاولة بعد مراجعة الكميات.")});
+                        frm.reload_doc();
+                    }
+                }
+            });
+        },
+        secondary_action_label: __("فتح حركات المخزون"),
+        secondary_action(){ frappe.set_route("List","WAFD Stock Movement"); }
+    });
+    dialog.fields_dict.items.df.data=rows;
+    dialog.fields_dict.items.grid.refresh();
+    dialog.show();
 }

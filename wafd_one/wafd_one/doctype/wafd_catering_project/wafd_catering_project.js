@@ -1,4 +1,18 @@
 frappe.ui.form.on("WAFD Catering Project", {
+    after_save(frm) {
+        if (frm.__wafd_next_step_opened || !frm.doc.name) return;
+        frm.__wafd_next_step_opened = true;
+        setTimeout(() => {
+            frappe.call({
+                method: "wafd_one.operations.get_next_operational_action",
+                args: { project_name: frm.doc.name },
+                callback(r) {
+                    const action = r.message || {};
+                    if (action.route && action.step !== "complete") frappe.set_route(...action.route);
+                }
+            });
+        }, 300);
+    },
     refresh(frm) {
         if (frm.is_new()) return;
 

@@ -68,7 +68,7 @@ frappe.ui.form.on("WAFD Contract", {
                             indicator: (op.warnings || []).length ? "orange" : "green"
                         }, 6);
                         if (projectName) {
-                            setTimeout(() => frappe.set_route("Form", "WAFD Catering Project", projectName), 450);
+                            setTimeout(() => open_next_project_step(projectName), 350);
                         } else {
                             frm.reload_doc();
                         }
@@ -206,6 +206,16 @@ function open_contract_cleanup_dialog(frm, options) {
 }
 
 frappe.ui.form.on("WAFD Project Service", {
+    form_render(frm, cdt, cdn) { configure_meal_selector(frm, cdt, cdn); },
+    service_type(frm, cdt, cdn) { configure_meal_selector(frm, cdt, cdn); },
+    meal_name(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (row.meal_name) frappe.model.set_value(cdt, cdn, "recipe", row.meal_name);
+    },
+    recipe(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (row.recipe && !row.meal_name) frappe.model.set_value(cdt, cdn, "meal_name", row.recipe);
+    },
     service_start_date: calculate_service,
     service_end_date: calculate_service,
     service_days: calculate_service,
@@ -264,4 +274,36 @@ function calculate_contract(frm) {
     frm.set_value("grand_total", grandTotal);
     frm.set_value("advance_amount", advance);
     frm.set_value("outstanding_contract_amount", Math.max(grandTotal - advance, 0));
+}
+
+
+function configure_meal_selector(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+    const categoryMap = {
+        "إفطار / Breakfast": "إفطار / Breakfast",
+        "غداء / Lunch": "غداء / Lunch",
+        "عشاء / Dinner": "عشاء / Dinner",
+        "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+        "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
+        "بوفيه / Buffet": "بوفيه / Buffet",
+        "وجبة خفيفة / Snack": "وجبة خفيفة / Snack"
+    };
+    const filters = { status: "نشطة / Active" };
+    if (categoryMap[row.service_type]) filters.meal_category = categoryMap[row.service_type];
+    frm.fields_dict.services.grid.get_field("meal_name").get_query = () => ({ filters });
+    frm.fields_dict.services.grid.get_field("recipe").get_query = () => ({ filters });
+}
+
+function open_next_project_step(projectName) {
+    frappe.call({
+        method: "wafd_one.operations.get_next_operational_action",
+        args: { project_name: projectName },
+        freeze: true,
+        freeze_message: __("جارٍ فتح الخطوة التشغيلية التالية..."),
+        callback(r) {
+            const action = r.message || {};
+            if (action.route) frappe.set_route(...action.route);
+            else frappe.set_route("Form", "WAFD Catering Project", projectName);
+        }
+    });
 }

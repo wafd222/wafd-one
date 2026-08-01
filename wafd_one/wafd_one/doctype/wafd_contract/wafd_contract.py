@@ -13,6 +13,13 @@ class WAFDContract(Document):
         self._sync_linked_project()
 
     def _validate_core_fields(self):
+        # Older deployments may retain a stale Custom Field/Property Setter
+        # that writes the grand total into advance_percent on a brand-new
+        # contract. Normalize only new documents; existing saved contracts
+        # still receive strict validation below.
+        if self.is_new() and flt(self.advance_percent) > 100:
+            self.advance_percent = 0
+
         if self.start_date and self.end_date and getdate(self.end_date) < getdate(self.start_date):
             frappe.throw("تاريخ نهاية العقد يجب أن يكون بعد تاريخ البداية / Contract end date must be after start date")
         if self.contract_value is not None and flt(self.contract_value) < 0:

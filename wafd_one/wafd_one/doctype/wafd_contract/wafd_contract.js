@@ -1,5 +1,6 @@
 frappe.ui.form.on("WAFD Contract", {
     refresh(frm) {
+        normalize_advance_percent(frm);
         calculate_contract(frm);
         if (frm.is_new()) return;
 
@@ -99,6 +100,16 @@ function calculate_service(frm, cdt, cdn) {
     calculate_contract(frm);
 }
 
+function normalize_advance_percent(frm) {
+    const value = flt(frm.doc.advance_percent);
+    // A stale Custom Field/Property Setter from older releases could place the
+    // contract grand total in this Percent field on a new form. Never allow an
+    // impossible percentage to poison the financial calculation.
+    if (frm.is_new() && value > 100) {
+        frm.set_value("advance_percent", 0);
+    }
+}
+
 function calculate_contract(frm) {
     // The child table can also be embedded in other forms. Only run contract
     // totals when the current parent is actually WAFD Contract and the target
@@ -108,6 +119,7 @@ function calculate_contract(frm) {
     if (frm.doc.start_date && frm.doc.end_date) {
         frm.set_value("duration_days", frappe.datetime.get_day_diff(frm.doc.end_date, frm.doc.start_date) + 1);
     }
+    normalize_advance_percent(frm);
     const subtotal = (frm.doc.services || []).reduce((sum, row) => sum + flt(row.estimated_revenue), 0);
     // Contract Value means the agreed amount before VAT. Services subtotal is
     // used only when no manual contract value has been entered.

@@ -25,7 +25,7 @@
       "fieldname": "warehouse_type",
       "fieldtype": "Select",
       "label": "نوع المستودع / Warehouse Type",
-      "options": "جاف / Dry\nمبرد / Chilled\nمجمد / Frozen\nتغليف / Packaging\nجاهز / Finished Goods",
+      "options": "جاف / Dry\nمبرد / Chilled\nمجمد / Frozen\nتغليف / Packaging\nمعدات / Equipment\nنظافة / Cleaning\nاحتياطي / Reserve\nجاهز / Finished Goods",
       "reqd": 1
     },
     {

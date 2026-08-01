@@ -13,6 +13,7 @@
     "standard_cost",
     "minimum_stock",
     "default_supplier",
+    "preferred_warehouse",
     "storage_condition",
     "shelf_life_days",
     "source_section",
@@ -75,6 +76,13 @@
       "fieldtype": "Link",
       "label": "المورد الافتراضي / Default Supplier",
       "options": "WAFD Supplier"
+    },
+    {
+      "fieldname": "preferred_warehouse",
+      "fieldtype": "Link",
+      "label": "المستودع المخصص / Preferred Warehouse",
+      "options": "WAFD Warehouse",
+      "in_list_view": 1
     },
     {
       "fieldname": "status",

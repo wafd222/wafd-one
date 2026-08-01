@@ -165,13 +165,13 @@ class WAFDProductionBatch(Document):
         """
         if not self.recipe:
             return
-        from wafd_one.master_data import CATEGORY_WAREHOUSE_MAP
+        from wafd_one.master_data import preferred_warehouse_for_ingredient
         existing = {row.warehouse for row in (self.source_warehouses or []) if row.warehouse}
         recipe = frappe.get_doc("WAFD Recipe", self.recipe)
         priority = max([cint(row.priority) for row in (self.source_warehouses or [])] or [0])
         for item in recipe.items:
-            category = frappe.db.get_value("WAFD Ingredient", item.ingredient, "category")
-            warehouse = CATEGORY_WAREHOUSE_MAP.get(category)
+            ingredient = frappe.db.get_value("WAFD Ingredient", item.ingredient, ["ingredient_name", "category", "preferred_warehouse"], as_dict=True) or {}
+            warehouse = ingredient.get("preferred_warehouse") or preferred_warehouse_for_ingredient(ingredient.get("ingredient_name") or item.ingredient, ingredient.get("category"))
             if warehouse and frappe.db.exists("WAFD Warehouse", warehouse) and warehouse not in existing:
                 priority += 1
                 self.append("source_warehouses", {"warehouse": warehouse, "priority": priority, "is_default": 0})
@@ -739,7 +739,7 @@ def prepare_uat_test_stock(batch_name, buffer_percent=25):
     if not shortages:
         return {"created": [], "posted": [], "count": 0, "already_available": True}
 
-    from wafd_one.master_data import CATEGORY_WAREHOUSE_MAP
+    from wafd_one.master_data import preferred_warehouse_for_ingredient
     from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import post_movement
 
     source_names = {row.warehouse for row in (batch.source_warehouses or []) if row.warehouse}
@@ -748,9 +748,9 @@ def prepare_uat_test_stock(batch_name, buffer_percent=25):
 
     for req in shortages:
         ingredient = frappe.db.get_value(
-            "WAFD Ingredient", req.ingredient, ["category", "uom"], as_dict=True
+            "WAFD Ingredient", req.ingredient, ["ingredient_name", "category", "uom", "preferred_warehouse"], as_dict=True
         ) or {}
-        warehouse = CATEGORY_WAREHOUSE_MAP.get(ingredient.get("category")) or batch.source_warehouse
+        warehouse = ingredient.get("preferred_warehouse") or preferred_warehouse_for_ingredient(ingredient.get("ingredient_name") or req.ingredient, ingredient.get("category")) or batch.source_warehouse
         if not warehouse or not frappe.db.exists("WAFD Warehouse", warehouse):
             frappe.throw(f"لا يوجد مستودع اختبار مناسب للصنف {req.ingredient} / No suitable UAT warehouse for ingredient")
 

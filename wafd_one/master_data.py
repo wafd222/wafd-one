@@ -322,16 +322,20 @@ INGREDIENTS.extend(ADDITIONAL_INGREDIENTS)
 
 
 WAREHOUSES = [
-    ("المستودع الجاف 1 - الأرز والحبوب", "جاف / Dry", "مقر وفد المدينة - مخطط الملك فهد"),
-    ("المستودع الجاف 2 - البهارات والبقوليات", "جاف / Dry", "مقر وفد المدينة - مخطط الملك فهد"),
-    ("مستودع التغليف", "تغليف / Packaging", "مقر وفد المدينة - مخطط الملك فهد"),
-    ("مستودع المشروبات", "جاف / Dry", "مقر وفد المدينة - مخطط الملك فهد"),
-    ("مستودع المواد التشغيلية", "جاف / Dry", "مقر وفد المدينة - مخطط الملك فهد"),
-    ("مستودع الوجبات الجاهزة", "جاهز / Finished Goods", "منطقة التغليف والتحميل"),
-    ("غرفة التبريد 1 - الألبان", "مبرد / Chilled", "مقر وفد المدينة"),
-    ("غرفة التبريد 2 - الخضار", "مبرد / Chilled", "مقر وفد المدينة"),
-    ("غرفة التجميد 1 - الدواجن", "مجمد / Frozen", "مقر وفد المدينة"),
-    ("غرفة التجميد 2 - اللحوم", "مجمد / Frozen", "مقر وفد المدينة"),
+    ("مستودع 1 - البهارات", "جاف / Dry", "مقر وفد المدينة - قسم البهارات"),
+    ("مستودع 2 - التغليف", "تغليف / Packaging", "مقر وفد المدينة - منطقة التغليف"),
+    ("مستودع 3 - المواد الغذائية الجافة", "جاف / Dry", "مقر وفد المدينة - المواد الجافة"),
+    ("مستودع 4 - المواد الغذائية المعبأة", "جاف / Dry", "مقر وفد المدينة - المواد المعبأة"),
+    ("مستودع 5 - مواد الاستعمال اليومي", "جاف / Dry", "مقر وفد المدينة - التشغيل اليومي"),
+    ("مستودع 6 - الأواني والمعدات", "جاف / Dry", "مقر وفد المدينة - أصول وأدوات الشركة"),
+    ("مستودع 7 - أدوات النظافة", "جاف / Dry", "مقر وفد المدينة - مواد وأدوات النظافة"),
+    ("مستودع 8 - المياه والمشروبات الكرتونية", "جاف / Dry", "مقر وفد المدينة - المياه والمشروبات"),
+    ("مستودع 9 - احتياطي", "جاف / Dry", "مقر وفد المدينة - احتياطي 1"),
+    ("مستودع 10 - احتياطي", "جاف / Dry", "مقر وفد المدينة - احتياطي 2"),
+    ("ثلاجة 1 - الخضار والفواكه", "مبرد / Chilled", "مقر وفد المدينة - تبريد الخضار والفواكه"),
+    ("ثلاجة 2 - اللحوم والدواجن والأسماك", "مبرد / Chilled", "مقر وفد المدينة - تبريد اللحوم والدواجن والأسماك"),
+    ("ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور", "مبرد / Chilled", "مقر وفد المدينة - تبريد المشروبات والألبان والتمور"),
+    ("ثلاجة 4 - المجمدات والمعجنات", "مجمد / Frozen", "مقر وفد المدينة - المجمدات والمعجنات"),
 ]
 
 # Recipe quantities are for 100 portions.
@@ -487,15 +491,49 @@ ITEM_GROUP_MAP = {
 }
 
 CATEGORY_WAREHOUSE_MAP = {
-    "أرز وحبوب / Rice & Grains": "المستودع الجاف 1 - الأرز والحبوب",
-    "تغليف / Packaging": "مستودع التغليف",
-    "مشروبات / Beverages": "مستودع المشروبات",
-    "ألبان / Dairy": "غرفة التبريد 1 - الألبان",
-    "خضار / Vegetables": "غرفة التبريد 2 - الخضار",
-    "دواجن / Poultry": "غرفة التجميد 1 - الدواجن",
-    "لحوم / Meat": "غرفة التجميد 2 - اللحوم",
-    "أخرى / Other": "المستودع الجاف 2 - البهارات والبقوليات",
+    "أرز وحبوب / Rice & Grains": "مستودع 3 - المواد الغذائية الجافة",
+    "تغليف / Packaging": "مستودع 2 - التغليف",
+    "مشروبات / Beverages": "مستودع 8 - المياه والمشروبات الكرتونية",
+    "ألبان / Dairy": "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور",
+    "خضار / Vegetables": "ثلاجة 1 - الخضار والفواكه",
+    "دواجن / Poultry": "ثلاجة 2 - اللحوم والدواجن والأسماك",
+    "لحوم / Meat": "ثلاجة 2 - اللحوم والدواجن والأسماك",
+    "أخرى / Other": "مستودع 5 - مواد الاستعمال اليومي",
 }
+
+SPICE_KEYWORDS = ("بهار", "كمون", "كركم", "فلفل", "هيل", "قرفة", "قرنفل", "ملح", "دقة", "زعفران", "كزبرة ناشفة")
+PACKAGED_KEYWORDS = ("معلب", "صلصة", "معجون", "زيت", "خل", "طحينة", "حمص جاهز", "فول معلب")
+CLEANING_KEYWORDS = ("منظف", "معقم", "صابون", "كلور", "مطهر", "مناديل تنظيف", "قفاز تنظيف", "كيس نفايات")
+EQUIPMENT_KEYWORDS = ("قدر", "صينية", "سكين", "مغرفة", "حافظة", "سخان", "معدات", "أواني")
+FROZEN_KEYWORDS = ("مجمد", "معجنات", "كرواسون", "سمبوس", "بطاطس مجمدة")
+DRINK_KEYWORDS = ("ماء", "عصير", "مشروب", "لبن", "زبادي", "تمر")
+
+
+def preferred_warehouse_for_ingredient(name: str, category: str | None = None) -> str:
+    text = (name or "").strip()
+    if any(k in text for k in CLEANING_KEYWORDS):
+        return "مستودع 7 - أدوات النظافة"
+    if any(k in text for k in EQUIPMENT_KEYWORDS):
+        return "مستودع 6 - الأواني والمعدات"
+    if any(k in text for k in SPICE_KEYWORDS):
+        return "مستودع 1 - البهارات"
+    if category == "تغليف / Packaging":
+        return "مستودع 2 - التغليف"
+    if any(k in text for k in FROZEN_KEYWORDS):
+        return "ثلاجة 4 - المجمدات والمعجنات"
+    if category in ("لحوم / Meat", "دواجن / Poultry") or "سمك" in text:
+        return "ثلاجة 2 - اللحوم والدواجن والأسماك"
+    if category == "خضار / Vegetables" or any(k in text for k in ("تفاح", "برتقال", "موز", "ليمون", "فواكه")):
+        return "ثلاجة 1 - الخضار والفواكه"
+    if category == "ألبان / Dairy" or any(k in text for k in DRINK_KEYWORDS):
+        return "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور"
+    if any(k in text for k in PACKAGED_KEYWORDS):
+        return "مستودع 4 - المواد الغذائية المعبأة"
+    if category == "مشروبات / Beverages":
+        return "مستودع 8 - المياه والمشروبات الكرتونية"
+    if category == "أرز وحبوب / Rice & Grains" or any(k in text for k in ("دقيق", "سكر", "أرز", "عدس", "حمص حب", "فول", "مكرونة")):
+        return "مستودع 3 - المواد الغذائية الجافة"
+    return CATEGORY_WAREHOUSE_MAP.get(category, "مستودع 5 - مواد الاستعمال اليومي")
 
 
 def _default_company() -> str | None:
@@ -597,7 +635,7 @@ def install_erpnext_inventory_masters() -> dict[str, int]:
             })
             result["erp_items"] += 1
 
-        preferred_warehouse = CATEGORY_WAREHOUSE_MAP.get(category, WAREHOUSES[0][0])
+        preferred_warehouse = preferred_warehouse_for_ingredient(name, category)
         if frappe.db.exists("WAFD Warehouse", preferred_warehouse) and not frappe.db.exists(
             "WAFD Stock Balance", {"warehouse": preferred_warehouse, "ingredient": name}
         ):
@@ -659,7 +697,7 @@ def load_reference_master_data() -> dict[str, int]:
 
     for name, code, category, uom, cost, minimum, supplier in INGREDIENTS:
         if not _exists("WAFD Ingredient", "ingredient_name", name):
-            _insert("WAFD Ingredient", {"ingredient_name": name, "item_code": code, "category": category, "uom": uom, "standard_cost": cost, "minimum_stock": minimum, "default_supplier": supplier, "status": ACTIVE})
+            _insert("WAFD Ingredient", {"ingredient_name": name, "item_code": code, "category": category, "uom": uom, "standard_cost": cost, "minimum_stock": minimum, "default_supplier": supplier, "preferred_warehouse": preferred_warehouse_for_ingredient(name, category), "status": ACTIVE})
             counts["ingredients"] += 1
 
     for name, warehouse_type, location in WAREHOUSES:

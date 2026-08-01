@@ -72,7 +72,8 @@
       "fieldtype": "Data",
       "label": "عنوان العقد / Contract Title",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "description": "يُكوّن تلقائيًا من البعثة والفندق وتاريخ البداية، ويمكن تعديله قبل الحفظ / Auto-generated from mission, hotel and start date"
     },
     {
       "fieldname": "mission",
@@ -92,7 +93,9 @@
       "fieldtype": "Link",
       "label": "المشروع / Project",
       "options": "WAFD Catering Project",
-      "in_list_view": 1
+      "in_list_view": 1,
+      "read_only": 1,
+      "description": "يُنشأ ويرتبط تلقائيًا عند حفظ العقد / Created and linked automatically when the contract is saved"
     },
     {
       "fieldname": "contract_number",

@@ -1,22 +1,53 @@
 frappe.ui.form.on("WAFD Contract", {
+    setup(frm) {
+        frm.set_df_property("project", "read_only", 1);
+    },
+
+    before_save(frm) {
+        frm.__wafd_was_new = frm.is_new();
+        set_automatic_contract_title(frm);
+    },
+
+    after_save(frm) {
+        if (frm.__wafd_auto_start_running || frm.doc.project) return;
+        frm.__wafd_was_new = false;
+        const missing = ["mission", "hotel", "start_date", "end_date", "beneficiary_count"]
+            .filter((fieldname) => !frm.doc[fieldname]);
+        if (!(frm.doc.services || []).length) missing.push("services");
+        if (missing.length) {
+            frappe.show_alert({
+                message: __("تم حفظ العقد. أكمل البعثة والفندق والتواريخ وعدد المستفيدين وبنود الخدمة لبدء الدورة تلقائيًا."),
+                indicator: "orange"
+            }, 7);
+            return;
+        }
+        frm.__wafd_auto_start_running = true;
+        frappe.call({
+            method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.activate_and_generate_operations",
+            args: { contract_name: frm.doc.name },
+            freeze: true,
+            freeze_message: __("جارٍ إنشاء المشروع وخطة التشغيل تلقائيًا..."),
+            callback(r) {
+                const data = r.message || {};
+                const projectName = data.project?.name;
+                frappe.show_alert({
+                    message: __("تم إنشاء المشروع وخطة التشغيل — جارٍ فتح التخطيط اليومي"),
+                    indicator: "green"
+                }, 6);
+                if (projectName) setTimeout(() => open_next_project_step(projectName), 300);
+                else frm.reload_doc();
+            },
+            always() { frm.__wafd_auto_start_running = false; }
+        });
+    },
+
     refresh(frm) {
         normalize_advance_percent(frm);
         calculate_contract(frm);
         if (frm.is_new()) return;
 
-        if (!frm.doc.project) {
-            frm.add_custom_button(__("إنشاء المشروع الآن / Create Project Now"), () => {
-                frappe.call({
-                    method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.create_project_from_contract",
-                    args: { contract_name: frm.doc.name },
-                    freeze: true,
-                    freeze_message: __("جارٍ إنشاء المشروع..."),
-                    callback(r) {
-                        if (r.message?.name) frappe.set_route("Form", "WAFD Catering Project", r.message.name);
-                    }
-                });
-            }, __("المشروع / Project"));
-        } else {
+        frm.set_df_property("project", "read_only", 1);
+        if (frm.doc.project) {
             frm.add_custom_button(__("فتح المشروع / Open Project"), () => {
                 frappe.set_route("Form", "WAFD Catering Project", frm.doc.project);
             }, __("المشروع / Project"));
@@ -78,7 +109,7 @@ frappe.ui.form.on("WAFD Contract", {
         }, __("التشغيل / Operations"));
     },
 
-    start_date: calculate_contract,
+    start_date(frm) { calculate_contract(frm); set_automatic_contract_title(frm); },
     end_date: calculate_contract,
     beneficiary_count: calculate_contract,
     contract_value: calculate_contract,
@@ -87,6 +118,7 @@ frappe.ui.form.on("WAFD Contract", {
     advance_percent: calculate_contract,
 
     mission(frm) {
+        set_automatic_contract_title(frm);
         if (!frm.doc.mission) return;
         frappe.db.get_value("WAFD Mission", frm.doc.mission, ["contact_person", "mobile"], (r) => {
             if (!frm.doc.contact_person && r?.contact_person) frm.set_value("contact_person", r.contact_person);
@@ -95,6 +127,7 @@ frappe.ui.form.on("WAFD Contract", {
     },
 
     hotel(frm) {
+        set_automatic_contract_title(frm);
         if (!frm.doc.hotel) return;
         frappe.db.get_value("WAFD Hotel", frm.doc.hotel, ["address", "contact_person", "mobile"], (r) => {
             if (!frm.doc.delivery_location && r?.address) frm.set_value("delivery_location", r.address);
@@ -103,6 +136,19 @@ frappe.ui.form.on("WAFD Contract", {
         });
     }
 });
+
+
+function set_automatic_contract_title(frm) {
+    if (!frm.is_new() && frm.doc.contract_title && !frm.__wafd_title_generated) return;
+    const parts = [frm.doc.mission, frm.doc.hotel].filter(Boolean);
+    if (frm.doc.start_date) parts.push(frappe.datetime.str_to_user(frm.doc.start_date));
+    if (!parts.length) return;
+    const value = parts.join(" - ");
+    if (frm.doc.contract_title !== value) {
+        frm.__wafd_title_generated = true;
+        frm.set_value("contract_title", value);
+    }
+}
 
 function open_contract_cleanup_dialog(frm, options) {
     frappe.call({

@@ -8,7 +8,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     <div class="wafd-command-center">
       <section class="wafd-hero-pro">
         <div class="wafd-hero-copy">
-          <div class="wafd-logo-shell"><img src="/assets/wafd_one/images/wafd-almadinah-official.png" alt="WAFD ONE"></div>
+          <div class="wafd-logo-shell"><img src="/assets/wafd_one/images/wafd-almadinah-dashboard.png" alt="WAFD ONE"></div>
           <div>
             <span class="wafd-eyebrow">شركة وفد المدينة لخدمات الإعاشة</span>
             <h1>WAFD ONE <small>Operations Command Center</small></h1>

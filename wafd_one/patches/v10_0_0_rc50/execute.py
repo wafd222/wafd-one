@@ -150,7 +150,7 @@ def execute():
             balance.average_cost = flt(row.unit_cost)
             balance.last_movement_date = movement.posting_date
             balance.stock_source_note = NOTE
-            balance.count_status = "افتتاحي اختباري / Test Opening"
+            balance.count_status = "جرد مبدئي / Initial Count"
             balance.save(ignore_permissions=True)
 
         movement.db_set(

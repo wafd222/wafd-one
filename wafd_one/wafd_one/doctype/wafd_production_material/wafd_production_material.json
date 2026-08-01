@@ -76,7 +76,7 @@
    "fieldname": "availability_status",
    "fieldtype": "Select",
    "label": "حالة التوفر / Availability",
-   "options": "متوفر / Available\nناقص / Shortage",
+   "options": "متوفر / Available\nناقص / Shortage\nمصروف / Issued",
    "read_only": 1,
    "in_list_view": 1
   }

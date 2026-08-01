@@ -263,8 +263,9 @@ _PURGE_ORDER = [
     "WAFD Loading Record",
     "WAFD Packaging Record",
     "WAFD Quality Inspection",
-    "WAFD Production Batch",
+    # Reverse and remove stock before deleting production documents.
     "WAFD Stock Movement",
+    "WAFD Production Batch",
     "WAFD Purchase Order",
     "WAFD Procurement Plan",
     "WAFD Project Revenue",
@@ -300,8 +301,14 @@ def _linked_names(doctype, contract_name, project_name=None):
         values.append(project_name)
     if not filters:
         return []
+    order_by = ""
+    if doctype == "WAFD Stock Movement":
+        # Reverse ledger-affecting documents newest first, exactly like undoing
+        # a stack of transactions. This is required to restore quantities and
+        # weighted-average valuation correctly.
+        order_by = " order by posting_date desc, creation desc"
     return frappe.db.sql_list(
-        f"select name from `tab{doctype}` where " + " or ".join(filters),
+        f"select name from `tab{doctype}` where " + " or ".join(filters) + order_by,
         tuple(values),
     )
 
@@ -333,14 +340,24 @@ def preview_contract_purge(contract_name):
         "project": project_name,
         "counts": {doctype: len(names) for doctype, names in records.items()},
         "total": sum(len(names) for names in records.values()),
-        "confirmation_phrase": f"DELETE {contract.name}",
+        "confirmation_phrase": "DELETE",
     }
 
 
-def _prepare_and_delete(doctype, name):
+def _prepare_and_delete(doctype, name, reason=None):
     if not frappe.db.exists(doctype, name):
-        return
+        return {"stock_reversed": 0, "stock_items": 0}
     doc = frappe.get_doc(doctype, name)
+    reversal = {"stock_reversed": 0, "stock_items": 0}
+
+    # WAFD Stock Movement uses its own posting state rather than docstatus.
+    # Reverse its quantities and valuation before deletion; never bypass this.
+    if doctype == "WAFD Stock Movement" and doc.get("status") == "مرحلة / Posted":
+        from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import reverse_posted_movement
+        result = reverse_posted_movement(doc, reason=reason)
+        reversal["stock_reversed"] = 1 if result.get("reversed") else 0
+        reversal["stock_items"] = result.get("items", 0)
+        doc.reload()
 
     # Submitted WAFD documents must be cancelled first so their normal reversal
     # hooks run. Legacy payments from pre-RC56 are normalized defensively.
@@ -350,17 +367,15 @@ def _prepare_and_delete(doctype, name):
         frappe.db.set_value(doctype, name, "status", "ملغي / Cancelled", update_modified=False)
 
     frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+    return reversal
 
 
 @frappe.whitelist(methods=["POST"])
 def purge_contract_and_operations(contract_name, confirmation=""):
     """Permanently delete one contract and only its linked operational chain."""
     _check_contract_purge_permission()
-    expected = f"DELETE {contract_name}"
-    if confirmation != expected:
-        frappe.throw(
-            f"اكتب عبارة التأكيد حرفياً: {expected} / Type the confirmation phrase exactly: {expected}"
-        )
+    if (confirmation or "").strip().upper() != "DELETE":
+        frappe.throw("اكتب DELETE للتأكيد / Type DELETE to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
 
@@ -370,10 +385,14 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         frappe.db.set_value("WAFD Catering Project", project_name, "contract", None, update_modified=False)
 
     deleted = {}
+    stock_reversed = 0
+    stock_items = 0
     for doctype in _PURGE_ORDER:
         names = records.get(doctype, [])
         for name in names:
-            _prepare_and_delete(doctype, name)
+            result = _prepare_and_delete(doctype, name, reason=f"contract purge {contract.name}")
+            stock_reversed += result.get("stock_reversed", 0)
+            stock_items += result.get("stock_items", 0)
         if names:
             deleted[doctype] = len(names)
 
@@ -390,4 +409,67 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         contract_name,
         deleted,
     )
-    return {"deleted": deleted, "total": sum(deleted.values())}
+    return {
+        "deleted": deleted,
+        "total": sum(deleted.values()),
+        "stock_movements_reversed": stock_reversed,
+        "stock_items_reversed": stock_items,
+    }
+
+
+@frappe.whitelist(methods=["POST"])
+def reset_contract_test_data(contract_name, confirmation=""):
+    """Delete the linked test-operation chain while preserving the contract.
+
+    The request is transactional: any failure rolls the complete reset back.
+    The contract is returned to Draft with its project link cleared, ready for
+    a fresh end-to-end test run.
+    """
+    _check_contract_purge_permission()
+    if (confirmation or "").strip().upper() != "RESET":
+        frappe.throw("اكتب RESET للتأكيد / Type RESET to confirm")
+
+    contract, project_name, records = _contract_purge_plan(contract_name)
+
+    # Break the Contract <-> Project circular link before deleting the chain.
+    frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
+    if project_name and frappe.db.exists("WAFD Catering Project", project_name):
+        frappe.db.set_value("WAFD Catering Project", project_name, "contract", None, update_modified=False)
+
+    deleted = {}
+    stock_reversed = 0
+    stock_items = 0
+    for doctype in _PURGE_ORDER:
+        names = records.get(doctype, [])
+        for name in names:
+            result = _prepare_and_delete(doctype, name, reason=f"contract reset {contract.name}")
+            stock_reversed += result.get("stock_reversed", 0)
+            stock_items += result.get("stock_items", 0)
+        if names:
+            deleted[doctype] = len(names)
+
+    if project_name and frappe.db.exists("WAFD Catering Project", project_name):
+        _prepare_and_delete("WAFD Catering Project", project_name)
+        deleted["WAFD Catering Project"] = 1
+
+    # Preserve the contract itself and make it ready for a clean regeneration.
+    frappe.db.set_value(
+        "WAFD Contract",
+        contract.name,
+        {"project": None, "status": "مسودة / Draft"},
+        update_modified=True,
+    )
+
+    frappe.logger("wafd_one").warning(
+        "Contract test data reset by %s: %s (%s)",
+        frappe.session.user,
+        contract_name,
+        deleted,
+    )
+    return {
+        "deleted": deleted,
+        "total": sum(deleted.values()),
+        "contract": contract.name,
+        "stock_movements_reversed": stock_reversed,
+        "stock_items_reversed": stock_items,
+    }

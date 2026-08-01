@@ -22,62 +22,27 @@ frappe.ui.form.on("WAFD Contract", {
             }, __("المشروع / Project"));
         }
 
+        frm.add_custom_button(__("إعادة تهيئة بيانات الاختبار / Reset Test Data"), () => {
+            open_contract_cleanup_dialog(frm, {
+                mode: "reset",
+                title: __("إعادة تهيئة بيانات العقد التجريبية"),
+                phrase: "RESET",
+                warning: __("سيتم حذف المشروع وجميع البيانات التشغيلية والمالية المرتبطة، مع الإبقاء على العقد وإعادته إلى مسودة."),
+                action_label: __("إعادة تهيئة / Reset"),
+                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.reset_contract_test_data",
+                freeze_message: __("جارٍ إعادة تهيئة بيانات العقد بأمان...")
+            });
+        }, __("إدارة / Administration"));
+
         frm.add_custom_button(__("حذف العقد وبياناته التجريبية / Delete Contract & Test Data"), () => {
-            frappe.call({
-                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.preview_contract_purge",
-                args: { contract_name: frm.doc.name },
-                freeze: true,
-                callback(r) {
-                    const data = r.message || {};
-                    const counts = data.counts || {};
-                    const rows = Object.entries(counts)
-                        .map(([doctype, count]) => `<tr><td>${frappe.utils.escape_html(doctype)}</td><td>${count}</td></tr>`)
-                        .join("");
-                    const phrase = data.confirmation_phrase || `DELETE ${frm.doc.name}`;
-                    const dialog = new frappe.ui.Dialog({
-                        title: __("حذف نهائي للعقد وجميع بياناته"),
-                        fields: [
-                            {
-                                fieldtype: "HTML",
-                                options: `<div class="alert alert-danger">
-                                    <b>${__("تحذير: لا يمكن التراجع عن هذه العملية.")}</b><br>
-                                    ${__("سيتم حذف العقد والمشروع وكل السجلات التشغيلية والمالية المرتبطة به فقط.")}
-                                    <table class="table table-bordered mt-3"><tbody>${rows}</tbody></table>
-                                    <b>${__("إجمالي السجلات")}: ${data.total || 0}</b>
-                                </div>`
-                            },
-                            {
-                                fieldname: "confirmation",
-                                fieldtype: "Data",
-                                label: __("اكتب عبارة التأكيد: {0}", [phrase]),
-                                reqd: 1
-                            }
-                        ],
-                        primary_action_label: __("حذف نهائي / Permanently Delete"),
-                        primary_action(values) {
-                            if (values.confirmation !== phrase) {
-                                frappe.msgprint(__("عبارة التأكيد غير صحيحة"));
-                                return;
-                            }
-                            frappe.call({
-                                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.purge_contract_and_operations",
-                                type: "POST",
-                                args: { contract_name: frm.doc.name, confirmation: values.confirmation },
-                                freeze: true,
-                                freeze_message: __("جارٍ حذف العقد وسلسلته المرتبطة بأمان..."),
-                                callback(res) {
-                                    dialog.hide();
-                                    frappe.show_alert({
-                                        message: __("تم حذف العقد و{0} سجل مرتبط", [res.message?.total || 0]),
-                                        indicator: "green"
-                                    }, 8);
-                                    frappe.set_route("List", "WAFD Contract");
-                                }
-                            });
-                        }
-                    });
-                    dialog.show();
-                }
+            open_contract_cleanup_dialog(frm, {
+                mode: "delete",
+                title: __("حذف نهائي للعقد وجميع بياناته"),
+                phrase: "DELETE",
+                warning: __("تحذير: لا يمكن التراجع. سيتم حذف العقد والمشروع وكل السجلات التشغيلية والمالية المرتبطة به فقط."),
+                action_label: __("حذف نهائي / Permanently Delete"),
+                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.purge_contract_and_operations",
+                freeze_message: __("جارٍ حذف العقد وسلسلته المرتبطة بأمان...")
             });
         }, __("إدارة / Administration"));
         frm.change_custom_button_type(
@@ -138,6 +103,81 @@ frappe.ui.form.on("WAFD Contract", {
         });
     }
 });
+
+function open_contract_cleanup_dialog(frm, options) {
+    frappe.call({
+        method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.preview_contract_purge",
+        args: { contract_name: frm.doc.name },
+        freeze: true,
+        callback(r) {
+            const data = r.message || {};
+            const counts = data.counts || {};
+            const rows = Object.entries(counts)
+                .filter(([doctype]) => options.mode === "delete" || doctype !== "WAFD Contract")
+                .map(([doctype, count]) => `<tr><td>${frappe.utils.escape_html(doctype)}</td><td>${count}</td></tr>`)
+                .join("");
+            const total = Object.entries(counts)
+                .filter(([doctype]) => options.mode === "delete" || doctype !== "WAFD Contract")
+                .reduce((sum, [, count]) => sum + flt(count), 0);
+            const phrase = options.phrase;
+            const dialog = new frappe.ui.Dialog({
+                title: options.title,
+                fields: [
+                    {
+                        fieldtype: "HTML",
+                        options: `<div class="alert alert-danger">
+                            <b>${options.warning}</b>
+                            <table class="table table-bordered mt-3"><tbody>${rows}</tbody></table>
+                            <b>${__("إجمالي السجلات")}: ${total}</b>
+                            <div class="mt-3">${__("اكتب {0} للتأكيد", [phrase])}</div>
+                        </div>`
+                    },
+                    {
+                        fieldname: "confirmation",
+                        fieldtype: "Data",
+                        label: __("عبارة التأكيد"),
+                        reqd: 1
+                    }
+                ],
+                primary_action_label: options.action_label,
+                primary_action(values) {
+                    if ((values.confirmation || "").trim().toUpperCase() !== phrase) {
+                        frappe.msgprint(__("عبارة التأكيد غير صحيحة. اكتب {0}", [phrase]));
+                        return;
+                    }
+                    frappe.call({
+                        method: options.method,
+                        type: "POST",
+                        args: { contract_name: frm.doc.name, confirmation: values.confirmation },
+                        freeze: true,
+                        freeze_message: options.freeze_message,
+                        callback(res) {
+                            dialog.hide();
+                            const result = res.message || {};
+                            const stockReport = __(
+                                "تم عكس {0} حركة مخزون تشمل {1} صنفًا.",
+                                [result.stock_movements_reversed || 0, result.stock_items_reversed || 0]
+                            );
+                            frappe.msgprint({
+                                title: options.mode === "delete" ? __("اكتمل الحذف الآمن") : __("اكتملت إعادة التهيئة"),
+                                indicator: "green",
+                                message: __("تمت معالجة {0} سجل مرتبط بنجاح.<br>{1}", [result.total || 0, stockReport])
+                            });
+                            if (options.mode === "delete") {
+                                frappe.set_route("List", "WAFD Contract");
+                            } else {
+                                frm.reload_doc();
+                            }
+                        }
+                    });
+                },
+                secondary_action_label: __("إلغاء / Cancel"),
+                secondary_action() { dialog.hide(); }
+            });
+            dialog.show();
+        }
+    });
+}
 
 frappe.ui.form.on("WAFD Project Service", {
     service_start_date: calculate_service,

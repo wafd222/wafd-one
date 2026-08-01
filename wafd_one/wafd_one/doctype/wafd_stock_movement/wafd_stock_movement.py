@@ -141,6 +141,107 @@ def _remove_stock(warehouse, row, posting_date):
     balance.save(ignore_permissions=True)
 
 
+def _remove_received_stock(warehouse, row, posting_date):
+    """Reverse a receipt/addition without allowing negative or reserved stock.
+
+    The weighted-average value is reversed algebraically so the balance returns
+    to the value it had before this movement, provided later movements have not
+    consumed the received quantity.
+    """
+    balance = _get_balance(warehouse, row.ingredient, row.uom, for_update=True)
+    current_qty = flt(balance.actual_quantity)
+    reverse_qty = flt(row.quantity)
+    new_qty = current_qty - reverse_qty
+    if new_qty < -0.000001:
+        frappe.throw(
+            f"لا يمكن عكس حركة المخزون {row.parent}: الكمية الحالية للصنف {row.ingredient} أقل من الكمية المستلمة "
+            f"/ Cannot reverse stock movement: current quantity is below the received quantity"
+        )
+    if new_qty + 0.000001 < flt(balance.reserved_quantity):
+        frappe.throw(
+            f"لا يمكن عكس حركة المخزون للصنف {row.ingredient} لوجود كمية محجوزة "
+            f"/ Cannot reverse movement while stock is reserved"
+        )
+
+    current_value = current_qty * flt(balance.average_cost)
+    reversed_value = reverse_qty * flt(row.unit_cost)
+    balance.actual_quantity = max(new_qty, 0)
+    if new_qty > 0:
+        remaining_value = current_value - reversed_value
+        # Small negative values can be produced by decimal rounding only.
+        if remaining_value < -0.01:
+            frappe.throw(
+                f"تعذر إعادة تكلفة المخزون بأمان للصنف {row.ingredient} "
+                f"/ Unable to reverse stock valuation safely"
+            )
+        balance.average_cost = max(remaining_value, 0) / new_qty
+    else:
+        balance.average_cost = 0
+    balance.last_movement_date = posting_date
+    balance.save(ignore_permissions=True)
+
+
+def reverse_posted_movement(doc, reason=None):
+    """Reverse one posted WAFD stock movement exactly once.
+
+    This is used by the contract reset/purge workflow.  It deliberately blocks
+    Adjustment movements because the pre-adjustment quantity is not stored in
+    legacy documents and guessing it could corrupt stock.
+    """
+    if isinstance(doc, str):
+        doc = frappe.get_doc("WAFD Stock Movement", doc)
+    if doc.status != "مرحلة / Posted":
+        return {"name": doc.name, "reversed": False, "items": 0}
+    if doc.movement_type == "تسوية / Adjustment":
+        frappe.throw(
+            f"لا يمكن حذف العقد لأن حركة التسوية {doc.name} لا تحتوي على رصيد ما قبل التسوية. "
+            f"ألغِ التسوية يدويًا أولًا / Contract purge blocked: adjustment movement must be reversed manually first"
+        )
+
+    frappe.db.sql("select name from `tabWAFD Stock Movement` where name=%s for update", doc.name)
+    doc.reload()
+    if doc.status != "مرحلة / Posted":
+        return {"name": doc.name, "reversed": False, "items": 0}
+
+    for row in doc.items or []:
+        if doc.movement_type == "استلام / Receipt":
+            _remove_received_stock(doc.target_warehouse, row, now_datetime())
+        elif doc.movement_type in ("صرف / Issue", "هالك / Waste"):
+            _add_stock(doc.source_warehouse, row, now_datetime())
+        elif doc.movement_type == "تحويل / Transfer":
+            # Reverse in the opposite order: remove from target, restore source.
+            _remove_received_stock(doc.target_warehouse, row, now_datetime())
+            _add_stock(doc.source_warehouse, row, now_datetime())
+        else:
+            frappe.throw(f"نوع حركة غير مدعوم للعكس: {doc.movement_type} / Unsupported reversal type")
+
+    doc.db_set(
+        {
+            "status": "ملغاة / Cancelled",
+            "posted_by": None,
+            "posted_on": None,
+        },
+        update_modified=True,
+    )
+    if doc.reference_type == "WAFD Purchase Order" and doc.reference_name:
+        from wafd_one.wafd_one.doctype.wafd_purchase_order.wafd_purchase_order import sync_purchase_order_receipts
+        sync_purchase_order_receipts(doc.reference_name)
+    if doc.production_batch and frappe.db.exists("WAFD Production Batch", doc.production_batch):
+        frappe.db.set_value(
+            "WAFD Production Batch",
+            doc.production_batch,
+            {"material_issue": None, "materials_status": "غير مصروفة / Not Issued"},
+            update_modified=False,
+        )
+    frappe.logger("wafd_one").warning(
+        "Stock movement reversed by %s: %s (%s)",
+        frappe.session.user,
+        doc.name,
+        reason or "manual",
+    )
+    return {"name": doc.name, "reversed": True, "items": len(doc.items or [])}
+
+
 @frappe.whitelist()
 def post_movement(movement_name):
     doc = frappe.get_doc("WAFD Stock Movement", movement_name)

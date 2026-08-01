@@ -32,7 +32,7 @@ def _scalar(query, values=None):
 
 
 def _confirmed_payments(invoice_name, exclude_payment=None):
-    conditions = ["invoice=%s", "status='معتمد / Confirmed'"]
+    conditions = ["invoice=%s", "docstatus=1", "status='معتمد / Confirmed'"]
     values = [invoice_name]
     if exclude_payment:
         conditions.append("name!=%s")
@@ -146,7 +146,7 @@ def refresh_project_financials(project_name):
     invoice_paid = flt(_scalar(
         """select coalesce(sum(p.amount), 0) from `tabWAFD Payment` p
            inner join `tabWAFD Invoice` i on i.name=p.invoice
-           where p.project=%s and p.status='معتمد / Confirmed'
+           where p.project=%s and p.docstatus=1 and p.status='معتمد / Confirmed'
              and i.status!='ملغاة / Cancelled'""",
         (project_name,),
     ))

@@ -5,27 +5,17 @@ from frappe.utils import flt, getdate, nowdate
 
 class WAFDPayment(Document):
     def validate(self):
-        from wafd_one.governance import approval_required, ensure_approved
-        if self.status == "معتمد / Confirmed":
-            if self.is_new() and approval_required(self):
-                frappe.throw(
-                    "احفظ التحصيل كمسودة أولاً ثم أنشئ طلب اعتماد / "
-                    "Save the payment as a draft before requesting approval"
-                )
-            if not self.is_new():
-                previous = self.get_doc_before_save()
-                if previous and previous.status != self.status:
-                    ensure_approved(self, "اعتماد التحصيل / payment confirmation")
         if not self.payment_date:
             self.payment_date = nowdate()
         if not self.invoice:
             frappe.throw("الفاتورة مطلوبة / Invoice is required")
 
-        self._protect_confirmed_payment()
+        from wafd_one.finance import get_invoice_totals, get_finance_settings
 
-        from wafd_one.finance import get_invoice_totals
-
-        totals = get_invoice_totals(self.invoice, exclude_payment=self.name if not self.is_new() else None)
+        totals = get_invoice_totals(
+            self.invoice,
+            exclude_payment=self.name if not self.is_new() else None,
+        )
         self.project = totals["project"]
         self.invoice_total = totals["invoice_total"]
         self.previously_paid = totals["paid_amount"]
@@ -38,13 +28,20 @@ class WAFDPayment(Document):
             frappe.throw("لا يمكن تسجيل تحصيل على فاتورة ملغاة / Cannot pay a cancelled invoice")
         if flt(self.invoice_total) <= 0:
             frappe.throw("لا يمكن تسجيل تحصيل لفاتورة قيمتها صفر / Cannot pay a zero-value invoice")
+        if flt(self.outstanding_before) <= 0:
+            frappe.throw("الفاتورة مدفوعة بالكامل ولا يمكن إنشاء تحصيل إضافي / Invoice is fully paid; another payment cannot be created")
         if flt(self.amount) <= 0:
             frappe.throw("مبلغ التحصيل يجب أن يكون أكبر من صفر / Payment must be greater than zero")
-        from wafd_one.finance import get_finance_settings
+        if flt(self.amount) > flt(self.outstanding_before):
+            frappe.throw(
+                "مبلغ التحصيل يتجاوز الرصيد المتبقي ({0}) / Payment exceeds outstanding balance ({0})".format(
+                    frappe.format_value(self.outstanding_before, {"fieldtype": "Currency"})
+                )
+            )
+
         settings = get_finance_settings()
         if (
-            self.status == "معتمد / Confirmed"
-            and self.payment_method != "نقدي / Cash"
+            self.payment_method != "نقدي / Cash"
             and settings.get("require_reference_for_non_cash")
             and not self.reference_number
         ):
@@ -58,47 +55,47 @@ class WAFDPayment(Document):
                     "name": ["!=", self.name or ""],
                     "reference_number": self.reference_number,
                     "payment_method": self.payment_method,
-                    "status": "معتمد / Confirmed",
+                    "docstatus": 1,
                 },
             )
             if duplicate:
                 frappe.throw(
-                    "رقم المرجع مستخدم في تحصيل معتمد آخر / "
-                    "Reference number is already used by another confirmed payment"
+                    "رقم المرجع مستخدم في تحصيل معتمد آخر / Reference number is already used by another submitted payment"
                 )
-        if self.status == "معتمد / Confirmed" and flt(self.amount) > flt(self.outstanding_before):
-            frappe.throw(
-                "مبلغ التحصيل يتجاوز الرصيد المتبقي ({0}) / Payment exceeds outstanding balance ({0})".format(
-                    frappe.format_value(self.outstanding_before, {"fieldtype": "Currency"})
-                )
-            )
 
-    def _protect_confirmed_payment(self):
-        if self.is_new():
-            return
-        previous = self.get_doc_before_save()
-        if not previous or previous.status != "معتمد / Confirmed":
-            return
-        protected = ("invoice", "project", "amount", "payment_date", "payment_method", "reference_number")
-        changed = [self.meta.get_label(field) for field in protected if self.get(field) != previous.get(field)]
-        if changed:
-            frappe.throw(
-                "لا يمكن تعديل بيانات تحصيل معتمد: {0} / Confirmed payment fields cannot be changed: {0}".format(
-                    ", ".join(changed)
-                )
-            )
-        if self.status != "معتمد / Confirmed":
-            frappe.throw("لا يمكن تغيير حالة تحصيل معتمد. أنشئ قيد إلغاء مستقل / A confirmed payment cannot be reopened or cancelled by editing")
+    def before_submit(self):
+        from wafd_one.governance import approval_required, ensure_approved
+
+        if approval_required(self):
+            ensure_approved(self, "اعتماد التحصيل / payment submission")
+
+    def on_submit(self):
+        self.db_set("status", "معتمد / Confirmed", update_modified=False)
+        self._refresh_invoice()
+
+    def on_cancel(self):
+        self.db_set("status", "ملغي / Cancelled", update_modified=False)
+        self._refresh_invoice()
 
     def on_update(self):
-        from wafd_one.finance import refresh_invoice_and_project
-        refresh_invoice_and_project(self.invoice)
+        # Draft payments never enter the paid total, but refreshing keeps the
+        # invoice display consistent after legacy-data migration or edits.
+        self._refresh_invoice()
 
     def on_trash(self):
-        if self.status == "معتمد / Confirmed":
-            frappe.throw("لا يمكن حذف تحصيل معتمد / A confirmed payment cannot be deleted")
-        frappe.enqueue(
-            "wafd_one.finance.refresh_invoice_and_project",
-            invoice_name=self.invoice,
-            enqueue_after_commit=True,
-        )
+        if self.docstatus == 1:
+            frappe.throw("يجب إلغاء التحصيل قبل حذفه / Cancel the payment before deleting it")
+        invoice = self.invoice
+        if invoice:
+            frappe.enqueue(
+                "wafd_one.finance.refresh_invoice_and_project",
+                invoice_name=invoice,
+                enqueue_after_commit=True,
+            )
+
+    def _refresh_invoice(self):
+        if not self.invoice:
+            return
+        from wafd_one.finance import refresh_invoice_and_project
+
+        refresh_invoice_and_project(self.invoice)

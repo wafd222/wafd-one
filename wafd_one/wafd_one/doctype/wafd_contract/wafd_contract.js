@@ -22,6 +22,70 @@ frappe.ui.form.on("WAFD Contract", {
             }, __("المشروع / Project"));
         }
 
+        frm.add_custom_button(__("حذف العقد وبياناته التجريبية / Delete Contract & Test Data"), () => {
+            frappe.call({
+                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.preview_contract_purge",
+                args: { contract_name: frm.doc.name },
+                freeze: true,
+                callback(r) {
+                    const data = r.message || {};
+                    const counts = data.counts || {};
+                    const rows = Object.entries(counts)
+                        .map(([doctype, count]) => `<tr><td>${frappe.utils.escape_html(doctype)}</td><td>${count}</td></tr>`)
+                        .join("");
+                    const phrase = data.confirmation_phrase || `DELETE ${frm.doc.name}`;
+                    const dialog = new frappe.ui.Dialog({
+                        title: __("حذف نهائي للعقد وجميع بياناته"),
+                        fields: [
+                            {
+                                fieldtype: "HTML",
+                                options: `<div class="alert alert-danger">
+                                    <b>${__("تحذير: لا يمكن التراجع عن هذه العملية.")}</b><br>
+                                    ${__("سيتم حذف العقد والمشروع وكل السجلات التشغيلية والمالية المرتبطة به فقط.")}
+                                    <table class="table table-bordered mt-3"><tbody>${rows}</tbody></table>
+                                    <b>${__("إجمالي السجلات")}: ${data.total || 0}</b>
+                                </div>`
+                            },
+                            {
+                                fieldname: "confirmation",
+                                fieldtype: "Data",
+                                label: __("اكتب عبارة التأكيد: {0}", [phrase]),
+                                reqd: 1
+                            }
+                        ],
+                        primary_action_label: __("حذف نهائي / Permanently Delete"),
+                        primary_action(values) {
+                            if (values.confirmation !== phrase) {
+                                frappe.msgprint(__("عبارة التأكيد غير صحيحة"));
+                                return;
+                            }
+                            frappe.call({
+                                method: "wafd_one.wafd_one.doctype.wafd_contract.wafd_contract.purge_contract_and_operations",
+                                type: "POST",
+                                args: { contract_name: frm.doc.name, confirmation: values.confirmation },
+                                freeze: true,
+                                freeze_message: __("جارٍ حذف العقد وسلسلته المرتبطة بأمان..."),
+                                callback(res) {
+                                    dialog.hide();
+                                    frappe.show_alert({
+                                        message: __("تم حذف العقد و{0} سجل مرتبط", [res.message?.total || 0]),
+                                        indicator: "green"
+                                    }, 8);
+                                    frappe.set_route("List", "WAFD Contract");
+                                }
+                            });
+                        }
+                    });
+                    dialog.show();
+                }
+            });
+        }, __("إدارة / Administration"));
+        frm.change_custom_button_type(
+            __("حذف العقد وبياناته التجريبية / Delete Contract & Test Data"),
+            __("إدارة / Administration"),
+            "danger"
+        );
+
         frm.add_custom_button(__("تفعيل وبناء خطة التشغيل / Activate & Build Operations"), () => {
             frappe.confirm(
                 __("سيتم تفعيل العقد وإنشاء المشروع وخطط الوجبات ودفعات الإنتاج بدون تكرار السجلات. متابعة؟"),

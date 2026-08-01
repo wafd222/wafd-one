@@ -248,3 +248,146 @@ def activate_and_generate_operations(contract_name):
     from wafd_one.wafd_one.doctype.wafd_catering_project.wafd_catering_project import generate_operation_plan
     operation_result = generate_operation_plan(project_result["name"])
     return {"project": project_result, "operations": operation_result}
+
+# Transaction parents linked to a contract/project, ordered from the end of the
+# workflow back to the project. Child rows are removed by Frappe with parents.
+_PURGE_ORDER = [
+    "WAFD Payment",
+    "WAFD Invoice",
+    "WAFD Receiving Note",
+    "WAFD Delivery Note",
+    "WAFD Delivery Proof",
+    "WAFD Complaint",
+    "WAFD Hotel Undertaking",
+    "WAFD Delivery Trip",
+    "WAFD Loading Record",
+    "WAFD Packaging Record",
+    "WAFD Quality Inspection",
+    "WAFD Production Batch",
+    "WAFD Stock Movement",
+    "WAFD Purchase Order",
+    "WAFD Procurement Plan",
+    "WAFD Project Revenue",
+    "WAFD Project Cost",
+    "WAFD Cost Snapshot",
+    "WAFD Operations Alert",
+    "WAFD Daily Meal Plan",
+    "WAFD Meal Plan",
+]
+
+
+def _check_contract_purge_permission():
+    user = frappe.session.user
+    roles = set(frappe.get_roles(user))
+    if user != "Administrator" and "System Manager" not in roles:
+        frappe.throw(
+            "حذف العقد بالكامل متاح فقط لمدير النظام / Only Administrator or System Manager can permanently purge a contract",
+            frappe.PermissionError,
+        )
+
+
+def _linked_names(doctype, contract_name, project_name=None):
+    if not frappe.db.exists("DocType", doctype):
+        return []
+    meta = frappe.get_meta(doctype)
+    filters = []
+    values = []
+    if meta.has_field("contract"):
+        filters.append("contract=%s")
+        values.append(contract_name)
+    if project_name and meta.has_field("project"):
+        filters.append("project=%s")
+        values.append(project_name)
+    if not filters:
+        return []
+    return frappe.db.sql_list(
+        f"select name from `tab{doctype}` where " + " or ".join(filters),
+        tuple(values),
+    )
+
+
+def _contract_purge_plan(contract_name):
+    contract = frappe.get_doc("WAFD Contract", contract_name)
+    project_name = contract.project or frappe.db.get_value(
+        "WAFD Catering Project", {"contract": contract_name}, "name"
+    )
+    records = {}
+    for doctype in _PURGE_ORDER:
+        names = _linked_names(doctype, contract_name, project_name)
+        if names:
+            records[doctype] = names
+    if project_name:
+        records["WAFD Catering Project"] = [project_name]
+    records["WAFD Contract"] = [contract_name]
+    return contract, project_name, records
+
+
+@frappe.whitelist()
+def preview_contract_purge(contract_name):
+    """Preview exactly what the one-click test-contract purge will remove."""
+    _check_contract_purge_permission()
+    contract, project_name, records = _contract_purge_plan(contract_name)
+    return {
+        "contract": contract.name,
+        "title": contract.contract_title,
+        "project": project_name,
+        "counts": {doctype: len(names) for doctype, names in records.items()},
+        "total": sum(len(names) for names in records.values()),
+        "confirmation_phrase": f"DELETE {contract.name}",
+    }
+
+
+def _prepare_and_delete(doctype, name):
+    if not frappe.db.exists(doctype, name):
+        return
+    doc = frappe.get_doc(doctype, name)
+
+    # Submitted WAFD documents must be cancelled first so their normal reversal
+    # hooks run. Legacy payments from pre-RC56 are normalized defensively.
+    if doc.docstatus == 1:
+        doc.cancel()
+    elif doctype == "WAFD Payment" and doc.get("status") == "معتمد / Confirmed":
+        frappe.db.set_value(doctype, name, "status", "ملغي / Cancelled", update_modified=False)
+
+    frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+
+
+@frappe.whitelist(methods=["POST"])
+def purge_contract_and_operations(contract_name, confirmation=""):
+    """Permanently delete one contract and only its linked operational chain."""
+    _check_contract_purge_permission()
+    expected = f"DELETE {contract_name}"
+    if confirmation != expected:
+        frappe.throw(
+            f"اكتب عبارة التأكيد حرفياً: {expected} / Type the confirmation phrase exactly: {expected}"
+        )
+
+    contract, project_name, records = _contract_purge_plan(contract_name)
+
+    # Break the intentional Contract <-> Project circular link before deletion.
+    frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
+    if project_name and frappe.db.exists("WAFD Catering Project", project_name):
+        frappe.db.set_value("WAFD Catering Project", project_name, "contract", None, update_modified=False)
+
+    deleted = {}
+    for doctype in _PURGE_ORDER:
+        names = records.get(doctype, [])
+        for name in names:
+            _prepare_and_delete(doctype, name)
+        if names:
+            deleted[doctype] = len(names)
+
+    if project_name and frappe.db.exists("WAFD Catering Project", project_name):
+        _prepare_and_delete("WAFD Catering Project", project_name)
+        deleted["WAFD Catering Project"] = 1
+
+    _prepare_and_delete("WAFD Contract", contract.name)
+    deleted["WAFD Contract"] = 1
+
+    frappe.logger("wafd_one").warning(
+        "Permanent contract purge by %s: %s (%s)",
+        frappe.session.user,
+        contract_name,
+        deleted,
+    )
+    return {"deleted": deleted, "total": sum(deleted.values())}

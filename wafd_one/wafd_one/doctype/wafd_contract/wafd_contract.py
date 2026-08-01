@@ -313,6 +313,64 @@ def _linked_names(doctype, contract_name, project_name=None):
     )
 
 
+def _discover_contract_stock_movements(records, project_name=None):
+    """Discover the complete stock chain belonging to one contract workflow.
+
+    Legacy movements are not always populated with ``project``.  They can still
+    belong to the contract through ``production_batch`` or a reference to any
+    linked operational document.  Build a closure so same-contract Issue/Waste/
+    Transfer movements are reversed automatically before older Receipts.
+    """
+    if not frappe.db.exists("DocType", "WAFD Stock Movement"):
+        return []
+
+    discovered = set(records.get("WAFD Stock Movement", []) or [])
+    batch_names = set(records.get("WAFD Production Batch", []) or [])
+    reference_names = set()
+    for doctype, names in records.items():
+        if doctype not in ("WAFD Contract", "WAFD Catering Project"):
+            reference_names.update(names or [])
+    if project_name:
+        reference_names.add(project_name)
+
+    # Repeat because a newly discovered movement may itself be referenced by a
+    # later corrective/transfer movement.
+    for _ in range(8):
+        clauses = []
+        values = []
+        if project_name:
+            clauses.append("project=%s")
+            values.append(project_name)
+        if batch_names:
+            marks = ",".join(["%s"] * len(batch_names))
+            clauses.append(f"production_batch in ({marks})")
+            values.extend(sorted(batch_names))
+        all_refs = reference_names | discovered
+        if all_refs:
+            marks = ",".join(["%s"] * len(all_refs))
+            clauses.append(f"reference_name in ({marks})")
+            values.extend(sorted(all_refs))
+        if not clauses:
+            break
+        rows = frappe.db.sql_list(
+            "select name from `tabWAFD Stock Movement` where " + " or ".join(clauses),
+            tuple(values),
+        )
+        before = len(discovered)
+        discovered.update(rows)
+        if len(discovered) == before:
+            break
+
+    if not discovered:
+        return []
+    marks = ",".join(["%s"] * len(discovered))
+    return frappe.db.sql_list(
+        f"select name from `tabWAFD Stock Movement` where name in ({marks}) "
+        "order by posting_date desc, creation desc",
+        tuple(sorted(discovered)),
+    )
+
+
 def _contract_purge_plan(contract_name):
     contract = frappe.get_doc("WAFD Contract", contract_name)
     project_name = contract.project or frappe.db.get_value(
@@ -323,6 +381,12 @@ def _contract_purge_plan(contract_name):
         names = _linked_names(doctype, contract_name, project_name)
         if names:
             records[doctype] = names
+
+    # Replace the project-only result with the full workflow stock closure.
+    stock_names = _discover_contract_stock_movements(records, project_name)
+    if stock_names:
+        records["WAFD Stock Movement"] = stock_names
+
     if project_name:
         records["WAFD Catering Project"] = [project_name]
     records["WAFD Contract"] = [contract_name]
@@ -445,7 +509,8 @@ def _stock_reversal_preflight(records):
         if not blocker.get("ingredient") or not blocker.get("warehouse"):
             continue
         later = frappe.db.sql(
-            """select distinct sm.name, sm.movement_type, sm.posting_date
+            """select distinct sm.name, sm.movement_type, sm.posting_date, sm.project, sm.production_batch,
+                        sm.reference_type, sm.reference_name
                  from `tabWAFD Stock Movement` sm
                  join `tabWAFD Stock Movement Item` i on i.parent=sm.name
                 where sm.status='مرحلة / Posted' and i.ingredient=%s

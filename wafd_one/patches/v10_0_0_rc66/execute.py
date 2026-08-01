@@ -3,12 +3,14 @@ from wafd_one.patches.v10_0_0_rc43.execute import _save_template, LOGO
 
 
 def _receiving_canvas():
-    details = '''<table style="width:100%;border-collapse:collapse;font-size:10px;direction:rtl;table-layout:fixed;">
-    <tr><td class="k">المشروع / Project</td><td>{{ doc.project or "" }}</td><td class="k">سند التسليم / Delivery Note</td><td>{{ doc.delivery_note or "" }}</td></tr>
-    <tr><td class="k">الفندق / Hotel</td><td>{{ doc.hotel or "" }}</td><td class="k">وقت الاستلام / Receipt Time</td><td>{{ doc.receipt_time or "" }}</td></tr>
-    <tr><td class="k">الكمية المسلمة / Delivered</td><td>{{ doc.delivered_quantity or 0 }}</td><td class="k">الكمية المستلمة / Received</td><td>{{ doc.received_quantity or 0 }}</td></tr>
-    <tr><td class="k">الكمية المرفوضة / Rejected</td><td>{{ doc.rejected_quantity or 0 }}</td><td class="k">حالة الوجبات / Condition</td><td>{{ doc.condition_status or "" }}</td></tr>
-    </table><style>.k{background:#f7f4ed;font-weight:700}.wafd-receiving td{border:1px solid #d8d8d8;padding:7px}</style>'''
+    label_style = "background:#f7f4ed;font-weight:700;border:1px solid #d8d8d8;padding:7px"
+    value_style = "border:1px solid #d8d8d8;padding:7px"
+    details = f'''<table style="width:100%;border-collapse:collapse;font-size:10px;direction:rtl;table-layout:fixed;">
+    <tr><td style="{label_style}">المشروع / Project</td><td style="{value_style}">{{{{ doc.project or "" }}}}</td><td style="{label_style}">سند التسليم / Delivery Note</td><td style="{value_style}">{{{{ doc.delivery_note or "" }}}}</td></tr>
+    <tr><td style="{label_style}">الفندق / Hotel</td><td style="{value_style}">{{{{ doc.hotel or "" }}}}</td><td style="{label_style}">وقت الاستلام / Receipt Time</td><td style="{value_style}">{{{{ doc.receipt_time or "" }}}}</td></tr>
+    <tr><td style="{label_style}">الكمية المسلمة / Delivered</td><td style="{value_style}">{{{{ doc.delivered_quantity or 0 }}}}</td><td style="{label_style}">الكمية المستلمة / Received</td><td style="{value_style}">{{{{ doc.received_quantity or 0 }}}}</td></tr>
+    <tr><td style="{label_style}">الكمية المرفوضة / Rejected</td><td style="{value_style}">{{{{ doc.rejected_quantity or 0 }}}}</td><td style="{label_style}">حالة الوجبات / Condition</td><td style="{value_style}">{{{{ doc.condition_status or "" }}}}</td></tr>
+    </table>'''
     sign = '''<div style="display:flex;gap:20px;direction:rtl;align-items:flex-end;font-size:10px;page-break-inside:avoid;">
       <div style="flex:1;line-height:1.8"><b>اسم المستلم:</b> {{ doc.receiver_name or "" }}<br><b>الصفة:</b> {{ doc.receiver_title or "" }}<br><b>ملاحظات:</b> {{ doc.notes or "" }}</div>
       <div style="width:220px;text-align:center"><b>توقيع المستلم / Signature</b><div style="height:100px;border-bottom:1px solid #777;display:flex;align-items:center;justify-content:center;overflow:hidden;">{% if doc.receiver_signature %}<img src="{{ doc.receiver_signature }}" style="max-width:205px;max-height:92px;object-fit:contain">{% endif %}</div></div>

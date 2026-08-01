@@ -20,11 +20,11 @@ from frappe.utils import flt, now_datetime
 from wafd_one.master_data import CATEGORY_WAREHOUSE_MAP, INGREDIENTS, WAREHOUSES
 from wafd_one.uom import canonical_uom
 
-REFERENCE_TYPE = "WAFD Opening Stock Bootstrap"
-REFERENCE_NAME = "RC50-ACCEPTANCE-OPENING-STOCK"
+REFERENCE_MARKER = "RC50-ACCEPTANCE-OPENING-STOCK"
 NOTE = (
-    "رصيد افتتاحي اختباري للاعتماد النهائي RC50؛ يجب مطابقته مع الجرد الفعلي قبل التشغيل. / "
-    "RC50 acceptance-test opening stock; reconcile with physical count before production."
+    "RC50-ACCEPTANCE-OPENING-STOCK | "
+    "رصيد افتتاحي اختباري للاعتماد النهائي؛ يجب مطابقته مع الجرد الفعلي قبل التشغيل. / "
+    "Acceptance-test opening stock; reconcile with physical count before production."
 )
 
 
@@ -89,7 +89,7 @@ def execute():
     # has already completed on this site.
     if frappe.db.exists(
         "WAFD Stock Movement",
-        {"reference_type": REFERENCE_TYPE, "reference_name": REFERENCE_NAME},
+        {"movement_type": "تسوية / Adjustment", "notes": ["like", f"%{REFERENCE_MARKER}%"]},
     ):
         return
 
@@ -125,8 +125,6 @@ def execute():
                 "movement_type": "تسوية / Adjustment",
                 "posting_date": now_datetime(),
                 "target_warehouse": warehouse,
-                "reference_type": REFERENCE_TYPE,
-                "reference_name": REFERENCE_NAME,
                 "status": "مسودة / Draft",
                 "notes": NOTE,
                 "items": items,

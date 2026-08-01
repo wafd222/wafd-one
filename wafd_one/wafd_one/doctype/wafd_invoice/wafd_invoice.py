@@ -150,16 +150,6 @@ class WAFDInvoice(Document):
 
     def _set_status(self):
         from wafd_one.governance import approval_required, ensure_approved
-        if self.status == "مرسلة / Sent":
-            if self.is_new() and approval_required(self):
-                frappe.throw(
-                    "احفظ الفاتورة كمسودة أولاً ثم أنشئ طلب اعتماد / "
-                    "Save the invoice as a draft before requesting approval"
-                )
-            if not self.is_new():
-                previous = self.get_doc_before_save()
-                if previous and previous.status != self.status:
-                    ensure_approved(self, "إرسال الفاتورة / invoice sending")
         if self.status == "ملغاة / Cancelled":
             return
         if flt(self.grand_total) <= 0:
@@ -170,8 +160,8 @@ class WAFDInvoice(Document):
             self.status = "مدفوعة جزئياً / Partially Paid"
         elif self.due_date and getdate(self.due_date) < getdate(nowdate()):
             self.status = "متأخرة / Overdue"
-        elif self.status not in ("مسودة / Draft", "مرسلة / Sent"):
-            self.status = "مرسلة / Sent"
+        else:
+            self.status = "غير مدفوعة / Unpaid"
 
     def on_update(self):
         from wafd_one.finance import refresh_project_financials

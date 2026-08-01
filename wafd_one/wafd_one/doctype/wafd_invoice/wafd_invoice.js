@@ -47,8 +47,8 @@ function wafd_recalculate_invoice(frm) {
             status = "مدفوعة جزئياً / Partially Paid";
         } else if (grand_total > 0 && frm.doc.due_date && frm.doc.due_date < frappe.datetime.get_today()) {
             status = "متأخرة / Overdue";
-        } else if (grand_total > 0 && !frm.is_new()) {
-            status = "مرسلة / Sent";
+        } else if (grand_total > 0) {
+            status = "غير مدفوعة / Unpaid";
         }
         frm.set_value("status", status);
     }

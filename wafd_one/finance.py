@@ -111,8 +111,8 @@ def refresh_invoice_and_project(invoice_name):
             status = "مدفوعة جزئياً / Partially Paid"
         elif invoice.due_date and getdate(invoice.due_date) < getdate(nowdate()):
             status = "متأخرة / Overdue"
-        elif status not in ("مسودة / Draft", "مرسلة / Sent"):
-            status = "مرسلة / Sent"
+        else:
+            status = "غير مدفوعة / Unpaid"
 
     frappe.db.set_value(
         "WAFD Invoice",

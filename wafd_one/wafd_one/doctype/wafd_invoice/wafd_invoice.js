@@ -140,8 +140,10 @@ function wafd_recalculate_item_subtotal(frm) {
 }
 
 
-function open_payment(frm) {
-    frappe.new_doc("WAFD Payment", {
+async function open_payment(frm) {
+    if (frm.is_dirty()) await frm.save();
+    frappe.show_alert({ message: __("تم اعتماد الفاتورة — جارٍ فتح التحصيل"), indicator: "green" }, 5);
+    frappe.route_options = {
         invoice: frm.doc.name,
         project: frm.doc.project,
         invoice_total: frm.doc.grand_total,
@@ -149,6 +151,8 @@ function open_payment(frm) {
         outstanding_before: frm.doc.balance,
         payment_date: frappe.datetime.get_today(),
         amount: frm.doc.balance,
+        payment_method: "نقدي / Cash",
         status: "مسودة / Draft"
-    });
+    };
+    setTimeout(() => frappe.new_doc("WAFD Payment"), 300);
 }

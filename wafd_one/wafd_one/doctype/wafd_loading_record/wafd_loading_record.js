@@ -31,12 +31,15 @@ function add_guided_loading_action(frm) {
         }
         await frm.set_value("status", "خرجت / Dispatched");
         await frm.save();
-        frappe.call({
+        const r = await frappe.call({
             method: "wafd_one.operations.create_delivery_trip",
             args: { loading_name: frm.doc.name },
             freeze: true,
-            callback(r) { if (r.message?.name) frappe.set_route("Form", "WAFD Delivery Trip", r.message.name); }
+            freeze_message: __("جارٍ اعتماد التحميل وإنشاء رحلة التوصيل...")
         });
+        const result = r.message || {};
+        frappe.show_alert({ message: __("تم اعتماد التحميل — جارٍ فتح رحلة التوصيل"), indicator: "green" }, 6);
+        if (result.name) setTimeout(() => frappe.set_route("Form", "WAFD Delivery Trip", result.name), 350);
     });
 }
 

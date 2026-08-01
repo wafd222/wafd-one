@@ -108,15 +108,18 @@ function add_guided_packaging_action(frm) {
             await frm.set_value("packed_quantity", cint(frm.doc.planned_quantity));
         }
         await frm.save();
-        frappe.call({
+        const r = await frappe.call({
             method: "wafd_one.operations.create_loading_record",
             args: { packaging_name: frm.doc.name },
             freeze: true,
-            callback(r) {
-                const result = r.message || {};
-                if (result.name) frappe.set_route("Form", "WAFD Loading Record", result.name);
-                else if (result.values) frappe.new_doc("WAFD Loading Record", result.values);
-            }
+            freeze_message: __("جارٍ اعتماد التغليف وإنشاء سجل التحميل...")
         });
+        const result = r.message || {};
+        frappe.show_alert({ message: __("تم اعتماد التغليف — جارٍ فتح التحميل"), indicator: "green" }, 6);
+        if (result.name) setTimeout(() => frappe.set_route("Form", "WAFD Loading Record", result.name), 350);
+        else if (result.values) {
+            frappe.route_options = result.values;
+            setTimeout(() => frappe.new_doc("WAFD Loading Record"), 350);
+        }
     });
 }

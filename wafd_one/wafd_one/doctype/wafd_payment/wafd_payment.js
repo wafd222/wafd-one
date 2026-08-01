@@ -1,7 +1,8 @@
 frappe.ui.form.on("WAFD Payment", {
     refresh(frm) {
+        toggle_reference_requirement(frm);
         if (frm.doc.docstatus === 0 && !frm.is_new()) {
-            frm.page.set_primary_action(__("اعتماد التحصيل / Submit Payment"), async () => {
+            frm.page.set_primary_action(__("اعتماد التحصيل وإغلاق الدورة / Submit Payment & Finish"), async () => {
                 await frm.save();
                 await frm.savesubmit();
             });
@@ -10,6 +11,13 @@ frappe.ui.form.on("WAFD Payment", {
             frm.add_custom_button(__("فتح الفاتورة / Open Invoice"), () => {
                 frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice);
             });
+        }
+    },
+
+    payment_method(frm) {
+        toggle_reference_requirement(frm);
+        if (frm.doc.payment_method === "نقدي / Cash" && frm.doc.reference_number) {
+            frm.set_value("reference_number", "");
         }
     },
 
@@ -34,5 +42,18 @@ frappe.ui.form.on("WAFD Payment", {
                 }
             }
         });
+    },
+
+    on_submit(frm) {
+        frappe.show_alert({ message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"), indicator: "green" }, 7);
+        const project = frm.doc.project;
+        if (project) setTimeout(() => frappe.set_route("Form", "WAFD Catering Project", project), 500);
+        else setTimeout(() => frappe.set_route("wafd-one-dashboard"), 500);
     }
 });
+
+function toggle_reference_requirement(frm) {
+    const required = !!frm.doc.payment_method && frm.doc.payment_method !== "نقدي / Cash";
+    frm.toggle_reqd("reference_number", required);
+    frm.toggle_display("reference_number", required || !!frm.doc.reference_number);
+}

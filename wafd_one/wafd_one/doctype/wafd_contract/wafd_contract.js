@@ -62,16 +62,16 @@ frappe.ui.form.on("WAFD Contract", {
                     callback(r) {
                         const data = r.message || {};
                         const op = data.operations || {};
-                        frappe.msgprint({
-                            title: __("تم إنشاء دورة التشغيل"),
-                            indicator: (op.warnings || []).length ? "orange" : "green",
-                            message: __("المشروع: {0}<br>خطط الوجبات الجديدة: {1}<br>دفعات الإنتاج الجديدة: {2}", [
-                                data.project?.name || frm.doc.project || "-",
-                                op.meal_plans_created || 0,
-                                op.batches_created || 0
-                            ])
-                        });
-                        frm.reload_doc();
+                        const projectName = data.project?.name || frm.doc.project;
+                        frappe.show_alert({
+                            message: __("تم إنشاء دورة التشغيل بنجاح — جارٍ فتح المشروع / Operations created — opening project"),
+                            indicator: (op.warnings || []).length ? "orange" : "green"
+                        }, 6);
+                        if (projectName) {
+                            setTimeout(() => frappe.set_route("Form", "WAFD Catering Project", projectName), 450);
+                        } else {
+                            frm.reload_doc();
+                        }
                     }
                 })
             );

@@ -93,7 +93,13 @@ def execute():
     ):
         return
 
-    grouped: dict[str, list[dict]] = defaultdict(list)
+    # Use one row per ingredient in each movement.  The master-data seed may
+    # contain the same ingredient more than once (for example under multiple
+    # recipes/categories), while WAFD Stock Movement deliberately rejects
+    # duplicate ingredient rows.  Keep the largest configured minimum instead
+    # of summing duplicates, because this patch establishes a target opening
+    # balance rather than recording multiple receipts.
+    grouped: dict[str, dict[str, dict]] = defaultdict(dict)
 
     for ingredient, _code, category, uom, cost, minimum_stock, _supplier in INGREDIENTS:
         if not frappe.db.exists("WAFD Ingredient", ingredient):
@@ -107,18 +113,20 @@ def execute():
             continue
 
         quantity = max(flt(minimum_stock), 1)
-        grouped[warehouse].append(
-            {
-                "ingredient": ingredient,
-                "quantity": quantity,
-                "uom": canonical_uom(uom),
-                "unit_cost": flt(cost),
-                "amount": quantity * flt(cost),
-                "traceability_notes": NOTE,
-            }
-        )
+        candidate = {
+            "ingredient": ingredient,
+            "quantity": quantity,
+            "uom": canonical_uom(uom),
+            "unit_cost": flt(cost),
+            "amount": quantity * flt(cost),
+            "traceability_notes": NOTE,
+        }
+        existing = grouped[warehouse].get(ingredient)
+        if not existing or flt(candidate["quantity"]) > flt(existing["quantity"]):
+            grouped[warehouse][ingredient] = candidate
 
-    for warehouse, items in grouped.items():
+    for warehouse, item_map in grouped.items():
+        items = list(item_map.values())
         movement = frappe.get_doc(
             {
                 "doctype": "WAFD Stock Movement",

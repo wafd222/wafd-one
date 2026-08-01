@@ -181,6 +181,62 @@ def _remove_received_stock(warehouse, row, posting_date):
     balance.save(ignore_permissions=True)
 
 
+
+def analyze_reversal_safety(doc):
+    """Return a non-mutating diagnostic for reversing one posted movement."""
+    if isinstance(doc, str):
+        doc = frappe.get_doc("WAFD Stock Movement", doc)
+    result = {"name": doc.name, "safe": True, "blockers": [], "items": []}
+    if doc.status != "مرحلة / Posted":
+        return result
+    if doc.movement_type == "تسوية / Adjustment":
+        result["safe"] = False
+        result["blockers"].append({
+            "movement": doc.name,
+            "reason": "adjustment",
+            "message": "حركة تسوية لا تحتوي على رصيد ما قبل التسوية / Adjustment movement has no stored pre-adjustment balance",
+        })
+        return result
+
+    checks = []
+    for row in doc.items or []:
+        if doc.movement_type == "استلام / Receipt":
+            checks.append((doc.target_warehouse, row, "receipt"))
+        elif doc.movement_type == "تحويل / Transfer":
+            checks.append((doc.target_warehouse, row, "transfer_target"))
+
+    for warehouse, row, role in checks:
+        balance = _get_balance(warehouse, row.ingredient, row.uom)
+        current_qty = flt(balance.actual_quantity)
+        reserved_qty = flt(balance.reserved_quantity)
+        required_qty = flt(row.quantity)
+        item = {
+            "movement": doc.name, "ingredient": row.ingredient, "warehouse": warehouse,
+            "required_quantity": required_qty, "current_quantity": current_qty,
+            "reserved_quantity": reserved_qty, "role": role, "dependencies": [],
+        }
+        shortage = max(required_qty - current_qty, 0)
+        reserved_block = max((reserved_qty + required_qty) - current_qty, 0)
+        if shortage > 0.000001 or reserved_block > 0.000001:
+            result["safe"] = False
+            later = frappe.db.sql(
+                """select distinct sm.name, sm.movement_type, sm.posting_date
+                   from `tabWAFD Stock Movement` sm
+                   join `tabWAFD Stock Movement Item` i on i.parent=sm.name
+                  where sm.status='مرحلة / Posted' and sm.name!=%s and i.ingredient=%s
+                    and sm.posting_date >= %s
+                    and ((sm.source_warehouse=%s and sm.movement_type in ('صرف / Issue','هالك / Waste','تحويل / Transfer'))
+                         or (sm.target_warehouse=%s and sm.movement_type='تسوية / Adjustment'))
+                  order by sm.posting_date desc, sm.creation desc limit 20""",
+                (doc.name, row.ingredient, doc.posting_date, warehouse, warehouse), as_dict=True
+            )
+            item["dependencies"] = later
+            item["shortage"] = shortage
+            item["reserved_block"] = reserved_block
+            result["blockers"].append(item)
+        result["items"].append(item)
+    return result
+
 def reverse_posted_movement(doc, reason=None):
     """Reverse one posted WAFD stock movement exactly once.
 

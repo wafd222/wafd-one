@@ -329,11 +329,159 @@ def _contract_purge_plan(contract_name):
     return contract, project_name, records
 
 
+
+def _stock_reversal_preflight(records):
+    """Simulate the complete linked stock rollback without changing data.
+
+    The simulation runs movements newest-first, exactly like the real cleanup.
+    This means a later Issue/Waste/Transfer belonging to the same contract is
+    automatically restored in the virtual balance before an older Receipt is
+    checked. Only shortages caused by records outside the cleanup chain (or
+    reserved stock / legacy adjustments) remain blockers.
+    """
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import _get_balance
+
+    movement_names = records.get("WAFD Stock Movement", [])
+    virtual = {}
+    diagnostics = []
+    blockers = []
+    automatic = []
+
+    def state(warehouse, row):
+        key = (warehouse, row.ingredient)
+        if key not in virtual:
+            balance = _get_balance(warehouse, row.ingredient, row.uom)
+            virtual[key] = {
+                "quantity": flt(balance.actual_quantity),
+                "reserved": flt(balance.reserved_quantity),
+                "initial": flt(balance.actual_quantity),
+            }
+        return key, virtual[key]
+
+    for name in movement_names:
+        if not frappe.db.exists("WAFD Stock Movement", name):
+            continue
+        doc = frappe.get_doc("WAFD Stock Movement", name)
+        result = {"name": name, "safe": True, "blockers": [], "items": []}
+        if doc.status != "مرحلة / Posted":
+            diagnostics.append(result)
+            continue
+        if doc.movement_type == "تسوية / Adjustment":
+            blocker = {
+                "movement": name,
+                "reason": "adjustment",
+                "message": "حركة تسوية لا تحتوي على رصيد ما قبل التسوية / Adjustment movement has no stored pre-adjustment balance",
+            }
+            result["safe"] = False
+            result["blockers"].append(blocker)
+            blockers.append(blocker)
+            diagnostics.append(result)
+            continue
+
+        for row in doc.items or []:
+            qty = flt(row.quantity)
+            item = {"movement": name, "ingredient": row.ingredient, "quantity": qty, "movement_type": doc.movement_type}
+
+            if doc.movement_type in ("صرف / Issue", "هالك / Waste"):
+                key, st = state(doc.source_warehouse, row)
+                before = st["quantity"]
+                st["quantity"] += qty
+                item.update({"warehouse": doc.source_warehouse, "action": "restore", "before": before, "after": st["quantity"]})
+                automatic.append(item.copy())
+
+            elif doc.movement_type == "استلام / Receipt":
+                key, st = state(doc.target_warehouse, row)
+                before = st["quantity"]
+                after = before - qty
+                item.update({"warehouse": doc.target_warehouse, "action": "remove_receipt", "before": before, "after": after, "reserved_quantity": st["reserved"]})
+                if after < -0.000001 or after + 0.000001 < st["reserved"]:
+                    blocker = dict(item)
+                    blocker.update({
+                        "required_quantity": qty,
+                        "current_quantity": before,
+                        "shortage": max(-after, 0),
+                        "reserved_block": max(st["reserved"] - after, 0),
+                        "dependencies": [],
+                    })
+                    result["safe"] = False
+                    result["blockers"].append(blocker)
+                    blockers.append(blocker)
+                else:
+                    st["quantity"] = max(after, 0)
+                    automatic.append(item.copy())
+
+            elif doc.movement_type == "تحويل / Transfer":
+                target_key, target = state(doc.target_warehouse, row)
+                target_before = target["quantity"]
+                target_after = target_before - qty
+                item.update({"warehouse": doc.target_warehouse, "source_warehouse": doc.source_warehouse, "action": "reverse_transfer", "before": target_before, "after": target_after, "reserved_quantity": target["reserved"]})
+                if target_after < -0.000001 or target_after + 0.000001 < target["reserved"]:
+                    blocker = dict(item)
+                    blocker.update({
+                        "required_quantity": qty,
+                        "current_quantity": target_before,
+                        "shortage": max(-target_after, 0),
+                        "reserved_block": max(target["reserved"] - target_after, 0),
+                        "dependencies": [],
+                    })
+                    result["safe"] = False
+                    result["blockers"].append(blocker)
+                    blockers.append(blocker)
+                else:
+                    target["quantity"] = max(target_after, 0)
+                    source_key, source = state(doc.source_warehouse, row)
+                    source_before = source["quantity"]
+                    source["quantity"] += qty
+                    item["source_before"] = source_before
+                    item["source_after"] = source["quantity"]
+                    automatic.append(item.copy())
+
+            result["items"].append(item)
+        diagnostics.append(result)
+
+    # Attach likely external consumers only for genuine remaining blockers.
+    cleanup_set = set(movement_names)
+    for blocker in blockers:
+        if not blocker.get("ingredient") or not blocker.get("warehouse"):
+            continue
+        later = frappe.db.sql(
+            """select distinct sm.name, sm.movement_type, sm.posting_date
+                 from `tabWAFD Stock Movement` sm
+                 join `tabWAFD Stock Movement Item` i on i.parent=sm.name
+                where sm.status='مرحلة / Posted' and i.ingredient=%s
+                  and sm.source_warehouse=%s
+                order by sm.posting_date desc, sm.creation desc limit 30""",
+            (blocker["ingredient"], blocker["warehouse"]), as_dict=True,
+        )
+        blocker["dependencies"] = [row for row in later if row.name not in cleanup_set]
+
+    balance_effects = []
+    for (warehouse, ingredient), st in virtual.items():
+        change = flt(st["quantity"]) - flt(st["initial"])
+        if abs(change) > 0.000001:
+            balance_effects.append({
+                "warehouse": warehouse,
+                "ingredient": ingredient,
+                "before": st["initial"],
+                "after": st["quantity"],
+                "change": change,
+                "reserved_quantity": st["reserved"],
+            })
+
+    return {
+        "safe": not blockers,
+        "diagnostics": diagnostics,
+        "blockers": blockers,
+        "automatic_actions": automatic,
+        "balance_effects": balance_effects,
+    }
+
 @frappe.whitelist()
 def preview_contract_purge(contract_name):
     """Preview exactly what the one-click test-contract purge will remove."""
     _check_contract_purge_permission()
     contract, project_name, records = _contract_purge_plan(contract_name)
+    stock_analysis = _stock_reversal_preflight(records)
     return {
         "contract": contract.name,
         "title": contract.contract_title,
@@ -341,6 +489,7 @@ def preview_contract_purge(contract_name):
         "counts": {doctype: len(names) for doctype, names in records.items()},
         "total": sum(len(names) for names in records.values()),
         "confirmation_phrase": "DELETE",
+        "stock_analysis": stock_analysis,
     }
 
 
@@ -378,6 +527,12 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         frappe.throw("اكتب DELETE للتأكيد / Type DELETE to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
+    stock_analysis = _stock_reversal_preflight(records)
+    if not stock_analysis["safe"]:
+        frappe.throw(
+            "تعذر تنفيذ الحذف لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح معاينة الحذف لمعرفة الأصناف والحركات التابعة. "
+            "/ Contract deletion blocked by unsafe stock reversals. Review the deletion preview for details."
+        )
 
     # Break the intentional Contract <-> Project circular link before deletion.
     frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
@@ -414,6 +569,8 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         "total": sum(deleted.values()),
         "stock_movements_reversed": stock_reversed,
         "stock_items_reversed": stock_items,
+        "stock_balance_effects": stock_analysis.get("balance_effects") or [],
+        "automatic_stock_actions": len(stock_analysis.get("automatic_actions") or []),
     }
 
 
@@ -430,6 +587,12 @@ def reset_contract_test_data(contract_name, confirmation=""):
         frappe.throw("اكتب RESET للتأكيد / Type RESET to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
+    stock_analysis = _stock_reversal_preflight(records)
+    if not stock_analysis["safe"]:
+        frappe.throw(
+            "تعذرت إعادة التهيئة لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح المعاينة لمعرفة الأصناف والحركات التابعة. "
+            "/ Contract reset blocked by unsafe stock reversals. Review the preview for details."
+        )
 
     # Break the Contract <-> Project circular link before deleting the chain.
     frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
@@ -472,4 +635,6 @@ def reset_contract_test_data(contract_name, confirmation=""):
         "contract": contract.name,
         "stock_movements_reversed": stock_reversed,
         "stock_items_reversed": stock_items,
+        "stock_balance_effects": stock_analysis.get("balance_effects") or [],
+        "automatic_stock_actions": len(stock_analysis.get("automatic_actions") or []),
     }

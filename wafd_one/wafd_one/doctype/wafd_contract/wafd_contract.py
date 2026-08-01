@@ -609,12 +609,76 @@ def _expand_test_contract_legacy_stock_dependencies(contract, records, max_round
     ]
     return analysis
 
+def _contract_stock_settlement(records):
+    """Summarize the contract stock without changing the live balance.
+
+    Permanent cleanup keeps the current physical balance exactly as-is. Quantities
+    already issued/wasted are treated as consumed, while the net unused quantity
+    remains in its current warehouse/cold room. This avoids recreating consumed
+    stock and allows an immediate cleanup of test contracts.
+    """
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import _get_balance
+
+    totals = {}
+
+    def add(ingredient, warehouse, uom, received=0, consumed=0):
+        if not warehouse or not ingredient:
+            return
+        key = (ingredient, warehouse, uom or "")
+        row = totals.setdefault(key, {
+            "ingredient": ingredient,
+            "warehouse": warehouse,
+            "uom": uom or "",
+            "received_quantity": 0.0,
+            "consumed_quantity": 0.0,
+        })
+        row["received_quantity"] += flt(received)
+        row["consumed_quantity"] += flt(consumed)
+
+    for name in records.get("WAFD Stock Movement", []) or []:
+        if not frappe.db.exists("WAFD Stock Movement", name):
+            continue
+        doc = frappe.get_doc("WAFD Stock Movement", name)
+        if doc.status != "مرحلة / Posted":
+            continue
+        for item in doc.items or []:
+            qty = flt(item.quantity)
+            if doc.movement_type == "استلام / Receipt":
+                add(item.ingredient, doc.target_warehouse, item.uom, received=qty)
+            elif doc.movement_type in ("صرف / Issue", "هالك / Waste"):
+                add(item.ingredient, doc.source_warehouse, item.uom, consumed=qty)
+            elif doc.movement_type == "تحويل / Transfer":
+                add(item.ingredient, doc.source_warehouse, item.uom, consumed=qty)
+                add(item.ingredient, doc.target_warehouse, item.uom, received=qty)
+
+    rows = []
+    for key in sorted(totals, key=lambda x: (x[1], x[0])):
+        row = totals[key]
+        balance = _get_balance(row["warehouse"], row["ingredient"], row["uom"])
+        current = max(flt(balance.actual_quantity), 0)
+        theoretical_unused = max(row["received_quantity"] - row["consumed_quantity"], 0)
+        # Never report or create more stock than physically exists now.
+        retained = min(theoretical_unused, current)
+        row.update({
+            "current_quantity": current,
+            "unused_quantity_retained": retained,
+            "consumed_from_received": min(row["received_quantity"], row["consumed_quantity"]),
+        })
+        rows.append(row)
+
+    return {
+        "items": rows,
+        "movement_count": len(records.get("WAFD Stock Movement", []) or []),
+        "item_count": len(rows),
+    }
+
+
 @frappe.whitelist()
 def preview_contract_purge(contract_name):
     """Preview exactly what the one-click test-contract purge will remove."""
     _check_contract_purge_permission()
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
+    stock_settlement = _contract_stock_settlement(records)
     return {
         "contract": contract.name,
         "title": contract.contract_title,
@@ -622,11 +686,11 @@ def preview_contract_purge(contract_name):
         "counts": {doctype: len(names) for doctype, names in records.items()},
         "total": sum(len(names) for names in records.values()),
         "confirmation_phrase": "DELETE",
-        "stock_analysis": stock_analysis,
+        "stock_settlement": stock_settlement,
     }
 
 
-def _prepare_and_delete(doctype, name, reason=None):
+def _prepare_and_delete(doctype, name, reason=None, preserve_stock=False):
     if not frappe.db.exists(doctype, name):
         return {"stock_reversed": 0, "stock_items": 0}
     doc = frappe.get_doc(doctype, name)
@@ -635,11 +699,22 @@ def _prepare_and_delete(doctype, name, reason=None):
     # WAFD Stock Movement uses its own posting state rather than docstatus.
     # Reverse its quantities and valuation before deletion; never bypass this.
     if doctype == "WAFD Stock Movement" and doc.get("status") == "مرحلة / Posted":
-        from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import reverse_posted_movement
-        result = reverse_posted_movement(doc, reason=reason)
-        reversal["stock_reversed"] = 1 if result.get("reversed") else 0
-        reversal["stock_items"] = result.get("items", 0)
-        doc.reload()
+        if preserve_stock:
+            # Immediate cleanup mode: preserve the live physical balance. Issued or
+            # wasted quantities remain consumed; unused quantities already remain
+            # in their warehouse/cold room and are not added a second time.
+            doc.db_set({
+                "status": "ملغاة / Cancelled",
+                "posted_by": None,
+                "posted_on": None,
+            }, update_modified=False)
+            doc.reload()
+        else:
+            from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import reverse_posted_movement
+            result = reverse_posted_movement(doc, reason=reason)
+            reversal["stock_reversed"] = 1 if result.get("reversed") else 0
+            reversal["stock_items"] = result.get("items", 0)
+            doc.reload()
 
     # Submitted WAFD documents must be cancelled first so their normal reversal
     # hooks run. Legacy payments from pre-RC56 are normalized defensively.
@@ -660,12 +735,7 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         frappe.throw("اكتب DELETE للتأكيد / Type DELETE to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
-    if not stock_analysis["safe"]:
-        frappe.throw(
-            "تعذر تنفيذ الحذف لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح معاينة الحذف لمعرفة الأصناف والحركات التابعة. "
-            "/ Contract deletion blocked by unsafe stock reversals. Review the deletion preview for details."
-        )
+    stock_settlement = _contract_stock_settlement(records)
 
     # Break the intentional Contract <-> Project circular link before deletion.
     frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
@@ -678,7 +748,7 @@ def purge_contract_and_operations(contract_name, confirmation=""):
     for doctype in _PURGE_ORDER:
         names = records.get(doctype, [])
         for name in names:
-            result = _prepare_and_delete(doctype, name, reason=f"contract purge {contract.name}")
+            result = _prepare_and_delete(doctype, name, reason=f"contract purge {contract.name}", preserve_stock=True)
             stock_reversed += result.get("stock_reversed", 0)
             stock_items += result.get("stock_items", 0)
         if names:
@@ -702,8 +772,7 @@ def purge_contract_and_operations(contract_name, confirmation=""):
         "total": sum(deleted.values()),
         "stock_movements_reversed": stock_reversed,
         "stock_items_reversed": stock_items,
-        "stock_balance_effects": stock_analysis.get("balance_effects") or [],
-        "automatic_stock_actions": len(stock_analysis.get("automatic_actions") or []),
+        "stock_settlement": stock_settlement,
     }
 
 
@@ -720,12 +789,7 @@ def reset_contract_test_data(contract_name, confirmation=""):
         frappe.throw("اكتب RESET للتأكيد / Type RESET to confirm")
 
     contract, project_name, records = _contract_purge_plan(contract_name)
-    stock_analysis = _expand_test_contract_legacy_stock_dependencies(contract, records)
-    if not stock_analysis["safe"]:
-        frappe.throw(
-            "تعذرت إعادة التهيئة لأن بعض حركات المخزون لا يمكن عكسها بأمان. افتح المعاينة لمعرفة الأصناف والحركات التابعة. "
-            "/ Contract reset blocked by unsafe stock reversals. Review the preview for details."
-        )
+    stock_settlement = _contract_stock_settlement(records)
 
     # Break the Contract <-> Project circular link before deleting the chain.
     frappe.db.set_value("WAFD Contract", contract.name, "project", None, update_modified=False)
@@ -738,7 +802,7 @@ def reset_contract_test_data(contract_name, confirmation=""):
     for doctype in _PURGE_ORDER:
         names = records.get(doctype, [])
         for name in names:
-            result = _prepare_and_delete(doctype, name, reason=f"contract reset {contract.name}")
+            result = _prepare_and_delete(doctype, name, reason=f"contract reset {contract.name}", preserve_stock=True)
             stock_reversed += result.get("stock_reversed", 0)
             stock_items += result.get("stock_items", 0)
         if names:
@@ -768,6 +832,5 @@ def reset_contract_test_data(contract_name, confirmation=""):
         "contract": contract.name,
         "stock_movements_reversed": stock_reversed,
         "stock_items_reversed": stock_items,
-        "stock_balance_effects": stock_analysis.get("balance_effects") or [],
-        "automatic_stock_actions": len(stock_analysis.get("automatic_actions") or []),
+        "stock_settlement": stock_settlement,
     }

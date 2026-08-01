@@ -120,46 +120,25 @@ function open_contract_cleanup_dialog(frm, options) {
                 .filter(([doctype]) => options.mode === "delete" || doctype !== "WAFD Contract")
                 .reduce((sum, [, count]) => sum + flt(count), 0);
             const phrase = options.phrase;
-            const stockAnalysis = data.stock_analysis || {};
-            const blockers = stockAnalysis.blockers || [];
-            const blockerRows = blockers.map((b) => {
-                const deps = (b.dependencies || []).map((d) =>
-                    `${frappe.utils.escape_html(d.name)} — ${frappe.utils.escape_html(d.movement_type || "")}`
-                ).join("<br>") || __("لا توجد حركة تابعة محددة؛ راجع الرصيد والحجوزات.");
-                return `<tr>
-                    <td>${frappe.utils.escape_html(b.ingredient || b.movement || "-")}</td>
-                    <td>${frappe.utils.escape_html(b.warehouse || "-")}</td>
-                    <td>${flt(b.required_quantity || 0)}</td>
-                    <td>${flt(b.current_quantity || 0)}</td>
-                    <td>${flt(b.reserved_quantity || 0)}</td>
-                    <td>${deps}</td>
-                </tr>`;
-            }).join("");
-            const effects = stockAnalysis.balance_effects || [];
-            const effectRows = effects.map((e) => `<tr>
-                <td>${frappe.utils.escape_html(e.ingredient || "-")}</td>
-                <td>${frappe.utils.escape_html(e.warehouse || "-")}</td>
-                <td>${flt(e.before || 0)}</td>
-                <td>${flt(e.change || 0) > 0 ? "+" : ""}${flt(e.change || 0)}</td>
-                <td>${flt(e.after || 0)}</td>
+            const settlement = data.stock_settlement || {};
+            const stockItems = settlement.items || [];
+            const stockRows = stockItems.map((item) => `<tr>
+                <td>${frappe.utils.escape_html(item.ingredient || "-")}</td>
+                <td>${frappe.utils.escape_html(item.warehouse || "-")}</td>
+                <td>${flt(item.received_quantity || 0)}</td>
+                <td>${flt(item.consumed_from_received || 0)}</td>
+                <td>${flt(item.unused_quantity_retained || 0)}</td>
+                <td>${frappe.utils.escape_html(item.uom || "")}</td>
             </tr>`).join("");
-            const automaticPlan = effects.length ? `<div class="alert alert-info mt-3">
-                <b>${__("سيعالج النظام المخزون آليًا ضمن نفس العقد:")}</b>
+            const stockPreview = stockRows ? `<div class="alert alert-info mt-3">
+                <b>${__("تسوية المخزون عند التنفيذ:")}</b>
+                <div class="mt-1">${__("سيبقى الرصيد الفعلي كما هو: المصروف يظل مستهلكًا، وغير المستخدم يبقى في مستودعه أو ثلاجته دون إضافة مكررة.")}</div>
                 <table class="table table-bordered mt-2">
-                    <thead><tr><th>${__("الصنف")}</th><th>${__("المستودع")}</th><th>${__("قبل")}</th><th>${__("التعديل الآلي")}</th><th>${__("بعد")}</th></tr></thead>
-                    <tbody>${effectRows}</tbody>
+                    <thead><tr><th>${__("الصنف")}</th><th>${__("المستودع/الثلاجة")}</th><th>${__("المستلم")}</th><th>${__("المصروف")}</th><th>${__("غير المستخدم")}</th><th>${__("الوحدة")}</th></tr></thead>
+                    <tbody>${stockRows}</tbody>
                 </table>
-                <div>${__("سيتم توثيق سبب كل تعديل بأنه ناتج عن إلغاء/إعادة تهيئة العقد الحالي.")}</div>
-            </div>` : "";
+            </div>` : `<div class="alert alert-info mt-3">${__("لا توجد حركات مخزون مرتبطة بهذا العقد.")}</div>`;
 
-            const stockWarning = blockers.length ? `<div class="alert alert-warning mt-3">
-                <b>${__("لا يمكن التنفيذ قبل معالجة تعارضات المخزون التالية:")}</b>
-                <table class="table table-bordered mt-2">
-                    <thead><tr><th>${__("الصنف/الحركة")}</th><th>${__("المستودع")}</th><th>${__("مطلوب للعكس")}</th><th>${__("المتاح حاليًا")}</th><th>${__("محجوز")}</th><th>${__("حركات لاحقة محتملة")}</th></tr></thead>
-                    <tbody>${blockerRows}</tbody>
-                </table>
-                <div>${__("اعكس الحركات اللاحقة أو ألغِ الحجوزات أولًا، ثم أعد فتح هذه النافذة.")}</div>
-            </div>` : `<div class="alert alert-success mt-3">${__("فحص المخزون ناجح: يمكن عكس جميع الحركات المرتبطة بأمان.")}</div>`;
             const dialog = new frappe.ui.Dialog({
                 title: options.title,
                 fields: [
@@ -169,8 +148,7 @@ function open_contract_cleanup_dialog(frm, options) {
                             <b>${options.warning}</b>
                             <table class="table table-bordered mt-3"><tbody>${rows}</tbody></table>
                             <b>${__("إجمالي السجلات")}: ${total}</b>
-                            ${automaticPlan}
-                            ${stockWarning}
+                            ${stockPreview}
                             <div class="mt-3">${__("اكتب {0} للتأكيد", [phrase])}</div>
                         </div>`
                     },
@@ -196,24 +174,19 @@ function open_contract_cleanup_dialog(frm, options) {
                         callback(res) {
                             dialog.hide();
                             const result = res.message || {};
-                            const effects = result.stock_balance_effects || [];
-                            const effectLines = effects.map((e) => {
-                                const delta = flt(e.change || 0);
-                                const reason = options.mode === "delete" ? __("حذف العقد") : __("إعادة تهيئة العقد");
-                                return `• ${frappe.utils.escape_html(e.ingredient || "-")} — ${frappe.utils.escape_html(e.warehouse || "-")}: ${flt(e.before || 0)} → ${flt(e.after || 0)} (${delta > 0 ? "+" : ""}${delta}) — ${reason}`;
+                            const finalSettlement = result.stock_settlement || {};
+                            const lines = (finalSettlement.items || []).map((item) => {
+                                return `• ${frappe.utils.escape_html(item.ingredient || "-")} — ${frappe.utils.escape_html(item.warehouse || "-")}: ` +
+                                    `${__("المستلم")} ${flt(item.received_quantity || 0)}، ` +
+                                    `${__("المصروف")} ${flt(item.consumed_from_received || 0)}، ` +
+                                    `${__("غير المستخدم والمتبقي في المخزون")} ${flt(item.unused_quantity_retained || 0)} ${frappe.utils.escape_html(item.uom || "")}`;
                             }).join("<br>");
-                            const stockReport = __("تم عكس {0} حركة مخزون تشمل {1} صنفًا، وتنفيذ {2} معالجة آلية.", [
-                                result.stock_movements_reversed || 0,
-                                result.stock_items_reversed || 0,
-                                result.automatic_stock_actions || 0
-                            ]);
                             frappe.msgprint({
-                                title: options.mode === "delete" ? __("اكتمل الحذف الآمن") : __("اكتملت إعادة التهيئة"),
+                                title: options.mode === "delete" ? __("تم حذف العقد بنجاح") : __("اكتملت إعادة التهيئة"),
                                 indicator: "green",
-                                message: __("تمت معالجة {0} سجل مرتبط بنجاح.<br>{1}<br><br><b>تقرير تعديل المخزون:</b><br>{2}", [
+                                message: __("تمت معالجة {0} سجل مرتبط.<br><br><b>بيان المخزون:</b><br>{1}", [
                                     result.total || 0,
-                                    stockReport,
-                                    effectLines || __("لا توجد فروقات كمية نهائية في المخزون.")
+                                    lines || __("لا توجد حركات مخزون مرتبطة.")
                                 ])
                             });
                             if (options.mode === "delete") {
@@ -228,13 +201,6 @@ function open_contract_cleanup_dialog(frm, options) {
                 secondary_action() { dialog.hide(); }
             });
             dialog.show();
-            if (blockers.length) {
-                // Keep the confirmation field editable so the dialog never appears broken.
-                // The destructive action remains disabled until dependency analysis is safe.
-                dialog.get_primary_btn().prop("disabled", true);
-                dialog.fields_dict.confirmation.df.description = __("يمكنك كتابة عبارة التأكيد، لكن زر التنفيذ سيظل معطلاً حتى تُحل التعارضات غير التابعة للعقد.");
-                dialog.fields_dict.confirmation.refresh();
-            }
         }
     });
 }

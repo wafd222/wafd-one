@@ -11,3 +11,20 @@
 @media(max-width:720px){.wafd-hero-pro{flex-direction:column;padding:20px}.wafd-hero-side{width:100%;min-width:0}.wafd-logo-shell{width:72px;height:68px}.wafd-hero-copy h1{font-size:27px}.wafd-hero-copy h1 small{display:none}.wafd-action-grid{grid-template-columns:repeat(2,1fr)}.wafd-control-strip{flex-wrap:wrap}.wafd-control-title{width:100%;margin-left:0}.wafd-control-strip label{flex:1}.wafd-control-strip input{width:100%}.wafd-flow-pro{grid-template-columns:repeat(3,1fr)}.wafd-kpi-grid{grid-template-columns:1fr 1fr}}
 
 .wafd-executive-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.wafd-executive-secondary{margin-top:12px}.wafd-risk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.wafd-risk-grid button{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);background:#faf9f6;border-radius:13px;padding:12px;text-align:right}.wafd-risk-grid button span{font-size:10px;font-weight:800}.wafd-risk-grid button strong{font-size:21px}.wafd-risk-grid button.is-risk{background:#fff7f2;border-color:#e7b9aa;color:#8f382b}.wafd-refresh-alerts{white-space:nowrap}.wafd-executive-grid table{min-width:480px}@media(max-width:1000px){.wafd-executive-grid{grid-template-columns:1fr}}@media(max-width:600px){.wafd-risk-grid{grid-template-columns:1fr}.wafd-executive-grid table{min-width:420px}}
+
+/* RC73 executive command center */
+.wafd-hero-copy h1,.wafd-hero-copy h1 small{color:#666a70}
+.wafd-kpi-grid-wide{grid-template-columns:repeat(4,1fr)}
+.wafd-manager-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.wafd-overview-card{min-height:180px}
+.wafd-today-ops{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.wafd-today-ops>div{border:1px solid var(--line);background:#faf9f6;border-radius:13px;padding:14px;text-align:center}
+.wafd-today-ops strong{display:block;font-size:25px;color:#181a1f}.wafd-today-ops span{font-size:10px;color:var(--muted)}
+.wafd-finance-summary,.wafd-inventory-summary{display:grid;gap:7px}
+.wafd-finance-summary>div,.wafd-inventory-summary>div{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eeeae2;padding:8px 2px}
+.wafd-finance-summary span,.wafd-inventory-summary span{font-size:10px;color:var(--muted)}
+.wafd-finance-summary strong,.wafd-inventory-summary strong{font-size:14px}.is-negative{color:#b23b2d!important}
+.wafd-status-pill{display:inline-grid;place-items:center;min-width:28px;padding:3px 8px;border-radius:99px;background:#eaf7ef;color:#247a45;font-weight:800}
+.wafd-status-pill.is-warn{background:#fff0e7;color:#a14c20}
+@media(max-width:1100px){.wafd-kpi-grid-wide{grid-template-columns:repeat(2,1fr)}.wafd-manager-overview{grid-template-columns:1fr}}
+@media(max-width:620px){.wafd-kpi-grid-wide{grid-template-columns:1fr 1fr}.wafd-today-ops{grid-template-columns:repeat(2,1fr)}}

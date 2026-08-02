@@ -137,6 +137,7 @@ def get_executive_dashboard_data(from_date=None, to_date=None):
 
     data.update(
         {
+            "active_contracts": _safe_count("WAFD Contract", {"status": ["not in", ["ملغي / Cancelled", "مغلق / Closed"]]}),
             "executive_risks": {
                 "open_alerts": _safe_count("WAFD Operations Alert", {"status": ["!=", "مغلق / Closed"]}),
                 "critical_alerts": critical_alerts,
@@ -150,11 +151,14 @@ def get_executive_dashboard_data(from_date=None, to_date=None):
             "driver_performance": _driver_performance(),
             "hotel_performance": _hotel_performance(),
             "food_safety": get_food_safety_dashboard(service_date=to_date or nowdate()),
+            "inventory_snapshot": _inventory_snapshot(),
+            "today_operations": _today_operations(),
         }
     )
     return data
 
 
+@frappe.whitelist()
 def refresh_executive_alerts():
     """Create or refresh management alerts for risks not covered by operations checks."""
     if not _has_doctype("WAFD Operations Alert"):
@@ -244,3 +248,54 @@ def refresh_executive_alerts():
             )
 
     return {"created_or_updated": len(set(created)), "alerts": list(dict.fromkeys(created))}
+
+
+def _inventory_snapshot(limit: int = 8):
+    if not _has_doctype("WAFD Stock Balance"):
+        return {"total_value": 0, "low_items": 0, "warehouses": [], "top_consumed": []}
+
+    total_value = frappe.db.sql("select coalesce(sum(stock_value),0) from `tabWAFD Stock Balance`")[0][0] or 0
+    low_items = frappe.db.sql(
+        """select count(*) from `tabWAFD Stock Balance`
+           where available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low')"""
+    )[0][0] or 0
+    warehouses = frappe.db.sql(
+        """select warehouse, coalesce(sum(stock_value),0) stock_value,
+                  sum(case when available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low') then 1 else 0 end) low_items,
+                  count(*) item_count
+           from `tabWAFD Stock Balance`
+           group by warehouse
+           order by stock_value desc
+           limit %s""",
+        (cint(limit),), as_dict=True,
+    )
+    top_consumed = []
+    if _has_doctype("WAFD Stock Movement") and _has_doctype("WAFD Stock Movement Item"):
+        top_consumed = frappe.db.sql(
+            """select smi.ingredient, coalesce(sum(smi.quantity),0) quantity,
+                      max(smi.uom) uom
+               from `tabWAFD Stock Movement Item` smi
+               inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
+               where sm.status in ('مرحّل / Posted','معتمد / Confirmed')
+                 and sm.movement_type in ('صرف / Issue','استهلاك / Consumption')
+               group by smi.ingredient
+               order by quantity desc
+               limit %s""",
+            (cint(limit),), as_dict=True,
+        )
+    return {
+        "total_value": flt(total_value),
+        "low_items": cint(low_items),
+        "warehouses": warehouses,
+        "top_consumed": top_consumed,
+    }
+
+
+def _today_operations():
+    today = nowdate()
+    return {
+        "planned": _safe_count("WAFD Meal Plan", {"service_date": today, "status": ["!=", "ملغي / Cancelled"]}),
+        "production": _safe_count("WAFD Production Batch", {"batch_date": today, "status": ["!=", "موقوف / Stopped"]}),
+        "trips": _safe_count("WAFD Delivery Trip", {"trip_date": today, "status": ["!=", "ملغية / Cancelled"]}),
+        "delivered": _safe_count("WAFD Delivery Trip", {"trip_date": today, "status": "تم التسليم / Delivered"}),
+    }

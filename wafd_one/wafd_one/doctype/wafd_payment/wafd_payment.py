@@ -130,13 +130,22 @@ def submit_and_finish(payment_name):
     elif payment.docstatus != 1:
         frappe.throw("لا يمكن اعتماد سند تحصيل ملغي / A cancelled payment cannot be submitted")
 
-    from wafd_one.finance import refresh_invoice_and_project, close_project_financially
+    from wafd_one.finance import refresh_invoice_and_project, get_project_billing_status, close_project_financially
 
+    # A valid payment must never be rolled back merely because the whole project is
+    # not yet ready for operational closure.  Submit and refresh the payment first,
+    # then close the project only when every closure condition is already satisfied.
     refresh_invoice_and_project(payment.invoice)
     project = payment.project or frappe.db.get_value("WAFD Invoice", payment.invoice, "project")
     closure = None
+    closure_pending = False
+    billing_status = None
     if project:
-        closure = close_project_financially(project)
+        billing_status = get_project_billing_status(project)
+        if billing_status.get("ready_for_closure"):
+            closure = close_project_financially(project)
+        else:
+            closure_pending = True
 
     return {
         "payment": payment.name,
@@ -144,7 +153,9 @@ def submit_and_finish(payment_name):
         "project": project,
         "project_status": frappe.db.get_value("WAFD Catering Project", project, "status") if project else None,
         "closure": closure,
-        "route": "wafd-one-dashboard",
+        "closure_pending": closure_pending,
+        "billing_status": billing_status,
+        "route": ["Form", "WAFD Invoice", payment.invoice],
     }
 
 

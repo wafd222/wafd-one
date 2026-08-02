@@ -14,6 +14,11 @@ frappe.ui.form.on("WAFD Payment", {
                     const result = r.message || {};
                     if (result.already_paid) {
                         frappe.show_alert({ message: __("الفاتورة مدفوعة بالكامل وتم حذف مسودة التحصيل الزائدة"), indicator: "green" }, 7);
+                    } else if (result.closure_pending) {
+                        frappe.show_alert({
+                            message: __("تم اعتماد التحصيل بنجاح. سيبقى المشروع مفتوحًا حتى تكتمل بقية عمليات التسليم والفوترة."),
+                            indicator: "blue"
+                        }, 9);
                     } else {
                         frappe.show_alert({ message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"), indicator: "green" }, 7);
                     }

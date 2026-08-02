@@ -35,11 +35,7 @@ frappe.ui.form.on("WAFD Packaging Record", {
                     freeze: true,
                     callback(r) {
                         const result = r.message || {};
-                        if (result.name) {
-                            frappe.set_route("Form", "WAFD Loading Record", result.name);
-                        } else if (result.values) {
-                            frappe.new_doc("WAFD Loading Record", result.values);
-                        }
+                        open_loading_record(result);
                     }
                 });
             }, __("Operations"));
@@ -116,10 +112,20 @@ function add_guided_packaging_action(frm) {
         });
         const result = r.message || {};
         frappe.show_alert({ message: __("تم اعتماد التغليف — جارٍ فتح التحميل"), indicator: "green" }, 6);
-        if (result.name) setTimeout(() => frappe.set_route("Form", "WAFD Loading Record", result.name), 350);
-        else if (result.values) {
-            frappe.route_options = result.values;
-            setTimeout(() => frappe.new_doc("WAFD Loading Record"), 350);
-        }
+        await open_loading_record(result);
     });
+}
+
+
+async function open_loading_record(result) {
+    if (result.name) {
+        await frappe.set_route("Form", "WAFD Loading Record", result.name);
+        return;
+    }
+    if (result.values) {
+        frappe.route_options = result.values;
+        await frappe.new_doc("WAFD Loading Record", result.values);
+        return;
+    }
+    frappe.throw(__("تعذر فتح سجل التحميل. أعد المحاولة أو راجع صلاحية إنشاء سجل التحميل."));
 }

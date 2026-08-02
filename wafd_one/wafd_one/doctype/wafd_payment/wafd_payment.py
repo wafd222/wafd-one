@@ -99,3 +99,38 @@ class WAFDPayment(Document):
         from wafd_one.finance import refresh_invoice_and_project
 
         refresh_invoice_and_project(self.invoice)
+
+
+@frappe.whitelist()
+def submit_and_finish(payment_name):
+    """Submit a payment, refresh its invoice, close the project and return the next route.
+
+    This explicit server action avoids relying on a browser on_submit callback and makes
+    the final workflow step atomic and repeat-safe.
+    """
+    if not payment_name or not frappe.db.exists("WAFD Payment", payment_name):
+        frappe.throw("سند التحصيل غير موجود / Payment not found")
+
+    payment = frappe.get_doc("WAFD Payment", payment_name)
+    payment.check_permission("write")
+    if payment.docstatus == 0:
+        payment.submit()
+    elif payment.docstatus != 1:
+        frappe.throw("لا يمكن اعتماد سند تحصيل ملغي / A cancelled payment cannot be submitted")
+
+    from wafd_one.finance import refresh_invoice_and_project, close_project_financially
+
+    refresh_invoice_and_project(payment.invoice)
+    project = payment.project or frappe.db.get_value("WAFD Invoice", payment.invoice, "project")
+    closure = None
+    if project:
+        closure = close_project_financially(project)
+
+    return {
+        "payment": payment.name,
+        "invoice": payment.invoice,
+        "project": project,
+        "project_status": frappe.db.get_value("WAFD Catering Project", project, "status") if project else None,
+        "closure": closure,
+        "route": "wafd-one-dashboard",
+    }

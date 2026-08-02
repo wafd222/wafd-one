@@ -63,6 +63,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <article class="wafd-card">
           <div class="wafd-card-head"><div><h3>وصول سريع</h3><small>المخزون والمستندات الأساسية</small></div></div>
           <div class="wafd-shortcuts">
+            <button class="wafd-stock-receipt-shortcut" data-stock-receipt="1">استلام مواد مشتراة</button>
             <button data-list="WAFD Warehouse">المستودعات والثلاجات</button>
             <button data-list="WAFD Stock Movement">حركات المخزون</button>
             <button data-list="WAFD Production Batch">دفعات الإنتاج</button>
@@ -89,6 +90,15 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   `).join(""));
 
   $root.on("click", "[data-route]", function () { frappe.set_route($(this).data("route")); });
+  $root.on("click", "[data-stock-receipt]", function () {
+    frappe.new_doc("WAFD Stock Movement", {
+      movement_type: "استلام / Receipt",
+      posting_date: frappe.datetime.now_datetime(),
+      status: "مسودة / Draft",
+      reference_type: "شراء مباشر / Direct Purchase",
+      notes: "استلام مواد مشتراة وتوريدها إلى مستودعات أو ثلاجات الإعاشة"
+    });
+  });
   $root.on("click", "[data-new]", function () { frappe.new_doc($(this).data("new")); });
   $root.on("click", "[data-list]", function () { frappe.set_route("List", $(this).data("list")); });
   $root.on("click", "[data-docname]", function () { frappe.set_route("Form", $(this).data("doctype"), $(this).data("docname")); });

@@ -3,13 +3,32 @@ frappe.ui.form.on("WAFD Payment", {
         toggle_reference_requirement(frm);
         if (frm.doc.docstatus === 0 && !frm.is_new()) {
             frm.page.set_primary_action(__("اعتماد التحصيل وإغلاق الدورة / Submit Payment & Finish"), async () => {
-                await frm.save();
-                await frm.savesubmit();
+                try {
+                    if (frm.is_dirty()) await frm.save();
+                    const r = await frappe.call({
+                        method: "wafd_one.wafd_one.doctype.wafd_payment.wafd_payment.submit_and_finish",
+                        args: { payment_name: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("جارٍ اعتماد التحصيل وإغلاق الدورة... / Submitting payment and closing workflow...")
+                    });
+                    const result = r.message || {};
+                    frappe.show_alert({
+                        message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"),
+                        indicator: "green"
+                    }, 7);
+                    setTimeout(() => frappe.set_route(result.route || "wafd-one-dashboard"), 450);
+                } catch (e) {
+                    // Frappe already displays the server validation message.
+                    console.error(e);
+                }
             });
         }
         if (frm.doc.docstatus === 1 && frm.doc.invoice) {
             frm.add_custom_button(__("فتح الفاتورة / Open Invoice"), () => {
                 frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice);
+            });
+            frm.add_custom_button(__("العودة للوحة التشغيل / Operations Dashboard"), () => {
+                frappe.set_route("wafd-one-dashboard");
             });
         }
     },
@@ -42,13 +61,6 @@ frappe.ui.form.on("WAFD Payment", {
                 }
             }
         });
-    },
-
-    on_submit(frm) {
-        frappe.show_alert({ message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"), indicator: "green" }, 7);
-        const project = frm.doc.project;
-        if (project) setTimeout(() => frappe.set_route("Form", "WAFD Catering Project", project), 500);
-        else setTimeout(() => frappe.set_route("wafd-one-dashboard"), 500);
     }
 });
 

@@ -12,11 +12,15 @@ frappe.ui.form.on("WAFD Payment", {
                         freeze_message: __("جارٍ اعتماد التحصيل وإغلاق الدورة... / Submitting payment and closing workflow...")
                     });
                     const result = r.message || {};
-                    frappe.show_alert({
-                        message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"),
-                        indicator: "green"
-                    }, 7);
-                    setTimeout(() => frappe.set_route(result.route || "wafd-one-dashboard"), 450);
+                    if (result.already_paid) {
+                        frappe.show_alert({ message: __("الفاتورة مدفوعة بالكامل وتم حذف مسودة التحصيل الزائدة"), indicator: "green" }, 7);
+                    } else {
+                        frappe.show_alert({ message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"), indicator: "green" }, 7);
+                    }
+                    setTimeout(() => {
+                        if (Array.isArray(result.route)) frappe.set_route(...result.route);
+                        else frappe.set_route(result.route || "wafd-one-dashboard");
+                    }, 450);
                 } catch (e) {
                     // Frappe already displays the server validation message.
                     console.error(e);
@@ -55,9 +59,18 @@ frappe.ui.form.on("WAFD Payment", {
                 if (r.message.balance <= 0) {
                     frappe.msgprint({
                         title: __("الفاتورة مدفوعة بالكامل"),
-                        indicator: "red",
-                        message: __("لا يمكن تسجيل تحصيل إضافي لهذه الفاتورة / This invoice has no outstanding balance.")
+                        indicator: "green",
+                        message: __("لا يمكن تسجيل تحصيل إضافي لهذه الفاتورة، وسيتم إغلاق هذه المسودة دون حفظها. / This invoice has no outstanding balance; this draft will not be kept.")
                     });
+                    if (!frm.is_new() && frm.doc.docstatus === 0) {
+                        frappe.call({
+                            method: "wafd_one.wafd_one.doctype.wafd_payment.wafd_payment.discard_paid_invoice_draft",
+                            args: { payment_name: frm.doc.name },
+                            freeze: true
+                        }).then(() => frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice));
+                    } else {
+                        frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice);
+                    }
                 }
             }
         });

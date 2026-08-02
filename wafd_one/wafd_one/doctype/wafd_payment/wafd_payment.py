@@ -114,6 +114,18 @@ def submit_and_finish(payment_name):
     payment = frappe.get_doc("WAFD Payment", payment_name)
     payment.check_permission("write")
     if payment.docstatus == 0:
+        from wafd_one.finance import get_invoice_totals
+        totals = get_invoice_totals(payment.invoice, exclude_payment=payment.name)
+        if flt(totals.get("balance")) <= 0:
+            invoice = payment.invoice
+            project = payment.project or totals.get("project")
+            frappe.delete_doc("WAFD Payment", payment.name, ignore_permissions=True, force=True)
+            return {
+                "already_paid": True,
+                "invoice": invoice,
+                "project": project,
+                "route": ["Form", "WAFD Invoice", invoice],
+            }
         payment.submit()
     elif payment.docstatus != 1:
         frappe.throw("لا يمكن اعتماد سند تحصيل ملغي / A cancelled payment cannot be submitted")
@@ -134,3 +146,21 @@ def submit_and_finish(payment_name):
         "closure": closure,
         "route": "wafd-one-dashboard",
     }
+
+
+@frappe.whitelist()
+def discard_paid_invoice_draft(payment_name):
+    """Remove a stale draft payment when its invoice is already fully paid."""
+    if not payment_name or not frappe.db.exists("WAFD Payment", payment_name):
+        return {"deleted": False}
+    payment = frappe.get_doc("WAFD Payment", payment_name)
+    payment.check_permission("delete")
+    if payment.docstatus != 0:
+        return {"deleted": False}
+    from wafd_one.finance import get_invoice_totals
+    totals = get_invoice_totals(payment.invoice, exclude_payment=payment.name)
+    if flt(totals.get("balance")) > 0:
+        frappe.throw("لا يمكن حذف المسودة لأن الفاتورة ما زالت تحتوي على رصيد / Draft cannot be discarded while the invoice still has a balance")
+    invoice = payment.invoice
+    frappe.delete_doc("WAFD Payment", payment.name, ignore_permissions=True, force=True)
+    return {"deleted": True, "invoice": invoice}

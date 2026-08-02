@@ -142,15 +142,31 @@ function wafd_recalculate_item_subtotal(frm) {
 
 async function open_payment(frm) {
     if (frm.is_dirty()) await frm.save();
-    frappe.show_alert({ message: __("تم اعتماد الفاتورة — جارٍ فتح التحصيل"), indicator: "green" }, 5);
+    const r = await frappe.call({
+        method: "wafd_one.finance.get_invoice_totals",
+        args: { invoice_name: frm.doc.name },
+        freeze: true,
+        freeze_message: __("جارٍ التحقق من رصيد الفاتورة...")
+    });
+    const totals = r.message || {};
+    if (flt(totals.balance) <= 0 || totals.status === "مدفوعة / Paid") {
+        frappe.msgprint({
+            title: __("الفاتورة مدفوعة بالكامل"),
+            indicator: "green",
+            message: __("لا يمكن إنشاء تحصيل جديد لأن رصيد الفاتورة يساوي صفرًا. / A new payment cannot be created because the invoice balance is zero.")
+        });
+        await frm.reload_doc();
+        return;
+    }
+    frappe.show_alert({ message: __("تم التحقق من الفاتورة — جارٍ فتح التحصيل"), indicator: "green" }, 5);
     frappe.route_options = {
         invoice: frm.doc.name,
-        project: frm.doc.project,
-        invoice_total: frm.doc.grand_total,
-        previously_paid: frm.doc.paid_amount,
-        outstanding_before: frm.doc.balance,
+        project: totals.project || frm.doc.project,
+        invoice_total: totals.invoice_total || frm.doc.grand_total,
+        previously_paid: totals.paid_amount || 0,
+        outstanding_before: totals.balance,
         payment_date: frappe.datetime.get_today(),
-        amount: frm.doc.balance,
+        amount: totals.balance,
         payment_method: "نقدي / Cash",
         status: "مسودة / Draft"
     };

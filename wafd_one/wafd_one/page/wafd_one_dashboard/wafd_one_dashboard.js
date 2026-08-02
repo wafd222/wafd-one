@@ -73,6 +73,29 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
           </div>
         </article>
       </section>
+
+      <section class="wafd-section-head"><div><span>لوحة المدير التنفيذية</span><small>المخاطر والأداء والربحية في شاشة واحدة</small></div></section>
+      <section class="wafd-executive-grid">
+        <article class="wafd-card">
+          <div class="wafd-card-head"><div><h3>المخاطر الإدارية</h3><small>العقود والوثائق والربحية والتنبيهات</small></div><button class="wafd-refresh-alerts">تحديث التنبيهات</button></div>
+          <div class="wafd-risk-grid"></div>
+        </article>
+        <article class="wafd-card">
+          <div class="wafd-card-head"><div><h3>أفضل المشاريع</h3><small>الإيراد والربح والهامش</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div>
+          <div class="wafd-project-rankings"></div>
+        </article>
+      </section>
+
+      <section class="wafd-executive-grid wafd-executive-secondary">
+        <article class="wafd-card">
+          <div class="wafd-card-head"><div><h3>أداء التوصيل</h3><small>السائقون والالتزام بالمواعيد</small></div><button data-list="WAFD Delivery Trip">الرحلات</button></div>
+          <div class="wafd-driver-performance"></div>
+        </article>
+        <article class="wafd-card">
+          <div class="wafd-card-head"><div><h3>أداء الفنادق</h3><small>الكميات المقبولة والمرفوضة</small></div><button data-list="WAFD Hotel">الفنادق</button></div>
+          <div class="wafd-hotel-performance"></div>
+        </article>
+      </section>
     </div>`);
 
   $root.find(".wafd-to").val(today);
@@ -103,6 +126,13 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   $root.on("click", "[data-list]", function () { frappe.set_route("List", $(this).data("list")); });
   $root.on("click", "[data-docname]", function () { frappe.set_route("Form", $(this).data("doctype"), $(this).data("docname")); });
   $root.on("click", ".wafd-refresh", load);
+  $root.on("click", ".wafd-refresh-alerts", function () {
+    frappe.call({
+      method: "wafd_one.executive.refresh_executive_alerts",
+      freeze: true,
+      freeze_message: __("جارٍ تحديث التنبيهات الإدارية...")
+    }).then(() => { frappe.show_alert({ message: __("تم تحديث التنبيهات"), indicator: "green" }); load(); });
+  });
 
   function escape(value) { return frappe.utils.escape_html(String(value ?? "")); }
   function money(value) { return format_currency(value || 0, "SAR"); }
@@ -148,6 +178,34 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     $root.find(".wafd-deliveries").html(deliveries.length ? `<table><thead><tr><th>التاريخ</th><th>الفندق</th><th>الكمية</th></tr></thead><tbody>${deliveries.slice(0, 7).map((row) => `
       <tr data-doctype="WAFD Delivery Trip" data-docname="${escape(row.name)}"><td>${escape(row.trip_date)}</td><td>${escape(row.hotel)}</td><td><b>${escape(row.quantity)}</b></td></tr>
     `).join("")}</tbody></table>` : empty("لا توجد توصيلات قادمة."));
+
+    const risks = data.executive_risks || {};
+    const riskCards = [
+      ["التنبيهات المفتوحة", risks.open_alerts || 0, "WAFD Operations Alert"],
+      ["التنبيهات الحرجة", risks.critical_alerts || 0, "WAFD Operations Alert"],
+      ["مشاريع هامشها منخفض", risks.low_margin_projects || 0, "WAFD Catering Project"],
+      ["عقود تنتهي خلال 30 يومًا", risks.expiring_contracts || 0, "WAFD Contract"],
+      ["وثائق مركبات قاربت الانتهاء", risks.vehicle_documents_expiring || 0, "WAFD Vehicle"],
+      ["رخص سائقين قاربت الانتهاء", risks.driver_licenses_expiring || 0, "WAFD Driver"]
+    ];
+    $root.find(".wafd-risk-grid").html(riskCards.map((item) => `
+      <button class="${item[1] ? "is-risk" : ""}" data-list="${item[2]}"><span>${item[0]}</span><strong>${escape(item[1])}</strong></button>
+    `).join(""));
+
+    const rankings = data.project_rankings || [];
+    $root.find(".wafd-project-rankings").html(rankings.length ? `<table><thead><tr><th>المشروع</th><th>الربح</th><th>الهامش</th></tr></thead><tbody>${rankings.slice(0, 6).map((row) => `
+      <tr data-doctype="WAFD Catering Project" data-docname="${escape(row.name)}"><td><b>${escape(row.project_name || row.name)}</b><small>${escape(row.primary_hotel || "")}</small></td><td>${money(row.profit)}</td><td>${flt(row.profit_margin_percent || 0).toFixed(1)}%</td></tr>
+    `).join("")}</tbody></table>` : empty("لا توجد بيانات ربحية كافية بعد."));
+
+    const drivers = data.driver_performance || [];
+    $root.find(".wafd-driver-performance").html(drivers.length ? `<table><thead><tr><th>السائق</th><th>الرحلات</th><th>في الوقت</th><th>متأخرة</th></tr></thead><tbody>${drivers.slice(0, 6).map((row) => `
+      <tr><td><b>${escape(row.driver)}</b></td><td>${escape(row.trips || 0)}</td><td>${escape(row.on_time_trips || 0)}</td><td>${escape(row.delayed_trips || 0)}</td></tr>
+    `).join("")}</tbody></table>` : empty("لا توجد بيانات توصيل كافية بعد."));
+
+    const hotels = data.hotel_performance || [];
+    $root.find(".wafd-hotel-performance").html(hotels.length ? `<table><thead><tr><th>الفندق</th><th>التسليمات</th><th>المقبول</th><th>نسبة القبول</th></tr></thead><tbody>${hotels.slice(0, 6).map((row) => `
+      <tr><td><b>${escape(row.hotel)}</b></td><td>${escape(row.deliveries || 0)}</td><td>${escape(row.accepted_quantity || 0)}</td><td>${flt(row.acceptance_percent || 0).toFixed(1)}%</td></tr>
+    `).join("")}</tbody></table>` : empty("لا توجد بيانات استلام كافية بعد."));
   }
 
   load();

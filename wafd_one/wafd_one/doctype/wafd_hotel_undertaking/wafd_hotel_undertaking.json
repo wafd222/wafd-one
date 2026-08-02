@@ -195,10 +195,8 @@
   },
   {
    "fieldname": "nationality",
-   "fieldtype": "Link",
-   "label": "الجنسية / Nationality",
-   "options": "WAFD Nationality",
-   "description": "اختر الجنسية من القائمة المعتمدة بدلاً من كتابتها يدوياً."
+   "fieldtype": "Data",
+   "label": "الجنسية / Nationality"
   },
   {
    "fieldname": "beneficiary_count",
@@ -283,14 +281,12 @@
   {
    "fieldname": "signature_image",
    "fieldtype": "Attach Image",
-   "label": "صورة التوقيع / Signature Image",
-   "description": "ارفع صورة التوقيع بشكل مستقل. يمكن استخدام زر الرفع المخصص على الجوال."
+   "label": "صورة التوقيع / Signature Image"
   },
   {
    "fieldname": "company_stamp",
    "fieldtype": "Attach Image",
-   "label": "ختم الشركة / Company Stamp",
-   "description": "ارفع صورة الختم بشكل مستقل. يمكن إرفاق التوقيع والختم معاً."
+   "label": "ختم الشركة / Company Stamp"
   },
   {
    "fieldname": "pdf_section",
@@ -320,7 +316,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-03 01:30:00.000000",
+ "modified": "2026-07-19 18:30:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Hotel Undertaking",

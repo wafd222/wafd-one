@@ -29,8 +29,15 @@ function add_guided_loading_action(frm) {
             frappe.msgprint(__("أرفق صورة التحميل قبل الخروج / Attach loading photo before dispatch."));
             return;
         }
-        await frm.set_value("status", "خرجت / Dispatched");
-        await frm.save();
+        if (frm.doc.status !== "خرجت / Dispatched") {
+            await frm.set_value("status", "خرجت / Dispatched");
+        }
+        // Do not call save on an unchanged document; Frappe treats that as an
+        // error and the route to the delivery trip never executes.
+        if (frm.is_dirty()) {
+            await frm.save();
+        }
+
         const r = await frappe.call({
             method: "wafd_one.operations.create_delivery_trip",
             args: { loading_name: frm.doc.name },
@@ -38,8 +45,11 @@ function add_guided_loading_action(frm) {
             freeze_message: __("جارٍ اعتماد التحميل وإنشاء رحلة التوصيل...")
         });
         const result = r.message || {};
+        if (!result.name) {
+            frappe.throw(__("تعذر إنشاء أو فتح رحلة التوصيل. أعد المحاولة أو راجع سجل الأخطاء."));
+        }
         frappe.show_alert({ message: __("تم اعتماد التحميل — جارٍ فتح رحلة التوصيل"), indicator: "green" }, 6);
-        if (result.name) setTimeout(() => frappe.set_route("Form", "WAFD Delivery Trip", result.name), 350);
+        await frappe.set_route("Form", "WAFD Delivery Trip", result.name);
     });
 }
 

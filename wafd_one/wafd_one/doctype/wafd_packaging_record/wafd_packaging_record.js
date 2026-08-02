@@ -35,7 +35,11 @@ frappe.ui.form.on("WAFD Packaging Record", {
                     freeze: true,
                     callback(r) {
                         const result = r.message || {};
-                        open_loading_record(result);
+                        if (result.name) {
+                            frappe.set_route("Form", "WAFD Loading Record", result.name);
+                        } else if (result.values) {
+                            frappe.new_doc("WAFD Loading Record", result.values);
+                        }
                     }
                 });
             }, __("Operations"));
@@ -103,7 +107,13 @@ function add_guided_packaging_action(frm) {
         if (!cint(frm.doc.packed_quantity)) {
             await frm.set_value("packed_quantity", cint(frm.doc.planned_quantity));
         }
-        await frm.save();
+        // Saving a clean document raises “No changes in document” in Frappe and
+        // stops the action before the next record is opened. Save only when the
+        // user actually changed a field.
+        if (frm.is_dirty()) {
+            await frm.save();
+        }
+
         const r = await frappe.call({
             method: "wafd_one.operations.create_loading_record",
             args: { packaging_name: frm.doc.name },
@@ -111,21 +121,17 @@ function add_guided_packaging_action(frm) {
             freeze_message: __("جارٍ اعتماد التغليف وإنشاء سجل التحميل...")
         });
         const result = r.message || {};
-        frappe.show_alert({ message: __("تم اعتماد التغليف — جارٍ فتح التحميل"), indicator: "green" }, 6);
-        await open_loading_record(result);
+
+        if (result.name) {
+            frappe.show_alert({ message: __("تم اعتماد التغليف — جارٍ فتح سجل التحميل"), indicator: "green" }, 6);
+            await frappe.set_route("Form", "WAFD Loading Record", result.name);
+            return;
+        }
+        if (result.values) {
+            frappe.show_alert({ message: __("تم اعتماد التغليف — جارٍ فتح سجل تحميل جديد"), indicator: "green" }, 6);
+            frappe.new_doc("WAFD Loading Record", result.values);
+            return;
+        }
+        frappe.throw(__("تعذر فتح سجل التحميل. أعد المحاولة أو راجع سجل الأخطاء."));
     });
-}
-
-
-async function open_loading_record(result) {
-    if (result.name) {
-        await frappe.set_route("Form", "WAFD Loading Record", result.name);
-        return;
-    }
-    if (result.values) {
-        frappe.route_options = result.values;
-        await frappe.new_doc("WAFD Loading Record", result.values);
-        return;
-    }
-    frappe.throw(__("تعذر فتح سجل التحميل. أعد المحاولة أو راجع صلاحية إنشاء سجل التحميل."));
 }

@@ -64,6 +64,7 @@ doc_events = {
         "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
         "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
         "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan", "WAFD Daily Meal Plan", "WAFD Kitchen",
+        "WAFD Iftar Project", "WAFD Iftar Recipient",
     )
 }
 

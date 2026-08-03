@@ -1,0 +1,124 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-08-03 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-08-03 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "owner": "Administrator",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "name": "WAFD Iftar Recipient",
+  "autoname": "field:recipient_name",
+  "title_field": "recipient_name",
+  "field_order": [
+    "recipient_name",
+    "mobile",
+    "organization",
+    "default_location",
+    "active",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "recipient_name",
+      "fieldtype": "Data",
+      "label": "اسم صاحب السفرة / Recipient Name",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "mobile",
+      "fieldtype": "Data",
+      "label": "رقم الجوال / Mobile",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "organization",
+      "fieldtype": "Data",
+      "label": "الجهة أو المجموعة / Organization"
+    },
+    {
+      "fieldname": "default_location",
+      "fieldtype": "Data",
+      "label": "موقع التوزيع المعتاد / Default Location",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "active",
+      "fieldtype": "Check",
+      "label": "نشط / Active",
+      "default": "1",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "print": 1,
+      "email": 1,
+      "export": 1,
+      "share": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "print": 1,
+      "email": 1,
+      "export": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Project Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1,
+      "print": 1,
+      "email": 1,
+      "export": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "print": 1,
+      "report": 1
+    },
+    {
+      "role": "WAFD Delivery Supervisor",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "print": 1,
+      "report": 1
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import frappe
 
 
 def execute():
-    source = Path(__file__).resolve().parents[2] / "wafd_one" / "print_format" / "wafd_hotel_undertaking" / "wafd_hotel_undertaking.json"
+    source = Path(__file__).resolve().parents[2] / "print_format" / "wafd_hotel_undertaking" / "wafd_hotel_undertaking.json"
     if not source.exists():
         return
     data = json.loads(source.read_text(encoding="utf-8"))

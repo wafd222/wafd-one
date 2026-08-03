@@ -7,7 +7,6 @@ import frappe
 def execute():
     source = (
         Path(__file__).resolve().parents[2]
-        / "wafd_one"
         / "print_format"
         / "wafd_hotel_undertaking"
         / "wafd_hotel_undertaking.json"

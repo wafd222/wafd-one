@@ -17,7 +17,7 @@ ROLES = (
     "WAFD Auditor",
 )
 
-DOCTYPE_ROOT = Path(__file__).resolve().parent / "wafd_one" / "doctype"
+DOCTYPE_ROOT = Path(__file__).resolve().parent / "doctype"
 
 
 def _ordered_doctype_files():
@@ -150,7 +150,6 @@ def _workspace_source_path():
 
     return (
         Path(__file__).resolve().parent
-        / "wafd_one"
         / "workspace"
         / "wafd_one"
         / "wafd_one.json"
@@ -345,7 +344,6 @@ def ensure_administration_console():
     doctype_name = "WAFD Administration Console"
     source_path = (
         Path(__file__).resolve().parent
-        / "wafd_one"
         / "doctype"
         / "wafd_administration_console"
         / "wafd_administration_console.json"
@@ -443,7 +441,7 @@ def ensure_hotel_undertaking_print_format():
     """Force one safe template into every undertaking print format."""
     source = (
         Path(__file__).resolve().parent
-        / "wafd_one" / "print_format" / "wafd_hotel_undertaking"
+        / "print_format" / "wafd_hotel_undertaking"
         / "wafd_hotel_undertaking.json"
     )
     data = json.loads(source.read_text(encoding="utf-8"))

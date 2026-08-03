@@ -1,17 +1,15 @@
 [project]
 name = "wafd_one"
-authors = [
-    { name = "Wafd Al-Madinah Catering Services", email = "wafd.almadinah@gmail.com" }
-]
-description = "WAFD ONE catering operations and finance application for Frappe"
+version = "10.0.0rc78"
+description = "WAFD ONE integrated catering operations management for Frappe Framework v16"
+readme = "README.md"
 requires-python = ">=3.10"
-dynamic = ["version"]
-dependencies = []
+authors = [{ name = "Wafd Almadinah", email = "wafd.almadinah@gmail.com" }]
+dependencies = ["pypdf>=5.0,<7"]
 
 [build-system]
-requires = ["flit_core >=3.4,<4"]
+requires = ["flit_core>=3.9,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.bench.frappe-dependencies]
-frappe = ">=16.0.0-dev,<17.0.0"
-erpnext = ">=16.0.0-dev,<17.0.0"
+frappe = ">=16.0.0-dev,<17.1.0"

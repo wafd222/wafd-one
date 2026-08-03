@@ -1,3 +1,11 @@
-recursive-include wafd_one *.py *.json *.js *.css *.html *.csv *.txt *.md *.svg *.png *.jpg *.jpeg *.webp
-include wafd_one/modules.txt
-include wafd_one/patches.txt
+include README.md
+include license.txt
+include *.md
+recursive-include wafd_one *.json *.py *.js *.css *.html *.svg *.png *.jpg *.jpeg *.txt
+recursive-exclude wafd_one __pycache__ *
+recursive-exclude wafd_one *.pyc
+
+recursive-include wafd_one/data_templates *.csv
+recursive-include wafd_one/reference_data *.csv
+
+include RELEASE_NOTES_5.6.0.md

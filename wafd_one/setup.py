@@ -17,45 +17,7 @@ ROLES = (
     "WAFD Auditor",
 )
 
-APP_PACKAGE_ROOT = Path(__file__).resolve().parent
-MODULE_ROOT = APP_PACKAGE_ROOT / "wafd_one"
-
-
-def _module_root():
-    """Return the physical Frappe module directory without failing at import time.
-
-    Frappe imports hooks and migration callbacks before schema sync. Resolving and
-    scanning DocType files at module import time made migration brittle when a
-    deployment still had stale package metadata. Keep path resolution lazy and
-    verify the canonical module layout only when a setup operation actually needs it.
-    """
-    root = MODULE_ROOT
-    if root.is_dir():
-        return root
-
-    # Resolve through Python's imported module as a defensive fallback for editable
-    # installs and Frappe Cloud build environments.
-    try:
-        imported = frappe.get_module("wafd_one.wafd_one")
-        candidate = Path(imported.__file__).resolve().parent
-        if candidate.is_dir():
-            return candidate
-    except Exception:
-        pass
-
-    raise FileNotFoundError(
-        f"WAFD ONE module directory is missing. Expected: {root}. "
-        "The repository must contain wafd_one/wafd_one/__init__.py and its doctype folder."
-    )
-
-
-def _doctype_root():
-    root = _module_root() / "doctype"
-    if not root.is_dir():
-        raise FileNotFoundError(
-            f"WAFD ONE DocType directory is missing. Expected: {root}"
-        )
-    return root
+DOCTYPE_ROOT = Path(__file__).resolve().parent / "wafd_one" / "doctype"
 
 
 def _ordered_doctype_files():
@@ -69,7 +31,7 @@ def _ordered_doctype_files():
     """
     definitions = {}
     name_to_file = {}
-    for path in sorted(_doctype_root().iterdir()):
+    for path in sorted(DOCTYPE_ROOT.iterdir()):
         source = path / f"{path.name}.json"
         if not path.is_dir() or path.name.startswith("__") or not source.exists():
             continue
@@ -103,6 +65,7 @@ def _ordered_doctype_files():
     return tuple(ordered)
 
 
+ALL_DOCTYPE_FILES = _ordered_doctype_files()
 
 
 # Backward-compatible Phase 1 subset used by historical repair patches.
@@ -147,7 +110,7 @@ def ensure_roles():
 
 def sync_all_doctypes():
     """Reload every WAFD ONE DocType JSON into the current site database."""
-    for doctype_file in _ordered_doctype_files():
+    for doctype_file in ALL_DOCTYPE_FILES:
         frappe.reload_doc(
             "wafd_one",
             "doctype",
@@ -186,7 +149,8 @@ def _workspace_source_path():
     from pathlib import Path
 
     return (
-        _module_root()
+        Path(__file__).resolve().parent
+        / "wafd_one"
         / "workspace"
         / "wafd_one"
         / "wafd_one.json"
@@ -380,7 +344,8 @@ def ensure_administration_console():
 
     doctype_name = "WAFD Administration Console"
     source_path = (
-        _module_root()
+        Path(__file__).resolve().parent
+        / "wafd_one"
         / "doctype"
         / "wafd_administration_console"
         / "wafd_administration_console.json"
@@ -477,8 +442,8 @@ def after_install():
 def ensure_hotel_undertaking_print_format():
     """Force one safe template into every undertaking print format."""
     source = (
-        _module_root()
-        / "print_format" / "wafd_hotel_undertaking"
+        Path(__file__).resolve().parent
+        / "wafd_one" / "print_format" / "wafd_hotel_undertaking"
         / "wafd_hotel_undertaking.json"
     )
     data = json.loads(source.read_text(encoding="utf-8"))

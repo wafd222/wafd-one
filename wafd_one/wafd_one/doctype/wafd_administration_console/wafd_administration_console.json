@@ -1,0 +1,101 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-18 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "warning_html",
+    "section_summary",
+    "refresh_summary",
+    "database_summary",
+    "section_master",
+    "install_master_data",
+    "section_reset",
+    "reset_database"
+  ],
+  "fields": [
+    {
+      "fieldname": "warning_html",
+      "fieldtype": "HTML",
+      "options": "<div class=\"alert alert-success\"><strong>حماية البيانات مفعلة</strong><br>إعادة تهيئة البيانات معطلة نهائياً. لن يتم حذف الفنادق أو الوصفات أو المشاريع أو الحركات. استخدم تثبيت البيانات المرجعية الناقصة لإضافة السجلات المفقودة فقط.</div>"
+    },
+    {
+      "fieldname": "section_summary",
+      "fieldtype": "Section Break",
+      "label": "ملخص قاعدة البيانات"
+    },
+    {
+      "fieldname": "refresh_summary",
+      "fieldtype": "Button",
+      "label": "تحديث الملخص"
+    },
+    {
+      "fieldname": "database_summary",
+      "fieldtype": "HTML"
+    },
+    {
+      "fieldname": "section_master",
+      "fieldtype": "Section Break",
+      "label": "البيانات المرجعية"
+    },
+    {
+      "fieldname": "install_master_data",
+      "fieldtype": "Button",
+      "label": "تثبيت البيانات المرجعية الناقصة"
+    },
+    {
+      "fieldname": "section_reset",
+      "fieldtype": "Section Break",
+      "label": "حماية البيانات من الحذف"
+    },
+    {
+      "fieldname": "reset_database",
+      "fieldtype": "Button",
+      "label": "إعادة التهيئة معطلة لحماية البيانات",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-07-21 13:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Administration Console",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "System Manager",
+      "share": 0,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "WAFD Operations Manager",
+      "share": 0,
+      "write": 1
+    }
+  ],
+  "quick_entry": 0,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0,
+  "custom": 0,
+  "hide_from_search": 0,
+  "istable": 0
+}

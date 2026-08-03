@@ -1,0 +1,192 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "format:WAFD-CCP-{#####}",
+  "creation": "2026-07-20 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "production_batch",
+    "ccp_type",
+    "check_time",
+    "inspector",
+    "section_measurement",
+    "measured_value",
+    "unit",
+    "minimum_limit",
+    "maximum_limit",
+    "compliance_status",
+    "section_action",
+    "deviation_details",
+    "corrective_action",
+    "verification_status",
+    "verified_by",
+    "verified_on",
+    "evidence_photo",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "production_batch",
+      "fieldtype": "Link",
+      "label": "دفعة الإنتاج / Production Batch",
+      "options": "WAFD Production Batch",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "ccp_type",
+      "fieldtype": "Select",
+      "label": "نقطة التحكم الحرجة / Critical Control Point",
+      "options": "الطهي / Cooking\nالحفظ الساخن / Hot Holding\nالحفظ البارد / Cold Holding\nالاستلام / Receiving\nالتبريد / Cooling\nالتعبئة / Packaging\nالنقل / Transport\nأخرى / Other",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "check_time",
+      "fieldtype": "Datetime",
+      "label": "وقت الفحص / Check Time",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "inspector",
+      "fieldtype": "Link",
+      "label": "المفتش / Inspector",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_measurement",
+      "fieldtype": "Section Break",
+      "label": "القياس والحدود / Measurement and Limits"
+    },
+    {
+      "fieldname": "measured_value",
+      "fieldtype": "Float",
+      "label": "القيمة المقاسة / Measured Value",
+      "reqd": 1
+    },
+    {
+      "fieldname": "unit",
+      "fieldtype": "Select",
+      "label": "الوحدة / Unit",
+      "options": "°C\nدقيقة / Minute\n%\nأخرى / Other",
+      "default": "°C",
+      "reqd": 1
+    },
+    {
+      "fieldname": "minimum_limit",
+      "fieldtype": "Float",
+      "label": "الحد الأدنى / Minimum Limit"
+    },
+    {
+      "fieldname": "maximum_limit",
+      "fieldtype": "Float",
+      "label": "الحد الأعلى / Maximum Limit"
+    },
+    {
+      "fieldname": "compliance_status",
+      "fieldtype": "Select",
+      "label": "حالة المطابقة / Compliance",
+      "options": "مطابق / Compliant\nغير مطابق / Noncompliant",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "section_action",
+      "fieldtype": "Section Break",
+      "label": "الانحراف والإجراء / Deviation and Action"
+    },
+    {
+      "fieldname": "deviation_details",
+      "fieldtype": "Small Text",
+      "label": "تفاصيل الانحراف / Deviation Details"
+    },
+    {
+      "fieldname": "corrective_action",
+      "fieldtype": "Small Text",
+      "label": "الإجراء التصحيحي / Corrective Action"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "بانتظار التحقق / Pending Verification\nتم التحقق / Verified",
+      "default": "بانتظار التحقق / Pending Verification",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "verified_by",
+      "fieldtype": "Link",
+      "label": "تم التحقق بواسطة / Verified By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "verified_on",
+      "fieldtype": "Datetime",
+      "label": "وقت التحقق / Verified On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "evidence_photo",
+      "fieldtype": "Attach Image",
+      "label": "صورة الدليل / Evidence Photo"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD CCP Check",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    },
+    {
+      "role": "WAFD Quality Inspector",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1
+    }
+  ],
+  "sort_field": "check_time",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

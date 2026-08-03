@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "prompt",
+ "creation": "2026-07-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["capacity_section", "daily_production_capacity", "capacity_warning_percent", "enforce_capacity_limit", "planning_section", "default_production_lead_hours", "shortage_warning_hours", "auto_generate_alerts"],
+ "fields": [
+  {"fieldname":"capacity_section","fieldtype":"Section Break","label":"الطاقة الإنتاجية / Production Capacity"},
+  {"fieldname":"daily_production_capacity","fieldtype":"Int","label":"الطاقة الإنتاجية اليومية (وجبة) / Daily Production Capacity","default":"10000","non_negative":1},
+  {"fieldname":"capacity_warning_percent","fieldtype":"Percent","label":"نسبة تنبيه استهلاك الطاقة / Capacity Warning Percent","default":"85"},
+  {"fieldname":"enforce_capacity_limit","fieldtype":"Check","label":"منع تجاوز الطاقة / Enforce Capacity Limit","default":"0"},
+  {"fieldname":"planning_section","fieldtype":"Section Break","label":"إعدادات التخطيط والتنبيه / Planning & Alerts"},
+  {"fieldname":"default_production_lead_hours","fieldtype":"Int","label":"ساعات التجهيز الافتراضية / Default Production Lead Hours","default":"8","non_negative":1},
+  {"fieldname":"shortage_warning_hours","fieldtype":"Int","label":"تنبيه العجز قبل الخدمة (ساعة) / Shortage Warning Hours","default":"24","non_negative":1},
+  {"fieldname":"auto_generate_alerts","fieldtype":"Check","label":"إنشاء تنبيهات التشغيل تلقائيًا / Auto-generate Operations Alerts","default":"1"}
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Operations Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"write":1,"create":1},
+  {"role":"WAFD Operations Manager","read":1,"write":1,"create":1},
+  {"role":"WAFD Project Manager","read":1}
+ ],
+ "sort_field":"modified","sort_order":"DESC","states":[],"track_changes":1
+}

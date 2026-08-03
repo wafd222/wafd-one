@@ -1,0 +1,365 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-19 21:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "intro_html",
+    "identity_section",
+    "company_logo",
+    "column_identity",
+    "watermark_logo",
+    "document_title",
+    "style_section",
+    "primary_color",
+    "text_color",
+    "muted_color",
+    "column_style",
+    "font_family",
+    "base_font_size",
+    "title_font_size",
+    "page_section",
+    "paper_size",
+    "orientation",
+    "margin_top",
+    "margin_bottom",
+    "column_margins",
+    "margin_right",
+    "margin_left",
+    "header_line_width",
+    "content_section",
+    "intro_text",
+    "agreement_text",
+    "closing_text",
+    "footer_text",
+    "watermark_section",
+    "show_watermark",
+    "watermark_text",
+    "watermark_opacity",
+    "signature_section",
+    "default_signature",
+    "default_stamp",
+    "column_signature",
+    "signatory_name",
+    "signatory_title",
+    "display_section",
+    "show_company_details",
+    "show_reference_number",
+    "show_second_party_signature",
+    "preview_section",
+    "preview_undertaking",
+    "preview_print",
+    "column_actions",
+    "reset_defaults"
+  ],
+  "fields": [
+    {
+      "fieldname": "intro_html",
+      "fieldtype": "HTML",
+      "options": "<div class=\"alert alert-info\"><b>إعدادات الطباعة العامة</b><br>غيّر الهوية والألوان والهوامش والتوقيع والختم، ثم افتح تعهدًا سابقًا للمعاينة. تنطبق الإعدادات على ملفات PDF الجديدة.</div>"
+    },
+    {
+      "fieldname": "identity_section",
+      "fieldtype": "Section Break",
+      "label": "الهوية والشعارات / Identity"
+    },
+    {
+      "fieldname": "company_logo",
+      "fieldtype": "Attach Image",
+      "label": "شعار الشركة / Company Logo",
+      "default": "/assets/wafd_one/images/wafd-almadinah-official.png",
+      "description": "الشعار الرئيسي أعلى المستند"
+    },
+    {
+      "fieldname": "column_identity",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "watermark_logo",
+      "fieldtype": "Attach Image",
+      "label": "شعار العلامة المائية / Watermark Logo",
+      "description": "اختياري؛ عند تركه فارغًا يستخدم نص العلامة المائية"
+    },
+    {
+      "fieldname": "document_title",
+      "fieldtype": "Data",
+      "label": "عنوان التعهد / Document Title",
+      "default": "تعهد والتزام إعاشة",
+      "reqd": 1
+    },
+    {
+      "fieldname": "style_section",
+      "fieldtype": "Section Break",
+      "label": "الألوان والخطوط / Colors & Fonts"
+    },
+    {
+      "fieldname": "primary_color",
+      "fieldtype": "Color",
+      "label": "اللون الرئيسي / Primary Color",
+      "default": "#AA8C27"
+    },
+    {
+      "fieldname": "text_color",
+      "fieldtype": "Color",
+      "label": "لون النص / Text Color",
+      "default": "#111111"
+    },
+    {
+      "fieldname": "muted_color",
+      "fieldtype": "Color",
+      "label": "لون النص الثانوي / Muted Color",
+      "default": "#6C6C6C"
+    },
+    {
+      "fieldname": "column_style",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "font_family",
+      "fieldtype": "Select",
+      "label": "الخط / Font",
+      "options": "Tahoma\nArial\nNoto Sans Arabic\nAmiri\nTraditional Arabic",
+      "default": "Tahoma"
+    },
+    {
+      "fieldname": "base_font_size",
+      "fieldtype": "Int",
+      "label": "حجم النص / Base Font Size",
+      "default": "13"
+    },
+    {
+      "fieldname": "title_font_size",
+      "fieldtype": "Int",
+      "label": "حجم العنوان / Title Font Size",
+      "default": "18"
+    },
+    {
+      "fieldname": "page_section",
+      "fieldtype": "Section Break",
+      "label": "الصفحة والهوامش / Page & Margins"
+    },
+    {
+      "fieldname": "paper_size",
+      "fieldtype": "Select",
+      "label": "حجم الورق / Paper Size",
+      "options": "A4\nLetter",
+      "default": "A4"
+    },
+    {
+      "fieldname": "orientation",
+      "fieldtype": "Select",
+      "label": "اتجاه الورقة / Orientation",
+      "options": "Portrait\nLandscape",
+      "default": "Portrait"
+    },
+    {
+      "fieldname": "margin_top",
+      "fieldtype": "Float",
+      "label": "الهامش العلوي مم / Top Margin mm",
+      "default": "12"
+    },
+    {
+      "fieldname": "margin_bottom",
+      "fieldtype": "Float",
+      "label": "الهامش السفلي مم / Bottom Margin mm",
+      "default": "13"
+    },
+    {
+      "fieldname": "column_margins",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "margin_right",
+      "fieldtype": "Float",
+      "label": "الهامش الأيمن مم / Right Margin mm",
+      "default": "14"
+    },
+    {
+      "fieldname": "margin_left",
+      "fieldtype": "Float",
+      "label": "الهامش الأيسر مم / Left Margin mm",
+      "default": "14"
+    },
+    {
+      "fieldname": "header_line_width",
+      "fieldtype": "Int",
+      "label": "سُمك الخط العلوي / Header Line Width",
+      "default": "8"
+    },
+    {
+      "fieldname": "content_section",
+      "fieldtype": "Section Break",
+      "label": "النصوص الثابتة / Fixed Text"
+    },
+    {
+      "fieldname": "intro_text",
+      "fieldtype": "Small Text",
+      "label": "مقدمة المستند / Introduction",
+      "default": "الحمد لله، والصلاة والسلام على رسول الله، وبعد:"
+    },
+    {
+      "fieldname": "agreement_text",
+      "fieldtype": "Small Text",
+      "label": "عبارة الاتفاق / Agreement Text",
+      "default": "فقد تم الاتفاق على هذا التعهد بين:"
+    },
+    {
+      "fieldname": "closing_text",
+      "fieldtype": "Text",
+      "label": "عبارة الختام / Closing Text",
+      "default": "نأمل من إدارة الفندق التعاون والتواصل معنا بشكل مباشر عند وجود أي ملاحظات ليتم تلافيها فورًا من قبلنا، وعرض هذا التعهد للجهات المسؤولة عند الحاجة."
+    },
+    {
+      "fieldname": "footer_text",
+      "fieldtype": "Small Text",
+      "label": "تذييل إضافي / Additional Footer",
+      "default": "حي الملك فهد، المدينة المنورة"
+    },
+    {
+      "fieldname": "watermark_section",
+      "fieldtype": "Section Break",
+      "label": "العلامة المائية / Watermark"
+    },
+    {
+      "fieldname": "show_watermark",
+      "fieldtype": "Check",
+      "label": "إظهار العلامة المائية / Show Watermark",
+      "default": "1"
+    },
+    {
+      "fieldname": "watermark_text",
+      "fieldtype": "Data",
+      "label": "نص العلامة المائية / Watermark Text",
+      "default": "وفد"
+    },
+    {
+      "fieldname": "watermark_opacity",
+      "fieldtype": "Float",
+      "label": "شفافية العلامة / Opacity",
+      "default": "0.05",
+      "description": "من 0 إلى 1"
+    },
+    {
+      "fieldname": "signature_section",
+      "fieldtype": "Section Break",
+      "label": "التوقيع والختم / Signature & Stamp"
+    },
+    {
+      "fieldname": "default_signature",
+      "fieldtype": "Attach Image",
+      "label": "التوقيع الافتراضي / Default Signature"
+    },
+    {
+      "fieldname": "default_stamp",
+      "fieldtype": "Attach Image",
+      "label": "الختم الافتراضي / Default Stamp"
+    },
+    {
+      "fieldname": "column_signature",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "signatory_name",
+      "fieldtype": "Data",
+      "label": "اسم الموقّع الافتراضي / Default Signatory",
+      "default": "نزار نذير بن ظفر"
+    },
+    {
+      "fieldname": "signatory_title",
+      "fieldtype": "Data",
+      "label": "صفة الموقّع / Signatory Title",
+      "default": "المدير العام"
+    },
+    {
+      "fieldname": "display_section",
+      "fieldtype": "Section Break",
+      "label": "خيارات العرض / Display Options"
+    },
+    {
+      "fieldname": "show_company_details",
+      "fieldtype": "Check",
+      "label": "إظهار بيانات الشركة في الرأس / Show Company Details",
+      "default": "1"
+    },
+    {
+      "fieldname": "show_reference_number",
+      "fieldtype": "Check",
+      "label": "إظهار رقم التعهد / Show Reference Number",
+      "default": "1"
+    },
+    {
+      "fieldname": "show_second_party_signature",
+      "fieldtype": "Check",
+      "label": "إظهار خانة توقيع الطرف الثاني / Show Second Party Signature",
+      "default": "0"
+    },
+    {
+      "fieldname": "preview_section",
+      "fieldtype": "Section Break",
+      "label": "المعاينة والإجراءات / Preview & Actions"
+    },
+    {
+      "fieldname": "preview_undertaking",
+      "fieldtype": "Link",
+      "label": "تعهد للمعاينة / Preview Undertaking",
+      "options": "WAFD Hotel Undertaking"
+    },
+    {
+      "fieldname": "preview_print",
+      "fieldtype": "Button",
+      "label": "فتح معاينة الطباعة / Open Print Preview"
+    },
+    {
+      "fieldname": "column_actions",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "reset_defaults",
+      "fieldtype": "Button",
+      "label": "إعادة الإعدادات الافتراضية / Reset Defaults"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-07-19 21:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Print Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "System Manager",
+      "share": 0,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 0,
+      "role": "WAFD Operations Manager",
+      "share": 0,
+      "write": 1
+    }
+  ],
+  "quick_entry": 0,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "custom": 0,
+  "hide_from_search": 0,
+  "istable": 0
+}

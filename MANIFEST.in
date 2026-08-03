@@ -1,0 +1,3 @@
+recursive-include wafd_one *.py *.json *.js *.css *.html *.csv *.txt *.md *.svg *.png *.jpg *.jpeg *.webp
+include wafd_one/modules.txt
+include wafd_one/patches.txt

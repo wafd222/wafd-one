@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-07-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "billing_section",
+    "default_tax_rate",
+    "default_due_days",
+    "minimum_auto_invoice_amount",
+    "automation_section",
+    "auto_create_delivery_invoices",
+    "auto_mark_overdue",
+    "overdue_alert_days",
+    "control_section",
+    "require_reference_for_non_cash",
+    "notes"
+  ],
+  "fields": [
+    {"fieldname":"billing_section","fieldtype":"Section Break","label":"إعدادات الفوترة / Billing Settings"},
+    {"fieldname":"default_tax_rate","fieldtype":"Percent","label":"نسبة الضريبة الافتراضية / Default Tax Rate","default":"15","reqd":1},
+    {"fieldname":"default_due_days","fieldtype":"Int","label":"أيام الاستحقاق الافتراضية / Default Due Days","default":"30","reqd":1},
+    {"fieldname":"minimum_auto_invoice_amount","fieldtype":"Currency","label":"الحد الأدنى لإنشاء فاتورة تلقائية / Minimum Auto Invoice Amount","default":"0"},
+    {"fieldname":"automation_section","fieldtype":"Section Break","label":"الأتمتة والتنبيهات / Automation and Alerts"},
+    {"fieldname":"auto_create_delivery_invoices","fieldtype":"Check","label":"إنشاء مسودات فواتير تلقائياً من التسليمات / Auto-create Draft Invoices from Deliveries","default":"0"},
+    {"fieldname":"auto_mark_overdue","fieldtype":"Check","label":"تحديث الفواتير المتأخرة يومياً / Update Overdue Invoices Daily","default":"1"},
+    {"fieldname":"overdue_alert_days","fieldtype":"Int","label":"إنشاء تنبيه بعد عدد أيام التأخر / Create Alert After Overdue Days","default":"1"},
+    {"fieldname":"control_section","fieldtype":"Section Break","label":"ضوابط التحصيل / Collection Controls"},
+    {"fieldname":"require_reference_for_non_cash","fieldtype":"Check","label":"اشتراط رقم مرجع للتحصيل غير النقدي / Require Reference for Non-cash Payments","default":"1"},
+    {"fieldname":"notes","fieldtype":"Small Text","label":"ملاحظات / Notes"}
+  ],
+  "index_web_pages_for_search": 0,
+  "issingle": 1,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-07-22 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Finance Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"email":1,"export":1,"print":1,"report":1,"share":1},
+    {"role":"WAFD Operations Manager","read":1,"write":1,"create":1,"email":1,"export":1,"print":1,"report":1,"share":1},
+    {"role":"WAFD Finance User","read":1,"write":1,"create":1,"email":1,"export":1,"print":1,"report":1,"share":1}
+  ],
+  "sort_field":"modified",
+  "sort_order":"DESC",
+  "states":[],
+  "track_changes":1
+}

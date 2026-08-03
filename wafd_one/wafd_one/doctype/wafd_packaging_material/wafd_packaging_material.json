@@ -1,0 +1,112 @@
+{
+  "doctype": "DocType",
+  "name": "WAFD Packaging Material",
+  "module": "WAFD ONE",
+  "autoname": "field:material_code",
+  "title_field": "material_name",
+  "search_fields": "material_name,material_code,category",
+  "track_changes": 1,
+  "field_order": [
+    "material_code",
+    "material_name",
+    "category",
+    "uom",
+    "unit_cost",
+    "units_per_pack",
+    "warehouse",
+    "is_active",
+    "description"
+  ],
+  "fields": [
+    {
+      "fieldname": "material_code",
+      "label": "رمز المادة / Material Code",
+      "fieldtype": "Data",
+      "unique": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "material_name",
+      "label": "اسم المادة / Material Name",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "category",
+      "label": "الفئة / Category",
+      "fieldtype": "Select",
+      "options": "علب وجبات / Meal Containers\nأكواب / Cups\nأدوات مائدة / Cutlery\nأكياس / Bags\nملصقات / Labels\nصناديق نقل / Transport Boxes\nمناديل / Tissues\nأخرى / Other",
+      "reqd": 1
+    },
+    {
+      "fieldname": "uom",
+      "label": "وحدة القياس / UOM",
+      "fieldtype": "Data",
+      "default": "حبة / Piece",
+      "reqd": 1
+    },
+    {
+      "fieldname": "unit_cost",
+      "label": "تكلفة الوحدة / Unit Cost",
+      "fieldtype": "Currency",
+      "reqd": 1
+    },
+    {
+      "fieldname": "units_per_pack",
+      "label": "عدد الوحدات في الكرتون / Units per Pack",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "warehouse",
+      "label": "المستودع / Warehouse",
+      "fieldtype": "Link",
+      "options": "WAFD Warehouse"
+    },
+    {
+      "fieldname": "is_active",
+      "label": "نشط / Active",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "description",
+      "label": "الوصف / Description",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "print": 1,
+      "report": 1,
+      "export": 1
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "print": 1,
+      "report": 1,
+      "export": 1
+    },
+    {
+      "role": "WAFD Production Supervisor",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "print": 1,
+      "report": 1
+    }
+  ],
+  "sort_field": "material_name",
+  "sort_order": "ASC",
+  "creation": "2026-07-24 16:00:00.000000",
+  "modified": "2026-07-24 16:00:00.000000",
+  "modified_by": "Administrator",
+  "owner": "Administrator"
+}

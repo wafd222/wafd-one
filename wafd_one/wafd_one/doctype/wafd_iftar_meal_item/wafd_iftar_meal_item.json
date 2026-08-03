@@ -1,0 +1,100 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-08-03 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-08-03 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "owner": "Administrator",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 0,
+  "name": "WAFD Iftar Meal Item",
+  "autoname": "hash",
+  "istable": 1,
+  "is_submittable": 0,
+  "permissions": [],
+  "field_order": [
+    "included",
+    "item_name",
+    "ingredient",
+    "quantity_per_meal",
+    "uom",
+    "unit_cost",
+    "cost_per_meal",
+    "total_quantity",
+    "total_cost",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "included",
+      "fieldtype": "Check",
+      "label": "مضمن / Included",
+      "default": "1",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item_name",
+      "fieldtype": "Data",
+      "label": "المكون / Component",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "ingredient",
+      "fieldtype": "Link",
+      "label": "صنف المخزون / Stock Item",
+      "options": "WAFD Ingredient"
+    },
+    {
+      "fieldname": "quantity_per_meal",
+      "fieldtype": "Float",
+      "label": "الكمية لكل وجبة / Qty per Meal",
+      "default": "1",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "uom",
+      "fieldtype": "Data",
+      "label": "الوحدة / UOM",
+      "default": "حبة / Each"
+    },
+    {
+      "fieldname": "unit_cost",
+      "fieldtype": "Currency",
+      "label": "تكلفة الوحدة / Unit Cost",
+      "non_negative": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "cost_per_meal",
+      "fieldtype": "Currency",
+      "label": "تكلفة الوجبة / Cost per Meal",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_quantity",
+      "fieldtype": "Float",
+      "label": "إجمالي الكمية / Total Qty",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_cost",
+      "fieldtype": "Currency",
+      "label": "التكلفة الإجمالية / Total Cost",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات / Notes"
+    }
+  ]
+}

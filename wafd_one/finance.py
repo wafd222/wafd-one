@@ -31,6 +31,49 @@ def _scalar(query, values=None):
     return frappe.db.sql(query, values or ())[0][0]
 
 
+def _posted_stock_consumption(project_name=None, from_date=None, to_date=None):
+    """Return actual inventory consumption value from posted issue/waste movements.
+
+    Production creates WAFD Stock Movement records, not WAFD Project Cost rows.  The
+    financial dashboard must therefore include posted inventory issues and waste in
+    actual cost. Receipts and transfers are intentionally excluded because they do
+    not represent consumption by a project.
+    """
+    conditions = [
+        "sm.status='مرحلة / Posted'",
+        "sm.movement_type in ('صرف / Issue', 'هالك / Waste')",
+    ]
+    values = []
+    if project_name:
+        conditions.append("sm.project=%s")
+        values.append(project_name)
+    if from_date and to_date:
+        conditions.append("coalesce(date(sm.posting_date), date(sm.creation)) between %s and %s")
+        values.extend([from_date, to_date])
+    return flt(_scalar(
+        f"""select coalesce(sum(sm.total_amount), 0)
+               from `tabWAFD Stock Movement` sm
+               where {' and '.join(conditions)}""",
+        tuple(values),
+    ))
+
+
+def _approved_project_costs(project_name=None, from_date=None, to_date=None):
+    conditions = ["status not in ('ملغي / Cancelled', 'مسودة / Draft')"]
+    values = []
+    if project_name:
+        conditions.append("project=%s")
+        values.append(project_name)
+    if from_date and to_date:
+        conditions.append("coalesce(cost_date, date(creation)) between %s and %s")
+        values.extend([from_date, to_date])
+    return flt(_scalar(
+        f"""select coalesce(sum(amount), 0) from `tabWAFD Project Cost`
+               where {' and '.join(conditions)}""",
+        tuple(values),
+    ))
+
+
 def _confirmed_payments(invoice_name, exclude_payment=None):
     conditions = ["invoice=%s", "docstatus=1", "status='معتمد / Confirmed'"]
     values = [invoice_name]
@@ -133,11 +176,9 @@ def refresh_project_financials(project_name):
         ["estimated_cost", "estimated_revenue", "contract_value", "total_meals"],
         as_dict=True,
     ) or {}
-    costs = flt(_scalar(
-        """select coalesce(sum(amount), 0) from `tabWAFD Project Cost`
-           where project=%s and status in ('معتمد / Approved', 'مدفوع / Paid')""",
-        (project_name,),
-    ))
+    direct_costs = _approved_project_costs(project_name=project_name)
+    stock_consumption = _posted_stock_consumption(project_name=project_name)
+    costs = direct_costs + stock_consumption
     collected_revenue = flt(_scalar(
         """select coalesce(sum(amount), 0) from `tabWAFD Project Revenue`
            where project=%s and status='محصل / Collected'""",
@@ -470,12 +511,9 @@ def get_dashboard_data(from_date=None, to_date=None):
            where due_date < %s and balance > 0 and status!='ملغاة / Cancelled'""",
         (nowdate(),),
     )
-    costs = _scalar(
-        """select coalesce(sum(amount), 0) from `tabWAFD Project Cost`
-           where coalesce(cost_date, date(creation)) between %s and %s
-             and status not in ('ملغي / Cancelled', 'مسودة / Draft')""",
-        date_values,
-    )
+    direct_costs = _approved_project_costs(from_date=from_date, to_date=to_date)
+    stock_consumption = _posted_stock_consumption(from_date=from_date, to_date=to_date)
+    costs = direct_costs + stock_consumption
     revenue = _scalar(
         """select coalesce(sum(amount), 0) from `tabWAFD Payment`
            where coalesce(payment_date, date(creation)) between %s and %s

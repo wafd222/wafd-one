@@ -34,9 +34,10 @@
     },
     {
       "fieldname": "country",
-      "fieldtype": "Data",
-      "label": "الدولة / Country",
-      "in_list_view": 1
+      "fieldtype": "Link",
+      "label": "الدولة / Country-Nationality",
+      "in_list_view": 1,
+      "options": "WAFD Nationality"
     },
     {
       "fieldname": "contact_person",

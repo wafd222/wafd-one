@@ -50,7 +50,7 @@
       "fieldname": "category",
       "fieldtype": "Select",
       "label": "التصنيف / Category",
-      "options": "لحوم / Meat\nدواجن / Poultry\nأرز وحبوب / Rice & Grains\nخضار / Vegetables\nألبان / Dairy\nمشروبات / Beverages\nتغليف / Packaging\nأخرى / Other"
+      "options": "لحوم / Meat\nدواجن / Poultry\nأسماك ومأكولات بحرية / Fish & Seafood\nأرز وحبوب / Rice & Grains\nبقوليات / Legumes\nخضار / Vegetables\nفواكه / Fruits\nألبان / Dairy\nمخبوزات / Bakery\nبهارات وصلصات / Spices & Sauces\nزيوت ودهون / Oils & Fats\nمشروبات / Beverages\nحلويات / Desserts\nتغليف / Packaging\nمنظفات / Cleaning\nتعقيم وسلامة / Hygiene & Safety\nأدوات تشغيل / Operating Supplies\nأخرى / Other"
     },
     {
       "fieldname": "uom",

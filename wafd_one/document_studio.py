@@ -271,15 +271,12 @@ def _render(template_name, doctype=None, docname=None):
         doc = frappe.get_doc(doctype, docname)
         doc.check_permission("read")
         if doctype == "WAFD Hotel Undertaking":
-            # Embed private attachment bytes so wkhtmltopdf can always render
-            # the fixed signature and stamp in both preview and approved PDF.
-            if hasattr(doc, "prepare_print_assets"):
-                doc.prepare_print_assets()
-            else:
-                if not doc.get("include_signature"):
-                    doc.signature_image = ""
-                if not doc.get("include_stamp"):
-                    doc.company_stamp = ""
+            # The signature and stamp are fixed company assets. Each document
+            # only decides whether they are visible in the generated output.
+            if not doc.get("include_signature"):
+                doc.signature_image = ""
+            if not doc.get("include_stamp"):
+                doc.company_stamp = ""
     else:
         doc = frappe._dict(name="PREVIEW", title=frappe._("Preview"))
     return frappe.render_template(html, {"doc": doc, "template": template})

@@ -186,12 +186,3 @@ wafd_one.patches.v10_0_0_rc78.execute
 
 # RC79 — actionable inventory and undertaking signature/stamp visibility
 wafd_one.patches.v10_0_0_rc79.execute
-
-# RC80 — embed private signature/stamp images in undertaking PDF
-wafd_one.patches.v10_0_0_rc80.execute
-
-# RC81 — undertaking signature/stamp placement and reusable company defaults
-wafd_one.patches.v10_0_0_rc81.execute
-
-# RC82 — restore approved undertaking design and apply only signature/stamp corrections
-wafd_one.patches.v10_0_0_rc82.execute

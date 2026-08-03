@@ -1,6 +1,3 @@
-import base64
-import mimetypes
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -11,7 +8,6 @@ DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
 
 class WAFDHotelUndertaking(Document):
     def validate(self):
-        self._apply_saved_company_data()
         self._fill_linked_data()
         self._fill_meals()
         self.supply_location = self._get_hotel_name() or self.supply_location
@@ -19,27 +15,6 @@ class WAFDHotelUndertaking(Document):
         self._apply_default_signature_and_stamp()
         self._validate_dates_and_count(draft_safe=True)
 
-
-    def _apply_saved_company_data(self):
-        """Fill company data from WAFD Print Settings when the option is enabled."""
-        if not self.get("use_saved_company_data"):
-            return
-        if not frappe.db.exists("DocType", "WAFD Print Settings"):
-            return
-        settings = frappe.get_single("WAFD Print Settings")
-        mapping = {
-            "company_name": "default_company_name",
-            "company_cr": "default_company_cr",
-            "company_representative": "default_company_representative",
-            "company_phone": "default_company_phone",
-            "company_email": "default_company_email",
-            "authorized_signatory": "signatory_name",
-            "signatory_title": "signatory_title",
-        }
-        for target, source in mapping.items():
-            value = settings.get(source)
-            if value:
-                self.set(target, value)
 
     def _apply_default_signature_and_stamp(self):
         """Use the company-wide fixed signature and stamp when available.
@@ -54,27 +29,6 @@ class WAFDHotelUndertaking(Document):
             self.signature_image = settings.default_signature
         if not self.company_stamp and settings.default_stamp:
             self.company_stamp = settings.default_stamp
-
-    def prepare_print_assets(self):
-        """Resolve fixed signature/stamp URLs into embedded data URIs for PDF.
-
-        Private Frappe file URLs are not reliably accessible to wkhtmltopdf.
-        Embedding the bytes makes the images appear in preview and generated PDF
-        without changing the stored attachment fields.
-        """
-        self._apply_default_signature_and_stamp()
-        if self.get("include_signature") and self.signature_image:
-            self.signature_image = _file_as_data_uri(self.signature_image)
-        else:
-            self.signature_image = ""
-        if self.get("include_stamp") and self.company_stamp:
-            self.company_stamp = _file_as_data_uri(self.company_stamp)
-        else:
-            self.company_stamp = ""
-        return self
-
-    def before_print(self, settings=None):
-        self.prepare_print_assets()
 
     def before_submit(self):
         self._validate_for_issue()
@@ -122,56 +76,11 @@ class WAFDHotelUndertaking(Document):
             frappe.throw(_("لا يمكن إصدار التعهد قبل استكمال الحقول التالية:<br>{0}").format("<br>".join(f"- {x}" for x in missing)), title=_("بيانات التعهد غير مكتملة"))
         self._validate_dates_and_count(draft_safe=False)
 
-def _file_as_data_uri(value):
-    """Return an image attachment as a data URI; leave external URLs untouched."""
-    value = (value or "").strip()
-    if not value or value.startswith("data:"):
-        return value
-    try:
-        file_name = frappe.db.get_value("File", {"file_url": value}, "name")
-        if not file_name:
-            return value
-        file_doc = frappe.get_doc("File", file_name)
-        content = file_doc.get_content()
-        if isinstance(content, str):
-            content = content.encode("utf-8")
-        mime = file_doc.get("content_type") or mimetypes.guess_type(file_doc.file_name or value)[0] or "image/png"
-        return f"data:{mime};base64,{base64.b64encode(content).decode('ascii')}"
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "WAFD undertaking print asset")
-        return value
-
-
 @frappe.whitelist()
 def load_linked_data(name):
     doc=frappe.get_doc("WAFD Hotel Undertaking", name); doc.check_permission("write")
-    doc._apply_saved_company_data(); doc._fill_linked_data(); doc._fill_meals(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
+    doc._fill_linked_data(); doc._fill_meals(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
     doc.save(); return doc.as_dict()
-
-
-@frappe.whitelist()
-def save_company_defaults(name):
-    """Save the current undertaking company details as the reusable defaults."""
-    doc = frappe.get_doc("WAFD Hotel Undertaking", name)
-    doc.check_permission("write")
-    if not frappe.db.exists("DocType", "WAFD Print Settings"):
-        frappe.throw(_("إعدادات الطباعة غير متاحة / Print settings are unavailable"))
-    settings = frappe.get_single("WAFD Print Settings")
-    values = {
-        "default_company_name": doc.company_name,
-        "default_company_cr": doc.company_cr,
-        "default_company_representative": doc.company_representative,
-        "default_company_phone": doc.company_phone,
-        "default_company_email": doc.company_email,
-        "signatory_name": doc.authorized_signatory or doc.company_representative,
-        "signatory_title": doc.signatory_title,
-    }
-    for fieldname, value in values.items():
-        if settings.meta.has_field(fieldname) and value:
-            settings.set(fieldname, value)
-    settings.flags.ignore_permissions = True
-    settings.save()
-    return {"saved": True}
 
 @frappe.whitelist()
 def approve_and_generate_pdf(name):

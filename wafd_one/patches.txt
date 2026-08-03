@@ -189,3 +189,6 @@ wafd_one.patches.v10_0_0_rc79.execute
 
 # RC80 — embed private signature/stamp images in undertaking PDF
 wafd_one.patches.v10_0_0_rc80.execute
+
+# RC81 — undertaking signature/stamp placement and reusable company defaults
+wafd_one.patches.v10_0_0_rc81.execute

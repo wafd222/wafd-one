@@ -11,6 +11,7 @@ DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
 
 class WAFDHotelUndertaking(Document):
     def validate(self):
+        self._apply_saved_company_data()
         self._fill_linked_data()
         self._fill_meals()
         self.supply_location = self._get_hotel_name() or self.supply_location
@@ -18,6 +19,27 @@ class WAFDHotelUndertaking(Document):
         self._apply_default_signature_and_stamp()
         self._validate_dates_and_count(draft_safe=True)
 
+
+    def _apply_saved_company_data(self):
+        """Fill company data from WAFD Print Settings when the option is enabled."""
+        if not self.get("use_saved_company_data"):
+            return
+        if not frappe.db.exists("DocType", "WAFD Print Settings"):
+            return
+        settings = frappe.get_single("WAFD Print Settings")
+        mapping = {
+            "company_name": "default_company_name",
+            "company_cr": "default_company_cr",
+            "company_representative": "default_company_representative",
+            "company_phone": "default_company_phone",
+            "company_email": "default_company_email",
+            "authorized_signatory": "signatory_name",
+            "signatory_title": "signatory_title",
+        }
+        for target, source in mapping.items():
+            value = settings.get(source)
+            if value:
+                self.set(target, value)
 
     def _apply_default_signature_and_stamp(self):
         """Use the company-wide fixed signature and stamp when available.
@@ -123,8 +145,33 @@ def _file_as_data_uri(value):
 @frappe.whitelist()
 def load_linked_data(name):
     doc=frappe.get_doc("WAFD Hotel Undertaking", name); doc.check_permission("write")
-    doc._fill_linked_data(); doc._fill_meals(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
+    doc._apply_saved_company_data(); doc._fill_linked_data(); doc._fill_meals(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
     doc.save(); return doc.as_dict()
+
+
+@frappe.whitelist()
+def save_company_defaults(name):
+    """Save the current undertaking company details as the reusable defaults."""
+    doc = frappe.get_doc("WAFD Hotel Undertaking", name)
+    doc.check_permission("write")
+    if not frappe.db.exists("DocType", "WAFD Print Settings"):
+        frappe.throw(_("إعدادات الطباعة غير متاحة / Print settings are unavailable"))
+    settings = frappe.get_single("WAFD Print Settings")
+    values = {
+        "default_company_name": doc.company_name,
+        "default_company_cr": doc.company_cr,
+        "default_company_representative": doc.company_representative,
+        "default_company_phone": doc.company_phone,
+        "default_company_email": doc.company_email,
+        "signatory_name": doc.authorized_signatory or doc.company_representative,
+        "signatory_title": doc.signatory_title,
+    }
+    for fieldname, value in values.items():
+        if settings.meta.has_field(fieldname) and value:
+            settings.set(fieldname, value)
+    settings.flags.ignore_permissions = True
+    settings.save()
+    return {"saved": True}
 
 @frappe.whitelist()
 def approve_and_generate_pdf(name):

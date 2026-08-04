@@ -8,41 +8,11 @@ DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
 
 class WAFDHotelUndertaking(Document):
     def validate(self):
-        self._normalize_signatory_name()
         self._fill_linked_data()
         self._fill_meals()
         self.supply_location = self._get_hotel_name() or self.supply_location
         self.company_logo = self.company_logo or "/assets/wafd_one/images/wafd-almadinah-official.png"
-        self._apply_default_signature_and_stamp()
         self._validate_dates_and_count(draft_safe=True)
-
-
-    def _normalize_signatory_name(self):
-        """Keep the approved general-manager name correct while remaining editable."""
-        wrong_names = {
-            "نزار نذير بن ظفر",
-            "نزار بن مذير بن ظفر",
-            "نزار مذير بن ظفر",
-            "نزار بن نذير ظفر",
-        }
-        if not self.authorized_signatory or self.authorized_signatory.strip() in wrong_names:
-            self.authorized_signatory = "نزار بن نذير بن ظفر"
-        if not self.company_representative or self.company_representative.strip() in wrong_names:
-            self.company_representative = "نزار بن نذير بن ظفر"
-
-    def _apply_default_signature_and_stamp(self):
-        """Use the company-wide fixed signature and stamp when available.
-
-        Each undertaking only controls visibility through include_signature and
-        include_stamp; users do not need to upload the two images repeatedly.
-        """
-        if not frappe.db.exists("DocType", "WAFD Print Settings"):
-            return
-        settings = frappe.get_single("WAFD Print Settings")
-        if not self.signature_image and settings.default_signature:
-            self.signature_image = settings.default_signature
-        if not self.company_stamp and settings.default_stamp:
-            self.company_stamp = settings.default_stamp
 
     def before_submit(self):
         self._validate_for_issue()

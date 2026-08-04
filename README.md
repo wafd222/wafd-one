@@ -1,4 +1,4 @@
-**Current release: 10.0.0 RC79**
+**Current release: 10.0.0 RC74**
 
 # WAFD ONE — 10.0.0 RC56
 

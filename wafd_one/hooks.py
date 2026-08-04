@@ -22,7 +22,8 @@ before_migrate = "wafd_one.setup.before_migrate"
 after_migrate = "wafd_one.setup.after_migrate"
 
 page_js = {
-    "wafd-one-dashboard": "public/js/wafd_one_dashboard.js",
+    # Dashboard page JS is loaded automatically from the standard Page path.
+    # Do not inject the public copy as well, otherwise handlers and API calls run twice.
     "wafd-launch-center": "public/js/wafd_launch_center.js",
 }
 

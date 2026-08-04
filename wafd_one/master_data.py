@@ -663,7 +663,26 @@ def load_reference_master_data() -> dict[str, int]:
 
     for name, country in MISSIONS:
         if not _exists("WAFD Mission", "mission_name", name):
-            _insert("WAFD Mission", {"mission_name": name, "country": country, "address": "مكتب شؤون الحجاج - المدينة المنورة", "status": ACTIVE})
+            # WAFD Mission.country is a Link to WAFD Nationality. The linked
+            # document name is bilingual (for example "إندونيسيا / Indonesia"),
+            # while the reference list keeps the short Arabic country name.
+            # Resolve the canonical link value before inserting to prevent
+            # LinkValidationError during migrate.
+            nationality = None
+            if frappe.db.exists("DocType", "WAFD Nationality"):
+                nationality = frappe.db.get_value(
+                    "WAFD Nationality", {"country_name_ar": country}, "name"
+                )
+                if not nationality and frappe.db.exists("WAFD Nationality", country):
+                    nationality = country
+            values = {
+                "mission_name": name,
+                "address": "مكتب شؤون الحجاج - المدينة المنورة",
+                "status": ACTIVE,
+            }
+            if nationality:
+                values["country"] = nationality
+            _insert("WAFD Mission", values)
             counts["missions"] += 1
 
     for name, district, address, lat, lon in HOTELS:

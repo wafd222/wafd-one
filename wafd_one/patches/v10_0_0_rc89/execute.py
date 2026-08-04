@@ -107,6 +107,23 @@ def _ensure_extra_recipes():
 
 
 def execute():
+    # RC78 creates the bilingual WAFD Nationality master. Reload it first and
+    # ensure Indonesia exists before inserting missions through the master loader.
+    # This prevents LinkValidationError when an older site has an incomplete
+    # nationality master.
+    if frappe.db.exists("DocType", "WAFD Nationality"):
+        if not frappe.db.get_value("WAFD Nationality", {"country_name_ar": "إندونيسيا"}, "name"):
+            frappe.get_doc({
+                "doctype": "WAFD Nationality",
+                "nationality_name": "إندونيسيا / Indonesia",
+                "country_name_ar": "إندونيسيا",
+                "country_name_en": "Indonesia",
+                "iso2": "ID",
+                "iso3": "IDN",
+                "is_hajj_source": 1,
+                "enabled": 1,
+            }).insert(ignore_permissions=True)
+
     # Re-run the idempotent master loader so every active warehouse, including
     # cleaning supplies, is present without overwriting user data.
     load_reference_master_data()

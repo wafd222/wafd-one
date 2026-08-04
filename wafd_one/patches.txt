@@ -187,5 +187,5 @@ wafd_one.patches.v10_0_0_rc78.execute
 # RC79 — actionable inventory and undertaking signature/stamp visibility
 wafd_one.patches.v10_0_0_rc79.execute
 
-# RC80 — restore approved undertaking layout and centralized company identity
-wafd_one.patches.v10_0_0_rc80.execute
+# RC81 — restore undertaking only; one page with corrected stamp/signature placement
+wafd_one.patches.v10_0_0_rc81.execute

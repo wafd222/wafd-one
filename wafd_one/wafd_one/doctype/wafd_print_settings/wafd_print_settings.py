@@ -4,11 +4,6 @@ from frappe.model.document import Document
 
 DEFAULTS = {
     "company_logo": "/assets/wafd_one/images/wafd-almadinah-official.png",
-    "company_name": "شركة وفد المدينة لخدمات الإعاشة",
-    "company_cr": "7051832694",
-    "company_address": "حي الملك فهد، المدينة المنورة",
-    "company_phone": "0500336989",
-    "company_email": "wafd.almadinah@gmail.com",
     "document_title": "تعهد والتزام إعاشة",
     "primary_color": "#AA8C27",
     "text_color": "#111111",
@@ -30,7 +25,7 @@ DEFAULTS = {
     "show_watermark": 1,
     "watermark_text": "وفد",
     "watermark_opacity": 0.05,
-    "signatory_name": "نزار بن مذير بن ظفر",
+    "signatory_name": "نزار نذير بن ظفر",
     "signatory_title": "المدير العام",
     "show_company_details": 1,
     "show_reference_number": 1,

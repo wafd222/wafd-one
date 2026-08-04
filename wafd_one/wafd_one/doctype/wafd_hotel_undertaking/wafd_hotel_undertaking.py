@@ -1,6 +1,3 @@
-import base64
-import mimetypes
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -15,44 +12,7 @@ class WAFDHotelUndertaking(Document):
         self._fill_meals()
         self.supply_location = self._get_hotel_name() or self.supply_location
         self.company_logo = self.company_logo or "/assets/wafd_one/images/wafd-almadinah-official.png"
-        self._apply_default_signature_and_stamp()
         self._validate_dates_and_count(draft_safe=True)
-
-
-    def _apply_default_signature_and_stamp(self):
-        """Use the company-wide fixed signature and stamp when available.
-
-        Each undertaking only controls visibility through include_signature and
-        include_stamp; users do not need to upload the two images repeatedly.
-        """
-        if not frappe.db.exists("DocType", "WAFD Print Settings"):
-            return
-        settings = frappe.get_single("WAFD Print Settings")
-        if not self.signature_image and settings.default_signature:
-            self.signature_image = settings.default_signature
-        if not self.company_stamp and settings.default_stamp:
-            self.company_stamp = settings.default_stamp
-
-    def prepare_print_assets(self):
-        """Resolve fixed signature/stamp URLs into embedded data URIs for PDF.
-
-        Private Frappe file URLs are not reliably accessible to wkhtmltopdf.
-        Embedding the bytes makes the images appear in preview and generated PDF
-        without changing the stored attachment fields.
-        """
-        self._apply_default_signature_and_stamp()
-        if self.get("include_signature") and self.signature_image:
-            self.signature_image = _file_as_data_uri(self.signature_image)
-        else:
-            self.signature_image = ""
-        if self.get("include_stamp") and self.company_stamp:
-            self.company_stamp = _file_as_data_uri(self.company_stamp)
-        else:
-            self.company_stamp = ""
-        return self
-
-    def before_print(self, settings=None):
-        self.prepare_print_assets()
 
     def before_submit(self):
         self._validate_for_issue()
@@ -99,26 +59,6 @@ class WAFDHotelUndertaking(Document):
         if missing:
             frappe.throw(_("لا يمكن إصدار التعهد قبل استكمال الحقول التالية:<br>{0}").format("<br>".join(f"- {x}" for x in missing)), title=_("بيانات التعهد غير مكتملة"))
         self._validate_dates_and_count(draft_safe=False)
-
-def _file_as_data_uri(value):
-    """Return an image attachment as a data URI; leave external URLs untouched."""
-    value = (value or "").strip()
-    if not value or value.startswith("data:"):
-        return value
-    try:
-        file_name = frappe.db.get_value("File", {"file_url": value}, "name")
-        if not file_name:
-            return value
-        file_doc = frappe.get_doc("File", file_name)
-        content = file_doc.get_content()
-        if isinstance(content, str):
-            content = content.encode("utf-8")
-        mime = file_doc.get("content_type") or mimetypes.guess_type(file_doc.file_name or value)[0] or "image/png"
-        return f"data:{mime};base64,{base64.b64encode(content).decode('ascii')}"
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "WAFD undertaking print asset")
-        return value
-
 
 @frappe.whitelist()
 def load_linked_data(name):

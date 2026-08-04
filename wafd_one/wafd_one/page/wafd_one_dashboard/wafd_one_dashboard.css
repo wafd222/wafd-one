@@ -28,24 +28,3 @@
 .wafd-status-pill.is-warn{background:#fff0e7;color:#a14c20}
 @media(max-width:1100px){.wafd-kpi-grid-wide{grid-template-columns:repeat(2,1fr)}.wafd-manager-overview{grid-template-columns:1fr}}
 @media(max-width:620px){.wafd-kpi-grid-wide{grid-template-columns:1fr 1fr}.wafd-today-ops{grid-template-columns:repeat(2,1fr)}}
-
-/* RC79 actionable inventory details */
-.wafd-inventory-summary .wafd-inventory-detail {
-  border: 0;
-  background: transparent;
-  text-align: right;
-  width: 100%;
-  padding: 0;
-  cursor: pointer;
-}
-.wafd-inventory-summary .wafd-inventory-detail small {
-  display: block;
-  color: var(--text-muted, #6c7680);
-  margin-top: 3px;
-}
-.wafd-warehouse-status button.wafd-status-pill {
-  border: 0;
-  cursor: pointer;
-}
-.wafd-low-stock-dialog { max-height: 60vh; overflow: auto; direction: rtl; }
-.wafd-low-stock-dialog td small { display: block; color: #6c7680; }

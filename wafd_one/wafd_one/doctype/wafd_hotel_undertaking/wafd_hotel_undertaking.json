@@ -285,17 +285,15 @@
     },
     {
       "fieldname": "include_signature",
-      "label": "إظهار التوقيع / Show Signature",
+      "label": "إظهار توقيع الشركة / Include Company Signature",
       "fieldtype": "Check",
-      "default": 1,
-      "allow_in_quick_entry": 1
+      "default": 0
     },
     {
       "fieldname": "include_stamp",
-      "label": "إظهار الختم / Show Stamp",
+      "label": "إظهار ختم الشركة / Include Company Stamp",
       "fieldtype": "Check",
-      "default": 1,
-      "allow_in_quick_entry": 1
+      "default": 0
     },
     {
       "fieldname": "signature_image",

@@ -151,7 +151,7 @@ def get_executive_dashboard_data(from_date=None, to_date=None):
             "driver_performance": _driver_performance(),
             "hotel_performance": _hotel_performance(),
             "food_safety": get_food_safety_dashboard(service_date=to_date or nowdate()),
-            "inventory_snapshot": _inventory_snapshot(from_date=from_date, to_date=to_date),
+            "inventory_snapshot": _inventory_snapshot(),
             "today_operations": _today_operations(),
         }
     )
@@ -250,92 +250,42 @@ def refresh_executive_alerts():
     return {"created_or_updated": len(set(created)), "alerts": list(dict.fromkeys(created))}
 
 
-def _inventory_snapshot(limit: int = 8, from_date=None, to_date=None):
-    """Return actionable inventory data for management.
-
-    Low stock is calculated against the ingredient minimum_stock level, rather
-    than the physical-count status. Consumption uses posted issue/waste stock
-    movements and respects the dashboard date range.
-    """
+def _inventory_snapshot(limit: int = 8):
     if not _has_doctype("WAFD Stock Balance"):
-        return {
-            "total_value": 0,
-            "low_items": 0,
-            "low_item_details": [],
-            "warehouses": [],
-            "top_consumed": [],
-        }
+        return {"total_value": 0, "low_items": 0, "warehouses": [], "top_consumed": []}
 
-    total_value = frappe.db.sql(
-        "select coalesce(sum(stock_value),0) from `tabWAFD Stock Balance`"
+    total_value = frappe.db.sql("select coalesce(sum(stock_value),0) from `tabWAFD Stock Balance`")[0][0] or 0
+    low_items = frappe.db.sql(
+        """select count(*) from `tabWAFD Stock Balance`
+           where available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low')"""
     )[0][0] or 0
-
-    low_condition = "coalesce(sb.available_quantity,0) <= coalesce(i.minimum_stock,0)"
-    low_item_details = frappe.db.sql(
-        f"""select sb.ingredient,
-                   coalesce(i.ingredient_name, sb.ingredient) ingredient_name,
-                   sb.warehouse,
-                   coalesce(sb.available_quantity,0) available_quantity,
-                   coalesce(i.minimum_stock,0) minimum_stock,
-                   greatest(coalesce(i.minimum_stock,0)-coalesce(sb.available_quantity,0),0) suggested_purchase_quantity,
-                   coalesce(sb.uom, i.uom, '') uom
-            from `tabWAFD Stock Balance` sb
-            left join `tabWAFD Ingredient` i on i.name=sb.ingredient
-            where {low_condition}
-              and coalesce(i.minimum_stock,0) > 0
-            order by suggested_purchase_quantity desc, ingredient_name asc""",
-        as_dict=True,
-    )
-    low_items = len(low_item_details)
-
     warehouses = frappe.db.sql(
-        f"""select sb.warehouse,
-                   coalesce(sum(sb.stock_value),0) stock_value,
-                   sum(case when {low_condition} and coalesce(i.minimum_stock,0)>0 then 1 else 0 end) low_items,
-                   count(*) item_count
-            from `tabWAFD Stock Balance` sb
-            left join `tabWAFD Ingredient` i on i.name=sb.ingredient
-            group by sb.warehouse
-            order by stock_value desc
-            limit %s""",
-        (cint(limit),),
-        as_dict=True,
+        """select warehouse, coalesce(sum(stock_value),0) stock_value,
+                  sum(case when available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low') then 1 else 0 end) low_items,
+                  count(*) item_count
+           from `tabWAFD Stock Balance`
+           group by warehouse
+           order by stock_value desc
+           limit %s""",
+        (cint(limit),), as_dict=True,
     )
-
     top_consumed = []
     if _has_doctype("WAFD Stock Movement") and _has_doctype("WAFD Stock Movement Item"):
-        conditions = [
-            "sm.status='مرحلة / Posted'",
-            "sm.movement_type in ('صرف / Issue','هالك / Waste')",
-        ]
-        values = []
-        if from_date:
-            conditions.append("date(sm.posting_date) >= %s")
-            values.append(getdate(from_date))
-        if to_date:
-            conditions.append("date(sm.posting_date) <= %s")
-            values.append(getdate(to_date))
-        values.append(cint(limit))
         top_consumed = frappe.db.sql(
-            f"""select smi.ingredient,
-                       coalesce(i.ingredient_name, smi.ingredient) ingredient_name,
-                       coalesce(sum(smi.quantity),0) quantity,
-                       coalesce(max(smi.uom), max(i.uom), '') uom
-                from `tabWAFD Stock Movement Item` smi
-                inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
-                left join `tabWAFD Ingredient` i on i.name=smi.ingredient
-                where {' and '.join(conditions)}
-                group by smi.ingredient, i.ingredient_name
-                order by quantity desc
-                limit %s""",
-            tuple(values),
-            as_dict=True,
+            """select smi.ingredient, coalesce(sum(smi.quantity),0) quantity,
+                      max(smi.uom) uom
+               from `tabWAFD Stock Movement Item` smi
+               inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
+               where sm.status in ('مرحّل / Posted','معتمد / Confirmed')
+                 and sm.movement_type in ('صرف / Issue','استهلاك / Consumption')
+               group by smi.ingredient
+               order by quantity desc
+               limit %s""",
+            (cint(limit),), as_dict=True,
         )
-
     return {
         "total_value": flt(total_value),
         "low_items": cint(low_items),
-        "low_item_details": low_item_details,
         "warehouses": warehouses,
         "top_consumed": top_consumed,
     }

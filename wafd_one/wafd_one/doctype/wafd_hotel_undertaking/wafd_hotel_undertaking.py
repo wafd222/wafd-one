@@ -5,14 +5,24 @@ from frappe.utils import cint, now_datetime
 
 PRINT_FORMAT = "تعهد والتزام إعاشة — WAFD"
 DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
+DEFAULT_SIGNATORY = "نزار بن نذير بن ظفر"
 
 class WAFDHotelUndertaking(Document):
     def validate(self):
         self._fill_linked_data()
         self._fill_meals()
+        self._fill_company_approval_assets()
         self.supply_location = self._get_hotel_name() or self.supply_location
         self.company_logo = self.company_logo or "/assets/wafd_one/images/wafd-almadinah-official.png"
+        self.authorized_signatory = self.authorized_signatory or DEFAULT_SIGNATORY
         self._validate_dates_and_count(draft_safe=True)
+
+    def after_insert(self):
+        self._save_beneficiary_reference_if_requested()
+
+    def on_update(self):
+        if not self.flags.in_insert:
+            self._save_beneficiary_reference_if_requested()
 
     def before_submit(self):
         self._validate_for_issue()
@@ -30,12 +40,16 @@ class WAFDHotelUndertaking(Document):
             frappe.throw(_("عدد المستفيدين يجب أن يكون أكبر من صفر / Beneficiary count must be greater than zero"))
 
     def _fill_linked_data(self):
-        """The undertaking is intentionally linked only to the selected hotel.
-
-        Client/company, dates, meals, beneficiary count and nationality remain
-        explicit user inputs so this optional document never changes operational
-        workflows or inherits unrelated project data.
-        """
+        if self.saved_beneficiary:
+            ref = frappe.db.get_value(
+                "WAFD Undertaking Beneficiary", self.saved_beneficiary,
+                ["beneficiary_name", "identity_number", "nationality", "representative_name"], as_dict=True
+            )
+            if ref:
+                self.second_party_name = self.second_party_name or ref.beneficiary_name
+                self.second_party_cr = self.second_party_cr or ref.identity_number
+                self.party_nationality = self.party_nationality or ref.nationality
+                self.second_party_representative = self.second_party_representative or ref.representative_name
         if self.hotel:
             self.supply_location = self._get_hotel_name() or self.supply_location
 
@@ -43,15 +57,50 @@ class WAFDHotelUndertaking(Document):
         if not self.meal_types:
             self.meal_types = DEFAULT_MEALS
 
+    def _fill_company_approval_assets(self):
+        if not frappe.db.exists("DocType", "WAFD Print Settings"):
+            return
+        settings = frappe.get_single("WAFD Print Settings")
+        if not self.signature_image and settings.default_signature:
+            self.signature_image = settings.default_signature
+        if not self.company_stamp and settings.default_stamp:
+            self.company_stamp = settings.default_stamp
+        if self.include_signature is None:
+            self.include_signature = 1
+        if self.include_stamp is None:
+            self.include_stamp = 1
+
+    def _save_beneficiary_reference_if_requested(self):
+        if not cint(self.save_beneficiary_reference) or self.project or not self.second_party_name:
+            return
+        name = self.second_party_name.strip()
+        existing = frappe.db.exists("WAFD Undertaking Beneficiary", {"beneficiary_name": name})
+        values = {
+            "identity_number": self.second_party_cr,
+            "nationality": self.party_nationality,
+            "representative_name": self.second_party_representative,
+            "disabled": 0,
+        }
+        if existing:
+            frappe.db.set_value("WAFD Undertaking Beneficiary", existing, values, update_modified=True)
+            ref_name = existing
+        else:
+            ref = frappe.get_doc({"doctype":"WAFD Undertaking Beneficiary", "beneficiary_name":name, **values})
+            ref.insert(ignore_permissions=True)
+            ref_name = ref.name
+        if self.saved_beneficiary != ref_name:
+            frappe.db.set_value(self.doctype, self.name, "saved_beneficiary", ref_name, update_modified=False)
+            self.saved_beneficiary = ref_name
+
     def _get_hotel_name(self):
         if not self.hotel:
             return None
         return frappe.db.get_value("WAFD Hotel", self.hotel, "hotel_name") or self.hotel
 
     def _validate_for_issue(self):
-        self._fill_linked_data(); self._fill_meals()
+        self._fill_linked_data(); self._fill_meals(); self._fill_company_approval_assets()
         required = {
-            "hotel": "الفندق / Hotel",
+            "hotel": "الفندق / Hotel", "second_party_name": "اسم المستفيد / Beneficiary Name",
             "beneficiary_count": "عدد المستفيدين / Beneficiary Count", "meal_types": "الوجبات / Meals",
             "start_date": "تاريخ البداية / Start Date", "end_date": "تاريخ النهاية / End Date",
         }
@@ -63,8 +112,15 @@ class WAFDHotelUndertaking(Document):
 @frappe.whitelist()
 def load_linked_data(name):
     doc=frappe.get_doc("WAFD Hotel Undertaking", name); doc.check_permission("write")
-    doc._fill_linked_data(); doc._fill_meals(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
+    doc._fill_linked_data(); doc._fill_meals(); doc._fill_company_approval_assets(); doc.supply_location=doc._get_hotel_name() or doc.supply_location
     doc.save(); return doc.as_dict()
+
+@frappe.whitelist()
+def get_saved_beneficiary(name):
+    if not name:
+        return {}
+    return frappe.db.get_value("WAFD Undertaking Beneficiary", name,
+        ["beneficiary_name", "identity_number", "nationality", "representative_name"], as_dict=True) or {}
 
 @frappe.whitelist()
 def approve_and_generate_pdf(name):
@@ -74,8 +130,6 @@ def approve_and_generate_pdf(name):
         doc.save(); doc.submit(); doc.reload()
     if doc.docstatus == 2:
         frappe.throw(_("لا يمكن إصدار PDF لتعهد ملغي / Cannot generate a PDF for a cancelled undertaking"))
-    # Use the exact same active Document Studio template as the Preview button.
-    # This prevents the approved PDF from falling back to an obsolete Print Format.
     from wafd_one.document_studio import get_default_template, render_pdf_bytes
     template_name = get_default_template("WAFD Hotel Undertaking")
     if not template_name:

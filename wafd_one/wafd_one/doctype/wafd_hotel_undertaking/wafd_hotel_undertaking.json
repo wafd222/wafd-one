@@ -18,6 +18,8 @@
     "company_email",
     "company_logo",
     "party_section",
+    "saved_beneficiary",
+    "save_beneficiary_reference",
     "second_party_name",
     "second_party_cr",
     "party_nationality",
@@ -130,12 +132,26 @@
     {
       "fieldname": "party_section",
       "fieldtype": "Section Break",
-      "label": "بيانات الشركة أو العميل / Client Company Details"
+      "label": "بيانات المستفيد / Beneficiary Details"
+    },
+    {
+      "fieldname": "saved_beneficiary",
+      "fieldtype": "Link",
+      "label": "اختيار مستفيد محفوظ / Saved Beneficiary",
+      "options": "WAFD Undertaking Beneficiary",
+      "description": "اختر شركة أو مستفيداً تم حفظه سابقاً."
+    },
+    {
+      "default": "0",
+      "fieldname": "save_beneficiary_reference",
+      "fieldtype": "Check",
+      "label": "حفظ المستفيد كمرجع / Save Beneficiary as Reference",
+      "description": "يُحفظ عند حفظ التعهد المستقل غير المرتبط بمشروع."
     },
     {
       "fieldname": "second_party_name",
       "fieldtype": "Data",
-      "label": "اسم الشركة أو المؤسسة أو المستفيد / Company, Institution or Beneficiary",
+      "label": "اسم المستفيد / Beneficiary Name",
       "reqd": 1,
       "in_list_view": 1,
       "allow_in_quick_entry": 1
@@ -143,8 +159,8 @@
     {
       "fieldname": "second_party_cr",
       "fieldtype": "Data",
-      "label": "رقم السجل أو الجواز / CR or Passport Number",
-      "hidden": 1,
+      "label": "رقم السجل التجاري / الهوية / الجواز",
+      "hidden": 0,
       "allow_in_quick_entry": 1
     },
     {
@@ -185,7 +201,7 @@
     {
       "fieldname": "mission",
       "fieldtype": "Link",
-      "label": "البعثة أو العميل / Mission or Client",
+      "label": "المستفيد / Beneficiary",
       "options": "WAFD Mission",
       "hidden": 1,
       "read_only": 1
@@ -287,13 +303,15 @@
       "fieldname": "include_signature",
       "label": "إظهار توقيع الشركة / Include Company Signature",
       "fieldtype": "Check",
-      "default": 0
+      "default": "1",
+      "description": "يمكن إخفاء التوقيع لهذا التعهد فقط دون حذف الصورة المحفوظة."
     },
     {
       "fieldname": "include_stamp",
       "label": "إظهار ختم الشركة / Include Company Stamp",
       "fieldtype": "Check",
-      "default": 0
+      "default": "1",
+      "description": "يمكن إخفاء الختم لهذا التعهد فقط دون حذف الصورة المحفوظة."
     },
     {
       "fieldname": "signature_image",

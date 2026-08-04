@@ -1,8 +1,6 @@
-**Current release: 10.0.0 RC79**
+**Current release: 10.0.0 RC81**
 
-# WAFD ONE — 10.0.0 RC56
-
-# WAFD ONE 10.0.0 RC49
+# WAFD ONE
 
 Production governance, approvals, auditability, operations, food safety and financial intelligence.
 
@@ -28,6 +26,15 @@ Production governance, approvals, auditability, operations, food safety and fina
 
 أضف المستودع إلى Bench يعمل بـ Frappe v16، ثبّت التطبيق على الموقع، ثم نفّذ التحديث. يقوم التطبيق بمزامنة مساحة WAFD ONE تلقائيًا بعد كل migration.
 
+
+## Version 10.0.0 RC81 — Migration Safety and Print Reliability
+
+- Removed stale patch references whose Python modules were not included in the release package.
+- Kept all available historical patches in their original execution order.
+- Added an idempotent RC81 repair patch.
+- Replaced the hard-coded Receiving Note template ID with dynamic default-template resolution.
+- Re-applied the approved Hotel Undertaking print format and default signature/stamp settings.
+- Added release validation checks for versions, patches, JSON, Python, JavaScript, and fixed template identifiers.
 
 ## Version 5.0.1
 Smart Kitchen & Warehouse: stock balances, controlled stock posting, production workflow, packaging tracking, and quality gates.

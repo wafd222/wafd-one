@@ -104,7 +104,7 @@
       "fieldname": "company_representative",
       "fieldtype": "Data",
       "label": "ممثل الشركة / Company Representative",
-      "default": "نزار نذير بن ظفر",
+      "default": "نزار بن نذير بن ظفر",
       "reqd": 1
     },
     {
@@ -130,12 +130,12 @@
     {
       "fieldname": "party_section",
       "fieldtype": "Section Break",
-      "label": "بيانات الشركة أو العميل / Client Company Details"
+      "label": "بيانات المستفيد / Beneficiary Details"
     },
     {
       "fieldname": "second_party_name",
       "fieldtype": "Data",
-      "label": "اسم الشركة أو المؤسسة أو المستفيد / Company, Institution or Beneficiary",
+      "label": "اسم المستفيد / Beneficiary Name",
       "reqd": 1,
       "in_list_view": 1,
       "allow_in_quick_entry": 1
@@ -143,8 +143,8 @@
     {
       "fieldname": "second_party_cr",
       "fieldtype": "Data",
-      "label": "رقم السجل أو الجواز / CR or Passport Number",
-      "hidden": 1,
+      "label": "رقم السجل التجاري أو الهوية للمستفيد / Beneficiary CR or ID",
+      "hidden": 0,
       "allow_in_quick_entry": 1
     },
     {
@@ -185,7 +185,7 @@
     {
       "fieldname": "mission",
       "fieldtype": "Link",
-      "label": "البعثة أو العميل / Mission or Client",
+      "label": "المستفيد المرتبط / Linked Beneficiary",
       "options": "WAFD Mission",
       "hidden": 1,
       "read_only": 1
@@ -247,7 +247,8 @@
       "fieldtype": "Data",
       "label": "موقع التوريد / Supply Location",
       "fetch_from": "hotel.hotel_name",
-      "read_only": 1
+      "read_only": 1,
+      "hidden": 1
     },
     {
       "fieldname": "service_notes",
@@ -274,7 +275,7 @@
       "fieldname": "authorized_signatory",
       "fieldtype": "Data",
       "label": "الموقّع المعتمد / Authorized Signatory",
-      "default": "نزار نذير بن ظفر",
+      "default": "نزار بن نذير بن ظفر",
       "reqd": 1
     },
     {
@@ -335,7 +336,7 @@
   "index_web_pages_for_search": 0,
   "is_submittable": 1,
   "links": [],
-  "modified": "2026-07-19 18:30:00.000000",
+  "modified": "2026-08-04 04:30:00.000000",
   "modified_by": "Administrator",
   "module": "WAFD ONE",
   "name": "WAFD Hotel Undertaking",

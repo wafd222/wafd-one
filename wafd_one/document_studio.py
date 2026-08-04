@@ -261,27 +261,10 @@ def save_template(template_name, canvas_json, page_settings=None):
     return {"name": doc.name, "revision": doc.revision}
 
 
-
-def _undertaking_source_html():
-    """Return the approved undertaking template shipped with the app.
-
-    This applies only to WAFD Hotel Undertaking and prevents a stale database
-    Document Studio canvas from replacing the approved one-page layout.
-    """
-    from pathlib import Path
-    source = (
-        Path(__file__).resolve().parent
-        / "wafd_one" / "print_format" / "wafd_hotel_undertaking"
-        / "wafd_hotel_undertaking.json"
-    )
-    return json.loads(source.read_text(encoding="utf-8")).get("html") or ""
-
 def _render(template_name, doctype=None, docname=None):
     template = frappe.get_doc("WAFD Document Template", template_name)
     template.check_permission("read")
     html = template.compiled_html or compile_template(template)
-    if doctype == "WAFD Hotel Undertaking":
-        html = _undertaking_source_html()
     if doctype and docname:
         if doctype != template.reference_doctype:
             frappe.throw(frappe._("The selected document does not match the template DocType."))

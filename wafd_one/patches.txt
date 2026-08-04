@@ -189,3 +189,6 @@ wafd_one.patches.v10_0_0_rc79.execute
 
 # RC84 — final hotel undertaking field and print corrections
 wafd_one.patches.v10_0_0_rc84.execute
+
+# RC85 — audited hotel undertaking layout and data corrections
+wafd_one.patches.v10_0_0_rc85.execute

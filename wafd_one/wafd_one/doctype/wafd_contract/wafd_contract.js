@@ -1,6 +1,7 @@
 frappe.ui.form.on("WAFD Contract", {
     setup(frm) {
         frm.set_df_property("project", "read_only", 1);
+        install_meal_queries(frm);
     },
 
     before_save(frm) {
@@ -116,6 +117,7 @@ frappe.ui.form.on("WAFD Contract", {
     discount_amount: calculate_contract,
     tax_rate: calculate_contract,
     advance_percent: calculate_contract,
+    advance_amount: calculate_contract,
 
     mission(frm) {
         set_automatic_contract_title(frm);
@@ -313,31 +315,51 @@ function calculate_contract(frm) {
     const taxable = Math.max(baseValue - flt(frm.doc.discount_amount), 0);
     const tax = taxable * flt(frm.doc.tax_rate) / 100;
     const grandTotal = taxable + tax;
-    const advance = grandTotal * flt(frm.doc.advance_percent) / 100;
+    let advance = Math.max(flt(frm.doc.advance_amount), 0);
+    if (advance > grandTotal) advance = grandTotal;
+    const advancePercent = grandTotal > 0 ? (advance / grandTotal * 100) : 0;
     frm.set_value("services_subtotal", subtotal);
     if (!flt(frm.doc.contract_value) && subtotal) frm.set_value("contract_value", subtotal);
     frm.set_value("tax_amount", tax);
     frm.set_value("grand_total", grandTotal);
-    frm.set_value("advance_amount", advance);
+    if (flt(frm.doc.advance_amount) !== advance) frm.set_value("advance_amount", advance);
+    frm.set_value("advance_percent", advancePercent);
     frm.set_value("outstanding_contract_amount", Math.max(grandTotal - advance, 0));
 }
 
 
-function configure_meal_selector(frm, cdt, cdn) {
-    const row = locals[cdt][cdn];
-    const categoryMap = {
-        "إفطار / Breakfast": "إفطار / Breakfast",
-        "غداء / Lunch": "غداء / Lunch",
-        "عشاء / Dinner": "عشاء / Dinner",
-        "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
-        "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
-        "بوفيه / Buffet": "بوفيه / Buffet",
-        "وجبة خفيفة / Snack": "وجبة خفيفة / Snack"
-    };
+const WAFD_RECIPE_CATEGORY_MAP = {
+    "إفطار / Breakfast": "إفطار / Breakfast",
+    "غداء / Lunch": "غداء / Lunch",
+    "عشاء / Dinner": "عشاء / Dinner",
+    "سحور / Suhoor": "إفطار / Breakfast",
+    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+    "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
+    "بوفيه / Buffet": "بوفيه / Buffet",
+    "وجبة خفيفة / Snack": "وجبة خفيفة / Snack"
+};
+
+function recipe_query_for_row(cdt, cdn) {
+    const row = locals[cdt] && locals[cdt][cdn];
     const filters = { status: "نشطة / Active" };
-    if (categoryMap[row.service_type]) filters.meal_category = categoryMap[row.service_type];
-    frm.fields_dict.services.grid.get_field("meal_name").get_query = () => ({ filters });
-    frm.fields_dict.services.grid.get_field("recipe").get_query = () => ({ filters });
+    const category = row && WAFD_RECIPE_CATEGORY_MAP[row.service_type];
+    if (category) filters.meal_category = category;
+    return { filters };
+}
+
+function install_meal_queries(frm) {
+    const grid = frm.fields_dict.services && frm.fields_dict.services.grid;
+    if (!grid) return;
+    grid.get_field("meal_name").get_query = (doc, cdt, cdn) => recipe_query_for_row(cdt, cdn);
+    grid.get_field("recipe").get_query = (doc, cdt, cdn) => recipe_query_for_row(cdt, cdn);
+}
+
+function configure_meal_selector(frm, cdt, cdn) {
+    install_meal_queries(frm);
+    const row = locals[cdt][cdn];
+    if (row.meal_name) frappe.model.set_value(cdt, cdn, "meal_name", null);
+    if (row.recipe) frappe.model.set_value(cdt, cdn, "recipe", null);
+    if (frm.fields_dict.services && frm.fields_dict.services.grid) frm.fields_dict.services.grid.refresh();
 }
 
 function open_next_project_step(projectName) {

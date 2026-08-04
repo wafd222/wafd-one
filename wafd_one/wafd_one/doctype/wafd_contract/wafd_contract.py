@@ -75,8 +75,9 @@ class WAFDContract(Document):
         taxable = max(flt(self.contract_value) - flt(self.discount_amount), 0)
         self.tax_amount = taxable * flt(self.tax_rate) / 100
         self.grand_total = taxable + flt(self.tax_amount)
-        self.advance_amount = flt(self.grand_total) * flt(self.advance_percent) / 100
-        self.outstanding_contract_amount = max(flt(self.grand_total) - flt(self.advance_amount), 0)
+        self.advance_amount = min(max(flt(self.advance_amount), 0), flt(self.grand_total))
+        self.advance_percent = (self.advance_amount / flt(self.grand_total) * 100) if flt(self.grand_total) else 0
+        self.outstanding_contract_amount = max(flt(self.grand_total) - self.advance_amount, 0)
 
     def _validate_linked_project(self):
         if not self.project:

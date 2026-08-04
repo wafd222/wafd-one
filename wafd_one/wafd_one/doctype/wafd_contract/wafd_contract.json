@@ -184,7 +184,9 @@
       "fieldname": "default_source_warehouse",
       "fieldtype": "Link",
       "label": "مستودع الصرف الافتراضي / Default Source Warehouse",
-      "options": "WAFD Warehouse"
+      "options": "WAFD Warehouse",
+      "hidden": 1,
+      "reqd": 0
     },
     {
       "fieldname": "operations_defaults_column",
@@ -294,13 +296,14 @@
       "fieldname": "advance_percent",
       "fieldtype": "Percent",
       "label": "نسبة الدفعة المقدمة / Advance Percent",
-      "default": "0"
+      "default": "0",
+      "read_only": 1
     },
     {
       "fieldname": "advance_amount",
       "fieldtype": "Currency",
-      "label": "قيمة الدفعة المقدمة من الإجمالي / Advance Amount from Grand Total",
-      "read_only": 1
+      "label": "قيمة الدفعة المقدمة / Advance Amount",
+      "non_negative": 1
     },
     {
       "fieldname": "outstanding_contract_amount",

@@ -42,6 +42,13 @@ frappe.ui.form.on("WAFD Payment", {
         }
     },
 
+
+    after_save(frm) {
+        if (frm.doc.docstatus === 1 && frm.doc.invoice) {
+            setTimeout(() => frappe.set_route("Form", "WAFD Invoice", frm.doc.invoice), 250);
+        }
+    },
+
     payment_method(frm) {
         toggle_reference_requirement(frm);
         if (frm.doc.payment_method === "نقدي / Cash" && frm.doc.reference_number) {

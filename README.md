@@ -1,10 +1,10 @@
-**Current release: 10.0.0 RC89**
+**Current release: 10.0.0 RC94**
 
-**Current release: 10.0.0 RC74**
+**Current release: 10.0.0 RC94**
 
-# WAFD ONE — 10.0.0 RC56
+# WAFD ONE — 10.0.0 RC94
 
-# WAFD ONE 10.0.0 RC49
+# WAFD ONE 10.0.0 RC94
 
 Production governance, approvals, auditability, operations, food safety and financial intelligence.
 

@@ -145,7 +145,7 @@ MEAL_SEQUENCE = (
     "كوفي بريك / Coffee Break",
     "غداء / Lunch",
     "عشاء / Dinner",
-    "إفطار صائم / Iftar Saem",
+    "إفطار رمضان / Ramadan Iftar",
 )
 
 MEAL_DEFAULT_TIMES = {
@@ -154,12 +154,12 @@ MEAL_DEFAULT_TIMES = {
     "كوفي بريك / Coffee Break": "10:00:00",
     "غداء / Lunch": "13:00:00",
     "عشاء / Dinner": "19:00:00",
-    "إفطار صائم / Iftar Saem": "18:00:00",
+    "إفطار رمضان / Ramadan Iftar": "18:00:00",
 }
 
 # Meal Plan historically used a shorter English label for Iftar Saem.
 MEAL_PLAN_TYPE_MAP = {
-    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+    "إفطار رمضان / Ramadan Iftar": "إفطار رمضان / Ramadan Iftar",
 }
 
 

@@ -155,7 +155,7 @@ def submit_and_finish(payment_name):
         "closure": closure,
         "closure_pending": closure_pending,
         "billing_status": billing_status,
-        "route": ["Form", "WAFD Invoice", payment.invoice],
+        "route": (["Form", "WAFD Catering Project", project] if closure and project else ["Form", "WAFD Invoice", payment.invoice]),
     }
 
 

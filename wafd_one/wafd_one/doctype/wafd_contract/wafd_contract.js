@@ -332,10 +332,11 @@ const WAFD_RECIPE_CATEGORY_MAP = {
     "إفطار / Breakfast": "إفطار / Breakfast",
     "غداء / Lunch": "غداء / Lunch",
     "عشاء / Dinner": "عشاء / Dinner",
-    "سحور / Suhoor": "إفطار / Breakfast",
-    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
+    "سحور / Suhoor": "سحور / Suhoor",
+    "إفطار رمضان / Ramadan Iftar": "إفطار رمضان / Ramadan Iftar",
     "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
     "بوفيه / Buffet": "بوفيه / Buffet",
+    "وجبة ترحيبية / Welcome Meal": "وجبة ترحيبية / Welcome Meal",
     "وجبة خفيفة / Snack": "وجبة خفيفة / Snack"
 };
 

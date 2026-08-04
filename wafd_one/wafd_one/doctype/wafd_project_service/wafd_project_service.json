@@ -27,7 +27,7 @@
    "fieldname": "service_type",
    "fieldtype": "Select",
    "label": "نوع الخدمة / Service Type",
-   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة ترحيبية / Welcome Meal\nأخرى / Other",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار رمضان / Ramadan Iftar\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة ترحيبية / Welcome Meal\nأخرى / Other",
    "reqd": 1,
    "in_list_view": 1
   },

@@ -26,7 +26,7 @@
    "fieldname": "meal_type",
    "fieldtype": "Select",
    "label": "نوع الوجبة / Meal Type",
-   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار رمضان / Ramadan Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break",
    "reqd": 1,
    "in_list_view": 1
   },

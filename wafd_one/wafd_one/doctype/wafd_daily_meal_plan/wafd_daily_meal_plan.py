@@ -143,8 +143,8 @@ MEAL_TYPE_MAP = {
     "غداء / Lunch": "غداء / Lunch",
     "عشاء / Dinner": "عشاء / Dinner",
     "سحور / Suhoor": "سحور / Suhoor",
-    "إفطار صائم / Iftar Saem": "إفطار صائم / Iftar",
-    "إفطار صائم / Iftar": "إفطار صائم / Iftar",
+    "إفطار رمضان / Ramadan Iftar": "إفطار رمضان / Ramadan Iftar",
+    "إفطار رمضان / Ramadan Iftar": "إفطار رمضان / Ramadan Iftar",
     "كوفي بريك / Coffee Break": "كوفي بريك / Coffee Break",
 }
 

@@ -252,7 +252,7 @@ def refresh_executive_alerts():
 
 def _low_stock_condition(alias: str = "sb") -> str:
     """Return the canonical low-stock condition using the ingredient minimum level."""
-    return f"coalesce({alias}.available_quantity, 0) <= coalesce(i.minimum_stock, 0)"
+    return f"coalesce(i.minimum_stock, 0) > 0 and coalesce({alias}.available_quantity, 0) <= coalesce(i.minimum_stock, 0)"
 
 
 def _inventory_snapshot(limit: int = 8):
@@ -267,17 +267,24 @@ def _inventory_snapshot(limit: int = 8):
               left join `tabWAFD Ingredient` i on i.name = sb.ingredient
              where {low_condition}"""
     )[0][0] or 0
+    # Start from the warehouse master so active empty warehouses remain visible.
     warehouses = frappe.db.sql(
-        f"""select sb.warehouse,
+        f"""select w.name warehouse,
                    coalesce(sum(sb.stock_value),0) stock_value,
-                   sum(case when {low_condition} then 1 else 0 end) low_items,
-                   count(*) item_count
-              from `tabWAFD Stock Balance` sb
+                   coalesce(sum(case when {low_condition} then 1 else 0 end),0) low_items,
+                   count(sb.name) item_count,
+                   coalesce(group_concat(distinct case
+                       when coalesce(sb.available_quantity,0) <> 0
+                       then concat(trim(trailing '.00' from format(sb.available_quantity, 2)), ' ', coalesce(nullif(sb.uom,''), i.uom, ''))
+                       end order by coalesce(nullif(sb.uom,''), i.uom, '') separator ' • '), '0') quantity_summary
+              from `tabWAFD Warehouse` w
+              left join `tabWAFD Stock Balance` sb on sb.warehouse = w.name
               left join `tabWAFD Ingredient` i on i.name = sb.ingredient
-             group by sb.warehouse
-             order by stock_value desc
+             where coalesce(w.status, 'نشط / Active') not in ('غير نشط / Inactive','غير نشطة / Inactive')
+             group by w.name
+             order by stock_value desc, w.name asc
              limit %s""",
-        (cint(limit),), as_dict=True,
+        (max(cint(limit), 50),), as_dict=True,
     )
     top_consumed = []
     if _has_doctype("WAFD Stock Movement") and _has_doctype("WAFD Stock Movement Item"):

@@ -625,7 +625,11 @@ def get_dashboard_data(from_date=None, to_date=None):
         "overdue_receivables": flt(overdue),
         "actual_cost": flt(costs),
         "collected_revenue": flt(revenue),
-        "profit": flt(revenue) - flt(costs),
+        # Management profitability follows the accrual basis: issued invoices less
+        # actual posted cost. Collection remains a separate cash KPI.
+        "recognized_revenue": flt(invoiced),
+        "profit": flt(invoiced) - flt(costs),
+        "cash_profit": flt(revenue) - flt(costs),
         "alerts": alerts,
         "projects": projects,
         "upcoming_deliveries": upcoming_deliveries,

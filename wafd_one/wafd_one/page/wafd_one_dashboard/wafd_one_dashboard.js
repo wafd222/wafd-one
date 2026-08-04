@@ -151,6 +151,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   $root.on("click", "[data-new]", function () { frappe.new_doc($(this).data("new")); });
   $root.on("click", "[data-list]", function () { frappe.set_route("List", $(this).data("list")); });
   $root.on("click", "[data-docname]", function () { frappe.set_route("Form", $(this).data("doctype"), $(this).data("docname")); });
+  $root.on("click", "[data-low-stock]", function () { showLowStock($(this).data("warehouse") || ""); });
   $root.on("click", ".wafd-refresh", load);
   $root.on("click", ".wafd-refresh-alerts", function () {
     frappe.call({
@@ -170,6 +171,26 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   function toInt(value) { const number = Number.parseInt(value, 10); return Number.isFinite(number) ? number : 0; }
   function money(value) { return format_currency(toFloat(value), "SAR"); }
   function empty(message) { return `<div class="wafd-empty">${escape(message)}</div>`; }
+
+  function showLowStock(warehouse) {
+    frappe.call({
+      method: "wafd_one.executive.get_low_stock_details",
+      args: { warehouse: warehouse || null },
+      freeze: true,
+      freeze_message: __("جارٍ تحميل كميات المخزون...")
+    }).then((response) => {
+      const rows = response.message || [];
+      const title = warehouse ? `المخزون المنخفض — ${warehouse}` : "الأصناف المنخفضة أو النافدة";
+      const html = rows.length ? `<div class="wafd-low-stock-dialog"><table class="table table-bordered"><thead><tr><th>الصنف</th><th>المتاح</th><th>الحد الأدنى</th><th>الوحدة</th><th>المستودع</th></tr></thead><tbody>${rows.map(row => `<tr data-balance="${escape(row.name)}"><td><b>${escape(row.ingredient)}</b></td><td class="${toFloat(row.available_quantity) <= 0 ? 'text-danger' : ''}">${escape(row.available_quantity || 0)}</td><td>${escape(row.minimum_stock || 0)}</td><td>${escape(row.uom || '')}</td><td>${escape(row.warehouse || '')}</td></tr>`).join("")}</tbody></table></div>` : empty("لا توجد أصناف منخفضة في هذا المستودع.");
+      const dialog = new frappe.ui.Dialog({ title, size: "extra-large", fields: [{ fieldtype: "HTML", fieldname: "stock_html" }] });
+      dialog.fields_dict.stock_html.$wrapper.html(html);
+      dialog.$wrapper.on("click", "[data-balance]", function () {
+        frappe.set_route("Form", "WAFD Stock Balance", $(this).data("balance"));
+        dialog.hide();
+      });
+      dialog.show();
+    }).catch(() => frappe.msgprint(__("تعذر تحميل تفاصيل المخزون المنخفض.")));
+  }
 
   function load() {
     frappe.call({
@@ -263,10 +284,10 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     `).join("")}</tbody></table>` : empty("لا توجد بيانات توصيل كافية بعد."));
 
     const consumed = (data.inventory_snapshot || {}).top_consumed || [];
-    $root.find(".wafd-top-consumed").html(consumed.length ? `<table><thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead><tbody>${consumed.map(row => `<tr><td><b>${escape(row.ingredient)}</b></td><td>${escape(row.quantity || 0)}</td><td>${escape(row.uom || '')}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد حركات صرف كافية بعد."));
+    $root.find(".wafd-top-consumed").html(consumed.length ? `<table><thead><tr><th>الصنف</th><th>الكمية المصروفة</th><th>الوحدة</th><th>الحركات</th></tr></thead><tbody>${consumed.map(row => `<tr><td><b>${escape(row.ingredient)}</b></td><td>${escape(row.quantity || 0)}</td><td>${escape(row.uom || '')}</td><td>${escape(row.movement_count || 0)}</td></tr>`).join("")}</tbody></table>` : empty("لا توجد حركات صرف مرحلة بعد."));
 
     const warehouses = (data.inventory_snapshot || {}).warehouses || [];
-    $root.find(".wafd-warehouse-status").html(warehouses.length ? `<table><thead><tr><th>المستودع</th><th>قيمة المخزون</th><th>منخفض</th></tr></thead><tbody>${warehouses.map(row => `<tr><td><b>${escape(row.warehouse)}</b><small>${escape(row.item_count || 0)} صنف</small></td><td>${money(row.stock_value)}</td><td><span class="wafd-status-pill ${toInt(row.low_items)?'is-warn':''}">${escape(row.low_items || 0)}</span></td></tr>`).join("")}</tbody></table>` : empty("لا توجد أرصدة مخزون بعد."));
+    $root.find(".wafd-warehouse-status").html(warehouses.length ? `<table><thead><tr><th>المستودع</th><th>قيمة المخزون</th><th>منخفض</th></tr></thead><tbody>${warehouses.map(row => `<tr><td><b>${escape(row.warehouse)}</b><small>${escape(row.item_count || 0)} صنف</small></td><td>${money(row.stock_value)}</td><td><button type="button" class="wafd-status-pill wafd-low-stock-button ${toInt(row.low_items)?'is-warn':''}" data-low-stock="1" data-warehouse="${escape(row.warehouse)}" title="عرض كميات الأصناف المنخفضة">${escape(row.low_items || 0)}</button></td></tr>`).join("")}</tbody></table>` : empty("لا توجد أرصدة مخزون بعد."));
 
     const hotels = data.hotel_performance || [];
     $root.find(".wafd-hotel-performance").html(hotels.length ? `<table><thead><tr><th>الفندق</th><th>التسليمات</th><th>المقبول</th><th>نسبة القبول</th></tr></thead><tbody>${hotels.slice(0, 6).map((row) => `

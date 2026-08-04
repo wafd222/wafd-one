@@ -250,37 +250,51 @@ def refresh_executive_alerts():
     return {"created_or_updated": len(set(created)), "alerts": list(dict.fromkeys(created))}
 
 
+def _low_stock_condition(alias: str = "sb") -> str:
+    """Return the canonical low-stock condition using the ingredient minimum level."""
+    return f"coalesce({alias}.available_quantity, 0) <= coalesce(i.minimum_stock, 0)"
+
+
 def _inventory_snapshot(limit: int = 8):
     if not _has_doctype("WAFD Stock Balance"):
         return {"total_value": 0, "low_items": 0, "warehouses": [], "top_consumed": []}
 
     total_value = frappe.db.sql("select coalesce(sum(stock_value),0) from `tabWAFD Stock Balance`")[0][0] or 0
+    low_condition = _low_stock_condition("sb")
     low_items = frappe.db.sql(
-        """select count(*) from `tabWAFD Stock Balance`
-           where available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low')"""
+        f"""select count(*)
+              from `tabWAFD Stock Balance` sb
+              left join `tabWAFD Ingredient` i on i.name = sb.ingredient
+             where {low_condition}"""
     )[0][0] or 0
     warehouses = frappe.db.sql(
-        """select warehouse, coalesce(sum(stock_value),0) stock_value,
-                  sum(case when available_quantity <= 0 or count_status in ('عجز / Shortage','منخفض / Low') then 1 else 0 end) low_items,
-                  count(*) item_count
-           from `tabWAFD Stock Balance`
-           group by warehouse
-           order by stock_value desc
-           limit %s""",
+        f"""select sb.warehouse,
+                   coalesce(sum(sb.stock_value),0) stock_value,
+                   sum(case when {low_condition} then 1 else 0 end) low_items,
+                   count(*) item_count
+              from `tabWAFD Stock Balance` sb
+              left join `tabWAFD Ingredient` i on i.name = sb.ingredient
+             group by sb.warehouse
+             order by stock_value desc
+             limit %s""",
         (cint(limit),), as_dict=True,
     )
     top_consumed = []
     if _has_doctype("WAFD Stock Movement") and _has_doctype("WAFD Stock Movement Item"):
+        # The live DocType status is "مرحلة / Posted". Keep legacy values for old records.
         top_consumed = frappe.db.sql(
-            """select smi.ingredient, coalesce(sum(smi.quantity),0) quantity,
-                      max(smi.uom) uom
-               from `tabWAFD Stock Movement Item` smi
-               inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
-               where sm.status in ('مرحّل / Posted','معتمد / Confirmed')
-                 and sm.movement_type in ('صرف / Issue','استهلاك / Consumption')
-               group by smi.ingredient
-               order by quantity desc
-               limit %s""",
+            """select smi.ingredient,
+                      coalesce(sum(abs(smi.quantity)),0) quantity,
+                      max(smi.uom) uom,
+                      count(distinct sm.name) movement_count,
+                      coalesce(sum(abs(smi.amount)),0) consumption_value
+                 from `tabWAFD Stock Movement Item` smi
+                 inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
+                where sm.status in ('مرحلة / Posted','مرحّل / Posted','معتمد / Confirmed')
+                  and sm.movement_type in ('صرف / Issue','استهلاك / Consumption','هالك / Waste')
+                group by smi.ingredient
+                order by quantity desc
+                limit %s""",
             (cint(limit),), as_dict=True,
         )
     return {
@@ -289,6 +303,33 @@ def _inventory_snapshot(limit: int = 8):
         "warehouses": warehouses,
         "top_consumed": top_consumed,
     }
+
+
+@frappe.whitelist()
+def get_low_stock_details(warehouse: str | None = None):
+    """Return current low/empty stock rows for the dashboard drill-down."""
+    if not _has_doctype("WAFD Stock Balance"):
+        return []
+    filters = [warehouse] if warehouse else []
+    warehouse_clause = "and sb.warehouse = %s" if warehouse else ""
+    return frappe.db.sql(
+        f"""select sb.name,
+                   sb.warehouse,
+                   sb.ingredient,
+                   coalesce(sb.actual_quantity, 0) actual_quantity,
+                   coalesce(sb.reserved_quantity, 0) reserved_quantity,
+                   coalesce(sb.available_quantity, 0) available_quantity,
+                   coalesce(i.minimum_stock, 0) minimum_stock,
+                   coalesce(sb.uom, i.uom, '') uom,
+                   coalesce(sb.stock_value, 0) stock_value,
+                   sb.last_movement_date
+              from `tabWAFD Stock Balance` sb
+              left join `tabWAFD Ingredient` i on i.name = sb.ingredient
+             where {_low_stock_condition('sb')}
+                   {warehouse_clause}
+             order by sb.available_quantity asc, sb.ingredient asc""",
+        tuple(filters), as_dict=True,
+    )
 
 
 def _today_operations():

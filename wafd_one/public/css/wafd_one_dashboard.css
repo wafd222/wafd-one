@@ -28,3 +28,6 @@
 .wafd-status-pill.is-warn{background:#fff0e7;color:#a14c20}
 @media(max-width:1100px){.wafd-kpi-grid-wide{grid-template-columns:repeat(2,1fr)}.wafd-manager-overview{grid-template-columns:1fr}}
 @media(max-width:620px){.wafd-kpi-grid-wide{grid-template-columns:1fr 1fr}.wafd-today-ops{grid-template-columns:repeat(2,1fr)}}
+
+.wafd-low-stock-button{border:0;cursor:pointer;min-width:34px}.wafd-low-stock-button:hover{filter:brightness(.94);transform:translateY(-1px)}
+.wafd-low-stock-dialog table{direction:rtl}.wafd-low-stock-dialog tbody tr{cursor:pointer}.wafd-low-stock-dialog tbody tr:hover{background:#faf7ef}

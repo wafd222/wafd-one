@@ -19,15 +19,13 @@ def _safe_count(doctype: str, filters=None) -> int:
 
 
 def _expiry_count(doctype: str, fieldname: str, days: int = 30) -> int:
+    """Count records expiring soon without assuming every master has a status field."""
     if not _has_doctype(doctype) or not frappe.db.has_column(doctype, fieldname):
         return 0
-    return _safe_count(
-        doctype,
-        {
-            fieldname: ["between", [nowdate(), add_days(nowdate(), days)]],
-            "status": ["not in", ["غير نشط / Inactive", "غير نشطة / Inactive"]],
-        },
-    )
+    filters = {fieldname: ["between", [nowdate(), add_days(nowdate(), days)]]}
+    if frappe.db.has_column(doctype, "status"):
+        filters["status"] = ["not in", ["غير نشط / Inactive", "غير نشطة / Inactive"]]
+    return _safe_count(doctype, filters)
 
 
 def _open_alert_rows(limit: int = 12):

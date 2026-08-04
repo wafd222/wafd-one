@@ -125,6 +125,8 @@ def get_invoice_totals(invoice_name, exclude_payment=None):
     )
     if not invoice:
         frappe.throw("الفاتورة غير موجودة / Invoice not found")
+    # Whitelisted calls must respect document permissions; internal callers also pass.
+    frappe.get_doc("WAFD Invoice", invoice_name).check_permission("read")
     paid = _confirmed_payments(invoice_name, exclude_payment=exclude_payment)
     total = flt(invoice.grand_total)
     return {

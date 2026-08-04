@@ -52,7 +52,7 @@ EXTRA_RECIPES = [
     ("وجبة استقبال دولية", "غداء / Lunch", "عام / General", "جميع البعثات والشركات", [("أرز بسمتي",17),("دجاج كامل مبرد",45),("سلطة خضراء",1),("عصير 200 مل",100),("ماء 330 مل",100)]),
     ("بوفيه بعثات آسيوي", "بوفيه / Buffet", "آسيوي / Asian", "بعثات آسيا", [("أرز ياسمين",14),("صدور دجاج",22),("لحم بقري",14),("مكرونة",8),("خيار",5),("عصير 200 مل",100)]),
     ("بوفيه بعثات إفريقي", "بوفيه / Buffet", "إفريقي / African", "بعثات إفريقيا", [("أرز بسمتي",16),("دجاج كامل مبرد",40),("لحم بقري",15),("بطاطس",10),("طماطم",6),("عصير 200 مل",100)]),
-    ("سحور متوازن", "سحور / Suhoor", "عام / General", "شركات وبعثات رمضان", [("أرز بسمتي",12),("صدور دجاج",18),("زبادي",100),("موز",12),("ماء 330 مل",100)]),
+    ("سحور متوازن", "إفطار / Breakfast", "عام / General", "شركات وبعثات رمضان", [("أرز بسمتي",12),("صدور دجاج",18),("زبادي",100),("موز",12),("ماء 330 مل",100)]),
 ]
 
 
@@ -81,8 +81,27 @@ def _ensure_extra_ingredients():
 def _ensure_extra_recipes():
     if not frappe.db.exists("DocType", "WAFD Recipe"):
         return 0
+
+    # Keep imported recipe categories strictly within the Select options of
+    # WAFD Recipe.  Suhoor is operationally treated as breakfast until the
+    # recipe DocType formally supports it, preventing migrate validation errors.
+    field = frappe.get_meta("WAFD Recipe").get_field("meal_category")
+    allowed_categories = {
+        row.strip() for row in (field.options or "").splitlines() if row.strip()
+    } if field else set()
+    category_aliases = {
+        "سحور / Suhoor": "إفطار / Breakfast",
+    }
+
     count = 0
     for name, category, cuisine, nationalities, items in EXTRA_RECIPES:
+        category = category_aliases.get(category, category)
+        if allowed_categories and category not in allowed_categories:
+            frappe.log_error(
+                f"Skipped recipe {name}: unsupported category {category}",
+                "RC89 recipe category validation",
+            )
+            continue
         if frappe.db.exists("WAFD Recipe", {"recipe_name": name}):
             continue
         doc = frappe.get_doc({

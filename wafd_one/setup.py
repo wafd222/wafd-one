@@ -512,7 +512,15 @@ def ensure_madinah_hotels_400():
     from frappe.utils import nowdate
     path = Path(__file__).resolve().parent / "reference_data" / "madinah_hotels_400_ota_review.csv"
     if not path.exists():
-        raise RuntimeError(f"Hotel catalogue is missing: {path}")
+        # The hotel catalogue is optional during upgrades. Existing production
+        # sites may already contain a larger hotel master, while some package
+        # builders omit non-Python data files. Migration must never fail for
+        # this optional seed file.
+        frappe.log_error(
+            f"Optional hotel catalogue is missing; installation skipped: {path}",
+            "WAFD ONE hotel catalogue",
+        )
+        return {"catalogue_count": 0, "installed_count": 0, "skipped": True}
     with path.open(encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
 

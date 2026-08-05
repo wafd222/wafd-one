@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "carton_no",
+  "recipient_name",
+  "meal_quantity",
+  "status",
+  "vehicle",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "carton_no",
+   "fieldtype": "Int",
+   "label": "رقم الكرتون / Carton No.",
+   "in_list_view": 1,
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "recipient_name",
+   "fieldtype": "Data",
+   "label": "صاحب السفرة / Table Owner",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "meal_quantity",
+   "fieldtype": "Int",
+   "label": "عدد الوجبات / Meals",
+   "in_list_view": 1,
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مخطط / Planned\nمعبأ / Packed\nمحمل / Loaded\nمسلم / Delivered\nمرتجع / Returned",
+   "default": "مخطط / Planned",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "المركبة / Vehicle",
+   "options": "WAFD Vehicle"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Iftar Carton",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

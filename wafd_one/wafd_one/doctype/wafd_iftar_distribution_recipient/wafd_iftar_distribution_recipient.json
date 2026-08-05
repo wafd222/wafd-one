@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "supervisor_name",
+  "assistant_name",
+  "table_owner_name",
+  "mobile_no",
+  "distribution_point",
+  "meal_quantity",
+  "carton_count",
+  "received",
+  "received_on",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "supervisor_name",
+   "fieldtype": "Data",
+   "label": "المشرف / Supervisor",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "assistant_name",
+   "fieldtype": "Data",
+   "label": "المساعد / Assistant",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "table_owner_name",
+   "fieldtype": "Data",
+   "label": "صاحب السفرة / Table Owner",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "label": "رقم الجوال / Mobile",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "distribution_point",
+   "fieldtype": "Data",
+   "label": "نقطة التوزيع / Distribution Point",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_quantity",
+   "fieldtype": "Int",
+   "label": "عدد الوجبات / Meals",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "carton_count",
+   "fieldtype": "Int",
+   "label": "عدد الكراتين / Cartons",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received",
+   "fieldtype": "Check",
+   "label": "تم الاستلام / Received",
+   "default": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received_on",
+   "fieldtype": "Datetime",
+   "label": "وقت الاستلام / Received On"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Iftar Distribution Recipient",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

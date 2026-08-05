@@ -11,9 +11,46 @@ DAILY_DISTRIBUTION = "يومي (يتكرر لكل يوم) / Daily (Repeats Each 
 WHOLE_PROJECT_DISTRIBUTION = "كامل المشروع / Whole Project"
 ZAMZAM_INGREDIENT_NAME = "ماء زمزم 330 مل"
 
+PROJECT_SITE_DEFAULTS = {
+    "المسجد النبوي الشريف / Prophet’s Mosque": (
+        "المسجد النبوي / Prophet Mosque",
+        "جهة حكومية / Government Entity",
+        "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي",
+    ),
+    "مسجد قباء / Quba Mosque": (
+        "مسجد قباء / Quba Mosque",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+    "مسجد القبلتين / Qiblatain Mosque": (
+        "مسجد القبلتين / Qiblatain Mosque",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+    "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": (
+        "الميقات / Miqat",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+}
+
+STANDARD_COMPONENTS = [
+    ("زبادي", 1, "أساسي / Core", 1),
+    ("تمر", 5, "أساسي / Core", 1),
+    ("ماء 330 مل", 1, "أساسي / Core", 1),
+    ("دقة مدينية", 1, "أساسي / Core", 1),
+    ("ملعقة", 1, "أساسي / Core", 1),
+    ("منديل معطر", 1, "أساسي / Core", 1),
+    ("خبز فتوت", 1, "أساسي / Core", 1),
+    ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
+    ("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1),
+]
+
 
 class WAFDIftarProject(Document):
     def validate(self):
+        self._apply_project_defaults()
+        self._ensure_standard_components()
         self._validate_dates_and_times()
         self._calculate_quantities()
         self._sync_known_operating_quantities()
@@ -22,6 +59,36 @@ class WAFDIftarProject(Document):
         self._validate_distribution()
         self._validate_closing_quantities()
         self._calculate_profitability()
+
+
+    def _apply_project_defaults(self):
+        defaults = PROJECT_SITE_DEFAULTS.get(self.project_title)
+        if defaults:
+            self.distribution_site, self.contracting_entity_type, self.contracting_entity = defaults
+        elif self.project_title == "مشروع أو موقع آخر / Other Project or Site":
+            self.distribution_site = "موقع آخر / Other"
+
+    def _ensure_standard_components(self):
+        # Standard meal materials are automatic; the user only selects optional additions.
+        if self.components:
+            return
+        rows = list(STANDARD_COMPONENTS)
+        if self.include_zamzam:
+            rows.append((ZAMZAM_INGREDIENT_NAME, 1, "إضافة / Add-on", 1))
+        missing = []
+        for ingredient_name, qty, group, mandatory in rows:
+            ingredient = _ingredient_name(ingredient_name)
+            if not ingredient:
+                missing.append(ingredient_name)
+                continue
+            self.append("components", {
+                "ingredient": ingredient,
+                "quantity_per_meal": qty,
+                "component_group": group,
+                "is_mandatory": mandatory,
+            })
+        if missing:
+            frappe.throw("المواد المرجعية التالية غير موجودة: " + "، ".join(missing))
 
     def _validate_dates_and_times(self):
         if self.start_date and self.end_date and self.end_date < self.start_date:
@@ -151,17 +218,7 @@ def _ingredient_name(name: str) -> str | None:
 def load_standard_components(project_name: str):
     doc = frappe.get_doc("WAFD Iftar Project", project_name)
     doc.check_permission("write")
-    standard = [
-        ("زبادي", 1, "أساسي / Core", 1),
-        ("تمر", 5, "أساسي / Core", 1),
-        ("ماء 330 مل", 1, "أساسي / Core", 1),
-        ("دقة مدينية", 1, "أساسي / Core", 1),
-        ("ملعقة", 1, "أساسي / Core", 1),
-        ("منديل معطر", 1, "أساسي / Core", 1),
-        ("خبز فتوت", 1, "أساسي / Core", 1),
-        ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
-        ("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1),
-    ]
+    standard = list(STANDARD_COMPONENTS)
     if doc.include_zamzam:
         standard.append((ZAMZAM_INGREDIENT_NAME, 1, "إضافة / Add-on", 1))
 

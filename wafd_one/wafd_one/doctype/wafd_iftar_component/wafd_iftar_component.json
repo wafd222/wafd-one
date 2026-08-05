@@ -22,7 +22,8 @@
    "label": "المادة / Ingredient",
    "options": "WAFD Ingredient",
    "in_list_view": 1,
-   "reqd": 1
+   "reqd": 1,
+   "description": "تُحمّل المكونات الأساسية تلقائياً عند إنشاء المشروع / Standard components load automatically"
   },
   {
    "fieldname": "component_group",
@@ -50,13 +51,15 @@
    "fieldname": "uom",
    "fieldtype": "Data",
    "label": "الوحدة / UOM",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
   },
   {
    "fieldname": "unit_cost",
    "fieldtype": "Currency",
    "label": "تكلفة الوحدة / Unit Cost",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
   },
   {
    "fieldname": "cost_per_meal",
@@ -80,7 +83,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-05 00:00:00.000000",
+ "modified": "2026-08-05 06:40:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Component",

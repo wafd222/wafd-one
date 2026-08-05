@@ -8,6 +8,7 @@
   "identity_section",
   "naming_series",
   "project_title",
+  "contracting_entity_type",
   "contracting_entity",
   "column_break_a",
   "distribution_site",
@@ -71,23 +72,35 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "سلسلة الترقيم / Naming Series",
-   "options": "WAFD-IFTAR-.#####",
-   "default": "WAFD-IFTAR-.#####",
-   "reqd": 1
+   "options": "WAFD-IFTAR-#####",
+   "default": "WAFD-IFTAR-#####",
+   "reqd": 1,
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "project_title",
-   "fieldtype": "Data",
-   "label": "اسم المشروع / Project Title",
+   "fieldtype": "Select",
+   "label": "المشروع / Project",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "options": "المسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site"
+  },
+  {
+   "fieldname": "contracting_entity_type",
+   "fieldtype": "Select",
+   "label": "نوع الجهة المتعاقدة / Contracting Entity Type",
+   "options": "جهة حكومية / Government Entity\nمؤسسة / Establishment\nشركة / Company\nجمعية / Association\nمستفيد / Beneficiary\nفاعل خير / Benefactor\nأخرى / Other",
+   "default": "جهة حكومية / Government Entity",
+   "reqd": 1
   },
   {
    "fieldname": "contracting_entity",
    "fieldtype": "Data",
    "label": "الجهة المتعاقدة / Contracting Entity",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "تُحدد تلقائياً للمواقع الرسمية، ويمكن تعديلها للمشاريع الأخرى / Auto-filled for official sites and editable for other projects"
   },
   {
    "fieldname": "column_break_a",
@@ -99,7 +112,8 @@
    "label": "موقع التوزيع / Distribution Site",
    "options": "المسجد النبوي / Prophet Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nالميقات / Miqat\nموقع آخر / Other",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
   },
   {
    "fieldname": "site_details",
@@ -392,7 +406,7 @@
  "index_web_pages_for_search": 1,
  "istable": 0,
  "links": [],
- "modified": "2026-08-05 00:00:00.000000",
+ "modified": "2026-08-05 06:40:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Project",

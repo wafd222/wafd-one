@@ -71,36 +71,6 @@ async function load_standard_components_client(frm) {
     frm.refresh_field("components");
 }
 
-
-function render_iftar_summary(frm) {
-    const days = cint(frm.doc.number_of_days || 0);
-    const total = cint(frm.doc.total_meals || 0);
-    const cartons = Math.ceil(cint(frm.doc.daily_meals || 0) / Math.max(cint(frm.doc.max_carton_capacity || 25), 1));
-    const allocated = (frm.doc.distribution_recipients || []).reduce((s, r) => s + cint(r.meal_quantity), 0);
-    const completed = (frm.doc.daily_executions || []).filter(r => cint(r.received_meals) > 0).length;
-    const html = `<div class="wafd-iftar-summary">
-      <div><b>${__("الوجبات اليومية")}</b><strong>${format_number(frm.doc.daily_meals || 0)}</strong></div>
-      <div><b>${__("أيام المشروع")}</b><strong>${days}</strong></div>
-      <div><b>${__("إجمالي الوجبات")}</b><strong>${format_number(total)}</strong></div>
-      <div><b>${__("كراتين يومية")}</b><strong>${cartons}</strong></div>
-      <div><b>${__("الموزع من الخطة")}</b><strong>${format_number(allocated)}</strong></div>
-      <div><b>${__("أيام مكتملة")}</b><strong>${completed}/${days}</strong></div>
-    </div>`;
-    frm.get_field("quick_summary")?.$wrapper.html(html);
-}
-
-function add_print_button(frm, label, format) {
-    frm.add_custom_button(__(label), () => {
-        const url = `/printview?doctype=${encodeURIComponent(frm.doctype)}&name=${encodeURIComponent(frm.doc.name)}&format=${encodeURIComponent(format)}&no_letterhead=1`;
-        window.open(url, "_blank");
-    }, __("النماذج والتقارير / Forms & Reports"));
-}
-
-function apply_simple_mode(frm) {
-    ["components", "operating_costs", "cartons"].forEach(field => frm.toggle_display(field, !frm.is_new()));
-    frm.toggle_display("daily_executions", !frm.is_new());
-}
-
 frappe.ui.form.on("WAFD Iftar Project", {
     async onload(frm) {
         if (frm.is_new()) {
@@ -111,8 +81,6 @@ frappe.ui.form.on("WAFD Iftar Project", {
     },
     async refresh(frm) {
         await apply_project_setup(frm);
-        apply_simple_mode(frm);
-        render_iftar_summary(frm);
         frm.set_query("vehicle", "cartons", () => ({ filters: { status: "متاحة / Available" } }));
         const missing_costs = (frm.doc.components || []).filter(row => flt(row.unit_cost) <= 0).map(row => row.ingredient);
         if (missing_costs.length) {
@@ -145,16 +113,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
             frm.dashboard.add_indicator(__(`التكلفة/وجبة: ${format_currency(frm.doc.actual_cost_per_meal || 0)}`), "orange");
             frm.dashboard.add_indicator(__(`الربح المتوقع: ${format_currency(frm.doc.expected_profit || 0)}`), (frm.doc.expected_profit || 0) >= 0 ? "green" : "red");
         }
-        if (!frm.is_new()) {
-            add_print_button(frm, "ملخص المشروع / Project Summary", "WAFD Iftar Project Summary");
-            add_print_button(frm, "التقرير اليومي / Daily Report", "WAFD Iftar Daily Report");
-            add_print_button(frm, "نموذج التسليم / Delivery Note", "WAFD Iftar Delivery Note");
-            add_print_button(frm, "نموذج الاستلام / Receipt Note", "WAFD Iftar Receipt Note");
-        }
     },
-    daily_meals(frm) { render_iftar_summary(frm); },
-    start_date(frm) { render_iftar_summary(frm); },
-    end_date(frm) { render_iftar_summary(frm); },
     async project_title(frm) { await apply_project_setup(frm); },
     async include_zamzam(frm) {
         if (frm.is_new()) {
@@ -218,3 +177,26 @@ frappe.ui.form.on("WAFD Iftar Operating Cost", {
         frappe.model.set_value(cdt, cdn, "amount", flt(row.quantity) * flt(row.rate));
     }
 });
+
+
+frappe.ui.form.on("WAFD Iftar Project", {
+  async refresh(frm) {
+    if (frm.fields_dict.daily_operations_html) {
+      const w=frm.fields_dict.daily_operations_html.$wrapper;
+      if (frm.is_new()) { w.html('<div class="alert alert-info">احفظ المشروع أولاً ليتم إنشاء الخطة اليومية.</div>'); }
+      else {
+        const x=(await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_project_operations',args:{project_name:frm.doc.name}})).message||[];
+        w.html(`<div class="iftar-inline-head"><b>الخطة اليومية</b><button class="btn btn-sm btn-primary generate-days">توليد الأيام الناقصة</button></div>${x.length?`<table class="table table-bordered"><thead><tr><th>التاريخ</th><th>الحالة</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.map(r=>`<tr data-day="${r.name}" style="cursor:pointer"><td>${frappe.datetime.str_to_user(r.operation_date)}</td><td>${r.status}</td><td>${r.planned_meals||0}</td><td>${r.produced_meals||0}</td><td>${r.packaged_meals||0}</td><td>${r.loaded_meals||0}</td><td>${r.delivered_meals||0}</td><td>${r.received_meals||0}</td><td>${r.completion_percent||0}%</td></tr>`).join('')}</tbody></table>`:'<div class="alert alert-warning">لم تُنشأ الخطة اليومية بعد.</div>'}`);
+        w.off('click').on('click','[data-day]',function(){frappe.set_route('Form','WAFD Iftar Daily Operation',$(this).data('day'))}).on('click','.generate-days',async()=>{await frappe.call({method:'wafd_one.wafd_one.iftar_pro.generate_daily_operations',args:{project_name:frm.doc.name},freeze:true});frm.reload_doc()});
+      }
+    }
+    if (frm.fields_dict.reports_html) {
+      const w=frm.fields_dict.reports_html.$wrapper;
+      w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
+      w.off('click').on('click','[data-page]',function(){frappe.set_route($(this).data('page'))}).on('click','[data-list]',function(){frappe.set_route('List',$(this).data('list'),{project:frm.doc.name})}).on('click','[data-print]',()=>frm.print_doc());
+    }
+  },
+  start_date: update_iftar_totals, end_date: update_iftar_totals, daily_meals: update_iftar_totals,
+  meal_template(frm){const z=frm.doc.meal_template==='وجبة مع زمزم / Iftar + Zamzam';frm.set_value('include_zamzam',z?1:0);}
+});
+function update_iftar_totals(frm){if(frm.doc.start_date&&frm.doc.end_date){const days=frappe.datetime.get_day_diff(frm.doc.end_date,frm.doc.start_date)+1;frm.set_value('number_of_days',Math.max(days,0));frm.set_value('total_meals',Math.max(days,0)*(frm.doc.daily_meals||0));}}

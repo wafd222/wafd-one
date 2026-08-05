@@ -1,6 +1,14 @@
-**Current release: 10.0.0 RC106**
+# WAFD ONE
 
-# WAFD ONE — 10.0.0 RC106
+Current release: **10.0.0 RC108 — Iftar Pro Workflow Redesign**
+
+**Current release: 10.0.0 RC94**
+
+**Current release: 10.0.0 RC94**
+
+# WAFD ONE — 10.0.0 RC94
+
+# WAFD ONE 10.0.0 RC94
 
 Production governance, approvals, auditability, operations, food safety and financial intelligence.
 
@@ -37,5 +45,3 @@ Smart Kitchen & Warehouse: stock balances, controlled stock posting, production 
 - Cost and revenue variance against estimates.
 - Approval locks for posted costs and collected revenue.
 - Automatic project financial refresh after financial transactions.
-
-Current release: 10.0.0 RC105

@@ -1,0 +1,16 @@
+{
+ "doctype": "Print Format",
+ "name": "إفطار صائم — تسليم واستلام يومي",
+ "doc_type": "WAFD Iftar Daily Operation",
+ "module": "WAFD ONE",
+ "standard": "Yes",
+ "custom_format": 1,
+ "print_format_type": "Jinja",
+ "html": "<style>@page{size:A4;margin:12mm}.sheet{direction:rtl;font-family:Tahoma,Arial;color:#172b4d}.head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #b88a2a;padding-bottom:10px}.head img{width:72px}.title{text-align:center;margin:22px 0}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #d7dce2}.grid div{padding:10px;border:1px solid #d7dce2}.stages{width:100%;border-collapse:collapse;margin-top:18px}.stages th,.stages td{border:1px solid #ccd2da;padding:9px;text-align:center}.sign{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:45px;text-align:center}.muted{color:#6b7280}</style><div class='sheet'><div class='head'><div><b>شركة وفد المدينة لخدمات الإعاشة</b><br><span class='muted'>WAFD AL-MADINAH CATERING SERVICES</span></div><img src='/assets/wafd_one/images/wafd-almadinah-official.png'></div><div class='title'><h2>نموذج التسليم والاستلام اليومي — إفطار صائم</h2><div>{{ doc.name }}</div></div><div class='grid'><div><b>المشروع:</b> {{ doc.project }}</div><div><b>التاريخ:</b> {{ doc.get_formatted('operation_date') }}</div><div><b>المستلم:</b> {{ doc.recipient_name or '' }}</div><div><b>رقم الهوية:</b> {{ doc.recipient_id or '' }}</div><div><b>المركبة:</b> {{ doc.vehicle or '' }}</div><div><b>المشرف:</b> {{ doc.supervisor_name or '' }}</div></div><table class='stages'><tr><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th></tr><tr><td>{{doc.planned_meals or 0}}</td><td>{{doc.produced_meals or 0}}</td><td>{{doc.packaged_meals or 0}}</td><td>{{doc.loaded_meals or 0}}</td><td>{{doc.delivered_meals or 0}}</td><td>{{doc.received_meals or 0}}</td></tr></table><div class='grid' style='margin-top:18px'><div><b>الفائض:</b> {{doc.surplus_meals or 0}}</div><div><b>التالف:</b> {{doc.waste_meals or 0}}</div><div><b>حفظ النعمة:</b> {{doc.preservation_society_quantity or 0}}</div><div><b>وقت الاستلام:</b> {{doc.get_formatted('receipt_time') if doc.receipt_time else ''}}</div></div><p><b>الملاحظات:</b> {{doc.notes or 'لا توجد ملاحظات'}}</p><div class='sign'><div>المسلّم<br><br>{{doc.delivered_by or '________________'}}<br><br>التوقيع: ________________</div><div>المستلم<br><br>{{doc.received_by or doc.recipient_name or '________________'}}<br><br>التوقيع: ________________</div></div></div>",
+ "disabled": 0,
+ "show_section_headings": 0,
+ "line_breaks": 0,
+ "font": "Default",
+ "creation": "2026-08-06 00:00:00.000000",
+ "modified": "2026-08-06 00:00:00.000000"
+}

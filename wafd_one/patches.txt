@@ -208,3 +208,6 @@ wafd_one.patches.v10_0_0_rc100.execute
 wafd_one.patches.v10_0_0_rc101.execute
 
 wafd_one.patches.v10_0_0_rc103.execute
+
+wafd_one.patches.v10_0_0_rc105.execute
+wafd_one.patches.v10_0_0_rc106.execute

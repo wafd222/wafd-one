@@ -17,3 +17,6 @@ body{background:var(--wafd-bg)}
 @media(max-width:768px){.form-column{padding-left:8px!important;padding-right:8px!important}.page-head{position:sticky;top:0;z-index:20}}
 /* Final usability polish */
 .layout-main-section{max-width:1600px;margin-inline:auto}.page-head .page-head-content{max-width:1600px;margin-inline:auto}.form-layout{padding-bottom:24px}.form-section{margin-bottom:10px}.form-section .section-head{font-size:14px;padding-top:10px;padding-bottom:8px}.control-label{font-weight:600}.form-control,.input-with-feedback,.control-input input,.control-input select{min-height:36px}.grid-heading-row{background:#f4f1e9!important;font-weight:700}.grid-row:hover{background:#fbfaf7}.btn{transition:all .15s ease}.btn:hover{transform:translateY(-1px)}
+
+/* RC105 — simplified Iftar operations */
+.wafd-iftar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:8px 0 14px}.wafd-iftar-summary>div{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;box-shadow:0 2px 8px rgba(15,23,42,.05)}.wafd-iftar-summary b{display:block;color:#64748b;font-size:12px;margin-bottom:5px}.wafd-iftar-summary strong{display:block;color:#111827;font-size:20px}.form-tabs-list .nav-link{font-weight:700}.form-section.card-section{border-radius:12px}.grid-heading-row{background:#f8fafc}

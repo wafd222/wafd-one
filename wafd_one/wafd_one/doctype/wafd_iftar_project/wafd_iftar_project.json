@@ -5,6 +5,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "setup_tab",
+  "quick_summary",
   "identity_section",
   "naming_series",
   "project_title",
@@ -25,6 +27,10 @@
   "include_zamzam",
   "zamzam_reference_price",
   "mandatory_tablecloths",
+  "operations_tab",
+  "daily_progress_section",
+  "daily_executions",
+  "distribution_progress_section",
   "meal_section",
   "components",
   "operations_section",
@@ -39,10 +45,11 @@
   "operating_costs",
   "distribution_section",
   "max_carton_capacity",
-  "distribution_plan_basis",
   "planned_distribution_meals",
+  "distribution_plan_basis",
   "distribution_recipients",
   "cartons",
+  "finance_tab",
   "costing_section",
   "material_cost_total",
   "operating_cost_total",
@@ -63,6 +70,16 @@
   "notes"
  ],
  "fields": [
+  {
+   "fieldname": "setup_tab",
+   "fieldtype": "Tab Break",
+   "label": "1 — إنشاء المشروع / Project Setup"
+  },
+  {
+   "fieldname": "quick_summary",
+   "fieldtype": "HTML",
+   "label": "ملخص المشروع / Project Summary"
+  },
   {
    "fieldname": "identity_section",
    "fieldtype": "Section Break",
@@ -92,7 +109,9 @@
    "label": "نوع الجهة المتعاقدة / Contracting Entity Type",
    "options": "جهة حكومية / Government Entity\nمؤسسة / Establishment\nشركة / Company\nجمعية / Association\nمستفيد / Beneficiary\nفاعل خير / Benefactor\nأخرى / Other",
    "default": "جهة حكومية / Government Entity",
-   "reqd": 1
+   "reqd": 1,
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "contracting_entity",
@@ -118,7 +137,8 @@
   {
    "fieldname": "site_details",
    "fieldtype": "Data",
-   "label": "تفاصيل الموقع / Site Details"
+   "label": "تفاصيل الموقع / Site Details",
+   "collapsible": 1
   },
   {
    "fieldname": "status",
@@ -127,7 +147,8 @@
    "options": "مسودة / Draft\nمعتمد / Approved\nإنتاج / Production\nتغليف / Packaging\nنقل / Transport\nتوزيع / Distribution\nإغلاق / Closing\nمكتمل / Completed\nملغي / Cancelled",
    "default": "مسودة / Draft",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "schedule_section",
@@ -186,7 +207,8 @@
    "fieldname": "zamzam_reference_price",
    "fieldtype": "Currency",
    "label": "سعر زمزم المرجعي / Zamzam Reference Price",
-   "default": 1.5
+   "default": 1.5,
+   "read_only": 1
   },
   {
    "fieldname": "mandatory_tablecloths",
@@ -196,9 +218,33 @@
    "read_only": 1
   },
   {
+   "fieldname": "operations_tab",
+   "fieldtype": "Tab Break",
+   "label": "2 — التشغيل اليومي / Daily Operations"
+  },
+  {
+   "fieldname": "daily_progress_section",
+   "fieldtype": "Section Break",
+   "label": "التقارير اليومية / Daily Reports"
+  },
+  {
+   "fieldname": "daily_executions",
+   "fieldtype": "Table",
+   "label": "سجل التنفيذ اليومي / Daily Execution Log",
+   "options": "WAFD Iftar Daily Execution",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "distribution_progress_section",
+   "fieldtype": "Section Break",
+   "label": "التوزيع والتسليم / Distribution & Handover",
+   "collapsible": 1
+  },
+  {
    "fieldname": "meal_section",
    "fieldtype": "Section Break",
-   "label": "مكونات الوجبة / Meal Components"
+   "label": "الوصفة والمكونات (تلقائي) / Recipe & Components (Automatic)",
+   "collapsible": 1
   },
   {
    "fieldname": "components",
@@ -210,7 +256,8 @@
   {
    "fieldname": "operations_section",
    "fieldtype": "Section Break",
-   "label": "تكاليف التشغيل / Operating Costs"
+   "label": "الموارد والتكاليف (متقدم) / Resources & Costs (Advanced)",
+   "collapsible": 1
   },
   {
    "fieldname": "general_supervisors",
@@ -295,19 +342,27 @@
    "fieldname": "distribution_recipients",
    "fieldtype": "Table",
    "label": "أصحاب السفر / Table Owners",
-   "options": "WAFD Iftar Distribution Recipient"
+   "options": "WAFD Iftar Distribution Recipient",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "cartons",
    "fieldtype": "Table",
    "label": "الكراتين / Cartons",
    "options": "WAFD Iftar Carton",
-   "description": "تُنشأ تلقائياً بعد اكتمال خطة أصحاب السفر / Generated automatically after recipient allocations are complete"
+   "description": "تُنشأ تلقائياً بعد اكتمال خطة أصحاب السفر / Generated automatically after recipient allocations are complete",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "finance_tab",
+   "fieldtype": "Tab Break",
+   "label": "3 — المالية والإغلاق / Finance & Closing"
   },
   {
    "fieldname": "costing_section",
    "fieldtype": "Section Break",
-   "label": "ملخص التكلفة والربحية / Cost & Profit Summary"
+   "label": "التحليل المالي / Financial Analysis",
+   "collapsible": 1
   },
   {
    "fieldname": "material_cost_total",
@@ -364,51 +419,59 @@
   {
    "fieldname": "safety_section",
    "fieldtype": "Section Break",
-   "label": "السلامة والإغلاق / Safety & Closing"
+   "label": "الإغلاق والملاحظات / Closing & Notes",
+   "collapsible": 1
   },
   {
    "fieldname": "departure_time",
    "fieldtype": "Datetime",
-   "label": "وقت مغادرة المصنع / Factory Departure"
+   "label": "وقت مغادرة المصنع / Factory Departure",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "site_arrival_time",
    "fieldtype": "Datetime",
-   "label": "وقت الوصول للموقع / Site Arrival"
+   "label": "وقت الوصول للموقع / Site Arrival",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "distribution_deadline",
    "fieldtype": "Datetime",
-   "label": "موعد التسليم قبل المغرب / Distribution Deadline"
+   "label": "موعد التسليم قبل المغرب / Distribution Deadline",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "surplus_meals",
    "fieldtype": "Int",
    "label": "الوجبات الفائضة / Surplus Meals",
-   "default": 0
+   "default": 0,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "waste_meals",
    "fieldtype": "Int",
    "label": "الوجبات التالفة / Waste Meals",
-   "default": 0
+   "default": 0,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "preservation_society_quantity",
    "fieldtype": "Int",
    "label": "المسلّم لجمعية حفظ النعمة / Delivered to Food Preservation Society",
-   "default": 0
+   "default": 0,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "notes",
    "fieldtype": "Long Text",
-   "label": "ملاحظات / Notes"
+   "label": "ملاحظات / Notes",
+   "allow_on_submit": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 0,
  "links": [],
- "modified": "2026-08-05 07:30:00.000000",
+ "modified": "2026-08-05 18:55:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Project",

@@ -4,7 +4,7 @@ import math
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, date_diff, flt, now_datetime
+from frappe.utils import add_days, cint, date_diff, flt, getdate, now_datetime
 
 
 DAILY_DISTRIBUTION = "يومي (يتكرر لكل يوم) / Daily (Repeats Each Day)"
@@ -54,6 +54,7 @@ class WAFDIftarProject(Document):
         self._ensure_standard_components()
         self._validate_dates_and_times()
         self._calculate_quantities()
+        self._ensure_daily_execution_rows()
         self._sync_known_operating_quantities()
         self._hydrate_component_costs()
         self._calculate_operating_costs()
@@ -61,6 +62,7 @@ class WAFDIftarProject(Document):
         self._auto_generate_cartons(distribution_complete)
         self._hydrate_carton_vehicles()
         self._validate_closing_quantities()
+        self._validate_daily_execution()
         self._calculate_profitability()
 
     def _remove_blank_child_rows(self):
@@ -128,6 +130,27 @@ class WAFDIftarProject(Document):
             if self.distribution_plan_basis == WHOLE_PROJECT_DISTRIBUTION
             else cint(self.daily_meals)
         )
+
+    def _ensure_daily_execution_rows(self):
+        """Create one compact operational row per project day without overwriting actual entries."""
+        if not self.start_date or not self.end_date:
+            return
+        start, end = getdate(self.start_date), getdate(self.end_date)
+        existing = {getdate(row.execution_date): row for row in (self.daily_executions or []) if row.execution_date}
+        rows = []
+        current = start
+        while current <= end:
+            row = existing.get(current)
+            if row:
+                row.planned_meals = cint(self.daily_meals)
+                rows.append(row)
+            else:
+                rows.append(self.append("daily_executions", {
+                    "execution_date": current,
+                    "planned_meals": cint(self.daily_meals),
+                }))
+            current = add_days(current, 1)
+        self.set("daily_executions", rows)
 
     def _sync_known_operating_quantities(self):
         mapping = {
@@ -270,6 +293,28 @@ class WAFDIftarProject(Document):
             frappe.throw("كميات الإغلاق لا يمكن أن تكون سالبة / Closing quantities cannot be negative")
         if sum(closing_values) > cint(self.total_meals):
             frappe.throw("إجمالي الفائض والتالف والمسلّم للجمعية يتجاوز وجبات المشروع / Closing quantities exceed project meals")
+
+    def _validate_daily_execution(self):
+        seen_dates = set()
+        for row in self.daily_executions or []:
+            execution_date = getdate(row.execution_date) if row.execution_date else None
+            if execution_date in seen_dates:
+                frappe.throw(f"يوجد تقرير يومي مكرر بتاريخ {row.execution_date} / Duplicate daily report date")
+            if execution_date:
+                seen_dates.add(execution_date)
+            values = [cint(row.planned_meals), cint(row.produced_meals), cint(row.packed_meals), cint(row.loaded_meals), cint(row.delivered_meals), cint(row.received_meals), cint(row.surplus_meals), cint(row.waste_meals)]
+            if any(value < 0 for value in values):
+                frappe.throw(f"لا يمكن إدخال كمية سالبة في التقرير اليومي {row.execution_date} / Daily quantities cannot be negative")
+            if cint(row.packed_meals) > cint(row.produced_meals):
+                frappe.throw(f"المغلف يتجاوز المنتج في {row.execution_date} / Packed exceeds produced")
+            if cint(row.loaded_meals) > cint(row.packed_meals):
+                frappe.throw(f"المحمّل يتجاوز المغلف في {row.execution_date} / Loaded exceeds packed")
+            if cint(row.delivered_meals) > cint(row.loaded_meals):
+                frappe.throw(f"المسلّم يتجاوز المحمّل في {row.execution_date} / Delivered exceeds loaded")
+            if cint(row.received_meals) > cint(row.delivered_meals):
+                frappe.throw(f"المستلم يتجاوز المسلّم في {row.execution_date} / Received exceeds delivered")
+            if cint(row.surplus_meals) + cint(row.waste_meals) > cint(row.produced_meals):
+                frappe.throw(f"الفائض والتالف يتجاوزان المنتج في {row.execution_date} / Surplus and waste exceed produced")
 
     def _calculate_profitability(self):
         material_per_meal = sum(flt(r.cost_per_meal) for r in (self.components or []))

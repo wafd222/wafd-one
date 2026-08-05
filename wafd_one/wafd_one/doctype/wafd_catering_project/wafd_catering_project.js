@@ -180,9 +180,18 @@ frappe.ui.form.on("WAFD Catering Project", {
         }, __("Finance"));
 
 
+        if (frm.doc.status === "مكتمل / Completed") {
+            frm.add_custom_button(__("إنهاء والعودة للوحة الرئيسية / Finish & Dashboard"), () => {
+                frappe.set_route("wafd-one-dashboard");
+            }, __("إنهاء / Finish"));
+            frm.add_custom_button(__("فتح قائمة المشاريع / Open Projects"), () => {
+                frappe.set_route("List", "WAFD Catering Project");
+            }, __("إنهاء / Finish"));
+        }
+
         if (frm.doc.status === "مكتمل / Completed" && frm.doc.mission) {
             frm.add_custom_button(__("شهادة استلام وشكر / Service Acceptance Certificate"), () => {
-                const url = `/api/method/wafd_one.document_studio.download_pdf?template_name=${encodeURIComponent("شهادة شكر")}&doctype=${encodeURIComponent("WAFD Mission")}&docname=${encodeURIComponent(frm.doc.mission)}`;
+                const url = `/api/method/wafd_one.document_studio.download_pdf?template_name=${encodeURIComponent("شهادة استلام وشكر")}&doctype=${encodeURIComponent("WAFD Catering Project")}&docname=${encodeURIComponent(frm.doc.name)}`;
                 window.open(url, "_blank");
             }, __("الطباعة / Print"));
         }

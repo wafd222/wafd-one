@@ -9,10 +9,16 @@
   "identity_section",
   "naming_series",
   "cabinet_name",
+  "sequence_number",
   "capacity",
   "status",
   "column_break_1",
   "current_hotel",
+  "current_project",
+  "current_sandwich_count",
+  "dispatched_on",
+  "expected_return_on",
+  "returned_on",
   "asset_code",
   "section_break_2",
   "last_cleaned_on",
@@ -89,6 +95,46 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "sequence_number",
+   "fieldtype": "Int",
+   "label": "رقم السخان / Cabinet Number",
+   "read_only": 1,
+   "in_list_view": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "current_project",
+   "fieldtype": "Link",
+   "label": "المشروع الحالي / Current Project",
+   "options": "WAFD Catering Project",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "current_sandwich_count",
+   "fieldtype": "Int",
+   "label": "عدد السفندشات الحالي / Current Sandwich Count",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dispatched_on",
+   "fieldtype": "Datetime",
+   "label": "وقت الخروج / Dispatched On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_return_on",
+   "fieldtype": "Datetime",
+   "label": "موعد العودة المتوقع / Expected Return",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "returned_on",
+   "fieldtype": "Datetime",
+   "label": "وقت العودة / Returned On",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

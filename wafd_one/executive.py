@@ -148,6 +148,7 @@ def get_executive_dashboard_data(from_date=None, to_date=None):
             "project_rankings": _project_rankings(),
             "driver_performance": _driver_performance(),
             "hotel_performance": _hotel_performance(),
+            "hot_cabinets": _hot_cabinet_snapshot(),
             "food_safety": get_food_safety_dashboard(service_date=to_date or nowdate()),
             "inventory_snapshot": _inventory_snapshot(),
             "today_operations": _today_operations(),
@@ -251,6 +252,19 @@ def refresh_executive_alerts():
 def _low_stock_condition(alias: str = "sb") -> str:
     """Return the canonical low-stock condition using the ingredient minimum level."""
     return f"coalesce(i.minimum_stock, 0) > 0 and coalesce({alias}.available_quantity, 0) <= coalesce(i.minimum_stock, 0)"
+
+
+def _hot_cabinet_snapshot():
+    if not _has_doctype("WAFD Hot Cabinet"):
+        return {"total": 0, "available": 0, "at_hotels": 0, "sandwiches": 0, "rows": []}
+    rows = frappe.get_all("WAFD Hot Cabinet", fields=["name", "sequence_number", "status", "current_hotel", "current_project", "current_sandwich_count", "dispatched_on", "expected_return_on"], order_by="sequence_number asc", limit_page_length=100)
+    return {
+        "total": len(rows),
+        "available": sum(1 for r in rows if r.status == "متاح / Available"),
+        "at_hotels": sum(1 for r in rows if r.current_hotel or r.status == "لدى الفندق / At Hotel"),
+        "sandwiches": sum(cint(r.current_sandwich_count) for r in rows),
+        "rows": rows,
+    }
 
 
 def _inventory_snapshot(limit: int = 8):

@@ -150,6 +150,32 @@ class WAFDPackagingRecord(Document):
         if self.status in ("قيد التغليف / In Progress", "مكتمل / Completed", "جاهز للتحميل / Ready for Loading") and quality != "ناجح / Passed":
             frappe.throw("لا يمكن بدء التغليف قبل نجاح فحص الجودة / Quality inspection must pass before packaging")
 
+    def _sync_hot_cabinet_tracking(self):
+        """Keep the 1-50 cabinet register synchronized with operational use."""
+        assigned = set()
+        for row in (self.get("hot_cabinet_allocations") or []):
+            if not row.hot_cabinet:
+                continue
+            assigned.add(row.hot_cabinet)
+            hotel = row.hotel or frappe.db.get_value("WAFD Catering Project", self.project, "primary_hotel")
+            frappe.db.set_value("WAFD Hot Cabinet", row.hot_cabinet, {
+                "status": "لدى الفندق / At Hotel" if hotel else "محمل / Loaded",
+                "current_hotel": hotel,
+                "current_project": self.project,
+                "current_sandwich_count": cint(row.sandwich_count),
+                "dispatched_on": now_datetime(),
+                "returned_on": None,
+            }, update_modified=False)
+
+    def on_cancel(self):
+        for row in (self.get("hot_cabinet_allocations") or []):
+            if row.hot_cabinet:
+                frappe.db.set_value("WAFD Hot Cabinet", row.hot_cabinet, {
+                    "status": "مرتجع / Returned", "current_hotel": None,
+                    "current_project": None, "current_sandwich_count": 0,
+                    "returned_on": now_datetime(),
+                }, update_modified=False)
+
     def on_update(self):
         values = {
             "packed_quantity": cint(self.packed_quantity),
@@ -164,3 +190,5 @@ class WAFDPackagingRecord(Document):
         elif self.status == "قيد التغليف / In Progress":
             values["status"] = "قيد الإنتاج / In Production"
         frappe.db.set_value("WAFD Production Batch", self.production_batch, values, update_modified=False)
+        if cint(self.use_hot_cabinets):
+            self._sync_hot_cabinet_tracking()

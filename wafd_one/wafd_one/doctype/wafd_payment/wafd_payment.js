@@ -23,8 +23,7 @@ frappe.ui.form.on("WAFD Payment", {
                         frappe.show_alert({ message: __("تم اعتماد التحصيل وإغلاق الدورة بنجاح"), indicator: "green" }, 7);
                     }
                     setTimeout(() => {
-                        if (Array.isArray(result.route)) frappe.set_route(...result.route);
-                        else frappe.set_route(result.route || "wafd-one-dashboard");
+                        frappe.set_route("wafd-one-dashboard");
                     }, 450);
                 } catch (e) {
                     // Frappe already displays the server validation message.

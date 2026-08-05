@@ -121,6 +121,10 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
           <div class="wafd-card-head"><div><h3>المستودعات والثلاجات</h3><small>قيمة المخزون والمواد المنخفضة</small></div><button data-list="WAFD Warehouse">عرض الكل</button></div>
           <div class="wafd-warehouse-status"></div>
         </article>
+        <article class="wafd-card">
+          <div class="wafd-card-head"><div><h3>تتبع السخانات والسفندشات</h3><small>السخانات لدى الفنادق ومواعيد إرجاعها</small></div><button data-list="WAFD Hot Cabinet">عرض الكل</button></div>
+          <div class="wafd-hot-cabinet-status"></div>
+        </article>
       </section>
     </div>`);
 
@@ -290,6 +294,11 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
 
     const warehouses = (data.inventory_snapshot || {}).warehouses || [];
     $root.find(".wafd-warehouse-status").html(warehouses.length ? `<table><thead><tr><th>المستودع</th><th>الكمية المتاحة</th><th>قيمة المخزون</th><th>منخفض</th></tr></thead><tbody>${warehouses.map(row => `<tr><td><b>${escape(row.warehouse)}</b><small>${escape(row.item_count || 0)} صنف</small></td><td><small>${escape(row.quantity_summary || "0")}</small></td><td>${money(row.stock_value)}</td><td><button type="button" class="wafd-status-pill wafd-low-stock-button ${toInt(row.low_items)?'is-warn':''}" data-low-stock="1" data-warehouse="${escape(row.warehouse)}" title="عرض كميات الأصناف المنخفضة">${escape(row.low_items || 0)}</button></td></tr>`).join("")}</tbody></table>` : empty("لا توجد أرصدة مخزون بعد."));
+
+
+    const cabinets = data.hot_cabinets || {};
+    const cabinetRows = cabinets.rows || [];
+    $root.find(".wafd-hot-cabinet-status").html(cabinetRows.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="wafd-status-pill">الإجمالي: ${escape(cabinets.total || 0)}</span><span class="wafd-status-pill">متاح: ${escape(cabinets.available || 0)}</span><span class="wafd-status-pill is-warn">لدى الفنادق: ${escape(cabinets.at_hotels || 0)}</span><span class="wafd-status-pill">السفندشات: ${escape(cabinets.sandwiches || 0)}</span></div><table><thead><tr><th>السخان</th><th>الفندق</th><th>السفندشات</th><th>الحالة</th></tr></thead><tbody>${cabinetRows.filter(r => r.current_hotel || toInt(r.current_sandwich_count)).slice(0,10).map(r => `<tr data-doctype="WAFD Hot Cabinet" data-docname="${escape(r.name)}"><td><b>${escape(r.sequence_number || r.name)}</b></td><td>${escape(r.current_hotel || "—")}</td><td>${escape(r.current_sandwich_count || 0)}</td><td>${escape(r.status || "")}</td></tr>`).join("")}</tbody></table>` : empty("لم يتم تسجيل السخانات بعد."));
 
     const hotels = data.hotel_performance || [];
     $root.find(".wafd-hotel-performance").html(hotels.length ? `<table><thead><tr><th>الفندق</th><th>التسليمات</th><th>المقبول</th><th>نسبة القبول</th></tr></thead><tbody>${hotels.slice(0, 6).map((row) => `

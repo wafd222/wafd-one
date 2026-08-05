@@ -8,7 +8,7 @@ from wafd_one.patches.v10_0_0_rc43.execute import _save_template
 SERIES_KEYS = [
     "WAFD-INV-", "WAFD-INV-.#####", "WAFD-INVOICE-", "WAFD-INVOICE-.#####",
     "WAFD-PAY-", "WAFD-PAY-.#####", "WAFD-PRODUCTION-BATCH-", "WAFD-PRODUCTION-BATCH-.#####",
-    "WAFD-QUALITY-INSPECTION-", "WAFD-QUALITY-INSPECTION-.#####", "WAFD-HC-", "WAFD-HC-.#####",
+    "WAFD-QUALITY-INSPECTION-", "WAFD-QUALITY-INSPECTION-.#####",
 ]
 
 def _certificate_canvas():
@@ -28,57 +28,50 @@ def _reset_series():
         frappe.db.sql("delete from `tabSeries` where name=%s", key)
 
 def _ensure_cabinets():
-    """Ensure cabinets 1..50 without ever duplicating existing records.
+    """Ensure cabinets 1..50 safely after partial or repeated migrations.
 
-    RC96 can be resumed safely after a partial migration. Existing rows are
-    matched by asset code, sequence number, or the deterministic document name.
-    Only missing cabinets are inserted.
+    Cabinet names are deterministic. Existing rows are repaired in place and
+    missing rows are inserted with duplicate protection. This avoids consuming
+    the naming series again when RC96 is retried after a failed migrate.
     """
     frappe.reload_doc("wafd_one", "doctype", "wafd_hot_cabinet", force=True)
+
     for number in range(1, 51):
         code = f"HC-{number:03d}"
         expected_name = f"WAFD-HC-{number:05d}"
-
-        name = (
-            frappe.db.get_value("WAFD Hot Cabinet", {"asset_code": code}, "name")
-            or frappe.db.get_value("WAFD Hot Cabinet", {"sequence_number": number}, "name")
-            or (expected_name if frappe.db.exists("WAFD Hot Cabinet", expected_name) else None)
-        )
-
         values = {
             "cabinet_name": f"سخان رقم {number}",
             "sequence_number": number,
             "asset_code": code,
             "capacity": 50,
         }
-        if name:
-            # Preserve operational status/location while repairing master data.
-            frappe.db.set_value(
-                "WAFD Hot Cabinet", name, values, update_modified=False
-            )
+
+        existing = (
+            (expected_name if frappe.db.exists("WAFD Hot Cabinet", expected_name) else None)
+            or frappe.db.get_value("WAFD Hot Cabinet", {"asset_code": code}, "name")
+            or frappe.db.get_value("WAFD Hot Cabinet", {"sequence_number": number}, "name")
+        )
+        if existing:
+            frappe.db.set_value("WAFD Hot Cabinet", existing, values, update_modified=False)
             continue
 
         doc = frappe.get_doc({
             "doctype": "WAFD Hot Cabinet",
-            "naming_series": "WAFD-HC-.#####",
+            "name": expected_name,
             **values,
             "status": "متاح / Available",
         })
-        try:
-            doc.insert(ignore_permissions=True)
-        except frappe.DuplicateEntryError:
-            # A partially executed migration may already have consumed the name.
-            # Locate and repair that row instead of aborting the whole migrate.
-            existing = (
-                frappe.db.get_value("WAFD Hot Cabinet", {"asset_code": code}, "name")
-                or frappe.db.get_value("WAFD Hot Cabinet", {"sequence_number": number}, "name")
-                or (expected_name if frappe.db.exists("WAFD Hot Cabinet", expected_name) else None)
-            )
-            if not existing:
-                raise
-            frappe.db.set_value(
-                "WAFD Hot Cabinet", existing, values, update_modified=False
-            )
+        # Frappe may retry a failed patch after a row was already committed.
+        # ignore_if_duplicate prevents that harmless state from aborting migrate.
+        doc.insert(ignore_permissions=True, ignore_if_duplicate=True)
+
+        actual = (
+            (expected_name if frappe.db.exists("WAFD Hot Cabinet", expected_name) else None)
+            or frappe.db.get_value("WAFD Hot Cabinet", {"asset_code": code}, "name")
+            or frappe.db.get_value("WAFD Hot Cabinet", {"sequence_number": number}, "name")
+        )
+        if actual:
+            frappe.db.set_value("WAFD Hot Cabinet", actual, values, update_modified=False)
 
 def execute():
     _reset_series()

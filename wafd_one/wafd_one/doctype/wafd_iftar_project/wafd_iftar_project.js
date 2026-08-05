@@ -81,6 +81,11 @@ frappe.ui.form.on("WAFD Iftar Project", {
     },
     async refresh(frm) {
         await apply_project_setup(frm);
+        frm.set_query("vehicle", "cartons", () => ({ filters: { status: "متاحة / Available" } }));
+        const missing_costs = (frm.doc.components || []).filter(row => flt(row.unit_cost) <= 0).map(row => row.ingredient);
+        if (missing_costs.length) {
+            frm.dashboard.set_headline_alert(__("توجد مواد بدون تكلفة. أدخل التكلفة الفعلية قبل اعتماد المشروع."), "orange");
+        }
         if (!frm.is_new() && frm.doc.docstatus === 0) {
             frm.add_custom_button(__("تحديث المكونات والتكاليف / Refresh Components & Costs"), async () => {
                 if (frm.is_dirty()) await frm.save();
@@ -137,5 +142,38 @@ frappe.ui.form.on("WAFD Iftar Component", {
     quantity_per_meal(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         frappe.model.set_value(cdt, cdn, "cost_per_meal", flt(row.quantity_per_meal) * flt(row.unit_cost));
+    },
+    unit_cost(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        frappe.model.set_value(cdt, cdn, "cost_per_meal", flt(row.quantity_per_meal) * flt(row.unit_cost));
+        if (flt(row.unit_cost) > 0 && (!row.price_source || row.price_source === __("المخزون / Inventory"))) {
+            frappe.model.set_value(cdt, cdn, "price_source", __("إدخال فعلي / Manual Actual Cost"));
+        }
+    }
+});
+
+frappe.ui.form.on("WAFD Iftar Carton", {
+    vehicle(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (!row.vehicle) {
+            frappe.model.set_value(cdt, cdn, "vehicle_details", "");
+            return;
+        }
+        frappe.db.get_value("WAFD Vehicle", row.vehicle, ["plate_number", "vehicle_type", "make_model"]).then(r => {
+            const v = r.message || {};
+            const details = [v.plate_number, v.vehicle_type, v.make_model].filter(Boolean).join(" — ");
+            frappe.model.set_value(cdt, cdn, "vehicle_details", details);
+        });
+    }
+});
+
+frappe.ui.form.on("WAFD Iftar Operating Cost", {
+    quantity(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        frappe.model.set_value(cdt, cdn, "amount", flt(row.quantity) * flt(row.rate));
+    },
+    rate(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        frappe.model.set_value(cdt, cdn, "amount", flt(row.quantity) * flt(row.rate));
     }
 });

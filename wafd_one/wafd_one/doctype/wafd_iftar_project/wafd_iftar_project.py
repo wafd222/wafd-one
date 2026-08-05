@@ -50,15 +50,32 @@ STANDARD_COMPONENTS = [
 class WAFDIftarProject(Document):
     def validate(self):
         self._apply_project_defaults()
+        self._remove_blank_child_rows()
         self._ensure_standard_components()
         self._validate_dates_and_times()
         self._calculate_quantities()
         self._sync_known_operating_quantities()
         self._hydrate_component_costs()
         self._calculate_operating_costs()
-        self._validate_distribution()
+        distribution_complete = self._validate_distribution()
+        self._auto_generate_cartons(distribution_complete)
+        self._hydrate_carton_vehicles()
         self._validate_closing_quantities()
         self._calculate_profitability()
+
+    def _remove_blank_child_rows(self):
+        self.set("cartons", [
+            row for row in (self.cartons or [])
+            if cint(row.carton_no) or cint(row.meal_quantity) or row.recipient_name or row.vehicle
+        ])
+        self.set("distribution_recipients", [
+            row for row in (self.distribution_recipients or [])
+            if row.table_owner_name or cint(row.meal_quantity) or row.supervisor_name or row.assistant_name
+        ])
+        self.set("operating_costs", [
+            row for row in (self.operating_costs or [])
+            if row.cost_type or row.description or flt(row.quantity) or flt(row.rate)
+        ])
 
 
     def _apply_project_defaults(self):
@@ -169,7 +186,7 @@ class WAFDIftarProject(Document):
     def _validate_distribution(self):
         distributed = 0
         names = set()
-        capacity = cint(self.max_carton_capacity)
+        capacity = cint(self.max_carton_capacity) or 25
         for row in self.distribution_recipients or []:
             qty = cint(row.meal_quantity)
             if qty < 25:
@@ -185,6 +202,67 @@ class WAFDIftarProject(Document):
         self.distribution_variance = cint(self.planned_distribution_meals) - distributed
         if distributed > cint(self.planned_distribution_meals):
             frappe.throw("إجمالي كميات التوزيع يتجاوز وجبات خطة التوزيع / Distribution exceeds planned distribution meals")
+        return bool(distributed and distributed == cint(self.planned_distribution_meals))
+
+    def _auto_generate_cartons(self, distribution_complete: bool):
+        """Generate carton rows only when the allocation is complete.
+
+        Draft projects remain saveable while distribution is incomplete. Any manually
+        added empty carton row is ignored. Generated operational status and vehicle
+        assignments are preserved when the allocation has not changed.
+        """
+        if not distribution_complete:
+            self.set("cartons", [])
+            return
+
+        capacity = cint(self.max_carton_capacity) or 25
+        if capacity < 1 or capacity > 25:
+            frappe.throw("السعة القصوى للكرتون من 1 إلى 25 وجبة / Carton capacity must be between 1 and 25 meals")
+
+        expected_plan = []
+        carton_no = 1
+        for recipient in self.distribution_recipients or []:
+            remaining = cint(recipient.meal_quantity)
+            recipient.carton_count = math.ceil(remaining / capacity) if remaining else 0
+            while remaining > 0:
+                qty = min(capacity, remaining)
+                expected_plan.append((carton_no, recipient.table_owner_name, qty))
+                remaining -= qty
+                carton_no += 1
+
+        current_plan = [
+            (cint(row.carton_no), row.recipient_name, cint(row.meal_quantity))
+            for row in (self.cartons or [])
+        ]
+        if current_plan == expected_plan:
+            return
+
+        previous = {
+            (cint(row.carton_no), row.recipient_name, cint(row.meal_quantity)): row
+            for row in (self.cartons or [])
+        }
+        self.set("cartons", [])
+        for number, recipient_name, meals in expected_plan:
+            old = previous.get((number, recipient_name, meals))
+            self.append("cartons", {
+                "carton_no": number,
+                "recipient_name": recipient_name,
+                "meal_quantity": meals,
+                "status": old.status if old else "مخطط / Planned",
+                "vehicle": old.vehicle if old else None,
+                "notes": old.notes if old else None,
+            })
+
+    def _hydrate_carton_vehicles(self):
+        for row in self.cartons or []:
+            if not row.vehicle:
+                row.vehicle_details = ""
+                continue
+            vehicle = frappe.db.get_value(
+                "WAFD Vehicle", row.vehicle, ["plate_number", "vehicle_type", "make_model"], as_dict=True
+            ) or {}
+            parts = [vehicle.get("plate_number"), vehicle.get("vehicle_type"), vehicle.get("make_model")]
+            row.vehicle_details = " — ".join(str(part) for part in parts if part)
 
     def _validate_closing_quantities(self):
         closing_values = [cint(self.surplus_meals), cint(self.waste_meals), cint(self.preservation_society_quantity)]
@@ -203,6 +281,16 @@ class WAFDIftarProject(Document):
         self.profit_margin = (self.expected_profit / self.total_revenue * 100) if self.total_revenue else 0
 
     def before_submit(self):
+        zero_costs = [
+            row.ingredient for row in (self.components or [])
+            if row.is_mandatory and flt(row.unit_cost) <= 0
+        ]
+        if zero_costs:
+            frappe.throw(
+                "أدخل التكلفة الفعلية للمواد الإلزامية قبل الاعتماد: "
+                + "، ".join(zero_costs)
+                + " / Mandatory component costs are missing"
+            )
         if cint(self.distribution_variance) != 0:
             frappe.throw("يجب توزيع كامل وجبات الخطة قبل الاعتماد / All planned meals must be allocated before submission")
         carton_meals = sum(cint(row.meal_quantity) for row in (self.cartons or []))

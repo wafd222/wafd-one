@@ -10,6 +10,10 @@
   "table_owner_name",
   "mobile_no",
   "distribution_point",
+  "delivery_location",
+  "scheduled_delivery_time",
+  "receiver_name",
+  "receipt_signature",
   "meal_quantity",
   "carton_count",
   "received",
@@ -49,6 +53,27 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "delivery_location",
+   "fieldtype": "Data",
+   "label": "موقع التسليم التفصيلي / Delivery Location",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "scheduled_delivery_time",
+   "fieldtype": "Datetime",
+   "label": "موعد التسليم / Scheduled Delivery"
+  },
+  {
+   "fieldname": "receiver_name",
+   "fieldtype": "Data",
+   "label": "اسم المستلم / Receiver Name"
+  },
+  {
+   "fieldname": "receipt_signature",
+   "fieldtype": "Attach Image",
+   "label": "توقيع الاستلام / Receipt Signature"
+  },
+  {
    "fieldname": "meal_quantity",
    "fieldtype": "Int",
    "label": "عدد الوجبات / Meals",
@@ -72,7 +97,8 @@
   {
    "fieldname": "received_on",
    "fieldtype": "Datetime",
-   "label": "وقت الاستلام / Received On"
+   "label": "وقت الاستلام / Received On",
+   "read_only": 1
   },
   {
    "fieldname": "notes",
@@ -83,7 +109,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-05 00:00:00.000000",
+ "modified": "2026-08-05 07:30:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Distribution Recipient",

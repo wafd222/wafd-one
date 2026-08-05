@@ -262,7 +262,8 @@
    "fieldname": "operating_costs",
    "fieldtype": "Table",
    "label": "تفاصيل تكاليف التشغيل / Operating Cost Details",
-   "options": "WAFD Iftar Operating Cost"
+   "options": "WAFD Iftar Operating Cost",
+   "description": "أدخل السعر الفعلي فقط؛ الكميات تُزامن تلقائياً / Enter actual rate only; quantities sync automatically"
   },
   {
    "fieldname": "distribution_section",
@@ -300,7 +301,8 @@
    "fieldname": "cartons",
    "fieldtype": "Table",
    "label": "الكراتين / Cartons",
-   "options": "WAFD Iftar Carton"
+   "options": "WAFD Iftar Carton",
+   "description": "تُنشأ تلقائياً بعد اكتمال خطة أصحاب السفر / Generated automatically after recipient allocations are complete"
   },
   {
    "fieldname": "costing_section",
@@ -406,7 +408,7 @@
  "index_web_pages_for_search": 1,
  "istable": 0,
  "links": [],
- "modified": "2026-08-05 06:40:00.000000",
+ "modified": "2026-08-05 07:30:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Project",

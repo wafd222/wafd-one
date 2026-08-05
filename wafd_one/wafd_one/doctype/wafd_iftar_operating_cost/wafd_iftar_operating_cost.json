@@ -45,7 +45,7 @@
   {
    "fieldname": "allocation_basis",
    "fieldtype": "Select",
-   "label": "طريقة الاحتساب / Allocation Basis",
+   "label": "تُحسب على / Calculated Per",
    "options": "للمشروع / Per Project\nلليوم / Per Day\nللوجبة / Per Meal\nللوحدة / Per Unit",
    "default": "للمشروع / Per Project",
    "in_list_view": 1,
@@ -63,18 +63,22 @@
    "fieldtype": "Select",
    "label": "أساس التكلفة / Cost Basis",
    "options": "عرض مورد / Supplier Quote\nفاتورة فعلية / Actual Invoice\nتكلفة داخلية / Internal Cost\nتقديري / Estimated",
-   "default": "تكلفة داخلية / Internal Cost"
+   "default": "تكلفة داخلية / Internal Cost",
+   "hidden": 1,
+   "print_hide": 1
   },
   {
    "fieldname": "source_reference",
    "fieldtype": "Data",
-   "label": "مرجع المصدر / Source Reference"
+   "label": "مرجع المصدر / Source Reference",
+   "hidden": 1,
+   "print_hide": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-05 00:00:00.000000",
+ "modified": "2026-08-05 07:30:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Iftar Operating Cost",

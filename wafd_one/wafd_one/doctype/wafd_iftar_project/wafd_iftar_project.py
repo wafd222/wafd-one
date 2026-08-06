@@ -43,7 +43,6 @@ STANDARD_COMPONENTS = [
     ("ملعقة", 1, "أساسي / Core", 1),
     ("منديل معطر", 1, "أساسي / Core", 1),
     ("خبز فتوت", 1, "أساسي / Core", 1),
-    ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
 ]
 
 
@@ -132,10 +131,16 @@ class WAFDIftarProject(Document):
             if water and water not in names:
                 self.append("components", {"ingredient": water, "quantity_per_meal": 1, "component_group": "أساسي / Core", "is_mandatory": 1})
         external = self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity"
-        if external and branded and branded not in {r.ingredient for r in (self.components or [])}:
-            self.append("components", {"ingredient": branded, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
-        if not external:
-            self.set("components", [r for r in (self.components or []) if r.ingredient != branded])
+        iftar_wrap = _ingredient_name("غلاف إفطار صائم")
+        current = {r.ingredient for r in (self.components or []) if r.ingredient}
+        if external:
+            for packaging_item in (iftar_wrap, branded):
+                if packaging_item and packaging_item not in current:
+                    self.append("components", {"ingredient": packaging_item, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
+                    current.add(packaging_item)
+        else:
+            blocked = {item for item in (iftar_wrap, branded) if item}
+            self.set("components", [r for r in (self.components or []) if r.ingredient not in blocked])
 
     def _validate_dates_and_times(self):
         if self.start_date and self.end_date and self.end_date < self.start_date:
@@ -160,20 +165,28 @@ class WAFDIftarProject(Document):
         )
 
     def _sync_known_operating_quantities(self):
+        capacity = cint(self.max_carton_capacity) or 25
+        total_cartons = math.ceil(cint(self.total_meals) / capacity) if cint(self.total_meals) else 0
+        daily_tablecloths = len(self.distribution_recipients or [])
         mapping = {
+            "الكرتون / Carton": (total_cartons, "للوحدة / Per Unit"),
+            "السفرة / Tablecloth": (daily_tablecloths, "لليوم / Per Day"),
             "المشرف العام / General Supervisor": (cint(self.general_supervisors), "لليوم / Per Day"),
             "المشرفون / Supervisors": (cint(self.supervisors), "لليوم / Per Day"),
             "المساعدون / Assistants": (cint(self.assistants), "لليوم / Per Day"),
             "النقل / Transport": (cint(self.vehicles_count), "لليوم / Per Day"),
+            "المركبات / Vehicles": (cint(self.vehicles_count), "لليوم / Per Day"),
             "ثلاجات الشاي / Tea Coolers": (cint(self.tea_coolers), "للمشروع / Per Project"),
             "ثلاجات القهوة / Coffee Coolers": (cint(self.coffee_coolers), "للمشروع / Per Project"),
             "أكياس النفايات / Waste Bags": (cint(self.waste_bag_count), "للوحدة / Per Unit"),
-            "السفر / Tablecloths": (len(self.distribution_recipients or []), "للوحدة / Per Unit"),
         }
         for row in self.operating_costs or []:
             if row.cost_type in mapping:
                 quantity, default_basis = mapping[row.cost_type]
-                row.quantity = quantity
+                # Preserve a manually entered positive quantity for flexible staffing,
+                # except for cartons which are always derived from meal count/capacity.
+                if row.cost_type == "الكرتون / Carton" or not flt(row.quantity):
+                    row.quantity = quantity
                 row.allocation_basis = row.allocation_basis or default_basis
 
     def _hydrate_component_costs(self):
@@ -485,7 +498,9 @@ def load_standard_components(project_name: str):
 def load_standard_operating_costs(project_name: str):
     doc = frappe.get_doc("WAFD Iftar Project", project_name)
     doc.check_permission("write")
+    capacity = cint(doc.max_carton_capacity) or 25
     standards = [
+        ("الكرتون / Carton", math.ceil(cint(doc.total_meals) / capacity) if cint(doc.total_meals) else 0, "للوحدة / Per Unit"),
         ("المشرف العام / General Supervisor", cint(doc.general_supervisors), "لليوم / Per Day"),
         ("المشرفون / Supervisors", cint(doc.supervisors), "لليوم / Per Day"),
         ("المساعدون / Assistants", cint(doc.assistants), "لليوم / Per Day"),
@@ -493,7 +508,7 @@ def load_standard_operating_costs(project_name: str):
         ("ثلاجات الشاي / Tea Coolers", cint(doc.tea_coolers), "للمشروع / Per Project"),
         ("ثلاجات القهوة / Coffee Coolers", cint(doc.coffee_coolers), "للمشروع / Per Project"),
         ("أكياس النفايات / Waste Bags", cint(doc.waste_bag_count), "للوحدة / Per Unit"),
-        ("السفر / Tablecloths", len(doc.distribution_recipients or []), "للوحدة / Per Unit"),
+        ("السفرة / Tablecloth", len(doc.distribution_recipients or []), "لليوم / Per Day"),
     ]
     existing = {row.cost_type: row for row in (doc.operating_costs or [])}
     for cost_type, qty, basis in standards:

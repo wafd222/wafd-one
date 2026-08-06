@@ -63,7 +63,7 @@ async function load_standard_components_client(frm) {
         row.component_group = group;
         row.is_mandatory = mandatory;
         row.uom = value.uom;
-        row.unit_cost = value.latest_market_cost || value.standard_cost || (ingredient_name === "ماء زمزم 330 مل" ? (frm.doc.zamzam_reference_price || 1.5) : 0);
+        row.unit_cost = value.latest_market_cost || value.standard_cost || (ingredient_name === "ماء زمزم 330 مل" ? (frm.doc.zamzam_reference_price || 9) : 0);
         row.cost_per_meal = flt(row.quantity_per_meal) * flt(row.unit_cost);
         row.price_source = value.latest_price_source || value.cost_basis || __("المخزون / Inventory");
     }
@@ -215,7 +215,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
     if (frm.fields_dict.reports_html) {
       const w=frm.fields_dict.reports_html.$wrapper;
       w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-page="wafd-iftar-report-center">مركز التقارير والطباعة</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
-      w.off('click').on('click','[data-page]',function(){frappe.set_route($(this).data('page'))}).on('click','[data-list]',function(){frappe.set_route('List',$(this).data('list'),{project:frm.doc.name})}).on('click','[data-print]',()=>frappe.set_route('print', frm.doctype, frm.doc.name, {print_format:'WAFD Iftar Project Summary'}));
+      w.off('click').on('click','[data-page]',function(){const page=$(this).data('page');if(page==='wafd-iftar-report-center')frappe.route_options={project:frm.doc.name};frappe.set_route(page)}).on('click','[data-list]',function(){frappe.route_options={project:frm.doc.name};frappe.set_route('List',$(this).data('list'))}).on('click','[data-print]',()=>{frappe.route_options={print_format:'WAFD Iftar Project Summary'};frappe.set_route('print', frm.doctype, frm.doc.name);});
     }
   },
   start_date: update_iftar_totals, end_date: update_iftar_totals, daily_meals: update_iftar_totals,

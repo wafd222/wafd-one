@@ -40,26 +40,40 @@ function build_wizard(wrapper) {
     {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'سعر البيع للوجبة', reqd:1},
     {step:3, fieldtype:'Select', fieldname:'distribution_type', label:'نوع التوزيع', options:`\nمسجد أو حرم / Mosque or Haram\nتوزيع خارجي أو جهة / External Distribution or Entity`, reqd:1},
     {step:3, fieldtype:'Select', fieldname:'meal_template', label:'نوع الوجبة', options:`\nالوجبة القياسية / Standard Iftar\nوجبة مع زمزم / Iftar + Zamzam\nوجبة مخصصة / Custom Package`, reqd:1},
-    {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:'استبدال الماء بزمزم 330 مل'},
+    {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:'استبدال الماء العادي بزمزم 330 مل (تكلفة مرجعية 9 ر.س)'},
     {step:3, fieldtype:'MultiCheck', fieldname:'optional_items', label:'إضافات الوجبة المخصصة', options:[
       {label:'معمول',value:'معمول'}, {label:'فواكه مجففة',value:'فواكه مجففة'}, {label:'مكسرات مشكلة',value:'مكسرات مشكلة'},
       {label:'لوزين',value:'لوزين'}, {label:'عصير برتقال 200 مل',value:'عصير برتقال 200 مل'}, {label:'عصير تفاح 200 مل',value:'عصير تفاح 200 مل'}
     ]},
-    {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'تكلفة الكرتون الواحد (25 وجبة)'},
-    {step:4, fieldtype:'Currency', fieldname:'tablecloth_unit_cost', label:'تكلفة السفرة الواحدة'},
-    {step:4, fieldtype:'Currency', fieldname:'supervisors_manager_cost', label:'تكلفة مدير المشرفين'},
-    {step:4, fieldtype:'Currency', fieldname:'supervisors_cost', label:'إجمالي تكلفة المشرفين'},
-    {step:4, fieldtype:'Currency', fieldname:'assistants_cost', label:'إجمالي تكلفة المساعدين'},
-    {step:4, fieldtype:'Currency', fieldname:'packaging_workers_cost', label:'تكلفة عمال التغليف'},
-    {step:4, fieldtype:'Currency', fieldname:'loading_workers_cost', label:'تكلفة عمال التحميل'},
-    {step:4, fieldtype:'Currency', fieldname:'drivers_cost', label:'تكلفة السائقين والمركبات'}
+    {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'سعر الكرتون الواحد (25 وجبة)'},
+    {step:4, fieldtype:'Int', fieldname:'tablecloth_count', label:'عدد السفر يومياً'},
+    {step:4, fieldtype:'Currency', fieldname:'tablecloth_unit_cost', label:'سعر السفرة الواحدة'},
+    {step:4, fieldtype:'Int', fieldname:'supervisors_manager_count', label:'عدد مديري المشرفين'},
+    {step:4, fieldtype:'Currency', fieldname:'supervisors_manager_rate', label:'أجر مدير المشرفين / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'supervisors_count', label:'عدد المشرفين'},
+    {step:4, fieldtype:'Currency', fieldname:'supervisors_rate', label:'أجر المشرف الواحد / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'assistants_count', label:'عدد المساعدين'},
+    {step:4, fieldtype:'Currency', fieldname:'assistants_rate', label:'أجر المساعد الواحد / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'packaging_workers_count', label:'عدد عمال التغليف'},
+    {step:4, fieldtype:'Currency', fieldname:'packaging_workers_rate', label:'أجر عامل التغليف / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'loading_workers_count', label:'عدد عمال التحميل'},
+    {step:4, fieldtype:'Currency', fieldname:'loading_workers_rate', label:'أجر عامل التحميل / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'drivers_count', label:'عدد السائقين'},
+    {step:4, fieldtype:'Currency', fieldname:'drivers_rate', label:'أجر السائق / يوم'},
+    {step:4, fieldtype:'Data', fieldname:'other_cost_description', label:'تكلفة إضافية — الوصف'},
+    {step:4, fieldtype:'Float', fieldname:'other_cost_quantity', label:'التكلفة الإضافية — الكمية'},
+    {step:4, fieldtype:'Currency', fieldname:'other_cost_rate', label:'التكلفة الإضافية — السعر'},
+    {step:4, fieldtype:'Select', fieldname:'other_cost_basis', label:'التكلفة الإضافية — طريقة الاحتساب', options:`للمشروع / Per Project
+لليوم / Per Day
+للوجبة / Per Meal
+للوحدة / Per Unit`}
   ];
 
   const controls = {};
   definitions.forEach(df => {
     const box = $(`<div class="iw-field" data-field-step="${df.step}"></div>`).appendTo($root.find('.iw-grid'));
     controls[df.fieldname] = frappe.ui.form.make_control({parent: box, df, render_input: true});
-    controls[df.fieldname].set_value(df.fieldtype === 'Check' ? 0 : '');
+    controls[df.fieldname].set_value(df.fieldtype === 'Check' ? 0 : (['Int','Float','Currency'].includes(df.fieldtype) ? 0 : ''));
   });
 
   const locationDefaults = {
@@ -86,7 +100,11 @@ function build_wizard(wrapper) {
   }
   function renderSummary() {
     const t=totals();
-    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>عدد الكراتين المتوقع</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>الإيراد المتوقع</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
+    const cartonCost=t.cartons*Number(value('carton_unit_cost')||0);
+    const days=t.days||1;
+    const dailyCosts=[['tablecloth_count','tablecloth_unit_cost'],['supervisors_manager_count','supervisors_manager_rate'],['supervisors_count','supervisors_rate'],['assistants_count','assistants_rate'],['packaging_workers_count','packaging_workers_rate'],['loading_workers_count','loading_workers_rate'],['drivers_count','drivers_rate']].reduce((a,p)=>a+Number(value(p[0])||0)*Number(value(p[1])||0)*days,0);
+    const other=Number(value('other_cost_quantity')||0)*Number(value('other_cost_rate')||0)*(value('other_cost_basis')==='لليوم / Per Day'?days:value('other_cost_basis')==='للوجبة / Per Meal'?t.meals:1);
+    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد المتوقع</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
   }
   function showStep(step) {
     currentStep=Math.max(1,Math.min(4,step));
@@ -125,6 +143,7 @@ function build_wizard(wrapper) {
       if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam')data.include_zamzam=1;
       const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
       sessionStorage.removeItem("wafd_iftar_wizard_draft");
+      Object.values(controls).forEach(c => { try { c.set_value(c.df.fieldtype === 'Check' ? 0 : (['Int','Float','Currency'].includes(c.df.fieldtype) ? 0 : '')); } catch(e) {} });
       frappe.show_alert({message:'تم إنشاء المشروع بنجاح — فتح أول يوم تشغيل',indicator:'green'},5);
       const msg=response.message||{};
       if(msg.first_operation){frappe.set_route('Form','WAFD Iftar Daily Operation',msg.first_operation);}

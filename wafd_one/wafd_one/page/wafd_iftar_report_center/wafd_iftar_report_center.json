@@ -1,19 +1,21 @@
 {
-  "doctype": "Page",
-  "name": "wafd-iftar-report-center",
-  "module": "WAFD ONE",
-  "page_name": "wafd-iftar-report-center",
-  "title": "مركز تقارير إفطار الصائم",
-  "standard": "Yes",
-  "roles": [
-    {
-      "role": "System Manager"
-    },
-    {
-      "role": "WAFD Operations Manager"
-    },
-    {
-      "role": "WAFD Project Manager"
-    }
-  ]
+ "doctype": "Page",
+ "name": "wafd-iftar-report-center",
+ "module": "WAFD ONE",
+ "page_name": "wafd-iftar-report-center",
+ "title": "مركز تقارير إفطار الصائم",
+ "standard": "Yes",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Project Manager"
+  }
+ ],
+ "creation": "2026-08-07 01:15:00.000000",
+ "modified": "2026-08-07 01:15:00.000000"
 }

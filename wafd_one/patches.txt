@@ -228,3 +228,5 @@ wafd_one.patches.v10_0_0_rc119.execute
 wafd_one.patches.v10_0_0_rc120.execute
 
 wafd_one.patches.v10_0_0_rc121.execute
+
+wafd_one.patches.v10_0_0_rc122.execute

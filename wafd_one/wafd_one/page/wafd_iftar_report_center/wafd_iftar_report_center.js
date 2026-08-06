@@ -10,14 +10,23 @@ frappe.pages['wafd-iftar-report-center'].on_page_show=function(wrapper){
 async function build_report_center(wrapper){
   const $section=$(wrapper).find('.layout-main-section').off('.wafdReportCenter').attr('dir','rtl').empty();
   const $r=$(`<div class="irc">
-    <div class="irc-head"><div><span>WAFD IFTAR PRO</span><h2>مركز التقارير والطباعة</h2><p>اختر مشروعاً، ثم افتح جميع مستنداته وتقاريره من مكان واحد.</p></div><button type="button" class="btn irc-back">لوحة التشغيل اليومية</button></div>
-    <div class="irc-toolbar"><div class="irc-select"></div><div class="irc-project-meta">اختر مشروعاً لعرض مستنداته</div></div>
+    <div class="irc-head"><div><span>WAFD IFTAR PRO</span><h2>مركز التقارير والطباعة</h2><p>ابحث بالمشروع أو صاحب السفرة أو التاريخ، ثم افتح جميع التقارير من مكان واحد.</p></div><button type="button" class="btn irc-back">لوحة التشغيل اليومية</button></div>
+    <div class="irc-search-panel">
+      <div class="irc-search-project"></div><div class="irc-search-owner"></div><div class="irc-search-date"></div>
+      <button type="button" class="btn btn-primary irc-search-btn">بحث</button><button type="button" class="btn btn-default irc-clear-btn">مسح البحث</button>
+    </div>
+    <div class="irc-results"></div>
+    <div class="irc-toolbar"><div class="irc-project-meta">اختر مشروعاً من نتائج البحث لعرض مستنداته</div></div>
     <div class="irc-section-title">المستندات الأساسية</div><div class="irc-grid irc-primary"></div>
     <div class="irc-section-title">المتابعة والتحليل</div><div class="irc-grid irc-secondary"></div>
   </div>`).appendTo($section);
 
-  const pc=frappe.ui.form.make_control({parent:$r.find('.irc-select'),df:{fieldtype:'Link',fieldname:'project',options:'WAFD Iftar Project',label:'المشروع',reqd:1,placeholder:'اختر مشروع إفطار صائم'},render_input:true});
+  const projectControl=frappe.ui.form.make_control({parent:$r.find('.irc-search-project'),df:{fieldtype:'Link',fieldname:'project',options:'WAFD Iftar Project',label:'المشروع',placeholder:'كل المشاريع'},render_input:true});
+  const ownerControl=frappe.ui.form.make_control({parent:$r.find('.irc-search-owner'),df:{fieldtype:'Data',fieldname:'table_owner',label:'صاحب السفرة',placeholder:'اكتب اسم صاحب السفرة'},render_input:true});
+  const dateControl=frappe.ui.form.make_control({parent:$r.find('.irc-search-date'),df:{fieldtype:'Date',fieldname:'date',label:'التاريخ'},render_input:true});
   const routeOptions=frappe.route_options||{}; frappe.route_options=null;
+  let selectedProject='';
+  let lastResults=[];
 
   const primary=[
     {icon:'📄',title:'ملخص المشروع',desc:'ملخص تنفيذي ومالي للمشروع',type:'project_print',format:'WAFD Iftar Project Summary'},
@@ -39,43 +48,59 @@ async function build_report_center(wrapper){
   $r.find('.irc-primary').html(primary.map((c,i)=>cardHtml(c,i,'p')).join(''));
   $r.find('.irc-secondary').html(secondary.map((c,i)=>cardHtml(c,i,'s')).join(''));
 
-  async function updateMeta(project){
-    if(!project){$r.find('.irc-project-meta').html('اختر مشروعاً لعرض مستنداته');return;}
-    try{
-      const doc=await frappe.db.get_doc('WAFD Iftar Project',project);
-      const site=doc.distribution_site||doc.project_title||'';
-      const total=doc.total_meals||doc.planned_distribution_meals||0;
-      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(doc.project_title||project)}</b><span>${frappe.utils.escape_html(site)} · ${frappe.format(total,{fieldtype:'Int'})} وجبة</span>`);
-    }catch(e){$r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(project)}</b>`);}
+  function resultHtml(row){
+    const title=frappe.utils.escape_html(row.project_title||row.name);
+    const site=frappe.utils.escape_html(row.distribution_site||'');
+    const dates=[row.start_date,row.end_date].filter(Boolean).join(' — ');
+    return `<button type="button" class="irc-result ${selectedProject===row.name?'selected':''}" data-project="${frappe.utils.escape_html(row.name)}"><b>${title}</b><span>${site}</span><small>${frappe.utils.escape_html(dates)} · ${frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'})} وجبة</small></button>`;
   }
 
-  function openPrint(doctype,name,format){ frappe.route_options={print_format:format}; frappe.set_route('print',doctype,name); }
-  function openList(doctype,filters){ frappe.route_options=filters||{}; frappe.set_route('List',doctype); }
+  async function runSearch(autoSelect=false){
+    const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.search_iftar_projects',args:{project:projectControl.get_value()||null,table_owner:ownerControl.get_value()||null,date:dateControl.get_value()||null,limit:200},freeze:true,freeze_message:'جارٍ البحث عن المشاريع...'});
+    lastResults=response.message||[];
+    $r.find('.irc-results').html(lastResults.length?`<div class="irc-results-head"><b>نتائج البحث</b><span>${lastResults.length} مشروع</span></div><div class="irc-result-grid">${lastResults.map(resultHtml).join('')}</div>`:`<div class="irc-no-results">لا توجد مشاريع مطابقة لخيارات البحث.</div>`);
+    if(autoSelect && lastResults.length===1) selectProject(lastResults[0].name);
+  }
 
+  async function selectProject(project){
+    selectedProject=project||'';
+    $r.find('.irc-result').removeClass('selected').filter(`[data-project="${CSS.escape(selectedProject)}"]`).addClass('selected');
+    if(!selectedProject){$r.find('.irc-project-meta').html('اختر مشروعاً من نتائج البحث لعرض مستنداته');return;}
+    const row=lastResults.find(x=>x.name===selectedProject);
+    if(row){
+      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(row.project_title||row.name)}</b><span>${frappe.utils.escape_html(row.distribution_site||'')} · ${frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'})} وجبة</span>`);
+      return;
+    }
+    try{
+      const doc=await frappe.db.get_doc('WAFD Iftar Project',selectedProject);
+      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(doc.project_title||selectedProject)}</b><span>${frappe.utils.escape_html(doc.distribution_site||'')} · ${frappe.format(doc.total_meals||doc.daily_meals||0,{fieldtype:'Int'})} وجبة</span>`);
+    }catch(e){$r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(selectedProject)}</b>`);}
+  }
+
+  function openPrint(doctype,name,format){frappe.route_options={print_format:format};frappe.set_route('print',doctype,name);}
+  function openList(doctype,filters){frappe.route_options=filters||{};frappe.set_route('List',doctype);}
   async function chooseOperation(project,printFormat){
     const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date','status','planned_meals'],order_by:'operation_date desc',limit:366});
     if(!ops.length)return frappe.msgprint('لا توجد سجلات يومية لهذا المشروع');
     if(routeOptions.operation&&ops.some(x=>x.name===routeOptions.operation))return openPrint('WAFD Iftar Daily Operation',routeOptions.operation,printFormat);
-    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op',label:'السجل اليومي',options:ops.map(x=>`${x.name} — ${x.operation_date||''}`).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){d.hide();const name=(v.op||'').split(' — ')[0];openPrint('WAFD Iftar Daily Operation',name,printFormat);}});d.show();
+    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op',label:'السجل اليومي',options:ops.map(x=>`${x.name} — ${x.operation_date||''}`).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){d.hide();openPrint('WAFD Iftar Daily Operation',(v.op||'').split(' — ')[0],printFormat);}});d.show();
   }
-
   async function openCard(card){
     if(card.type==='page')return frappe.set_route(card.page);
-    const project=pc.get_value();
-    if(!project)return frappe.msgprint({title:'اختر المشروع',message:'اختر مشروع إفطار صائم أولاً لعرض مستنداته.',indicator:'orange'});
+    const project=selectedProject;
+    if(!project)return frappe.msgprint({title:'اختر المشروع',message:'اختر مشروعاً من نتائج البحث أولاً.',indicator:'orange'});
     if(card.type==='project_print')return openPrint('WAFD Iftar Project',project,card.format);
     if(card.type==='operation_print')return chooseOperation(project,card.format);
     if(card.type==='list')return openList(card.doctype,{project});
     if(card.type==='project_form')return frappe.set_route('Form','WAFD Iftar Project',project,card.anchor);
   }
 
+  $section.on('click.wafdReportCenter','.irc-search-btn',()=>runSearch(true));
+  $section.on('click.wafdReportCenter','.irc-clear-btn',()=>{projectControl.set_value('');ownerControl.set_value('');dateControl.set_value('');selectedProject='';selectProject('');runSearch(false);});
+  $section.on('click.wafdReportCenter','.irc-result',function(){selectProject($(this).data('project'));});
   $section.on('click.wafdReportCenter','.irc-card',function(e){e.preventDefault();const group=$(this).data('group');const idx=Number($(this).data('i'));openCard(group==='p'?primary[idx]:secondary[idx]);});
   $section.on('click.wafdReportCenter','.irc-back',()=>frappe.set_route('wafd-iftar-operations'));
-  if(pc.$input)pc.$input.on('change.wafdReportCenter',()=>updateMeta(pc.get_value()));
 
-  if(routeOptions.project){pc.set_value(routeOptions.project);updateMeta(routeOptions.project);}
-  else {
-    const recent=await frappe.db.get_list('WAFD Iftar Project',{fields:['name'],order_by:'modified desc',limit:1});
-    if(recent.length){pc.set_value(recent[0].name);updateMeta(recent[0].name);}
-  }
+  if(routeOptions.project){projectControl.set_value(routeOptions.project);await runSearch(true);}
+  else {await runSearch(false);}
 }

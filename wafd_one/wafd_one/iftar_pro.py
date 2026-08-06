@@ -5,10 +5,120 @@ from frappe import _
 from frappe.utils import add_days, cint, getdate, nowdate
 
 
+WIZARD_BASE_PRICE = 9.0
+WIZARD_PROPHETS_MOSQUE = "المسجد النبوي الشريف / Prophet’s Mosque"
+WIZARD_HARAMAIN_ENTITY = "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي"
+WIZARD_LOCATION_DEFAULTS = {
+    WIZARD_PROPHETS_MOSQUE: {
+        "distribution_site": "المسجد النبوي الشريف / Prophet’s Mosque",
+        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
+        "distribution_type": "مسجد أو حرم / Mosque or Haram",
+    },
+    "مسجد قباء / Quba Mosque": {
+        "distribution_site": "مسجد قباء / Quba Mosque",
+        "distribution_type": "مسجد أو حرم / Mosque or Haram",
+    },
+    "مسجد القبلتين / Qiblatain Mosque": {
+        "distribution_site": "مسجد القبلتين / Qiblatain Mosque",
+        "distribution_type": "مسجد أو حرم / Mosque or Haram",
+    },
+    "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": {
+        "distribution_site": "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)",
+        "distribution_type": "مسجد أو حرم / Mosque or Haram",
+    },
+    "مشروع أو موقع آخر / Other Project or Site": {
+        "distribution_site": "",
+        "distribution_type": "توزيع خارجي أو جهة / External Distribution or Entity",
+    },
+}
+WIZARD_OPTIONAL_ITEMS = [
+    "معمول", "فواكه مجففة", "مكسرات مشكلة", "لوزين",
+    "عصير برتقال 200 مل", "عصير تفاح 200 مل",
+]
+
+
+def _ingredient_reference_cost(name):
+    row = frappe.db.get_value(
+        "WAFD Ingredient", name,
+        ["latest_market_cost", "standard_cost"],
+        as_dict=True,
+    ) or {}
+    return frappe.utils.flt(row.get("latest_market_cost") or row.get("standard_cost") or 0)
+
+
+@frappe.whitelist()
+def get_wizard_defaults():
+    """Single server-owned source for wizard defaults and add-on pricing."""
+    optional_prices = {name: _ingredient_reference_cost(name) for name in WIZARD_OPTIONAL_ITEMS}
+    return {
+        "base_price": WIZARD_BASE_PRICE,
+        "locations": WIZARD_LOCATION_DEFAULTS,
+        "optional_prices": optional_prices,
+        "zamzam_reference_price": _ingredient_reference_cost("ماء زمزم 330 مل") or 9.0,
+    }
+
+
+@frappe.whitelist()
+def search_iftar_projects(project=None, table_owner=None, date=None, limit=100):
+    """Search report-center projects without silently forcing the latest project."""
+    filters = {"docstatus": ["<", 2]}
+    if project:
+        filters["name"] = project
+    if date:
+        d = getdate(date)
+        filters["start_date"] = ["<=", d]
+        filters["end_date"] = [">=", d]
+
+    names = None
+    if table_owner:
+        # Child-table rows inherit project read access through their parent.
+        owner_rows = frappe.get_all(
+            "WAFD Iftar Distribution Recipient",
+            filters={"table_owner_name": ["like", f"%{table_owner}%"], "parenttype": "WAFD Iftar Project"},
+            pluck="parent",
+            limit_page_length=max(1, min(cint(limit), 500)),
+        )
+        operation_projects = frappe.get_all(
+            "WAFD Iftar Daily Operation",
+            filters={"table_owner_name": ["like", f"%{table_owner}%"], "docstatus": ["<", 2]},
+            pluck="project",
+            limit_page_length=max(1, min(cint(limit), 500)),
+        )
+        names = list(dict.fromkeys([x for x in owner_rows + operation_projects if x]))
+        if not names:
+            return []
+        filters["name"] = ["in", names]
+
+    rows = frappe.get_list(
+        "WAFD Iftar Project",
+        filters=filters,
+        fields=["name", "project_title", "distribution_site", "contracting_entity", "start_date", "end_date", "total_meals", "daily_meals", "status", "modified"],
+        order_by="start_date desc, modified desc",
+        limit_page_length=max(1, min(cint(limit), 500)),
+    )
+    return rows
+
+
 @frappe.whitelist()
 def create_project(data):
     if isinstance(data, str):
         data = frappe.parse_json(data)
+    data = dict(data or {})
+    location_default = WIZARD_LOCATION_DEFAULTS.get(data.get("project_title")) or {}
+    if location_default.get("distribution_site"):
+        data["distribution_site"] = location_default["distribution_site"]
+    if location_default.get("contracting_entity"):
+        data["contracting_entity"] = location_default["contracting_entity"]
+    if location_default.get("distribution_type"):
+        data["distribution_type"] = location_default["distribution_type"]
+    optional_items_for_price = data.get("optional_items") or []
+    if isinstance(optional_items_for_price, str):
+        optional_items_for_price = frappe.parse_json(optional_items_for_price)
+    calculated_sale_price = WIZARD_BASE_PRICE + sum(_ingredient_reference_cost(x) for x in optional_items_for_price)
+    if cint(data.get("include_zamzam")):
+        calculated_sale_price += _ingredient_reference_cost("ماء زمزم 330 مل") or 9.0
+    # The wizard price is automatic; never accept a lower stale/zero value from the browser.
+    data["sale_price_per_meal"] = max(frappe.utils.flt(data.get("sale_price_per_meal")), calculated_sale_price)
     required = [
         "project_title", "contracting_entity", "distribution_site",
         "start_date", "end_date", "daily_meals", "sale_price_per_meal",
@@ -234,6 +344,14 @@ def get_dashboard(date=None):
     sums = {key: sum(cint(row.get(key)) for row in rows) for key in keys}
     sums["remaining_meals"] = max(0, sums["planned_meals"] - sums["received_meals"])
     sums["project_count"] = len({row.project for row in rows})
+    active_projects = frappe.get_list(
+        "WAFD Iftar Project",
+        filters={"docstatus": ["<", 2]},
+        fields=["name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals", "total_meals", "status"],
+        order_by="start_date desc, modified desc",
+        limit_page_length=500,
+    )
+    sums["active_project_count"] = len(active_projects)
     sums["completion_percent"] = round(
         sums["received_meals"] / sums["planned_meals"] * 100, 1
     ) if sums["planned_meals"] else 0
@@ -242,6 +360,7 @@ def get_dashboard(date=None):
         "rows": rows,
         "selected_date": operation_date,
         "suggested_date": suggested_date,
+        "active_projects": active_projects,
     }
 
 

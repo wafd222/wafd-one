@@ -121,12 +121,12 @@
   },
   {
    "fieldname": "distribution_site",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "موقع التوزيع / Distribution Site",
-   "options": "المسجد النبوي / Prophet Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nالميقات / Miqat\nموقع آخر / Other",
    "reqd": 1,
    "in_list_view": 1,
-   "read_only": 0
+   "read_only": 0,
+   "description": "يُعبأ تلقائياً من الموقع الرئيسي ويمكن تعديله للمشاريع الخارجية / Auto-filled from main site; editable for external projects"
   },
   {
    "fieldname": "site_details",

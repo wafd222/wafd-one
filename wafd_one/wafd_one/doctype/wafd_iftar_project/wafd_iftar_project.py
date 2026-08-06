@@ -219,8 +219,8 @@ class WAFDIftarProject(Document):
         capacity = cint(self.max_carton_capacity) or 25
         for row in self.distribution_recipients or []:
             qty = cint(row.meal_quantity)
-            if qty <= 0:
-                frappe.throw("كمية صاحب السفرة يجب أن تكون أكبر من صفر / Table owner allocation must be greater than zero")
+            if qty < 25:
+                frappe.throw("أقل كمية لصاحب السفرة هي 25 وجبة / Minimum allocation per table owner is 25 meals")
             identity = (row.table_owner_name or "").strip()
             if identity and identity in names:
                 frappe.throw(f"صاحب السفرة مكرر: {identity} / Duplicate table owner")

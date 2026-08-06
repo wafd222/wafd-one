@@ -20,7 +20,7 @@ function build_wizard(wrapper) {
         <div class="iw-step-title"></div>
         <div class="iw-grid"></div>
         <div class="iw-summary"></div>
-        <div class="iw-actions"><button type="button" class="btn btn-default iw-prev">السابق</button><button type="button" class="btn btn-primary iw-next">التالي</button><button type="button" class="btn btn-primary iw-create">إنشاء المشروع وبدء التشغيل</button></div>
+        <div class="iw-actions"><button class="btn btn-default iw-prev">السابق</button><button class="btn btn-primary iw-next">التالي</button><button class="btn btn-primary iw-create">إنشاء المشروع وبدء التشغيل</button></div>
       </section>
     </div>`);
 
@@ -101,28 +101,17 @@ function build_wizard(wrapper) {
   Object.values(controls).forEach(c=>{ if(c.$input)c.$input.on('change input',renderSummary); });
   controls.project_title.$input.on('change',()=>{const x=locationDefaults[value('project_title')];if(x){controls.distribution_site.set_value(x[0]);controls.contracting_entity.set_value(x[1]);}});
   controls.meal_template.$input.on('change',()=>{if(value('meal_template')==='وجبة مع زمزم / Iftar + Zamzam')controls.include_zamzam.set_value(1);});
-  $root.off('.iftarWizard');
-  $root.on('click.iftarWizard','.iw-next',function(e){e.preventDefault();e.stopPropagation();if(validateStep(currentStep))showStep(currentStep+1);});
-  $root.on('click.iftarWizard','.iw-prev',function(e){e.preventDefault();e.stopPropagation();showStep(currentStep-1);});
-  $root.on('click.iftarWizard','.iw-steps b',function(e){e.preventDefault();const target=Number($(this).data('step'));if(target<currentStep||validateStep(currentStep))showStep(target);});
-  let creating=false;
-  $root.on('click.iftarWizard','.iw-create',async function(e){
-    e.preventDefault();e.stopPropagation();
-    if(creating||!validateStep(4)) return;
-    creating=true; const $button=$(this).prop('disabled',true);
-    try {
-      const data=collect();
-      if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam')data.include_zamzam=1;
-      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
-      sessionStorage.removeItem('wafd_iftar_wizard_draft');
-      Object.values(controls).forEach(c=>c.set_value(c.df.default ?? ''));
-      showStep(1);
-      frappe.show_alert({message:'تم إنشاء المشروع وفتح أول يوم تشغيل',indicator:'green'},5);
-      const target=response.message.first_operation?['Form','WAFD Iftar Daily Operation',response.message.first_operation]:['Form','WAFD Iftar Project',response.message.name];
-      frappe.set_route(...target);
-    } catch(err) {
-      console.error(err); frappe.msgprint({title:'تعذر إنشاء المشروع',message:err.message||'حدث خطأ أثناء إنشاء المشروع',indicator:'red'});
-    } finally { creating=false; $button.prop('disabled',false); }
+  $root.on('click','.iw-next',()=>{if(validateStep(currentStep))showStep(currentStep+1);});
+  $root.on('click','.iw-prev',()=>showStep(currentStep-1));
+  $root.on('click','.iw-steps b',function(){const target=Number($(this).data('step')); if(target<currentStep||validateStep(currentStep))showStep(target);});
+  $root.on('click','.iw-create',async function(){
+    if(!validateStep(4)) return;
+    const data=collect();
+    if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam')data.include_zamzam=1;
+    const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
+    frappe.show_alert({message:'تم إنشاء المشروع وفتح أول يوم تشغيل',indicator:'green'},5);
+    const target=response.message.first_operation?['Form','WAFD Iftar Daily Operation',response.message.first_operation]:['Form','WAFD Iftar Project',response.message.name];
+    frappe.set_route(...target);
   });
-  requestAnimationFrame(()=>showStep(1));
+  showStep(1);
 }

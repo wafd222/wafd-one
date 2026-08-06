@@ -661,19 +661,28 @@ def ensure_madinah_central_and_nearby_hotels():
     return {"catalogue_count": len(rows), "installed_or_updated": installed}
 
 def after_migrate():
-    # Restore any standard WAFD records removed by Frappe's orphan cleanup
-    # before post-migration data installers and workspace rebuilds run.
-    sync_all_doctypes()
-    ensure_hotel_undertaking_print_format()
-    ensure_madinah_hotels_400()
-    ensure_madinah_central_and_nearby_hotels()
-    # The framework has already synchronized all application DocTypes before
-    # this hook runs.  Re-sync only the administration console recovery path,
-    # then rebuild navigation.  Avoid reloading every operational DocType a
-    # second time on each migration.
-    apply_setup(
-        force_rebuild=True,
-        assign_manager_access=True,
-        sync_doctypes=False,
-    )
-    frappe.clear_cache()
+    """Keep normal upgrades lightweight.
+
+    Frappe already synchronizes standard DocTypes, Pages, Workspaces and Print
+    Formats during migrate.  Re-importing every DocType, rebuilding the
+    workspace, scanning/updating 400+ hotels and clearing the entire cache here
+    made every deployment repeat expensive work that belongs to installation or
+    explicit repair flows.
+
+    Set ``wafd_one_full_post_migrate`` in site_config.json only when a damaged
+    site needs the legacy recovery routine for one deployment.
+    """
+    ensure_roles()
+    ensure_default_app()
+
+    if frappe.conf.get("wafd_one_full_post_migrate"):
+        sync_all_doctypes()
+        ensure_hotel_undertaking_print_format()
+        ensure_madinah_hotels_400()
+        ensure_madinah_central_and_nearby_hotels()
+        apply_setup(
+            force_rebuild=True,
+            assign_manager_access=True,
+            sync_doctypes=False,
+        )
+        frappe.clear_cache()

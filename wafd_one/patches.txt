@@ -212,3 +212,5 @@ wafd_one.patches.v10_0_0_rc103.execute
 wafd_one.patches.v10_0_0_rc108.execute
 
 wafd_one.patches.v10_0_0_rc109.execute
+
+wafd_one.patches.v10_0_0_rc110.execute

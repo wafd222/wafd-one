@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC109 — Iftar One-Click Operations**
+Current release: **10.0.0 RC110 — Deploy Performance**
 
 **Current release: 10.0.0 RC94**
 

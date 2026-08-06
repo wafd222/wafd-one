@@ -281,21 +281,56 @@ class WAFDIftarProject(Document):
         self.profit_margin = (self.expected_profit / self.total_revenue * 100) if self.total_revenue else 0
 
     def before_submit(self):
+        # RC109: submission is a one-click operational action. Complete any safe,
+        # deterministic setup automatically instead of sending the user back to
+        # hidden advanced tables.
+        self._prepare_for_submission()
+
         zero_costs = [
             row.ingredient for row in (self.components or [])
             if row.is_mandatory and flt(row.unit_cost) <= 0
         ]
         if zero_costs:
             frappe.throw(
-                "أدخل التكلفة الفعلية للمواد الإلزامية قبل الاعتماد: "
+                "تعذر اعتماد المشروع لأن الأسعار المرجعية غير مكتملة للمواد التالية: "
                 + "، ".join(zero_costs)
-                + " / Mandatory component costs are missing"
+                + " / Reference costs are missing. Update ingredient master data and try again."
             )
-        if cint(self.distribution_variance) != 0:
-            frappe.throw("يجب توزيع كامل وجبات الخطة قبل الاعتماد / All planned meals must be allocated before submission")
+
+    def _prepare_for_submission(self):
+        expected = cint(self.planned_distribution_meals)
+        capacity = cint(self.max_carton_capacity) or 25
+
+        # If the distribution plan is empty or partially entered, preserve the
+        # user's allocations and place the remainder in one clear unassigned row.
+        allocated = sum(cint(row.meal_quantity) for row in (self.distribution_recipients or []))
+        if allocated > expected:
+            frappe.throw("إجمالي كميات التوزيع يتجاوز الخطة / Distribution exceeds the plan")
+        remainder = expected - allocated
+        if remainder:
+            if remainder < 25 and self.distribution_recipients:
+                self.distribution_recipients[0].meal_quantity = cint(self.distribution_recipients[0].meal_quantity) + remainder
+            else:
+                self.append("distribution_recipients", {
+                    "table_owner_name": "غير مخصص — يستكمل من شاشة التشغيل / Unassigned",
+                    "meal_quantity": remainder,
+                })
+
+        # Re-run calculations after the automatic allocation, then generate the
+        # carton plan in memory so the same submit transaction stays atomic.
+        self._validate_distribution()
+        self._auto_generate_cartons(True)
+        self._hydrate_carton_vehicles()
+        self._calculate_profitability()
+
         carton_meals = sum(cint(row.meal_quantity) for row in (self.cartons or []))
-        if not self.cartons or carton_meals != cint(self.planned_distribution_meals):
-            frappe.throw("أنشئ خطة كراتين مطابقة لخطة التوزيع قبل الاعتماد / Generate a matching carton plan before submission")
+        if not self.cartons or carton_meals != expected:
+            frappe.throw("تعذر إنشاء خطة الكراتين تلقائياً / Automatic carton plan generation failed")
+
+    def on_submit(self):
+        # Daily operating records are created automatically after approval.
+        from wafd_one.wafd_one.iftar_pro import generate_daily_operations
+        generate_daily_operations(self.name)
 
 
 def _ingredient_name(name: str) -> str | None:

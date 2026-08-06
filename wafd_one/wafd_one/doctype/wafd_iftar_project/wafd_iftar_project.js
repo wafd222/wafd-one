@@ -83,10 +83,14 @@ frappe.ui.form.on("WAFD Iftar Project", {
         await apply_project_setup(frm);
         frm.set_query("vehicle", "cartons", () => ({ filters: { status: "متاحة / Available" } }));
         const missing_costs = (frm.doc.components || []).filter(row => flt(row.unit_cost) <= 0).map(row => row.ingredient);
-        if (missing_costs.length) {
-            frm.dashboard.set_headline_alert(__("توجد مواد بدون تكلفة. أدخل التكلفة الفعلية قبل اعتماد المشروع."), "orange");
+        if (!frm.is_new() && missing_costs.length) {
+            frm.dashboard.set_headline_alert(__("سيتم تحديث الأسعار المرجعية تلقائياً عند الاعتماد. يمكن تعديلها من التفاصيل المتقدمة."), "blue");
         }
         if (!frm.is_new() && frm.doc.docstatus === 0) {
+            frm.add_custom_button(__("تجهيز واعتماد المشروع / Prepare & Submit"), async () => {
+                if (frm.is_dirty()) await frm.save();
+                await frm.save("Submit");
+            }).addClass("btn-primary");
             frm.add_custom_button(__("تحديث المكونات والتكاليف / Refresh Components & Costs"), async () => {
                 if (frm.is_dirty()) await frm.save();
                 await frappe.call({

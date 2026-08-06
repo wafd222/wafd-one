@@ -1,0 +1,19 @@
+{
+  "doctype": "Page",
+  "name": "wafd-iftar-report-center",
+  "module": "WAFD ONE",
+  "page_name": "wafd-iftar-report-center",
+  "title": "مركز تقارير إفطار الصائم",
+  "standard": "Yes",
+  "roles": [
+    {
+      "role": "System Manager"
+    },
+    {
+      "role": "WAFD Operations Manager"
+    },
+    {
+      "role": "WAFD Project Manager"
+    }
+  ]
+}

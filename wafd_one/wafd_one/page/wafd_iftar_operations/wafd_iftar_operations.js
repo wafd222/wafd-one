@@ -15,7 +15,7 @@ frappe.pages["wafd-iftar-operations"].on_page_load = function (wrapper) {
       <div class="io-card"><div class="io-head"><div><h3>مشاريع اليوم</h3><p>متابعة فورية من الإنتاج حتى الاستلام</p></div><button class="btn btn-default io-refresh">تحديث</button></div><div class="io-table"></div></div>
     </div>`);
   $r.find(".io-date").val(frappe.datetime.get_today());
-  $r.on("click", ".io-new", () => frappe.set_route("wafd-iftar-wizard"));
+  $r.on("click", ".io-new", () => { sessionStorage.removeItem('wafd_iftar_wizard_draft'); frappe.set_route('wafd-iftar-wizard', {new: Date.now()}); });
   $r.on("click", ".io-refresh", () => load(false));
   $r.on("change", ".io-date", () => load(false));
   $r.on("click", "[data-op]", function () { frappe.set_route("Form", "WAFD Iftar Daily Operation", $(this).data("op")); });

@@ -1,6 +1,7 @@
 frappe.ui.form.on("WAFD Iftar Daily Operation", {
   refresh(frm) {
     if (frm.is_new()) return;
+    if (!frm.doc.assigned_meals && frm.doc.planned_meals) frm.set_value('assigned_meals', frm.doc.planned_meals);
     const planned = Number(frm.doc.planned_meals || 0);
     const received = Number(frm.doc.received_meals || 0);
     frm.dashboard.add_indicator(__(`المخطط: ${planned}`), "blue");
@@ -23,7 +24,9 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         frappe.msgprint({
           title: __("اكتمل التشغيل اليومي"),
           indicator: "green",
-          message: __("تم اعتماد الاستلام وإغلاق اليوم بنجاح. ستبقى في هذه الشاشة ويمكنك الطباعة أو المراجعة.")
+          message: __("تم اعتماد الاستلام وإغلاق اليوم بنجاح. اختر الطباعة أو العودة للوحة التشغيل."),
+          primary_action: {label: __('فتح مركز التقارير والطباعة'), action: () => frappe.set_route('wafd-iftar-report-center', {project: frm.doc.project, operation: frm.doc.name})},
+          secondary_action: {label: __('العودة للوحة التشغيل'), action: () => frappe.set_route('wafd-iftar-operations')}
         });
       }
     };
@@ -43,7 +46,11 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
             title: __("بيانات الاستلام"),
             fields: [
               { fieldname: "recipient_name", fieldtype: "Data", label: __("اسم المستلم"), reqd: 1, default: frm.doc.recipient_name },
-              { fieldname: "recipient_id", fieldtype: "Data", label: __("رقم الهوية"), default: frm.doc.recipient_id }
+              { fieldname: "recipient_id", fieldtype: "Data", label: __("رقم الهوية"), default: frm.doc.recipient_id },
+              { fieldname: "table_owner_name", fieldtype: "Data", label: __("اسم صاحب السفرة"), default: frm.doc.table_owner_name },
+              { fieldname: "supervisor_name", fieldtype: "Data", label: __("اسم المشرف"), default: frm.doc.supervisor_name },
+              { fieldname: "supervisors_manager", fieldtype: "Data", label: __("مدير المشرفين"), default: frm.doc.supervisors_manager },
+              { fieldname: "assigned_meals", fieldtype: "Int", label: __("عدد الوجبات المسلمة"), default: frm.doc.assigned_meals || frm.doc.planned_meals }
             ],
             primary_action_label: __("اعتماد الاستلام"),
             primary_action(values) {

@@ -34,8 +34,27 @@ def create_project(data):
             if name and name not in existing:
                 doc.append("components", {"ingredient": name, "quantity_per_meal": 1, "component_group": "إضافة / Add-on", "is_mandatory": 0})
         doc.save(ignore_permissions=True)
+    # Store editable operating-cost agreements entered during creation.
+    total_meals = cint(doc.total_meals) or (cint(doc.daily_meals) * max(1, cint(doc.number_of_days)))
+    cost_map = [
+        ("carton_unit_cost", "الكرتون / Carton", max(1, (total_meals + 24) // 25)),
+        ("tablecloth_unit_cost", "السفرة / Tablecloth", 1),
+        ("supervisors_manager_cost", "مدير المشرفين / Supervisors Manager", 1),
+        ("supervisors_cost", "المشرفون / Supervisors", 1),
+        ("assistants_cost", "المساعدون / Assistants", 1),
+        ("packaging_workers_cost", "عمال التغليف / Packaging Workers", 1),
+        ("loading_workers_cost", "عمال التحميل / Loading Workers", 1),
+        ("drivers_cost", "السائقون / Drivers", 1),
+    ]
+    for key, label, quantity in cost_map:
+        rate = frappe.utils.flt(data.get(key))
+        if rate:
+            doc.append("operating_costs", {"cost_type": label, "description": label, "quantity": quantity, "rate": rate})
+    if any(frappe.utils.flt(data.get(key)) for key, _, _ in cost_map):
+        doc.save(ignore_permissions=True)
     generate_daily_operations(doc.name, ignore_permissions=True)
-    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}"}
+    first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
+    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
 
 
 @frappe.whitelist()
@@ -218,7 +237,7 @@ _STAGE_FIELDS = {
 
 
 @frappe.whitelist()
-def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=None, received_by=None):
+def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=None, received_by=None, table_owner_name=None, supervisor_name=None, supervisors_manager=None, assigned_meals=None):
     """Advance a daily operation safely, including records that were submitted in older releases."""
     if stage not in _STAGE_FIELDS:
         frappe.throw(_("مرحلة تشغيل غير صالحة / Invalid operation stage"))
@@ -253,6 +272,10 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
             "recipient_id": recipient_id or doc.recipient_id,
             "received_by": received_by or final_recipient,
             "receipt_time": frappe.utils.now_datetime(),
+            "table_owner_name": table_owner_name or doc.table_owner_name,
+            "supervisor_name": supervisor_name or doc.supervisor_name,
+            "supervisors_manager": supervisors_manager or doc.supervisors_manager,
+            "assigned_meals": cint(assigned_meals or doc.assigned_meals or planned),
         })
 
     # Derive status and completion from the values after this transition.

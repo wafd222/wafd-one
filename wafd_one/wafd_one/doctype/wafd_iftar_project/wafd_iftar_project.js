@@ -34,8 +34,6 @@ const STANDARD_IFTAR_COMPONENTS = [
     ["ملعقة", 1, "أساسي / Core", 1],
     ["منديل معطر", 1, "أساسي / Core", 1],
     ["خبز فتوت", 1, "أساسي / Core", 1],
-    ["غلاف إفطار صائم", 1, "تغليف / Packaging", 1],
-    ["غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1]
 ];
 
 async function apply_project_setup(frm) {
@@ -53,6 +51,7 @@ async function apply_project_setup(frm) {
 async function load_standard_components_client(frm) {
     if ((frm.doc.components || []).length) return;
     const rows = [...STANDARD_IFTAR_COMPONENTS];
+    if (frm.doc.distribution_type === 'توزيع خارجي أو جهة / External Distribution or Entity') rows.push(['غلاف شركة وفد المدينة', 1, 'تغليف / Packaging', 1]);
     if (frm.doc.include_zamzam) rows.push(["ماء زمزم 330 مل", 1, "إضافة / Add-on", 1]);
     for (const [ingredient_name, qty, group, mandatory] of rows) {
         const r = await frappe.db.get_value("WAFD Ingredient", {ingredient_name}, ["name", "uom", "latest_market_cost", "standard_cost", "latest_price_source", "cost_basis"]);
@@ -215,7 +214,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
     }
     if (frm.fields_dict.reports_html) {
       const w=frm.fields_dict.reports_html.$wrapper;
-      w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
+      w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-page="wafd-iftar-report-center">مركز التقارير والطباعة</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
       w.off('click').on('click','[data-page]',function(){frappe.set_route($(this).data('page'))}).on('click','[data-list]',function(){frappe.set_route('List',$(this).data('list'),{project:frm.doc.name})}).on('click','[data-print]',()=>frappe.set_route('print', frm.doctype, frm.doc.name, {print_format:'WAFD Iftar Project Summary'}));
     }
   },

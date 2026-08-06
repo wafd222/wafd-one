@@ -217,6 +217,22 @@
       "label": "الملاحظات / Notes"
     },
     {
+      "fieldname": "table_owner_name",
+      "fieldtype": "Data",
+      "label": "اسم صاحب السفرة / Table Owner"
+    },
+    {
+      "fieldname": "supervisors_manager",
+      "fieldtype": "Data",
+      "label": "مدير المشرفين / Supervisors Manager"
+    },
+    {
+      "fieldname": "assigned_meals",
+      "fieldtype": "Int",
+      "label": "الوجبات المسلمة للمشرف / Meals Assigned",
+      "read_only": 1
+    },
+    {
       "fieldname": "assistants_section",
       "fieldtype": "Section Break",
       "label": "حضور المساعدين / Assistants Attendance"

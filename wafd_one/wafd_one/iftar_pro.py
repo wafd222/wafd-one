@@ -54,7 +54,8 @@ def get_wizard_defaults():
         "base_price": WIZARD_BASE_PRICE,
         "locations": WIZARD_LOCATION_DEFAULTS,
         "optional_prices": optional_prices,
-        "zamzam_reference_price": _ingredient_reference_cost("ماء زمزم 330 مل") or 9.0,
+        "water_reference_price": _ingredient_reference_cost("ماء 330 مل") or 0.62,
+        "zamzam_reference_price": _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50,
     }
 
 
@@ -116,7 +117,9 @@ def create_project(data):
         optional_items_for_price = frappe.parse_json(optional_items_for_price)
     calculated_sale_price = WIZARD_BASE_PRICE + sum(_ingredient_reference_cost(x) for x in optional_items_for_price)
     if cint(data.get("include_zamzam")):
-        calculated_sale_price += _ingredient_reference_cost("ماء زمزم 330 مل") or 9.0
+        water_cost = _ingredient_reference_cost("ماء 330 مل") or 0.62
+        zamzam_cost = _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50
+        calculated_sale_price += max(0, zamzam_cost - water_cost)
     # The wizard price is automatic; never accept a lower stale/zero value from the browser.
     data["sale_price_per_meal"] = max(frappe.utils.flt(data.get("sale_price_per_meal")), calculated_sale_price)
     required = [

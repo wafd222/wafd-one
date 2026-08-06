@@ -77,7 +77,12 @@ async function build_report_center(wrapper){
     }catch(e){$r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(selectedProject)}</b>`);}
   }
 
-  function openPrint(doctype,name,format){frappe.route_options={print_format:format};frappe.set_route('print',doctype,name);}
+  function openPrint(doctype,name,format){
+    // Open the exact mapped Print Format as PDF. This avoids Frappe route_options
+    // leaking between cards and guarantees every report card opens its own document.
+    const q = new URLSearchParams({doctype, name, format, no_letterhead:'0'});
+    window.open('/api/method/frappe.utils.print_format.download_pdf?' + q.toString(), '_blank', 'noopener');
+  }
   function openList(doctype,filters){frappe.route_options=filters||{};frappe.set_route('List',doctype);}
   async function chooseOperation(project,printFormat){
     const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date','status','planned_meals'],order_by:'operation_date desc',limit:366});
@@ -92,7 +97,7 @@ async function build_report_center(wrapper){
     if(card.type==='project_print')return openPrint('WAFD Iftar Project',project,card.format);
     if(card.type==='operation_print')return chooseOperation(project,card.format);
     if(card.type==='list')return openList(card.doctype,{project});
-    if(card.type==='project_form')return frappe.set_route('Form','WAFD Iftar Project',project,card.anchor);
+    if(card.type==='project_form'){ frappe.set_route('Form','WAFD Iftar Project',project); return; }
   }
 
   $section.on('click.wafdReportCenter','.irc-search-btn',()=>runSearch(true));

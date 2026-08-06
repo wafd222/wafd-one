@@ -86,11 +86,28 @@ function build_wizard(wrapper) {
 
   const value = name => controls[name] ? controls[name].get_value() : null;
   const set = (name, val) => controls[name] && controls[name].set_value(val == null ? '' : val);
+  const OPTIONAL_ITEMS = ['معمول','فواكه مجففة','مكسرات مشكلة','لوزين','عصير برتقال 200 مل','عصير تفاح 200 مل'];
   const selectedOptionalItems = () => {
+    // Frappe MultiCheck can update its internal value after the native change event.
+    // Read the actual checked inputs first so simultaneous add-ons are always priced together.
+    const $wrap = controls.optional_items && controls.optional_items.$wrapper;
+    if ($wrap && $wrap.length) {
+      const picked = [];
+      $wrap.find('input[type=checkbox]:checked').each(function(){
+        const raw = $(this).val();
+        const label = ($(this).closest('label').text() || $(this).parent().text() || '').trim();
+        const match = OPTIONAL_ITEMS.find(x => x === raw || label.includes(x));
+        if (match && !picked.includes(match)) picked.push(match);
+      });
+      if (picked.length) return picked;
+    }
     const v = value('optional_items');
-    if (Array.isArray(v)) return v;
+    if (Array.isArray(v)) return v.filter(x=>OPTIONAL_ITEMS.includes(x));
     if (!v) return [];
-    if (typeof v === 'string') { try { const parsed=JSON.parse(v); return Array.isArray(parsed)?parsed:[v]; } catch(e) { return [v]; } }
+    if (typeof v === 'string') {
+      try { const parsed=JSON.parse(v); return (Array.isArray(parsed)?parsed:[v]).filter(x=>OPTIONAL_ITEMS.includes(x)); }
+      catch(e) { return OPTIONAL_ITEMS.filter(x=>v.includes(x)); }
+    }
     return [];
   };
 
@@ -110,12 +127,18 @@ function build_wizard(wrapper) {
   }
 
   function automaticSalePrice() {
+    const items = selectedOptionalItems();
     let price = Number(defaults.base_price || 9);
-    selectedOptionalItems().forEach(item => { price += Number((defaults.optional_prices || {})[item] || 0); });
-    if (Number(value('include_zamzam') || 0)) price += Number(defaults.zamzam_reference_price || 9);
+    items.forEach(item => { price += Number((defaults.optional_prices || {})[item] || 0); });
+    const zamzam = Number(value('include_zamzam') || 0);
+    const waterCost = Number(defaults.water_reference_price || 0);
+    const zamzamCost = Number(defaults.zamzam_reference_price || 0);
+    // Zamzam replaces the normal 330ml water already included in the 9 SAR standard meal.
+    // Therefore add only the price difference, never the full Zamzam bottle price again.
+    if (zamzam) price += Math.max(0, zamzamCost - waterCost);
     set('sale_price_per_meal', Number(price.toFixed(2)));
-    const additions = selectedOptionalItems().map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
-    if (Number(value('include_zamzam')||0)) additions.push(`زمزم: ${format_currency(Number(defaults.zamzam_reference_price||9),'SAR')}`);
+    const additions = items.map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
+    if (zamzam) additions.push(`استبدال الماء بزمزم: +${format_currency(Math.max(0,zamzamCost-waterCost),'SAR')}`);
     $root.find('.iw-price-note').html(`<b>السعر الأساسي للوجبة القياسية: ${format_currency(Number(defaults.base_price||9),'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
     renderSummary();
   }
@@ -205,7 +228,7 @@ function build_wizard(wrapper) {
   // Control listeners are attached to each actual control wrapper, including MultiCheck inputs.
   Object.values(controls).forEach(c => { if(c.$wrapper) c.$wrapper.on('change input', renderSummary); });
   controls.project_title.$wrapper.on('change', () => { applyLocationDefaults(); automaticSalePrice(); });
-  controls.optional_items.$wrapper.on('change', automaticSalePrice);
+  controls.optional_items.$wrapper.on('change', () => setTimeout(automaticSalePrice, 0));
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
   controls.meal_template.$wrapper.on('change', () => {
     const meal=value('meal_template');

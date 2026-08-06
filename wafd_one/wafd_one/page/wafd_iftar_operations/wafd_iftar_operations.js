@@ -2,13 +2,17 @@ frappe.pages["wafd-iftar-operations"].on_page_load = function (wrapper) {
   frappe.ui.make_app_page({ parent: wrapper, title: __("تشغيل إفطار الصائم"), single_column: true });
   const $r = $(wrapper).find(".layout-main-section").attr("dir", "rtl").html(`
     <div class="io-wrap">
-      <div class="io-top">
-        <div><h2>لوحة التشغيل اليومية</h2><p>الإنتاج والتغليف والتحميل والتسليم والاستلام في شاشة واحدة</p></div>
-        <div class="io-controls"><input type="date" class="form-control io-date"><button class="btn btn-primary io-new">مشروع جديد</button></div>
-      </div>
+      <section class="io-hero">
+        <div class="io-hero-overlay"></div>
+        <div class="io-brand">
+          <img src="/assets/wafd_one/images/wafd-almadinah-official.png" alt="شعار وفد المدينة">
+          <div><span>شركة وفد المدينة لخدمات الإعاشة</span><strong>مشروع إفطار صائم</strong><small>لوحة القيادة والتشغيل اليومي</small></div>
+        </div>
+        <div class="io-controls"><input type="date" class="form-control io-date"><button class="btn btn-light io-new">+ مشروع جديد</button></div>
+      </section>
       <div class="io-note"></div>
       <div class="io-kpis"></div>
-      <div class="io-card"><div class="io-head"><h3>مشاريع اليوم</h3><button class="btn btn-default io-refresh">تحديث</button></div><div class="io-table"></div></div>
+      <div class="io-card"><div class="io-head"><div><h3>مشاريع اليوم</h3><p>متابعة فورية من الإنتاج حتى الاستلام</p></div><button class="btn btn-default io-refresh">تحديث</button></div><div class="io-table"></div></div>
     </div>`);
   $r.find(".io-date").val(frappe.datetime.get_today());
   $r.on("click", ".io-new", () => frappe.set_route("wafd-iftar-wizard"));
@@ -20,7 +24,7 @@ frappe.pages["wafd-iftar-operations"].on_page_load = function (wrapper) {
 
   async function load(allowJump = true) {
     const selected = $r.find(".io-date").val();
-    const response = await frappe.call({ method: "wafd_one.wafd_one.iftar_pro.get_dashboard", args: { date: selected }, freeze: true });
+    const response = await frappe.call({ method: "wafd_one.wafd_one.iftar_pro.get_dashboard", args: { date: selected } });
     const x = response.message || { summary: {}, rows: [] };
     if (allowJump && !x.rows.length && x.suggested_date && !autoJumped) {
       autoJumped = true;
@@ -29,14 +33,17 @@ frappe.pages["wafd-iftar-operations"].on_page_load = function (wrapper) {
       return load(false);
     }
     const s = x.summary || {};
-    const cards = [["مشاريع اليوم", s.project_count], ["الوجبات المطلوبة", s.planned_meals], ["تم الإنتاج", s.produced_meals], ["تم التغليف", s.packaged_meals], ["تم التحميل", s.loaded_meals], ["تم التسليم", s.delivered_meals], ["تم الاستلام", s.received_meals], ["المتبقي", s.remaining_meals], ["نسبة الإنجاز", `${s.completion_percent || 0}%`]];
-    $r.find(".io-kpis").html(cards.map(c => `<div><span>${c[0]}</span><strong>${typeof c[1] === "number" ? num(c[1]) : c[1]}</strong></div>`).join(""));
-    $r.find(".io-table").html(x.rows.length ? `<table class="table"><thead><tr><th>المشروع</th><th>الموقع</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.rows.map(r => `<tr data-op="${r.name}"><td><b>${frappe.utils.escape_html(r.project_title || r.project)}</b><small>${frappe.utils.escape_html(r.project)}</small></td><td>${frappe.utils.escape_html(r.distribution_site || "")}</td><td>${num(r.planned_meals)}</td><td>${num(r.produced_meals)}</td><td>${num(r.packaged_meals)}</td><td>${num(r.loaded_meals)}</td><td>${num(r.delivered_meals)}</td><td>${num(r.received_meals)}</td><td><div class="progress"><div class="progress-bar" style="width:${r.completion_percent || 0}%"></div></div>${r.completion_percent || 0}%</td></tr>`).join("")}</tbody></table>` : `<div class="io-empty">لا توجد عمليات لهذا التاريخ. اختر تاريخ المشروع أو أنشئ مشروعاً جديداً.</div>`);
+    const cards = [
+      ["مشاريع اليوم", s.project_count, "briefcase"], ["الوجبات المطلوبة", s.planned_meals, "food"],
+      ["تم الإنتاج", s.produced_meals, "factory"], ["تم التغليف", s.packaged_meals, "package"],
+      ["تم التحميل", s.loaded_meals, "truck"], ["تم التسليم", s.delivered_meals, "delivery"],
+      ["تم الاستلام", s.received_meals, "check"], ["المتبقي", s.remaining_meals, "remaining"],
+      ["نسبة الإنجاز", `${s.completion_percent || 0}%`, "percent"]
+    ];
+    $r.find(".io-kpis").html(cards.map(c => `<div class="io-kpi"><span>${c[0]}</span><strong>${typeof c[1] === "number" ? num(c[1]) : c[1]}</strong><i class="io-dot"></i></div>`).join(""));
+    $r.find(".io-table").html(x.rows.length ? `<div class="table-responsive"><table class="table"><thead><tr><th>المشروع</th><th>الموقع</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.rows.map(r => `<tr data-op="${r.name}"><td><b>${frappe.utils.escape_html(r.project_title || r.project)}</b><small>${frappe.utils.escape_html(r.project)}</small></td><td>${frappe.utils.escape_html(r.distribution_site || "")}</td><td>${num(r.planned_meals)}</td><td>${num(r.produced_meals)}</td><td>${num(r.packaged_meals)}</td><td>${num(r.loaded_meals)}</td><td>${num(r.delivered_meals)}</td><td>${num(r.received_meals)}</td><td><div class="progress"><div class="progress-bar" style="width:${r.completion_percent || 0}%"></div></div><b>${r.completion_percent || 0}%</b></td></tr>`).join("")}</tbody></table></div>` : `<div class="io-empty"><b>لا توجد عمليات لهذا التاريخ</b><span>اختر تاريخ المشروع أو أنشئ مشروعاً جديداً.</span></div>`);
   }
   load(true);
-  // Keep the command center current when supervisors update stages in other tabs/devices.
-  const refreshTimer = setInterval(() => {
-    if (!document.hidden) load(false);
-  }, 15000);
+  const refreshTimer = setInterval(() => { if (!document.hidden) load(false); }, 15000);
   $(wrapper).on("remove", () => clearInterval(refreshTimer));
 };

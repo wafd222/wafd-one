@@ -361,6 +361,70 @@ def _ingredient_name(name: str) -> str | None:
 
 
 @frappe.whitelist()
+def delete_iftar_project_permanently(project_name: str):
+    """Delete an Iftar test/project and safely reverse all linked operational records.
+
+    Submitted stock movements are cancelled first so their stock effect is reversed.
+    The method is intentionally explicit and restricted to users who can delete the project.
+    """
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    project.check_permission("delete")
+
+    reversed_movements = 0
+    deleted_operations = 0
+
+    # Reverse app-native stock movements linked to this project, when present.
+    if frappe.db.table_exists("WAFD Stock Movement"):
+        movements = frappe.get_all(
+            "WAFD Stock Movement",
+            filters={"reference_type": "WAFD Iftar Project", "reference_name": project.name},
+            pluck="name",
+        )
+        for movement_name in movements:
+            movement = frappe.get_doc("WAFD Stock Movement", movement_name)
+            if movement.docstatus == 1:
+                movement.flags.ignore_permissions = True
+                movement.cancel()
+                reversed_movements += 1
+            frappe.delete_doc("WAFD Stock Movement", movement_name, ignore_permissions=True, force=True)
+
+    # Remove all generated daily operations before deleting the parent.
+    operations = frappe.get_all(
+        "WAFD Iftar Daily Operation", filters={"project": project.name}, pluck="name"
+    )
+    for operation_name in operations:
+        operation = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+        if operation.docstatus == 1:
+            operation.flags.ignore_permissions = True
+            operation.cancel()
+        frappe.delete_doc(
+            "WAFD Iftar Daily Operation", operation_name, ignore_permissions=True, force=True
+        )
+        deleted_operations += 1
+
+    # Clean non-accounting references created by the app.
+    for doctype in ("WAFD Operations Alert", "WAFD Approval Request", "WAFD Audit Event"):
+        if not frappe.db.table_exists(doctype):
+            continue
+        filters = {"reference_name": project.name}
+        if frappe.get_meta(doctype).has_field("reference_doctype"):
+            filters["reference_doctype"] = "WAFD Iftar Project"
+        for name in frappe.get_all(doctype, filters=filters, pluck="name"):
+            frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+
+    if project.docstatus == 1:
+        project.flags.ignore_permissions = True
+        project.cancel()
+    frappe.delete_doc("WAFD Iftar Project", project.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+    return {
+        "deleted": project_name,
+        "deleted_operations": deleted_operations,
+        "reversed_stock_movements": reversed_movements,
+    }
+
+
+@frappe.whitelist()
 def load_standard_components(project_name: str):
     doc = frappe.get_doc("WAFD Iftar Project", project_name)
     doc.check_permission("write")

@@ -112,6 +112,25 @@ frappe.ui.form.on("WAFD Iftar Project", {
             }, __("إفطار الصائم / Iftar"));
         }
         if (!frm.is_new()) {
+            frm.add_custom_button(__("حذف التجربة وإرجاع المواد"), () => {
+                frappe.confirm(
+                    __("سيتم حذف المشروع وكل السجلات اليومية المرتبطة به، وإلغاء أي حركة مخزون مرتبطة لإرجاع المواد. هل أنت متأكد؟"),
+                    async () => {
+                        const result = await frappe.call({
+                            method: "wafd_one.wafd_one.doctype.wafd_iftar_project.wafd_iftar_project.delete_iftar_project_permanently",
+                            args: { project_name: frm.doc.name },
+                            freeze: true,
+                            freeze_message: __("جاري إلغاء السجلات وإرجاع المواد ثم حذف المشروع...")
+                        });
+                        frappe.show_alert({
+                            message: __(`تم حذف المشروع وإلغاء ${result.message.reversed_stock_movements || 0} حركة مخزون`),
+                            indicator: "green"
+                        }, 7);
+                        frappe.set_route("List", "WAFD Iftar Project");
+                    }
+                );
+            }, __("إدارة المشروع")).addClass("btn-danger");
+
             frm.dashboard.add_indicator(__(`إجمالي الوجبات: ${frm.doc.total_meals || 0}`), "blue");
             frm.dashboard.add_indicator(__(`خطة التوزيع: ${frm.doc.planned_distribution_meals || 0}`), "blue");
             frm.dashboard.add_indicator(__(`التكلفة/وجبة: ${format_currency(frm.doc.actual_cost_per_meal || 0)}`), "orange");

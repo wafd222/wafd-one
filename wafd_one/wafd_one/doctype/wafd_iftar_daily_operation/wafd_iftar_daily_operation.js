@@ -19,6 +19,13 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
       });
       frappe.show_alert({ message: success, indicator: "green" }, 4);
       await frm.reload_doc();
+      if (stage === "received") {
+        frappe.msgprint({
+          title: __("اكتمل التشغيل اليومي"),
+          indicator: "green",
+          message: __("تم اعتماد الاستلام وإغلاق اليوم بنجاح. ستبقى في هذه الشاشة ويمكنك الطباعة أو المراجعة.")
+        });
+      }
     };
 
     if (frm.doc.docstatus !== 2) {

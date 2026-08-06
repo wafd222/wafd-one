@@ -196,3 +196,74 @@ def get_dashboard(date=None):
         "suggested_date": suggested_date,
     }
 
+
+
+_STAGE_FIELDS = {
+    "produced": "produced_meals",
+    "packaged": "packaged_meals",
+    "loaded": "loaded_meals",
+    "delivered": "delivered_meals",
+    "received": "received_meals",
+}
+
+
+@frappe.whitelist()
+def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=None, received_by=None):
+    """Advance a daily operation safely, including records that were submitted in older releases."""
+    if stage not in _STAGE_FIELDS:
+        frappe.throw(_("مرحلة تشغيل غير صالحة / Invalid operation stage"))
+
+    doc = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+    doc.check_permission("write")
+    planned = cint(doc.planned_meals)
+    values = {
+        "produced_meals": cint(doc.produced_meals),
+        "packaged_meals": cint(doc.packaged_meals),
+        "loaded_meals": cint(doc.loaded_meals),
+        "delivered_meals": cint(doc.delivered_meals),
+        "received_meals": cint(doc.received_meals),
+    }
+    source = {
+        "produced": planned,
+        "packaged": values["produced_meals"],
+        "loaded": values["packaged_meals"],
+        "delivered": values["loaded_meals"],
+        "received": values["delivered_meals"],
+    }[stage]
+    if stage != "produced" and source <= 0:
+        frappe.throw(_("يجب اعتماد المرحلة السابقة أولاً / Complete the previous stage first"))
+
+    updates = {_STAGE_FIELDS[stage]: source}
+    if stage == "received":
+        final_recipient = (recipient_name or doc.recipient_name or "").strip()
+        if not final_recipient:
+            frappe.throw(_("اسم المستلم مطلوب قبل اعتماد الاستلام / Recipient name is required"))
+        updates.update({
+            "recipient_name": final_recipient,
+            "recipient_id": recipient_id or doc.recipient_id,
+            "received_by": received_by or final_recipient,
+            "receipt_time": frappe.utils.now_datetime(),
+        })
+
+    # Derive status and completion from the values after this transition.
+    values.update({k: cint(v) for k, v in updates.items() if k in values})
+    received = values["received_meals"]
+    if received >= planned and planned:
+        status = "مستلم / Received"
+    elif values["delivered_meals"]:
+        status = "في التوزيع / Distributing"
+    elif values["loaded_meals"]:
+        status = "جاهز للتحميل / Ready to Load"
+    elif values["produced_meals"]:
+        status = "قيد الإنتاج / In Production"
+    else:
+        status = "مخطط / Planned"
+    updates["status"] = status
+    updates["completion_percent"] = min(100, received / planned * 100) if planned else 0
+    frappe.db.set_value("WAFD Iftar Daily Operation", doc.name, updates, update_modified=True)
+    return {
+        "name": doc.name,
+        "stage": stage,
+        "status": status,
+        "completion_percent": updates["completion_percent"],
+    }

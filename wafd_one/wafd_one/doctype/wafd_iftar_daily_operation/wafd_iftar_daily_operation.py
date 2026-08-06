@@ -32,6 +32,9 @@ class WAFDIftarDailyOperation(Document):
             frappe.throw("تاريخ التشغيل خارج مدة المشروع / Operation date is outside the project period")
 
         self.planned_meals = cint(project.daily_meals)
+        self.project_title = project.project_title
+        self.distribution_site = project.distribution_site
+        self.contracting_entity = project.contracting_entity
 
         produced = cint(self.produced_meals)
         packaged = cint(self.packaged_meals)

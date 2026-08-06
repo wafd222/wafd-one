@@ -4,6 +4,7 @@ import math
 
 import frappe
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.utils import cint, date_diff, flt, now_datetime
 
 
@@ -48,6 +49,10 @@ STANDARD_COMPONENTS = [
 
 
 class WAFDIftarProject(Document):
+    def autoname(self):
+        """Generate a clean project number independent of stale site naming-series metadata."""
+        self.name = make_autoname("WAFD-IFTAR-.#####")
+
     def validate(self):
         self._apply_project_defaults()
         self._remove_blank_child_rows()

@@ -4,7 +4,7 @@
  "module": "WAFD ONE",
  "engine": "InnoDB",
  "autoname": "format:IFTAR-DAY-{YYYY}-{#####}",
- "is_submittable": 1,
+ "is_submittable": 0,
  "track_changes": 1,
  "title_field": "project",
  "search_fields": "project,operation_date,status,recipient_name",
@@ -55,6 +55,27 @@
    "label": "المشروع / Project",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "project_title",
+   "fieldtype": "Data",
+   "label": "اسم المشروع / Project Name",
+   "read_only": 1,
+   "fetch_from": "project.project_title"
+  },
+  {
+   "fieldname": "distribution_site",
+   "fieldtype": "Data",
+   "label": "موقع التوزيع / Distribution Site",
+   "read_only": 1,
+   "fetch_from": "project.distribution_site"
+  },
+  {
+   "fieldname": "contracting_entity",
+   "fieldtype": "Data",
+   "label": "الجهة المتعاقدة / Contracting Entity",
+   "read_only": 1,
+   "fetch_from": "project.contracting_entity"
   },
   {
    "fieldname": "operation_date",

@@ -34,4 +34,9 @@ frappe.pages["wafd-iftar-operations"].on_page_load = function (wrapper) {
     $r.find(".io-table").html(x.rows.length ? `<table class="table"><thead><tr><th>المشروع</th><th>الموقع</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.rows.map(r => `<tr data-op="${r.name}"><td><b>${frappe.utils.escape_html(r.project_title || r.project)}</b><small>${frappe.utils.escape_html(r.project)}</small></td><td>${frappe.utils.escape_html(r.distribution_site || "")}</td><td>${num(r.planned_meals)}</td><td>${num(r.produced_meals)}</td><td>${num(r.packaged_meals)}</td><td>${num(r.loaded_meals)}</td><td>${num(r.delivered_meals)}</td><td>${num(r.received_meals)}</td><td><div class="progress"><div class="progress-bar" style="width:${r.completion_percent || 0}%"></div></div>${r.completion_percent || 0}%</td></tr>`).join("")}</tbody></table>` : `<div class="io-empty">لا توجد عمليات لهذا التاريخ. اختر تاريخ المشروع أو أنشئ مشروعاً جديداً.</div>`);
   }
   load(true);
+  // Keep the command center current when supervisors update stages in other tabs/devices.
+  const refreshTimer = setInterval(() => {
+    if (!document.hidden) load(false);
+  }, 15000);
+  $(wrapper).on("remove", () => clearInterval(refreshTimer));
 };

@@ -327,10 +327,28 @@ class WAFDIftarProject(Document):
         if not self.cartons or carton_meals != expected:
             frappe.throw("تعذر إنشاء خطة الكراتين تلقائياً / Automatic carton plan generation failed")
 
+    def after_insert(self):
+        # Create the daily plan immediately after the project is first saved so
+        # the operations screen is useful even before formal submission.
+        self._sync_daily_operations()
+
+    def on_update(self):
+        # Keep the operational calendar synchronized when dates or quantities
+        # are edited while the project is still in Draft.
+        if self.docstatus == 0:
+            self._sync_daily_operations()
+
     def on_submit(self):
-        # Daily operating records are created automatically after approval.
+        self._sync_daily_operations()
+
+    def on_update_after_submit(self):
+        self._sync_daily_operations()
+
+    def _sync_daily_operations(self):
+        if not self.name or not self.start_date or not self.end_date or cint(self.daily_meals) <= 0:
+            return
         from wafd_one.wafd_one.iftar_pro import generate_daily_operations
-        generate_daily_operations(self.name)
+        generate_daily_operations(self.name, ignore_permissions=True)
 
 
 def _ingredient_name(name: str) -> str | None:

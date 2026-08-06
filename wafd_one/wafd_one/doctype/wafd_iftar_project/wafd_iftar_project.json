@@ -85,8 +85,8 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "سلسلة الترقيم / Naming Series",
-   "options": "WAFD-IFTAR-#####",
-   "default": "WAFD-IFTAR-#####",
+   "options": "WAFD-IFTAR-.#####",
+   "default": "WAFD-IFTAR-.#####",
    "reqd": 1,
    "read_only": 1,
    "hidden": 1

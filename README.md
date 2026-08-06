@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC110 — Deploy Performance**
+Current release: **10.0.0 RC111 — Iftar Stability & Operations Fix**
 
 **Current release: 10.0.0 RC94**
 

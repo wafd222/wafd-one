@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC111 — Iftar Stability & Operations Fix**
+Current release: **10.0.0 RC112 — Migration Compatibility Fix**
 
 **Current release: 10.0.0 RC94**
 

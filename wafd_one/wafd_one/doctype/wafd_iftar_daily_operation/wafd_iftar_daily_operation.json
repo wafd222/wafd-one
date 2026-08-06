@@ -267,5 +267,6 @@
    "print": 1,
    "report": 1
   }
- ]
+ ],
+ "default_print_format": "إفطار صائم — تسليم واستلام يومي"
 }

@@ -197,7 +197,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
     if (frm.fields_dict.reports_html) {
       const w=frm.fields_dict.reports_html.$wrapper;
       w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
-      w.off('click').on('click','[data-page]',function(){frappe.set_route($(this).data('page'))}).on('click','[data-list]',function(){frappe.set_route('List',$(this).data('list'),{project:frm.doc.name})}).on('click','[data-print]',()=>frm.print_doc());
+      w.off('click').on('click','[data-page]',function(){frappe.set_route($(this).data('page'))}).on('click','[data-list]',function(){frappe.set_route('List',$(this).data('list'),{project:frm.doc.name})}).on('click','[data-print]',()=>frappe.set_route('print', frm.doctype, frm.doc.name, {print_format:'WAFD Iftar Project Summary'}));
     }
   },
   start_date: update_iftar_totals, end_date: update_iftar_totals, daily_meals: update_iftar_totals,

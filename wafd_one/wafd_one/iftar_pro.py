@@ -115,38 +115,69 @@ def get_project_operations(project_name):
 @frappe.whitelist()
 def get_dashboard(date=None):
     operation_date = getdate(date or nowdate())
-    rows = frappe.get_all(
-        "WAFD Iftar Daily Operation",
-        filters={"operation_date": operation_date},
-        fields=[
-            "name", "project", "status", "planned_meals", "produced_meals",
-            "packaged_meals", "loaded_meals", "delivered_meals", "received_meals",
-            "completion_percent",
-        ],
-        order_by="modified desc",
-    )
 
-    # Self-healing fallback: when a project covers the selected date but its
-    # daily rows were not created by an earlier release, generate them now.
+    def fetch_rows(target_date):
+        data = frappe.get_all(
+            "WAFD Iftar Daily Operation",
+            filters={"operation_date": target_date},
+            fields=[
+                "name", "project", "status", "planned_meals", "produced_meals",
+                "packaged_meals", "loaded_meals", "delivered_meals", "received_meals",
+                "completion_percent",
+            ],
+            order_by="modified desc",
+        )
+        if data:
+            project_names = list({row.project for row in data if row.project})
+            project_meta = {
+                row.name: row for row in frappe.get_all(
+                    "WAFD Iftar Project",
+                    filters={"name": ["in", project_names]},
+                    fields=["name", "project_title", "distribution_site", "contracting_entity"],
+                )
+            }
+            for row in data:
+                meta = project_meta.get(row.project)
+                row.project_title = meta.project_title if meta else row.project
+                row.distribution_site = meta.distribution_site if meta else ""
+                row.contracting_entity = meta.contracting_entity if meta else ""
+        return data
+
+    rows = fetch_rows(operation_date)
+
+    # Self-healing: generate missing daily rows for projects covering selected date.
     if not rows:
         projects = frappe.get_all(
             "WAFD Iftar Project",
-            filters={"start_date": ["<=", operation_date], "end_date": [">=", operation_date]},
+            filters={
+                "start_date": ["<=", operation_date],
+                "end_date": [">=", operation_date],
+                "docstatus": ["<", 2],
+            },
             pluck="name",
         )
         for project_name in projects:
             generate_daily_operations(project_name, ignore_permissions=True)
         if projects:
-            rows = frappe.get_all(
-                "WAFD Iftar Daily Operation",
-                filters={"operation_date": operation_date},
-                fields=[
-                    "name", "project", "status", "planned_meals", "produced_meals",
-                    "packaged_meals", "loaded_meals", "delivered_meals", "received_meals",
-                    "completion_percent",
-                ],
-                order_by="modified desc",
-            )
+            rows = fetch_rows(operation_date)
+
+    # When today has no work, suggest the nearest available operation date so
+    # the operations page does not appear empty while a project is upcoming.
+    suggested_date = None
+    if not rows:
+        nearest = frappe.db.sql(
+            """
+            select operation_date
+            from `tabWAFD Iftar Daily Operation`
+            where docstatus < 2
+            order by abs(datediff(operation_date, %s)), operation_date asc
+            limit 1
+            """,
+            operation_date,
+            as_dict=True,
+        )
+        if nearest:
+            suggested_date = nearest[0].operation_date
 
     keys = [
         "planned_meals", "produced_meals", "packaged_meals", "loaded_meals",
@@ -158,4 +189,10 @@ def get_dashboard(date=None):
     sums["completion_percent"] = round(
         sums["received_meals"] / sums["planned_meals"] * 100, 1
     ) if sums["planned_meals"] else 0
-    return {"summary": sums, "rows": rows}
+    return {
+        "summary": sums,
+        "rows": rows,
+        "selected_date": operation_date,
+        "suggested_date": suggested_date,
+    }
+

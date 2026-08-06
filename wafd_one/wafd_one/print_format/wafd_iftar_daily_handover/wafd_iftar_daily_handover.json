@@ -12,5 +12,8 @@
  "line_breaks": 0,
  "font": "Default",
  "creation": "2026-08-06 00:00:00.000000",
- "modified": "2026-08-06 00:00:00.000000"
+ "modified": "2026-08-06 00:00:00.000000",
+ "default_print_language": "ar",
+ "letter_head": null,
+ "align_labels_right": 1
 }

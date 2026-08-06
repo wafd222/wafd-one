@@ -516,5 +516,6 @@
  "naming_rule": "By \"Naming Series\" field",
  "title_field": "project_title",
  "is_submittable": 1,
- "search_fields": "project_title,contracting_entity,distribution_site,status"
+ "search_fields": "project_title,contracting_entity,distribution_site,status",
+ "default_print_format": "WAFD Iftar Project Summary"
 }

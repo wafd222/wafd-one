@@ -1,0 +1,20 @@
+{
+  "doctype": "Print Format",
+  "name": "WAFD Iftar Supervisor Receipt",
+  "doc_type": "WAFD Iftar Daily Operation",
+  "module": "WAFD ONE",
+  "custom_format": 1,
+  "print_format_type": "Jinja",
+  "standard": "Yes",
+  "disabled": 0,
+  "html": "<style>@page{size:A4;margin:8mm}.print-format{font-family:Arial;font-size:10pt;direction:rtl}.title{text-align:center}.tbl{width:100%;border-collapse:collapse}.tbl th,.tbl td{border:1px solid #999;padding:5px}.sign{margin-top:18px;display:flex;justify-content:space-between}</style><div class=\"title\"><h2>كشف استلام المشرف والمساعدين — إفطار صائم</h2><b>{{ doc.project }}</b> — {{ frappe.utils.formatdate(doc.operation_date) }}</div><table class=\"tbl\"><tr><th>عدد الوجبات</th><td>{{ doc.received_meals or doc.planned_meals }}</td><th>المشرف</th><td>{{ doc.supervisor_name or '' }}</td></tr><tr><th>اسم صاحب السفرة</th><td colspan=\"3\">{{ doc.recipient_name or '' }}</td></tr></table><h3>حضور المساعدين</h3><table class=\"tbl\"><thead><tr><th>م</th><th>الاسم</th><th>الجوال</th><th>الحالة</th><th>حضور</th><th>انصراف</th><th>التوقيع</th></tr></thead><tbody>{% for r in doc.assistants_attendance or [] %}<tr><td>{{ loop.index }}</td><td>{{ r.assistant_name }}</td><td>{{ r.mobile_no or '' }}</td><td>{{ r.attendance_status or '' }}</td><td>{{ r.check_in_time or '' }}</td><td>{{ r.check_out_time or '' }}</td><td></td></tr>{% endfor %}{% for i in range((doc.assistants_attendance|length),15) %}<tr><td>{{ i+1 }}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}</tbody></table><div class=\"sign\"><span>توقيع المشرف: __________</span><span>اعتماد الإدارة: __________</span></div>",
+  "raw_printing": 0,
+  "align_labels_right": 1,
+  "show_section_headings": 1,
+  "line_breaks": 0,
+  "absolute_value": 0,
+  "font": "Default",
+  "page_number": "Hide",
+  "print_format_builder": 0,
+  "default_print_language": "ar"
+}

@@ -17,13 +17,23 @@ def create_project(data):
     if missing:
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
-        "contracting_entity_type", "site_details", "meal_template", "include_zamzam"
+        "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type"
     ]
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
         **{key: value for key, value in data.items() if key in allowed},
     })
     doc.insert()
+    optional_items = data.get("optional_items") or []
+    if isinstance(optional_items, str):
+        optional_items = frappe.parse_json(optional_items)
+    if optional_items:
+        existing = {r.ingredient for r in (doc.components or [])}
+        for item in optional_items:
+            name = frappe.db.get_value("WAFD Ingredient", {"ingredient_name": item}, "name")
+            if name and name not in existing:
+                doc.append("components", {"ingredient": name, "quantity_per_meal": 1, "component_group": "إضافة / Add-on", "is_mandatory": 0})
+        doc.save(ignore_permissions=True)
     generate_daily_operations(doc.name, ignore_permissions=True)
     return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}"}
 

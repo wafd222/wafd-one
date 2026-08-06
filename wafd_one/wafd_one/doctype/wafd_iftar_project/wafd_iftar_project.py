@@ -44,7 +44,6 @@ STANDARD_COMPONENTS = [
     ("منديل معطر", 1, "أساسي / Core", 1),
     ("خبز فتوت", 1, "أساسي / Core", 1),
     ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
-    ("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1),
 ]
 
 
@@ -57,6 +56,7 @@ class WAFDIftarProject(Document):
         self._apply_project_defaults()
         self._remove_blank_child_rows()
         self._ensure_standard_components()
+        self._sync_package_rules()
         self._validate_dates_and_times()
         self._calculate_quantities()
         self._sync_known_operating_quantities()
@@ -95,8 +95,13 @@ class WAFDIftarProject(Document):
         if self.components:
             return
         rows = list(STANDARD_COMPONENTS)
+        # Zamzam replaces ordinary water; it is never added on top of it.
         if self.include_zamzam:
-            rows.append((ZAMZAM_INGREDIENT_NAME, 1, "إضافة / Add-on", 1))
+            rows = [row for row in rows if row[0] != "ماء 330 مل"]
+            rows.append((ZAMZAM_INGREDIENT_NAME, 1, "أساسي / Core", 1))
+        # Branded WAFD outer wrap is only for external/entity distribution.
+        if self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity":
+            rows.append(("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1))
         missing = []
         for ingredient_name, qty, group, mandatory in rows:
             ingredient = _ingredient_name(ingredient_name)
@@ -111,6 +116,26 @@ class WAFDIftarProject(Document):
             })
         if missing:
             frappe.throw("المواد المرجعية التالية غير موجودة: " + "، ".join(missing))
+
+    def _sync_package_rules(self):
+        names = {row.ingredient for row in (self.components or []) if row.ingredient}
+        water = _ingredient_name("ماء 330 مل")
+        zamzam = _ingredient_name(ZAMZAM_INGREDIENT_NAME)
+        branded = _ingredient_name("غلاف شركة وفد المدينة")
+        if self.include_zamzam:
+            self.set("components", [r for r in (self.components or []) if r.ingredient != water])
+            if zamzam and zamzam not in names:
+                self.append("components", {"ingredient": zamzam, "quantity_per_meal": 1, "component_group": "أساسي / Core", "is_mandatory": 1})
+        else:
+            self.set("components", [r for r in (self.components or []) if r.ingredient != zamzam])
+            names = {row.ingredient for row in (self.components or []) if row.ingredient}
+            if water and water not in names:
+                self.append("components", {"ingredient": water, "quantity_per_meal": 1, "component_group": "أساسي / Core", "is_mandatory": 1})
+        external = self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity"
+        if external and branded and branded not in {r.ingredient for r in (self.components or [])}:
+            self.append("components", {"ingredient": branded, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
+        if not external:
+            self.set("components", [r for r in (self.components or []) if r.ingredient != branded])
 
     def _validate_dates_and_times(self):
         if self.start_date and self.end_date and self.end_date < self.start_date:

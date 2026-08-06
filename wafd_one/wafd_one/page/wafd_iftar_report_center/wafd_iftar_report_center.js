@@ -1,20 +1,74 @@
 frappe.pages['wafd-iftar-report-center'].on_page_load=function(wrapper){
   frappe.ui.make_app_page({parent:wrapper,title:__('مركز تقارير إفطار الصائم'),single_column:true});
-  const $r=$(wrapper).find('.layout-main-section').attr('dir','rtl').html(`<div class="irc"><div class="irc-head"><h2>مركز التقارير والطباعة</h2><p>كل مستندات المشروع والتشغيل اليومي في شاشة واحدة.</p></div><div class="irc-select"></div><div class="irc-grid"></div></div>`);
-  const pc=frappe.ui.form.make_control({parent:$r.find('.irc-select'),df:{fieldtype:'Link',fieldname:'project',options:'WAFD Iftar Project',label:'المشروع',reqd:1},render_input:true});
-  const query=frappe.get_route_options()||{}; if(query.project)pc.set_value(query.project);
-  const cards=[
-    ['ملخص المشروع','project_print','WAFD Iftar Project Summary'], ['نموذج التسليم والاستلام','operation_print','إفطار صائم — تسليم واستلام يومي'],
-    ['كشف المشرف والمساعدين','operation_print','WAFD Iftar Supervisor Receipt'], ['السجلات اليومية','list','WAFD Iftar Daily Operation'],
-    ['خطة التوزيع والكراتين','project_form','advanced_tab'], ['التكاليف والربحية','project_form','advanced_tab'],
-    ['مكونات الوجبة والتسعير','project_form','advanced_tab'], ['لوحة التشغيل اليومية','page','wafd-iftar-operations']
-  ];
-  $r.find('.irc-grid').html(cards.map((c,i)=>`<button class="irc-card" data-i="${i}"><b>${c[0]}</b><span>فتح / معاينة / طباعة</span></button>`).join(''));
-  async function chooseOperation(project,printFormat){
-    const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date'],order_by:'operation_date desc',limit:366});
-    if(!ops.length)return frappe.msgprint('لا توجد سجلات يومية لهذا المشروع');
-    if(query.operation&&ops.some(x=>x.name===query.operation))return frappe.set_route('print','WAFD Iftar Daily Operation',query.operation,{print_format:printFormat});
-    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',fields:[{fieldtype:'Select',fieldname:'op',label:'السجل اليومي',options:ops.map(x=>`${x.name}`).join('\n'),reqd:1}],primary_action_label:'فتح الطباعة',primary_action(v){d.hide();frappe.set_route('print','WAFD Iftar Daily Operation',v.op,{print_format:printFormat});}});d.show();
-  }
-  $r.on('click','.irc-card',async function(){const card=cards[$(this).data('i')],project=pc.get_value();if(card[1]==='page')return frappe.set_route(card[2]);if(!project)return frappe.msgprint('اختر المشروع أولاً');if(card[1]==='project_print')return frappe.set_route('print','WAFD Iftar Project',project,{print_format:card[2]});if(card[1]==='operation_print')return chooseOperation(project,card[2]);if(card[1]==='list')return frappe.set_route('List',card[2],{project});if(card[1]==='project_form')return frappe.set_route('Form','WAFD Iftar Project',project,card[2]);});
+  wrapper.wafd_report_build=()=>build_report_center(wrapper);
 };
+
+frappe.pages['wafd-iftar-report-center'].on_page_show=function(wrapper){
+  if(wrapper.wafd_report_build)wrapper.wafd_report_build();
+};
+
+async function build_report_center(wrapper){
+  const $section=$(wrapper).find('.layout-main-section').off('.wafdReportCenter').attr('dir','rtl').empty();
+  const $r=$(`<div class="irc">
+    <div class="irc-head"><div><span>WAFD IFTAR PRO</span><h2>مركز التقارير والطباعة</h2><p>اختر مشروعاً، ثم افتح جميع مستنداته وتقاريره من مكان واحد.</p></div><button type="button" class="btn irc-back">لوحة التشغيل اليومية</button></div>
+    <div class="irc-toolbar"><div class="irc-select"></div><div class="irc-project-meta">اختر مشروعاً لعرض مستنداته</div></div>
+    <div class="irc-section-title">المستندات الأساسية</div><div class="irc-grid irc-primary"></div>
+    <div class="irc-section-title">المتابعة والتحليل</div><div class="irc-grid irc-secondary"></div>
+  </div>`).appendTo($section);
+
+  const pc=frappe.ui.form.make_control({parent:$r.find('.irc-select'),df:{fieldtype:'Link',fieldname:'project',options:'WAFD Iftar Project',label:'المشروع',reqd:1,placeholder:'اختر مشروع إفطار صائم'},render_input:true});
+  const routeOptions=frappe.get_route_options()||{};
+
+  const primary=[
+    {icon:'📄',title:'ملخص المشروع',desc:'الكميات، الموقع، مكونات الوجبة والتكاليف',type:'project_print',format:'WAFD Iftar Project Summary'},
+    {icon:'🤝',title:'التسليم والاستلام اليومي',desc:'النموذج الرسمي للتوقيع والاستلام',type:'operation_print',format:'إفطار صائم — تسليم واستلام يومي'},
+    {icon:'👥',title:'كشف المشرف والمساعدين',desc:'الحضور والغياب واستلام الوجبات',type:'operation_print',format:'WAFD Iftar Supervisor Receipt'},
+    {icon:'🗂️',title:'السجلات اليومية',desc:'جميع أيام التشغيل للمشروع',type:'list',doctype:'WAFD Iftar Daily Operation'}
+  ];
+  const secondary=[
+    {icon:'📦',title:'خطة التوزيع والكراتين',desc:'أصحاب السفر والكميات والكراتين',type:'project_form',anchor:'advanced_tab'},
+    {icon:'💰',title:'التكاليف والربحية',desc:'المواد والتشغيل والربح المتوقع',type:'project_form',anchor:'advanced_tab'},
+    {icon:'🥤',title:'مكونات الوجبة والتسعير',desc:'الأصناف والكميات والأسعار المرجعية',type:'project_form',anchor:'advanced_tab'},
+    {icon:'📊',title:'لوحة التشغيل اليومية',desc:'متابعة الإنتاج حتى الاستلام',type:'page',page:'wafd-iftar-operations'}
+  ];
+  const cardHtml=(c,i,g)=>`<button type="button" class="irc-card" data-group="${g}" data-i="${i}"><span class="irc-icon">${c.icon}</span><span class="irc-copy"><b>${c.title}</b><small>${c.desc}</small></span><span class="irc-arrow">←</span></button>`;
+  $r.find('.irc-primary').html(primary.map((c,i)=>cardHtml(c,i,'p')).join(''));
+  $r.find('.irc-secondary').html(secondary.map((c,i)=>cardHtml(c,i,'s')).join(''));
+
+  async function updateMeta(project){
+    if(!project){$r.find('.irc-project-meta').html('اختر مشروعاً لعرض مستنداته');return;}
+    try{
+      const doc=await frappe.db.get_doc('WAFD Iftar Project',project);
+      const site=doc.distribution_site||doc.project_title||'';
+      const total=doc.total_meals||doc.planned_distribution_meals||0;
+      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(doc.project_title||project)}</b><span>${frappe.utils.escape_html(site)} · ${frappe.format(total,{fieldtype:'Int'})} وجبة</span>`);
+    }catch(e){$r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(project)}</b>`);}
+  }
+
+  async function chooseOperation(project,printFormat){
+    const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date','status','planned_meals'],order_by:'operation_date desc',limit:366});
+    if(!ops.length)return frappe.msgprint('لا توجد سجلات يومية لهذا المشروع');
+    if(routeOptions.operation&&ops.some(x=>x.name===routeOptions.operation))return frappe.set_route('print','WAFD Iftar Daily Operation',routeOptions.operation,{print_format:printFormat});
+    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op',label:'السجل اليومي',options:ops.map(x=>`${x.name} — ${x.operation_date||''}`).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){d.hide();const name=(v.op||'').split(' — ')[0];frappe.set_route('print','WAFD Iftar Daily Operation',name,{print_format:printFormat});}});d.show();
+  }
+
+  async function openCard(card){
+    if(card.type==='page')return frappe.set_route(card.page);
+    const project=pc.get_value();
+    if(!project)return frappe.msgprint({title:'اختر المشروع',message:'اختر مشروع إفطار صائم أولاً لعرض مستنداته.',indicator:'orange'});
+    if(card.type==='project_print')return frappe.set_route('print','WAFD Iftar Project',project,{print_format:card.format});
+    if(card.type==='operation_print')return chooseOperation(project,card.format);
+    if(card.type==='list')return frappe.set_route('List',card.doctype,{project});
+    if(card.type==='project_form')return frappe.set_route('Form','WAFD Iftar Project',project,card.anchor);
+  }
+
+  $section.on('click.wafdReportCenter','.irc-card',function(e){e.preventDefault();const group=$(this).data('group');const idx=Number($(this).data('i'));openCard(group==='p'?primary[idx]:secondary[idx]);});
+  $section.on('click.wafdReportCenter','.irc-back',()=>frappe.set_route('wafd-iftar-operations'));
+  if(pc.$input)pc.$input.on('change.wafdReportCenter',()=>updateMeta(pc.get_value()));
+
+  if(routeOptions.project){pc.set_value(routeOptions.project);updateMeta(routeOptions.project);}
+  else {
+    const recent=await frappe.db.get_list('WAFD Iftar Project',{fields:['name'],order_by:'modified desc',limit:1});
+    if(recent.length){pc.set_value(recent[0].name);updateMeta(recent[0].name);}
+  }
+}

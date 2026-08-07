@@ -41,6 +41,7 @@ function build_wizard(wrapper) {
   </div>`).appendTo($section);
 
   const definitions = [
+    {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
     {step:1, fieldtype:'Data', fieldname:'contracting_entity', label:'الجهة المتعاقدة', reqd:1},
     {step:1, fieldtype:'Data', fieldname:'distribution_site', label:'موقع التوزيع', reqd:1},
@@ -56,6 +57,7 @@ function build_wizard(wrapper) {
       {label:'معمول',value:'معمول'}, {label:'فواكه مجففة',value:'فواكه مجففة'}, {label:'مكسرات مشكلة',value:'مكسرات مشكلة'},
       {label:'لوزين',value:'لوزين'}, {label:'عصير برتقال 200 مل',value:'عصير برتقال 200 مل'}, {label:'عصير تفاح 200 مل',value:'عصير تفاح 200 مل'}
     ]},
+    {step:4, fieldtype:'Check', fieldname:'reuse_last_setup', label:'نسخ أصحاب السفر والطاقم من آخر مشروع لنفس الموقع', default:1},
     {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'سعر الكرتون الواحد (25 وجبة)'},
     {step:4, fieldtype:'Int', fieldname:'tablecloth_count', label:'عدد السفر يومياً'},
     {step:4, fieldtype:'Currency', fieldname:'tablecloth_unit_cost', label:'سعر السفرة الواحدة'},
@@ -99,7 +101,11 @@ function build_wizard(wrapper) {
         const match = OPTIONAL_ITEMS.find(x => x === raw || label.includes(x));
         if (match && !picked.includes(match)) picked.push(match);
       });
-      if (picked.length) return picked;
+      // If the MultiCheck inputs exist, they are the source of truth even when
+      // the last option has just been unchecked. Falling back to get_value() in
+      // that exact moment can return Frappe's stale pre-change value and keep a
+      // removed add-on in the sale price.
+      return picked;
     }
     const v = value('optional_items');
     if (Array.isArray(v)) return v.filter(x=>OPTIONAL_ITEMS.includes(x));
@@ -194,6 +200,8 @@ function build_wizard(wrapper) {
   set('end_date', frappe.datetime.get_today());
   set('sale_price_per_meal', Number(defaults.base_price || 9));
   set('other_cost_basis', 'للمشروع / Per Project');
+  set('season_type', 'رمضان / Ramadan');
+  set('reuse_last_setup', 1);
 
   // Direct listeners: no delegated click handlers. This prevents lost button events after Frappe page re-renders.
   const nextButton = $root.find('.iw-next').get(0);

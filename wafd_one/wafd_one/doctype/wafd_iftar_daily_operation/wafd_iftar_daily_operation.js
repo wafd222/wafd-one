@@ -32,6 +32,18 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
       }
     };
 
+    if (frm.doc.received_meals && frm.doc.docstatus !== 2) {
+      frm.add_custom_button(__("إغلاق ميداني وتقرير"), () => {
+        const d = new frappe.ui.Dialog({title:__('الإغلاق الميداني والتقرير اليومي'),fields:[
+          {fieldname:'tables_spread_completed',fieldtype:'Check',label:__('تم فرش السفر'),default:frm.doc.tables_spread_completed||1},
+          {fieldname:'cleanup_completed',fieldtype:'Check',label:__('تم رفع السفر والنفايات'),default:frm.doc.cleanup_completed||1},
+          {fieldname:'preservation_society_quantity',fieldtype:'Int',label:__('المسلّم لجمعية حفظ النعمة'),default:frm.doc.preservation_society_quantity||0},
+          {fieldname:'daily_report_sent',fieldtype:'Check',label:__('تم إرسال التقرير اليومي للجهة'),default:frm.doc.daily_report_sent||0},
+          {fieldname:'media_links',fieldtype:'Long Text',label:__('روابط الصور والفيديو'),default:frm.doc.media_links||''}
+        ],primary_action_label:__('حفظ الإغلاق'),async primary_action(v){d.hide();await frm.set_value(v);await frm.save();frappe.show_alert({message:__('تم حفظ الإغلاق الميداني'),indicator:'green'},4);}});d.show();
+      }, __("التشغيل / Operations"));
+    }
+
     if (frm.doc.docstatus !== 2) {
       if (!frm.doc.produced_meals) {
         frm.add_custom_button(__("اعتماد الإنتاج"), () => advance("produced", __("تم اعتماد الإنتاج"))).addClass("btn-primary");
@@ -39,6 +51,31 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         frm.add_custom_button(__("اعتماد التغليف"), () => advance("packaged", __("تم اعتماد التغليف"))).addClass("btn-primary");
       } else if (!frm.doc.loaded_meals) {
         frm.add_custom_button(__("اعتماد التحميل"), () => advance("loaded", __("تم اعتماد التحميل"))).addClass("btn-primary");
+      } else if (!frm.doc.authority_inspection_approved) {
+        frm.add_custom_button(__("فحص مشرف التغذية"), () => {
+          const q = new frappe.ui.Dialog({
+            title: __("فحص مشرف التغذية من الجهة"),
+            fields: [
+              {fieldname:'authority_supervisor_name',fieldtype:'Data',label:__('اسم مشرف التغذية'),reqd:1,default:frm.doc.authority_supervisor_name},
+              {fieldtype:'Section Break',label:__('العينة العشوائية')},
+              {fieldname:'yogurt_checked',fieldtype:'Check',label:__('تم فحص الزبادي'),default:1},
+              {fieldname:'bread_checked',fieldtype:'Check',label:__('تم فحص الخبز'),default:1},
+              {fieldname:'dates_checked',fieldtype:'Check',label:__('تم فحص التمر'),default:1},
+              {fieldname:'expiry_checked',fieldtype:'Check',label:__('تم فحص تواريخ الصلاحية'),default:1},
+              {fieldname:'authority_inspection_notes',fieldtype:'Small Text',label:__('ملاحظات الفحص')}
+            ],
+            primary_action_label: __('اعتماد الفحص'),
+            async primary_action(v){
+              if(!v.yogurt_checked||!v.bread_checked||!v.dates_checked||!v.expiry_checked) return frappe.msgprint(__('يجب إكمال جميع عناصر الفحص قبل الاعتماد'));
+              q.hide();
+              await frm.set_value(v);
+              await frm.set_value('authority_inspection_approved',1);
+              await frm.save();
+              frappe.show_alert({message:__('تم اعتماد فحص مشرف التغذية'),indicator:'green'},4);
+              await frm.reload_doc();
+            }
+          }); q.show();
+        }).addClass("btn-primary");
       } else if (!frm.doc.delivered_meals) {
         frm.add_custom_button(__("اعتماد التسليم"), () => advance("delivered", __("تم اعتماد التسليم"))).addClass("btn-primary");
       } else if (!frm.doc.received_meals) {

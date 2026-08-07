@@ -100,6 +100,14 @@
    "options": "المسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site"
   },
   {
+   "fieldname": "season_type",
+   "fieldtype": "Select",
+   "label": "الموسم / Season",
+   "options": "رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project",
+   "default": "رمضان / Ramadan",
+   "reqd": 1
+  },
+  {
    "fieldname": "contracting_entity_type",
    "fieldtype": "Select",
    "label": "نوع الجهة المتعاقدة / Contracting Entity Type",

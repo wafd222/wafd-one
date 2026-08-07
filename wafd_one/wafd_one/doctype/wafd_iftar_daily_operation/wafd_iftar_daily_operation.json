@@ -110,6 +110,62 @@
    "read_only": 1
   },
   {
+   "fieldname": "authority_section",
+   "fieldtype": "Section Break",
+   "label": "فحص مشرف التغذية من الجهة / Authority Food Supervisor Inspection"
+  },
+  {
+   "fieldname": "authority_supervisor_name",
+   "fieldtype": "Data",
+   "label": "اسم مشرف التغذية / Food Supervisor Name"
+  },
+  {
+   "fieldname": "authority_inspection_time",
+   "fieldtype": "Datetime",
+   "label": "وقت الفحص / Inspection Time"
+  },
+  {
+   "fieldname": "yogurt_checked",
+   "fieldtype": "Check",
+   "label": "فحص الزبادي / Yogurt Checked",
+   "default": "0"
+  },
+  {
+   "fieldname": "bread_checked",
+   "fieldtype": "Check",
+   "label": "فحص الخبز / Bread Checked",
+   "default": "0"
+  },
+  {
+   "fieldname": "dates_checked",
+   "fieldtype": "Check",
+   "label": "فحص التمر / Dates Checked",
+   "default": "0"
+  },
+  {
+   "fieldname": "expiry_checked",
+   "fieldtype": "Check",
+   "label": "فحص تواريخ الصلاحية / Expiry Dates Checked",
+   "default": "0"
+  },
+  {
+   "fieldname": "authority_inspection_notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات الفحص / Inspection Notes"
+  },
+  {
+   "fieldname": "authority_inspection_photo",
+   "fieldtype": "Attach Image",
+   "label": "صورة الفحص / Inspection Photo"
+  },
+  {
+   "fieldname": "authority_inspection_approved",
+   "fieldtype": "Check",
+   "label": "اعتماد فحص الجهة / Authority Inspection Approved",
+   "default": "0",
+   "read_only": 1
+  },
+  {
    "fieldname": "flow_section",
    "fieldtype": "Section Break",
    "label": "مراحل التنفيذ / Execution Stages"
@@ -165,6 +221,34 @@
    "fieldtype": "Int",
    "label": "حفظ النعمة / Food Preservation",
    "non_negative": 1
+  },
+  {
+   "fieldname": "field_close_section",
+   "fieldtype": "Section Break",
+   "label": "الإغلاق الميداني والتقرير / Field Closeout & Daily Report"
+  },
+  {
+   "fieldname": "tables_spread_completed",
+   "fieldtype": "Check",
+   "label": "تم فرش السفر / Tablecloths Spread",
+   "default": "0"
+  },
+  {
+   "fieldname": "cleanup_completed",
+   "fieldtype": "Check",
+   "label": "تم رفع السفر والنفايات / Cleanup Completed",
+   "default": "0"
+  },
+  {
+   "fieldname": "daily_report_sent",
+   "fieldtype": "Check",
+   "label": "تم إرسال التقرير اليومي للجهة / Daily Report Sent",
+   "default": "0"
+  },
+  {
+   "fieldname": "media_links",
+   "fieldtype": "Long Text",
+   "label": "روابط الصور والفيديو / Photo & Video Links"
   },
   {
    "fieldname": "distribution_section",

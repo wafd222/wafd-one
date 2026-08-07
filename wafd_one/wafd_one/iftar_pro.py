@@ -16,14 +16,17 @@ WIZARD_LOCATION_DEFAULTS = {
     },
     "مسجد قباء / Quba Mosque": {
         "distribution_site": "مسجد قباء / Quba Mosque",
+        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مسجد القبلتين / Qiblatain Mosque": {
         "distribution_site": "مسجد القبلتين / Qiblatain Mosque",
+        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": {
         "distribution_site": "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)",
+        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مشروع أو موقع آخر / Other Project or Site": {
@@ -38,8 +41,15 @@ WIZARD_OPTIONAL_ITEMS = [
 
 
 def _ingredient_reference_cost(name):
+    """Resolve by document name *or* ingredient_name.
+
+    Wizard labels use Arabic ingredient names while WAFD Ingredient may use an
+    autoname/code as its document name.  Looking up only by docname caused some
+    add-ons to appear as zero-priced.
+    """
+    ingredient_id = frappe.db.get_value("WAFD Ingredient", {"ingredient_name": name}, "name") or name
     row = frappe.db.get_value(
-        "WAFD Ingredient", name,
+        "WAFD Ingredient", ingredient_id,
         ["latest_market_cost", "standard_cost"],
         as_dict=True,
     ) or {}
@@ -115,7 +125,14 @@ def create_project(data):
     optional_items_for_price = data.get("optional_items") or []
     if isinstance(optional_items_for_price, str):
         optional_items_for_price = frappe.parse_json(optional_items_for_price)
-    calculated_sale_price = WIZARD_BASE_PRICE + sum(_ingredient_reference_cost(x) for x in optional_items_for_price)
+    optional_costs = {x: _ingredient_reference_cost(x) for x in optional_items_for_price}
+    unpriced_optional = [name for name, cost in optional_costs.items() if frappe.utils.flt(cost) <= 0]
+    if unpriced_optional:
+        frappe.throw(
+            _("لا يمكن إنشاء المشروع لأن الإضافات التالية بلا سعر مرجعي: {0} / "
+              "Selected add-ons are missing reference prices: {0}").format(", ".join(unpriced_optional))
+        )
+    calculated_sale_price = WIZARD_BASE_PRICE + sum(optional_costs.values())
     if cint(data.get("include_zamzam")):
         water_cost = _ingredient_reference_cost("ماء 330 مل") or 0.62
         zamzam_cost = _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50
@@ -130,7 +147,7 @@ def create_project(data):
     if missing:
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
-        "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type"
+        "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type"
     ]
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
@@ -184,6 +201,30 @@ def create_project(data):
         doc.supervisors = cint(data.get("supervisors_count") or doc.supervisors)
         doc.assistants = cint(data.get("assistants_count") or doc.assistants)
         doc.save(ignore_permissions=True)
+
+    # Ramadan and recurring fasting projects normally reuse the same table owners
+    # and field team.  Copy the latest setup only when explicitly requested.
+    if cint(data.get("reuse_last_setup")):
+        previous = frappe.db.get_value(
+            "WAFD Iftar Project",
+            {"distribution_site": doc.distribution_site, "name": ["!=", doc.name], "docstatus": ["<", 2]},
+            "name", order_by="creation desc",
+        )
+        if previous:
+            previous_doc = frappe.get_doc("WAFD Iftar Project", previous)
+            if previous_doc.distribution_recipients and not doc.distribution_recipients:
+                for row in previous_doc.distribution_recipients:
+                    values = row.as_dict().copy()
+                    for key in ("name", "parent", "parentfield", "parenttype", "idx", "doctype"):
+                        values.pop(key, None)
+                    doc.append("distribution_recipients", values)
+            if not cint(data.get("supervisors_count")):
+                doc.supervisors = cint(previous_doc.supervisors)
+            if not cint(data.get("assistants_count")):
+                doc.assistants = cint(previous_doc.assistants)
+            if previous_doc.distribution_recipients:
+                doc.save(ignore_permissions=True)
+
     generate_daily_operations(doc.name, ignore_permissions=True)
     first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
     return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
@@ -402,6 +443,8 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
     }[stage]
     if stage != "produced" and source <= 0:
         frappe.throw(_("يجب اعتماد المرحلة السابقة أولاً / Complete the previous stage first"))
+    if stage == "delivered" and not cint(doc.authority_inspection_approved):
+        frappe.throw(_("يجب اعتماد فحص مشرف التغذية قبل التسليم والتوزيع / Authority food inspection must be approved before distribution"))
 
     updates = {_STAGE_FIELDS[stage]: source}
     if stage == "received":

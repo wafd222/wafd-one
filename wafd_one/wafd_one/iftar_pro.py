@@ -527,3 +527,32 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
         "completion_percent": updates["completion_percent"],
         "next_operation": next_operation,
     }
+
+
+@frappe.whitelist()
+def add_daily_photo(operation_name, photo, caption=None, site_label=None, table_owner_name=None, include_in_report=1):
+    """Attach a field photo to the daily operation from a supervisor/manager account."""
+    doc = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+    doc.check_permission("write")
+    if not photo:
+        frappe.throw(_("الصورة مطلوبة / Photo is required"))
+    row = doc.append("daily_photos", {
+        "photo": photo,
+        "caption": caption or "",
+        "site_label": site_label or doc.distribution_site or "",
+        "table_owner_name": table_owner_name or doc.table_owner_name or "",
+        "uploaded_by": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
+        "uploaded_at": frappe.utils.now_datetime(),
+        "include_in_report": cint(include_in_report),
+    })
+    doc.save(ignore_permissions=True)
+    return {"name": row.name, "count": len(doc.daily_photos or [])}
+
+
+@frappe.whitelist()
+def remove_daily_photo(operation_name, row_name):
+    doc = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+    doc.check_permission("write")
+    doc.set("daily_photos", [r for r in (doc.daily_photos or []) if r.name != row_name])
+    doc.save(ignore_permissions=True)
+    return {"count": len(doc.daily_photos or [])}

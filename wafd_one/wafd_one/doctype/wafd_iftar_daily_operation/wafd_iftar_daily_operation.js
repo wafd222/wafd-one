@@ -8,6 +8,38 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
     frm.dashboard.add_indicator(__(`المخطط: ${planned}`), "blue");
     frm.dashboard.add_indicator(__(`المستلم: ${received}`), received >= planned && planned ? "green" : "orange");
 
+
+    frm.add_custom_button(__("📷 التوثيق اليومي"), () => {
+      const d = new frappe.ui.Dialog({
+        title: __("إضافة صورة للتقرير اليومي"),
+        fields: [
+          {fieldname:'photo',fieldtype:'Attach Image',label:__('الصورة'),reqd:1},
+          {fieldname:'caption',fieldtype:'Data',label:__('وصف مختصر')},
+          {fieldname:'site_label',fieldtype:'Data',label:__('الموقع'),default:frm.doc.distribution_site||''},
+          {fieldname:'table_owner_name',fieldtype:'Data',label:__('صاحب السفرة'),default:frm.doc.table_owner_name||''},
+          {fieldname:'include_in_report',fieldtype:'Check',label:__('إظهار في التقرير الرسمي'),default:1}
+        ],
+        primary_action_label: __("حفظ الصورة"),
+        async primary_action(v){
+          d.hide();
+          await frappe.call({
+            method:'wafd_one.wafd_one.iftar_pro.add_daily_photo',
+            args:{operation_name:frm.doc.name,...v},
+            freeze:true,freeze_message:__('جاري حفظ الصورة...')
+          });
+          frappe.show_alert({message:__('تمت إضافة الصورة إلى التوثيق اليومي'),indicator:'green'},4);
+          await frm.reload_doc();
+        }
+      });
+      d.show();
+    });
+
+
+    frm.add_custom_button(__("التقرير اليومي الرسمي"), () => {
+      const q = new URLSearchParams({doctype:frm.doctype,name:frm.doc.name,format:'WAFD Iftar Official Daily Report',no_letterhead:'0'});
+      window.open('/api/method/frappe.utils.print_format.download_pdf?' + q.toString(), '_blank', 'noopener');
+    }, __("الطباعة / Print"));
+
     frm.add_custom_button(__("نموذج التسليم والاستلام"), () => {
       frappe.route_options = { print_format: "إفطار صائم — تسليم واستلام يومي" };
       frappe.set_route("print", frm.doctype, frm.doc.name);
@@ -25,7 +57,7 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
       if (stage === "received") {
         const next = result.message && result.message.next_operation;
         const nextBtn = next ? `<button type="button" class="btn btn-default wafd-next-day">فتح يوم التشغيل التالي</button>` : '';
-        const d = new frappe.ui.Dialog({title: __("اكتمل التشغيل اليومي"), fields:[{fieldtype:'HTML', options:`<div class="alert alert-success">تم اعتماد الاستلام وإغلاق اليوم. اختر الخطوة التالية.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-primary wafd-report-center">مركز التقارير والطباعة</button>${nextBtn}<button type="button" class="btn btn-default wafd-ops-dashboard">العودة للوحة التشغيل</button></div>`}]});
+        const d = new frappe.ui.Dialog({title: __("اكتمل التشغيل اليومي"), fields:[{fieldtype:'HTML', options:`<div class="alert alert-success">تم اعتماد الاستلام بنجاح. أكمل الإغلاق الميداني والتقرير اليومي قبل إغلاق اليوم.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-primary wafd-report-center">مركز التقارير والطباعة</button>${nextBtn}<button type="button" class="btn btn-default wafd-ops-dashboard">العودة للوحة التشغيل</button></div>`}]});
         d.show();
         d.$wrapper.on('click','.wafd-report-center',()=>{d.hide();frappe.route_options={project:frm.doc.project,operation:frm.doc.name};frappe.set_route('wafd-iftar-report-center');});
         d.$wrapper.on('click','.wafd-next-day',()=>{d.hide();frappe.set_route('Form','WAFD Iftar Daily Operation',next);});
@@ -36,11 +68,11 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
     if (frm.doc.received_meals && frm.doc.docstatus !== 2) {
       frm.add_custom_button(__("إغلاق ميداني وتقرير"), () => {
         const d = new frappe.ui.Dialog({title:__('الإغلاق الميداني والتقرير اليومي'),fields:[
-          {fieldname:'tables_spread_completed',fieldtype:'Check',label:__('تم فرش السفر'),default:frm.doc.tables_spread_completed||1},
-          {fieldname:'cleanup_completed',fieldtype:'Check',label:__('تم رفع السفر والنفايات'),default:frm.doc.cleanup_completed||1},
+          {fieldname:'tables_spread_completed',fieldtype:'Check',label:__('تم فرش السفر'),default:Number(frm.doc.tables_spread_completed||0)},
+          {fieldname:'cleanup_completed',fieldtype:'Check',label:__('تم رفع السفر والنفايات'),default:Number(frm.doc.cleanup_completed||0)},
           {fieldname:'preservation_society_quantity',fieldtype:'Int',label:__('المسلّم لجمعية حفظ النعمة'),default:frm.doc.preservation_society_quantity||0},
           {fieldname:'daily_report_sent',fieldtype:'Check',label:__('تم إرسال التقرير اليومي للجهة'),default:frm.doc.daily_report_sent||0},
-          {fieldname:'media_links',fieldtype:'Long Text',label:__('روابط الصور والفيديو'),default:frm.doc.media_links||''}
+          {fieldname:'media_links',fieldtype:'Long Text',label:__('ملاحظات التوثيق اليومي'),default:frm.doc.media_links||''}
         ],primary_action_label:__('حفظ الإغلاق'),async primary_action(v){d.hide();await frm.set_value(v);await frm.save();frappe.show_alert({message:__('تم حفظ الإغلاق الميداني'),indicator:'green'},4);}});d.show();
       }, __("التشغيل / Operations"));
     }
@@ -124,7 +156,7 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
             primary_action_label: __("اعتماد الاستلام"),
             primary_action(values) {
               dialog.hide();
-              advance("received", __("تم اعتماد الاستلام وإغلاق اليوم"), {...values, assistants: JSON.stringify(values.assistants || [])});
+              advance("received", __("تم اعتماد الاستلام"), {...values, assistants: JSON.stringify(values.assistants || [])});
             }
           });
           dialog.show();

@@ -33,6 +33,7 @@ async function build_report_center(wrapper){
     {icon:'🥤',title:'مكونات الوجبة والتسعير',desc:'الأصناف والكميات ومصادر الأسعار',type:'project_print',format:'WAFD Iftar Ingredients Report'},
     {icon:'💰',title:'التكاليف والربحية',desc:'الكرتون والسفر والعمالة والنقل والربح',type:'project_print',format:'WAFD Iftar Costing Report'},
     {icon:'📦',title:'خطة التوزيع والكراتين',desc:'أصحاب السفر والكميات والكراتين',type:'project_print',format:'WAFD Iftar Distribution & Cartons'},
+    {icon:'📨',title:'التقرير اليومي الرسمي للجهة',desc:'خطاب رسمي وملخص التنفيذ وفحص التغذية والصور',type:'operation_print',format:'WAFD Iftar Official Daily Report'},
     {icon:'📊',title:'التقرير التشغيلي اليومي',desc:'الإنتاج والتغليف والتحميل والتسليم والاستلام',type:'operation_print',format:'WAFD Iftar Daily Stage Report'},
     {icon:'🤝',title:'التسليم والاستلام اليومي',desc:'النموذج الرسمي للتوقيع والاستلام',type:'operation_print',format:'إفطار صائم — تسليم واستلام يومي'},
     {icon:'👥',title:'كشف المشرف والمساعدين',desc:'الوجبات والحضور والغياب حتى 100 مساعد',type:'operation_print',format:'WAFD Iftar Supervisor Receipt'},

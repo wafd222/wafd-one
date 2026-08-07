@@ -246,6 +246,17 @@
    "default": "0"
   },
   {
+   "fieldname": "daily_photos_section",
+   "fieldtype": "Section Break",
+   "label": "التوثيق اليومي بالصور / Daily Photo Documentation"
+  },
+  {
+   "fieldname": "daily_photos",
+   "fieldtype": "Table",
+   "label": "صور المشرفين والمدراء / Supervisor & Manager Photos",
+   "options": "WAFD Iftar Daily Photo"
+  },
+  {
    "fieldname": "media_links",
    "fieldtype": "Long Text",
    "label": "روابط الصور والفيديو / Photo & Video Links"

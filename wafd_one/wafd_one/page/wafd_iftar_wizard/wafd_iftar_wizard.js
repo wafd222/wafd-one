@@ -128,7 +128,7 @@ function build_wizard(wrapper) {
     const external = title === 'مشروع أو موقع آخر / Other Project or Site';
     controls.distribution_site.df.read_only = external ? 0 : 1;
     controls.distribution_site.refresh();
-    controls.contracting_entity.df.read_only = (title === 'المسجد النبوي الشريف / Prophet’s Mosque') ? 1 : 0;
+    controls.contracting_entity.df.read_only = (d.contracting_entity && title !== 'مشروع أو موقع آخر / Other Project or Site') ? 1 : 0;
     controls.contracting_entity.refresh();
   }
 
@@ -236,7 +236,10 @@ function build_wizard(wrapper) {
   // Control listeners are attached to each actual control wrapper, including MultiCheck inputs.
   Object.values(controls).forEach(c => { if(c.$wrapper) c.$wrapper.on('change input', renderSummary); });
   controls.project_title.$wrapper.on('change', () => { applyLocationDefaults(); automaticSalePrice(); });
-  controls.optional_items.$wrapper.on('change', () => setTimeout(automaticSalePrice, 0));
+  controls.optional_items.$wrapper.on('change input click', 'input[type=checkbox]', () => {
+    // Wait until the native checkbox state and Frappe MultiCheck state are both committed.
+    window.requestAnimationFrame(() => setTimeout(automaticSalePrice, 0));
+  });
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
   controls.meal_template.$wrapper.on('change', () => {
     const meal=value('meal_template');

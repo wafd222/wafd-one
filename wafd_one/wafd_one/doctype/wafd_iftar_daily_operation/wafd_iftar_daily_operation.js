@@ -1,5 +1,6 @@
 frappe.ui.form.on("WAFD Iftar Daily Operation", {
   refresh(frm) {
+    frm.$wrapper.find(".wafd-mobile-stage-action").remove();
     if (frm.is_new()) return;
     if (!frm.doc.assigned_meals && frm.doc.planned_meals) frm.set_value('assigned_meals', frm.doc.planned_meals);
     const planned = Number(frm.doc.planned_meals || 0);
@@ -45,14 +46,32 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
     }
 
     if (frm.doc.docstatus !== 2) {
+      const addStageAction = (label, action) => {
+        const btn = frm.add_custom_button(label, action);
+        btn.addClass("btn-primary");
+
+        // Frappe collapses custom buttons into the three-dot menu on small screens.
+        // Field supervisors need one-tap progression, so expose the current stage
+        // as a direct fixed action on mobile without replacing the normal Save action.
+        if (window.matchMedia && window.matchMedia("(max-width: 768px)").matches) {
+          const key = `wafd-mobile-stage-${frm.doc.name}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+          frm.$wrapper.find(".wafd-mobile-stage-action").remove();
+          const mobile = $(`<button type="button" class="btn btn-primary wafd-mobile-stage-action" id="${key}">${label}</button>`);
+          mobile.css({position:"fixed",left:"14px",right:"14px",bottom:"78px",zIndex:1050,height:"48px",fontSize:"16px",fontWeight:700,borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.18)"});
+          mobile.on("click", async (e) => { e.preventDefault(); e.stopPropagation(); await action(); });
+          frm.$wrapper.append(mobile);
+        }
+        return btn;
+      };
+
       if (!frm.doc.produced_meals) {
-        frm.add_custom_button(__("اعتماد الإنتاج"), () => advance("produced", __("تم اعتماد الإنتاج"))).addClass("btn-primary");
+        addStageAction(__("اعتماد الإنتاج"), () => advance("produced", __("تم اعتماد الإنتاج")));
       } else if (!frm.doc.packaged_meals) {
-        frm.add_custom_button(__("اعتماد التغليف"), () => advance("packaged", __("تم اعتماد التغليف"))).addClass("btn-primary");
+        addStageAction(__("اعتماد التغليف"), () => advance("packaged", __("تم اعتماد التغليف")));
       } else if (!frm.doc.loaded_meals) {
-        frm.add_custom_button(__("اعتماد التحميل"), () => advance("loaded", __("تم اعتماد التحميل"))).addClass("btn-primary");
+        addStageAction(__("اعتماد التحميل"), () => advance("loaded", __("تم اعتماد التحميل")));
       } else if (!frm.doc.authority_inspection_approved) {
-        frm.add_custom_button(__("فحص مشرف التغذية"), () => {
+        addStageAction(__("فحص مشرف التغذية"), () => {
           const q = new frappe.ui.Dialog({
             title: __("فحص مشرف التغذية من الجهة"),
             fields: [
@@ -75,11 +94,11 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
               await frm.reload_doc();
             }
           }); q.show();
-        }).addClass("btn-primary");
+        });
       } else if (!frm.doc.delivered_meals) {
-        frm.add_custom_button(__("اعتماد التسليم"), () => advance("delivered", __("تم اعتماد التسليم"))).addClass("btn-primary");
+        addStageAction(__("اعتماد التسليم"), () => advance("delivered", __("تم اعتماد التسليم")));
       } else if (!frm.doc.received_meals) {
-        frm.add_custom_button(__("اعتماد الاستلام"), () => {
+        addStageAction(__("اعتماد الاستلام"), () => {
           const dialog = new frappe.ui.Dialog({
             title: __("بيانات الاستلام"),
             size: "extra-large",
@@ -109,7 +128,7 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
             }
           });
           dialog.show();
-        }).addClass("btn-primary");
+        });
       }
     }
   }

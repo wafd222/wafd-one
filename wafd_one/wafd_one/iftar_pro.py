@@ -16,17 +16,17 @@ WIZARD_LOCATION_DEFAULTS = {
     },
     "مسجد قباء / Quba Mosque": {
         "distribution_site": "مسجد قباء / Quba Mosque",
-        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
+        "contracting_entity": "هيئة تطوير منطقة المدينة المنورة",
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مسجد القبلتين / Qiblatain Mosque": {
         "distribution_site": "مسجد القبلتين / Qiblatain Mosque",
-        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
+        "contracting_entity": "هيئة تطوير منطقة المدينة المنورة",
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": {
         "distribution_site": "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)",
-        "contracting_entity": WIZARD_HARAMAIN_ENTITY,
+        "contracting_entity": "هيئة تطوير منطقة المدينة المنورة",
         "distribution_type": "مسجد أو حرم / Mosque or Haram",
     },
     "مشروع أو موقع آخر / Other Project or Site": {
@@ -137,8 +137,9 @@ def create_project(data):
         water_cost = _ingredient_reference_cost("ماء 330 مل") or 0.62
         zamzam_cost = _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50
         calculated_sale_price += max(0, zamzam_cost - water_cost)
-    # The wizard price is automatic; never accept a lower stale/zero value from the browser.
-    data["sale_price_per_meal"] = max(frappe.utils.flt(data.get("sale_price_per_meal")), calculated_sale_price)
+    # The wizard price is server-owned and fully recomputed from the current selection.
+    # Never preserve a stale higher browser value after an add-on is removed.
+    data["sale_price_per_meal"] = frappe.utils.flt(calculated_sale_price, precision=2)
     required = [
         "project_title", "contracting_entity", "distribution_site",
         "start_date", "end_date", "daily_meals", "sale_price_per_meal",
@@ -212,7 +213,13 @@ def create_project(data):
         )
         if previous:
             previous_doc = frappe.get_doc("WAFD Iftar Project", previous)
-            if previous_doc.distribution_recipients and not doc.distribution_recipients:
+            # Reuse table-owner allocations only when the previous plan has the same
+            # daily allocation. A different-size project must never inherit quantities
+            # that exceed its new planned meals (the source of the mobile creation error).
+            previous_allocated = sum(cint(r.meal_quantity) for r in (previous_doc.distribution_recipients or []))
+            current_planned = cint(doc.planned_distribution_meals) or cint(doc.daily_meals)
+            can_reuse_allocations = bool(previous_doc.distribution_recipients and previous_allocated == current_planned)
+            if can_reuse_allocations and not doc.distribution_recipients:
                 for row in previous_doc.distribution_recipients:
                     values = row.as_dict().copy()
                     for key in ("name", "parent", "parentfield", "parenttype", "idx", "doctype"):
@@ -222,7 +229,7 @@ def create_project(data):
                 doc.supervisors = cint(previous_doc.supervisors)
             if not cint(data.get("assistants_count")):
                 doc.assistants = cint(previous_doc.assistants)
-            if previous_doc.distribution_recipients:
+            if can_reuse_allocations or not cint(data.get("supervisors_count")) or not cint(data.get("assistants_count")):
                 doc.save(ignore_permissions=True)
 
     generate_daily_operations(doc.name, ignore_permissions=True)

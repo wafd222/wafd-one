@@ -248,3 +248,6 @@ wafd_one.patches.v10_0_0_rc141.execute
 
 # RC142 financial consistency and report-label cleanup
 wafd_one.patches.v10_0_0_rc142.execute
+
+# RC144 verified report/attendance deployment cache refresh
+wafd_one.patches.v10_0_0_rc144.execute

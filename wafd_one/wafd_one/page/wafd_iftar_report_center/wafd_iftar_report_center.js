@@ -55,7 +55,7 @@ async function build_report_center(wrapper){
     const title=frappe.utils.escape_html(cleanText(row.project_title||row.name));
     const site=frappe.utils.escape_html(cleanText(row.distribution_site||''));
     const dates=[row.start_date,row.end_date].filter(Boolean).join(' — ');
-    return `<button type="button" class="irc-result ${selectedProject===row.name?'selected':''}" data-project="${frappe.utils.escape_html(row.name)}"><b>${title}</b><span>${site}</span><small>${frappe.utils.escape_html(dates)} · ${frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'})} وجبة</small></button>`;
+    return `<button type="button" class="irc-result ${selectedProject===row.name?'selected':''}" data-project="${frappe.utils.escape_html(row.name)}"><b>${title}</b><span>${site}</span><small>${frappe.utils.escape_html(dates)} · ${Number(row.total_meals||row.daily_meals||0).toLocaleString('en-US',{maximumFractionDigits:0})} وجبة</small></button>`;
   }
 
   async function runSearch(autoSelect=false){
@@ -64,7 +64,7 @@ async function build_report_center(wrapper){
     if(lastResults.length){
       const options=lastResults.map(row=>{
         const dates=[row.start_date,row.end_date].filter(Boolean).join(' — ');
-        const meals=frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'});
+        const meals=Number(row.total_meals||row.daily_meals||0).toLocaleString('en-US',{maximumFractionDigits:0});
         const label=[row.name,cleanText(row.project_title||''),dates,`${meals} وجبة`].filter(Boolean).join(' · ');
         return `<option value="${frappe.utils.escape_html(row.name)}">${frappe.utils.escape_html(label)}</option>`;
       }).join('');
@@ -89,12 +89,12 @@ async function build_report_center(wrapper){
     if(!selectedProject){$r.find('.irc-project-meta').html('اختر مشروعاً من نتائج البحث لعرض مستنداته');return;}
     const row=lastResults.find(x=>x.name===selectedProject);
     if(row){
-      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(row.project_title||row.name)}</b><span>${frappe.utils.escape_html(row.distribution_site||'')} · ${frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'})} وجبة</span>`);
+      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(row.project_title||row.name)}</b><span>${frappe.utils.escape_html(row.distribution_site||'')} · ${Number(row.total_meals||row.daily_meals||0).toLocaleString('en-US',{maximumFractionDigits:0})} وجبة</span>`);
       return;
     }
     try{
       const doc=await frappe.db.get_doc('WAFD Iftar Project',selectedProject);
-      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(doc.project_title||selectedProject)}</b><span>${frappe.utils.escape_html(doc.distribution_site||'')} · ${frappe.format(doc.total_meals||doc.daily_meals||0,{fieldtype:'Int'})} وجبة</span>`);
+      $r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(doc.project_title||selectedProject)}</b><span>${frappe.utils.escape_html(doc.distribution_site||'')} · ${Number(doc.total_meals||doc.daily_meals||0).toLocaleString('en-US',{maximumFractionDigits:0})} وجبة</span>`);
     }catch(e){$r.find('.irc-project-meta').html(`<b>${frappe.utils.escape_html(selectedProject)}</b>`);}
   }
 
@@ -109,7 +109,7 @@ async function build_report_center(wrapper){
     const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date','status','planned_meals'],order_by:'operation_date desc',limit:366});
     if(!ops.length)return frappe.msgprint('لا توجد سجلات يومية لهذا المشروع');
     if(routeOptions.operation&&ops.some(x=>x.name===routeOptions.operation))return openPrint('WAFD Iftar Daily Operation',routeOptions.operation,printFormat);
-    const choices=ops.map((x,i)=>({name:x.name,label:`${frappe.datetime.str_to_user(x.operation_date||'')} — ${frappe.format(x.planned_meals||0,{fieldtype:'Int'})} وجبة${x.status?` — ${x.status}`:''} — ${i+1}`}));
+    const choices=ops.map((x,i)=>({name:x.name,label:`${frappe.datetime.str_to_user(x.operation_date||'')} — ${Number(x.planned_meals||0).toLocaleString('en-US',{maximumFractionDigits:0})} وجبة${x.status?` — ${x.status}`:''} — ${i+1}`}));
     const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op_label',label:'التاريخ',options:choices.map(x=>x.label).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){const choice=choices.find(x=>x.label===v.op_label);if(!choice)return frappe.msgprint('تعذر تحديد يوم التشغيل المختار');d.hide();openPrint('WAFD Iftar Daily Operation',choice.name,printFormat);}});
     d.show();
     d.$wrapper.addClass('wafd-iftar-day-dialog');

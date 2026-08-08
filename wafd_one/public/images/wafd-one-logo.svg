@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="WAFD ONE">
+  <rect width="128" height="128" rx="28" fill="#151515"/>
+  <path d="M25 35h15l10 45 14-34h12l14 34 10-45h15L99 96H85L70 62 55 96H41L25 35z" fill="#C9A55C"/>
+  <circle cx="104" cy="28" r="8" fill="#F2E6C9"/>
+</svg>

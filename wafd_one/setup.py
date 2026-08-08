@@ -17,7 +17,29 @@ ROLES = (
     "WAFD Auditor",
 )
 
-DOCTYPE_ROOT = Path(__file__).resolve().parent / "wafd_one" / "doctype"
+def _resolve_doctype_root():
+    """Resolve the DocType folder in both supported repository layouts.
+
+    Frappe Cloud may install the Python package either as
+    ``.../wafd_one/wafd_one/doctype`` or, in older repository layouts, as
+    ``.../wafd_one/doctype``.  Do not assume one physical nesting depth at
+    import time because ``setup.py`` is imported before schema migration.
+    """
+    base = Path(__file__).resolve().parent
+    candidates = (
+        base / "wafd_one" / "doctype",
+        base / "doctype",
+    )
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    # Keep imports safe even on a partially checked-out app.  Callers that
+    # explicitly need metadata will simply see an empty set instead of making
+    # every ``bench migrate`` fail during pre-schema hooks.
+    return None
+
+
+DOCTYPE_ROOT = _resolve_doctype_root()
 
 
 def _ordered_doctype_files():
@@ -31,6 +53,8 @@ def _ordered_doctype_files():
     """
     definitions = {}
     name_to_file = {}
+    if not DOCTYPE_ROOT:
+        return ()
     for path in sorted(DOCTYPE_ROOT.iterdir()):
         source = path / f"{path.name}.json"
         if not path.is_dir() or path.name.startswith("__") or not source.exists():
@@ -148,13 +172,17 @@ def ensure_system_manager_access():
 def _workspace_source_path():
     from pathlib import Path
 
-    return (
-        Path(__file__).resolve().parent
-        / "wafd_one"
-        / "workspace"
-        / "wafd_one"
-        / "wafd_one.json"
+    base = Path(__file__).resolve().parent
+    candidates = (
+        base / "wafd_one" / "workspace" / "wafd_one" / "wafd_one.json",
+        base / "workspace" / "wafd_one" / "wafd_one.json",
     )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    # Preserve the canonical path in the error message if both layouts are
+    # unavailable; this path is only used by explicit workspace repair flows.
+    return candidates[0]
 
 
 def _load_workspace_source():

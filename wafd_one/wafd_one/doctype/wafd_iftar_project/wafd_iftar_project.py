@@ -1,0 +1,610 @@
+from __future__ import annotations
+
+import math
+
+import frappe
+from frappe.model.document import Document
+from frappe.model.naming import make_autoname
+from frappe.utils import cint, date_diff, flt, now_datetime
+
+
+DAILY_DISTRIBUTION = "يومي (يتكرر لكل يوم) / Daily (Repeats Each Day)"
+WHOLE_PROJECT_DISTRIBUTION = "كامل المشروع / Whole Project"
+ZAMZAM_INGREDIENT_NAME = "ماء زمزم 330 مل"
+PAID_ADDON_INGREDIENT_NAMES = {
+    "معمول", "فواكه مجففة", "مكسرات مشكلة", "لوزين",
+    "عصير برتقال 200 مل", "عصير تفاح 200 مل",
+}
+
+PROJECT_SITE_DEFAULTS = {
+    "المسجد النبوي الشريف / Prophet’s Mosque": (
+        "المسجد النبوي الشريف / Prophet’s Mosque",
+        "جهة حكومية / Government Entity",
+        "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي",
+    ),
+    "مسجد قباء / Quba Mosque": (
+        "مسجد قباء / Quba Mosque",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+    "مسجد القبلتين / Qiblatain Mosque": (
+        "مسجد القبلتين / Qiblatain Mosque",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+    "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": (
+        "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)",
+        "جهة حكومية / Government Entity",
+        "هيئة تطوير منطقة المدينة المنورة",
+    ),
+}
+
+STANDARD_COMPONENTS = [
+    ("زبادي", 1, "أساسي / Core", 1),
+    ("تمر", 5, "أساسي / Core", 1),
+    ("ماء 330 مل", 1, "أساسي / Core", 1),
+    ("دقة مدينية", 1, "أساسي / Core", 1),
+    ("ملعقة", 1, "أساسي / Core", 1),
+    ("منديل معطر", 1, "أساسي / Core", 1),
+    ("خبز فتوت", 1, "أساسي / Core", 1),
+    ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
+]
+
+
+class WAFDIftarProject(Document):
+    def autoname(self):
+        """Generate a clean project number independent of stale site naming-series metadata."""
+        self.name = make_autoname("WAFD-IFTAR-.#####")
+
+    def validate(self):
+        self._apply_project_defaults()
+        self._remove_blank_child_rows()
+        self._ensure_standard_components()
+        self._sync_package_rules()
+        self._validate_dates_and_times()
+        self._calculate_quantities()
+        self._sync_known_operating_quantities()
+        self._hydrate_component_costs()
+        self._enforce_commercial_price()
+        self._calculate_operating_costs()
+        distribution_complete = self._validate_distribution()
+        self._auto_generate_cartons(distribution_complete)
+        self._hydrate_carton_vehicles()
+        self._validate_closing_quantities()
+        self._calculate_profitability()
+
+    def _remove_blank_child_rows(self):
+        self.set("cartons", [
+            row for row in (self.cartons or [])
+            if cint(row.carton_no) or cint(row.meal_quantity) or row.recipient_name or row.vehicle
+        ])
+        self.set("distribution_recipients", [
+            row for row in (self.distribution_recipients or [])
+            if row.table_owner_name or cint(row.meal_quantity) or row.supervisor_name or row.assistant_name
+        ])
+        self.set("operating_costs", [
+            row for row in (self.operating_costs or [])
+            if row.cost_type or row.description or flt(row.quantity) or flt(row.rate)
+        ])
+
+
+    def _apply_project_defaults(self):
+        defaults = PROJECT_SITE_DEFAULTS.get(self.project_title)
+        if defaults:
+            self.distribution_site, self.contracting_entity_type, self.contracting_entity = defaults
+            if self.project_title == "المسجد النبوي الشريف / Prophet’s Mosque" and getattr(self, "haram_zone", None):
+                zone = frappe.db.get_value("WAFD Iftar Haram Zone", self.haram_zone, ["location_name"], as_dict=True) or {}
+                if zone.get("location_name"):
+                    self.distribution_site = zone.location_name
+        elif self.project_title == "مشروع أو موقع آخر / Other Project or Site":
+            self.distribution_site = "موقع آخر / Other"
+
+    def _ensure_standard_components(self):
+        # Standard meal materials are automatic; the user only selects optional additions.
+        if self.components:
+            return
+        rows = list(STANDARD_COMPONENTS)
+        # Zamzam replaces ordinary water; it is never added on top of it.
+        if self.include_zamzam:
+            rows = [row for row in rows if row[0] != "ماء 330 مل"]
+            rows.append((ZAMZAM_INGREDIENT_NAME, 1, "أساسي / Core", 1))
+        # The approved Iftar meal wrap is a standard meal cost and is included within the SAR 9 selling price.
+        # The separate WAFD branded outer wrap remains exclusive to external/entity distribution.
+        if self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity":
+            rows.append(("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1))
+        missing = []
+        for ingredient_name, qty, group, mandatory in rows:
+            ingredient = _ingredient_name(ingredient_name)
+            if not ingredient:
+                missing.append(ingredient_name)
+                continue
+            self.append("components", {
+                "ingredient": ingredient,
+                "quantity_per_meal": qty,
+                "component_group": group,
+                "is_mandatory": mandatory,
+            })
+        if missing:
+            frappe.throw("المواد المرجعية التالية غير موجودة: " + "، ".join(missing))
+
+    def _sync_package_rules(self):
+        names = {row.ingredient for row in (self.components or []) if row.ingredient}
+        water = _ingredient_name("ماء 330 مل")
+        zamzam = _ingredient_name(ZAMZAM_INGREDIENT_NAME)
+        branded = _ingredient_name("غلاف شركة وفد المدينة")
+        if self.include_zamzam:
+            self.set("components", [r for r in (self.components or []) if r.ingredient != water])
+            if zamzam and zamzam not in names:
+                self.append("components", {"ingredient": zamzam, "quantity_per_meal": 1, "component_group": "أساسي / Core", "is_mandatory": 1})
+        else:
+            self.set("components", [r for r in (self.components or []) if r.ingredient != zamzam])
+            names = {row.ingredient for row in (self.components or []) if row.ingredient}
+            if water and water not in names:
+                self.append("components", {"ingredient": water, "quantity_per_meal": 1, "component_group": "أساسي / Core", "is_mandatory": 1})
+        external = self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity"
+        iftar_wrap = _ingredient_name("غلاف إفطار صائم")
+        current = {r.ingredient for r in (self.components or []) if r.ingredient}
+        # Generic approved Iftar packaging is always part of the meal cost, but never raises the fixed SAR 9 sale price.
+        if iftar_wrap and iftar_wrap not in current:
+            self.append("components", {"ingredient": iftar_wrap, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
+            current.add(iftar_wrap)
+        if external:
+            if branded and branded not in current:
+                self.append("components", {"ingredient": branded, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
+        else:
+            if branded:
+                self.set("components", [r for r in (self.components or []) if r.ingredient != branded])
+
+    def _validate_dates_and_times(self):
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            frappe.throw("تاريخ النهاية لا يمكن أن يسبق تاريخ البداية / End date cannot precede start date")
+        if self.departure_time and self.site_arrival_time and self.site_arrival_time < self.departure_time:
+            frappe.throw("وقت الوصول لا يمكن أن يسبق وقت مغادرة المصنع / Arrival cannot precede factory departure")
+        if self.site_arrival_time and self.distribution_deadline and self.distribution_deadline < self.site_arrival_time:
+            frappe.throw("موعد التسليم لا يمكن أن يسبق وقت الوصول / Distribution deadline cannot precede arrival")
+
+    def _calculate_quantities(self):
+        days = date_diff(self.end_date, self.start_date) + 1 if self.start_date and self.end_date else 0
+        self.number_of_days = max(days, 0)
+        if cint(self.daily_meals) <= 0:
+            frappe.throw("عدد الوجبات اليومية يجب أن يكون أكبر من صفر / Daily meals must be greater than zero")
+        self.total_meals = cint(self.daily_meals) * cint(self.number_of_days)
+        if cint(self.max_carton_capacity) <= 0 or cint(self.max_carton_capacity) > 25:
+            frappe.throw("السعة القصوى للكرتون يجب أن تكون من 1 إلى 25 وجبة / Carton capacity must be between 1 and 25 meals")
+        self.planned_distribution_meals = (
+            cint(self.total_meals)
+            if self.distribution_plan_basis == WHOLE_PROJECT_DISTRIBUTION
+            else cint(self.daily_meals)
+        )
+
+    def _sync_known_operating_quantities(self):
+        capacity = cint(self.max_carton_capacity) or 25
+        total_cartons = math.ceil(cint(self.total_meals) / capacity) if cint(self.total_meals) else 0
+        daily_tablecloths = len(self.distribution_recipients or [])
+        mapping = {
+            "الكرتون / Carton": (total_cartons, "للوحدة / Per Unit"),
+            "السفرة / Tablecloth": (daily_tablecloths, "لليوم / Per Day"),
+            "المشرف العام / General Supervisor": (cint(self.general_supervisors), "لليوم / Per Day"),
+            "المشرفون / Supervisors": (cint(self.supervisors), "لليوم / Per Day"),
+            "المساعدون / Assistants": (cint(self.assistants), "لليوم / Per Day"),
+            "النقل / Transport": (cint(self.vehicles_count), "لليوم / Per Day"),
+            "المركبات / Vehicles": (cint(self.vehicles_count), "لليوم / Per Day"),
+            "ثلاجات الشاي / Tea Coolers": (cint(self.tea_coolers), "للمشروع / Per Project"),
+            "ثلاجات القهوة / Coffee Coolers": (cint(self.coffee_coolers), "للمشروع / Per Project"),
+            "أكياس النفايات / Waste Bags": (cint(self.waste_bag_count), "للوحدة / Per Unit"),
+        }
+        for row in self.operating_costs or []:
+            if row.cost_type in mapping:
+                quantity, default_basis = mapping[row.cost_type]
+                # Preserve a manually entered positive quantity for flexible staffing,
+                # except for cartons which are always derived from meal count/capacity.
+                if row.cost_type == "الكرتون / Carton" or not flt(row.quantity):
+                    row.quantity = quantity
+                row.allocation_basis = row.allocation_basis or default_basis
+
+    def _hydrate_component_costs(self):
+        seen = set()
+        for row in self.components or []:
+            if not row.ingredient:
+                continue
+            if row.ingredient in seen:
+                frappe.throw(f"المادة مكررة في مكونات الوجبة: {row.ingredient} / Duplicate meal component")
+            seen.add(row.ingredient)
+            data = frappe.db.get_value(
+                "WAFD Ingredient",
+                row.ingredient,
+                ["ingredient_name", "uom", "latest_market_cost", "standard_cost", "latest_price_source", "cost_basis"],
+                as_dict=True,
+            ) or {}
+            row.uom = row.uom or data.get("uom")
+            resolved_cost = flt(data.get("latest_market_cost")) or flt(data.get("standard_cost"))
+            if data.get("ingredient_name") == ZAMZAM_INGREDIENT_NAME:
+                # Approved operational assumption: Zamzam 330 ml costs SAR 1.50.
+                # It replaces ordinary water and never changes the SAR 9 selling price.
+                self.zamzam_reference_price = 1.50
+                resolved_cost = 1.50
+            if not flt(row.unit_cost):
+                row.unit_cost = resolved_cost
+            row.price_source = data.get("latest_price_source") or data.get("cost_basis") or "المخزون / Inventory"
+            row.cost_per_meal = flt(row.quantity_per_meal) * flt(row.unit_cost)
+            if row.is_mandatory and flt(row.quantity_per_meal) <= 0:
+                frappe.throw(f"الكمية مطلوبة للمادة الإلزامية {row.ingredient} / Quantity is required for mandatory component")
+
+    def _enforce_commercial_price(self):
+        """Keep contracted selling price independent from Zamzam and operating costs.
+
+        Standard Iftar is SAR 9.00 VAT-inclusive. Only explicit paid meal add-ons
+        (component_group = Add-on) can increase selling price. Zamzam is a water
+        replacement and therefore changes cost only.
+        """
+        self.zamzam_reference_price = 1.50
+        if self.meal_template not in ("الوجبة القياسية / Standard Iftar", "وجبة مع زمزم / Iftar + Zamzam"):
+            return
+        add_on_total = 0.0
+        for row in self.components or []:
+            name = (frappe.db.get_value("WAFD Ingredient", row.ingredient, "ingredient_name") or row.ingredient or "").strip()
+            # Historical releases occasionally classified standard meal materials
+            # as Add-on.  Commercial price must only react to the six approved
+            # paid additions.  Zamzam and all standard/packaging materials are
+            # cost-only and remain inside the contracted SAR 9 VAT-inclusive price.
+            if name not in PAID_ADDON_INGREDIENT_NAMES:
+                continue
+            add_on_total += flt(row.cost_per_meal)
+        self.sale_price_per_meal = flt(9.0 + add_on_total, 2)
+
+    def _calculate_operating_costs(self):
+        days = max(cint(self.number_of_days), 1)
+        meals = cint(self.total_meals)
+        for row in self.operating_costs or []:
+            multiplier = 1
+            if row.allocation_basis == "لليوم / Per Day":
+                multiplier = days
+            elif row.allocation_basis == "للوجبة / Per Meal":
+                multiplier = meals
+            row.amount = flt(row.quantity) * flt(row.rate) * multiplier
+        self.operating_cost_total = sum(flt(r.amount) for r in (self.operating_costs or []))
+
+    def _validate_distribution(self):
+        distributed = 0
+        names = set()
+        capacity = cint(self.max_carton_capacity) or 25
+        for row in self.distribution_recipients or []:
+            qty = cint(row.meal_quantity)
+            if qty < 25:
+                frappe.throw("أقل كمية لصاحب السفرة هي 25 وجبة / Minimum allocation per table owner is 25 meals")
+            identity = (row.table_owner_name or "").strip()
+            if identity and identity in names:
+                frappe.throw(f"صاحب السفرة مكرر: {identity} / Duplicate table owner")
+            names.add(identity)
+            row.carton_count = math.ceil(qty / capacity)
+            if row.received and not row.received_on:
+                row.received_on = now_datetime()
+            distributed += qty
+        self.distribution_variance = cint(self.planned_distribution_meals) - distributed
+        if distributed > cint(self.planned_distribution_meals):
+            frappe.throw("إجمالي كميات التوزيع يتجاوز وجبات خطة التوزيع / Distribution exceeds planned distribution meals")
+        return bool(distributed and distributed == cint(self.planned_distribution_meals))
+
+    def _auto_generate_cartons(self, distribution_complete: bool):
+        """Generate carton rows only when the allocation is complete.
+
+        Draft projects remain saveable while distribution is incomplete. Any manually
+        added empty carton row is ignored. Generated operational status and vehicle
+        assignments are preserved when the allocation has not changed.
+        """
+        if not distribution_complete:
+            self.set("cartons", [])
+            return
+
+        capacity = cint(self.max_carton_capacity) or 25
+        if capacity < 1 or capacity > 25:
+            frappe.throw("السعة القصوى للكرتون من 1 إلى 25 وجبة / Carton capacity must be between 1 and 25 meals")
+
+        expected_plan = []
+        carton_no = 1
+        for recipient in self.distribution_recipients or []:
+            remaining = cint(recipient.meal_quantity)
+            recipient.carton_count = math.ceil(remaining / capacity) if remaining else 0
+            while remaining > 0:
+                qty = min(capacity, remaining)
+                expected_plan.append((carton_no, recipient.table_owner_name, qty))
+                remaining -= qty
+                carton_no += 1
+
+        current_plan = [
+            (cint(row.carton_no), row.recipient_name, cint(row.meal_quantity))
+            for row in (self.cartons or [])
+        ]
+        if current_plan == expected_plan:
+            return
+
+        previous = {
+            (cint(row.carton_no), row.recipient_name, cint(row.meal_quantity)): row
+            for row in (self.cartons or [])
+        }
+        self.set("cartons", [])
+        for number, recipient_name, meals in expected_plan:
+            old = previous.get((number, recipient_name, meals))
+            self.append("cartons", {
+                "carton_no": number,
+                "recipient_name": recipient_name,
+                "meal_quantity": meals,
+                "status": old.status if old else "مخطط / Planned",
+                "vehicle": old.vehicle if old else None,
+                "notes": old.notes if old else None,
+            })
+
+    def _hydrate_carton_vehicles(self):
+        for row in self.cartons or []:
+            if not row.vehicle:
+                row.vehicle_details = ""
+                continue
+            vehicle = frappe.db.get_value(
+                "WAFD Vehicle", row.vehicle, ["plate_number", "vehicle_type", "make_model"], as_dict=True
+            ) or {}
+            parts = [vehicle.get("plate_number"), vehicle.get("vehicle_type"), vehicle.get("make_model")]
+            row.vehicle_details = " — ".join(str(part) for part in parts if part)
+
+    def _validate_closing_quantities(self):
+        closing_values = [cint(self.surplus_meals), cint(self.waste_meals), cint(self.preservation_society_quantity)]
+        if any(value < 0 for value in closing_values):
+            frappe.throw("كميات الإغلاق لا يمكن أن تكون سالبة / Closing quantities cannot be negative")
+        if sum(closing_values) > cint(self.total_meals):
+            frappe.throw("إجمالي الفائض والتالف والمسلّم للجمعية يتجاوز وجبات المشروع / Closing quantities exceed project meals")
+
+    def _calculate_profitability(self):
+        material_per_meal = sum(flt(r.cost_per_meal) for r in (self.components or []))
+        self.material_cost_total = material_per_meal * cint(self.total_meals)
+        self.total_project_cost = flt(self.material_cost_total) + flt(self.operating_cost_total)
+        self.actual_cost_per_meal = self.total_project_cost / self.total_meals if self.total_meals else 0
+
+        # Selling price is VAT-inclusive. VAT is extracted from gross revenue
+        # using 15/115 and excluded from profit.
+        self.vat_rate = 15
+        self.total_revenue = flt(self.sale_price_per_meal) * cint(self.total_meals)
+        self.vat_amount = flt(self.total_revenue) * flt(self.vat_rate) / (100 + flt(self.vat_rate)) if self.total_revenue else 0
+        self.net_revenue_excluding_vat = flt(self.total_revenue) - flt(self.vat_amount)
+        self.expected_profit = flt(self.net_revenue_excluding_vat) - flt(self.total_project_cost)
+        self.profit_margin = (self.expected_profit / self.net_revenue_excluding_vat * 100) if self.net_revenue_excluding_vat else 0
+
+    def before_submit(self):
+        # RC109: submission is a one-click operational action. Complete any safe,
+        # deterministic setup automatically instead of sending the user back to
+        # hidden advanced tables.
+        self._prepare_for_submission()
+
+        zero_costs = [
+            row.ingredient for row in (self.components or [])
+            if row.is_mandatory and flt(row.unit_cost) <= 0
+        ]
+        if zero_costs:
+            frappe.throw(
+                "تعذر اعتماد المشروع لأن الأسعار المرجعية غير مكتملة للمواد التالية: "
+                + "، ".join(zero_costs)
+                + " / Reference costs are missing. Update ingredient master data and try again."
+            )
+
+    def _prepare_for_submission(self):
+        expected = cint(self.planned_distribution_meals)
+        capacity = cint(self.max_carton_capacity) or 25
+
+        # If the distribution plan is empty or partially entered, preserve the
+        # user's allocations and place the remainder in one clear unassigned row.
+        allocated = sum(cint(row.meal_quantity) for row in (self.distribution_recipients or []))
+        if allocated > expected:
+            frappe.throw("إجمالي كميات التوزيع يتجاوز الخطة / Distribution exceeds the plan")
+        remainder = expected - allocated
+        if remainder:
+            if remainder < 25 and self.distribution_recipients:
+                self.distribution_recipients[0].meal_quantity = cint(self.distribution_recipients[0].meal_quantity) + remainder
+            else:
+                self.append("distribution_recipients", {
+                    "table_owner_name": "غير مخصص — يستكمل من شاشة التشغيل / Unassigned",
+                    "meal_quantity": remainder,
+                })
+
+        # Re-run calculations after the automatic allocation, then generate the
+        # carton plan in memory so the same submit transaction stays atomic.
+        self._validate_distribution()
+        self._auto_generate_cartons(True)
+        self._hydrate_carton_vehicles()
+        self._calculate_profitability()
+
+        carton_meals = sum(cint(row.meal_quantity) for row in (self.cartons or []))
+        if not self.cartons or carton_meals != expected:
+            frappe.throw("تعذر إنشاء خطة الكراتين تلقائياً / Automatic carton plan generation failed")
+
+    def after_insert(self):
+        # Create the daily plan immediately after the project is first saved so
+        # the operations screen is useful even before formal submission.
+        self._sync_daily_operations()
+
+    def on_update(self):
+        # Keep the operational calendar synchronized when dates or quantities
+        # are edited while the project is still in Draft.
+        if self.docstatus == 0:
+            self._sync_daily_operations()
+
+    def on_submit(self):
+        self._sync_daily_operations()
+
+    def on_update_after_submit(self):
+        self._sync_daily_operations()
+
+    def _sync_daily_operations(self):
+        if not self.name or not self.start_date or not self.end_date or cint(self.daily_meals) <= 0:
+            return
+        from wafd_one.wafd_one.iftar_pro import generate_daily_operations
+        generate_daily_operations(self.name, ignore_permissions=True)
+
+
+def _ingredient_name(name: str) -> str | None:
+    return frappe.db.get_value("WAFD Ingredient", {"ingredient_name": name}, "name")
+
+
+@frappe.whitelist()
+def delete_iftar_project_permanently(project_name: str):
+    """Delete an Iftar test/project and safely reverse all linked operational records.
+
+    Submitted stock movements are cancelled first so their stock effect is reversed.
+    The method is intentionally explicit and restricted to users who can delete the project.
+    """
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    project.check_permission("delete")
+
+    reversed_movements = 0
+    deleted_operations = 0
+
+    # Reverse app-native stock movements linked to this project, when present.
+    if frappe.db.table_exists("WAFD Stock Movement"):
+        movements = frappe.get_all(
+            "WAFD Stock Movement",
+            filters={"reference_type": "WAFD Iftar Project", "reference_name": project.name},
+            pluck="name",
+        )
+        for movement_name in movements:
+            movement = frappe.get_doc("WAFD Stock Movement", movement_name)
+            if movement.docstatus == 1:
+                movement.flags.ignore_permissions = True
+                movement.cancel()
+                reversed_movements += 1
+            frappe.delete_doc("WAFD Stock Movement", movement_name, ignore_permissions=True, force=True)
+
+    # Remove all generated daily operations before deleting the parent.
+    operations = frappe.get_all(
+        "WAFD Iftar Daily Operation", filters={"project": project.name}, pluck="name"
+    )
+    for operation_name in operations:
+        operation = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+        if operation.docstatus == 1:
+            operation.flags.ignore_permissions = True
+            operation.cancel()
+        frappe.delete_doc(
+            "WAFD Iftar Daily Operation", operation_name, ignore_permissions=True, force=True
+        )
+        deleted_operations += 1
+
+    # Clean non-accounting references created by the app.
+    for doctype in ("WAFD Operations Alert", "WAFD Approval Request", "WAFD Audit Event"):
+        if not frappe.db.table_exists(doctype):
+            continue
+        filters = {"reference_name": project.name}
+        if frappe.get_meta(doctype).has_field("reference_doctype"):
+            filters["reference_doctype"] = "WAFD Iftar Project"
+        for name in frappe.get_all(doctype, filters=filters, pluck="name"):
+            frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+
+    if project.docstatus == 1:
+        project.flags.ignore_permissions = True
+        project.cancel()
+    frappe.delete_doc("WAFD Iftar Project", project.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+    return {
+        "deleted": project_name,
+        "deleted_operations": deleted_operations,
+        "reversed_stock_movements": reversed_movements,
+    }
+
+
+@frappe.whitelist()
+def load_standard_components(project_name: str):
+    doc = frappe.get_doc("WAFD Iftar Project", project_name)
+    doc.check_permission("write")
+    standard = list(STANDARD_COMPONENTS)
+    water_id = _ingredient_name("ماء 330 مل")
+    zamzam_id = _ingredient_name(ZAMZAM_INGREDIENT_NAME)
+    if doc.include_zamzam:
+        # Zamzam is a true replacement: remove ordinary water and use one
+        # SAR 1.50 Zamzam bottle in the meal cost. The selling price is unchanged.
+        standard = [row for row in standard if row[0] != "ماء 330 مل"]
+        standard.append((ZAMZAM_INGREDIENT_NAME, 1, "أساسي / Core", 1))
+        if water_id:
+            doc.set("components", [row for row in (doc.components or []) if row.ingredient != water_id])
+    elif zamzam_id:
+        doc.set("components", [row for row in (doc.components or []) if row.ingredient != zamzam_id])
+
+    existing = {r.ingredient for r in doc.components or []}
+    missing = []
+    for ingredient, qty, group, mandatory in standard:
+        name = _ingredient_name(ingredient)
+        if not name:
+            missing.append(ingredient)
+            continue
+        if name not in existing:
+            doc.append("components", {
+                "ingredient": name,
+                "quantity_per_meal": qty,
+                "component_group": group,
+                "is_mandatory": mandatory,
+            })
+    if missing:
+        frappe.throw("المواد المرجعية التالية غير موجودة: " + "، ".join(missing))
+    doc.save()
+    return {"components": len(doc.components)}
+
+
+@frappe.whitelist()
+def load_standard_operating_costs(project_name: str):
+    doc = frappe.get_doc("WAFD Iftar Project", project_name)
+    doc.check_permission("write")
+    capacity = cint(doc.max_carton_capacity) or 25
+    standards = [
+        ("الكرتون / Carton", math.ceil(cint(doc.total_meals) / capacity) if cint(doc.total_meals) else 0, "للوحدة / Per Unit"),
+        ("المشرف العام / General Supervisor", cint(doc.general_supervisors), "لليوم / Per Day"),
+        ("المشرفون / Supervisors", cint(doc.supervisors), "لليوم / Per Day"),
+        ("المساعدون / Assistants", cint(doc.assistants), "لليوم / Per Day"),
+        ("النقل / Transport", cint(doc.vehicles_count), "لليوم / Per Day"),
+        ("ثلاجات الشاي / Tea Coolers", cint(doc.tea_coolers), "للمشروع / Per Project"),
+        ("ثلاجات القهوة / Coffee Coolers", cint(doc.coffee_coolers), "للمشروع / Per Project"),
+        ("أكياس النفايات / Waste Bags", cint(doc.waste_bag_count), "للوحدة / Per Unit"),
+        ("السفرة / Tablecloth", len(doc.distribution_recipients or []), "لليوم / Per Day"),
+    ]
+    existing = {row.cost_type: row for row in (doc.operating_costs or [])}
+    for cost_type, qty, basis in standards:
+        if qty <= 0:
+            continue
+        if cost_type in existing:
+            existing[cost_type].quantity = qty
+            existing[cost_type].allocation_basis = basis
+        else:
+            doc.append("operating_costs", {
+                "cost_type": cost_type,
+                "quantity": qty,
+                "allocation_basis": basis,
+                "cost_basis": "تكلفة داخلية / Internal Cost",
+            })
+    doc.save()
+    return {"operating_costs": len(doc.operating_costs)}
+
+
+@frappe.whitelist()
+def generate_cartons(project_name: str):
+    doc = frappe.get_doc("WAFD Iftar Project", project_name)
+    doc.check_permission("write")
+    capacity = cint(doc.max_carton_capacity) or 25
+    if capacity < 1 or capacity > 25:
+        frappe.throw("السعة القصوى للكرتون من 1 إلى 25 وجبة / Carton capacity must be between 1 and 25 meals")
+    expected = cint(doc.planned_distribution_meals) or (
+        cint(doc.total_meals) if doc.distribution_plan_basis == WHOLE_PROJECT_DISTRIBUTION else cint(doc.daily_meals)
+    )
+    allocated = sum(cint(row.meal_quantity) for row in (doc.distribution_recipients or []))
+    if allocated != expected:
+        frappe.throw(f"خطة التوزيع يجب أن تساوي {expected} وجبة قبل إنشاء الكراتين / Distribution must equal {expected} meals")
+
+    doc.set("cartons", [])
+    carton_no = 1
+    for recipient in doc.distribution_recipients or []:
+        remaining = cint(recipient.meal_quantity)
+        recipient.carton_count = math.ceil(remaining / capacity) if remaining else 0
+        while remaining > 0:
+            qty = min(capacity, remaining)
+            doc.append("cartons", {
+                "carton_no": carton_no,
+                "recipient_name": recipient.table_owner_name,
+                "meal_quantity": qty,
+                "status": "مخطط / Planned",
+            })
+            remaining -= qty
+            carton_no += 1
+    doc.save()
+    return {"carton_count": len(doc.cartons), "meal_count": sum(cint(r.meal_quantity) for r in doc.cartons)}

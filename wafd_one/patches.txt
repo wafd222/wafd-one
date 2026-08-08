@@ -242,3 +242,6 @@ wafd_one.patches.v10_0_0_rc130.execute
 wafd_one.patches.v10_0_0_rc131.execute
 wafd_one.patches.v10_0_0_rc136.execute
 wafd_one.patches.v10_0_0_rc140.execute
+
+# RC141 migration-safety marker
+wafd_one.patches.v10_0_0_rc141.execute

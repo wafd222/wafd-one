@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zone_code",
+  "company_name",
+  "location_name",
+  "active",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "zone_code",
+   "fieldtype": "Data",
+   "label": "الرمز / Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "اسم الشركة المعتمدة / Approved Company",
+   "reqd": 1,
+   "in_list_view": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "location_name",
+   "fieldtype": "Data",
+   "label": "الموقع المعتمد داخل الحرم / Approved Haram Location",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "نشط / Active",
+   "default": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-08-08 06:55:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Iftar Haram Zone",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:zone_code",
+ "title_field": "location_name",
+ "show_title_field_in_link": 1,
+ "creation": "2026-08-08 06:55:00.000000"
+}

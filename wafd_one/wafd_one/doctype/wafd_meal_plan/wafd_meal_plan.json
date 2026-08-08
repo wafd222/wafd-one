@@ -1,0 +1,233 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-MEAL-PLAN-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "source_service_row",
+  "hotel",
+  "service_date",
+  "meal_type",
+  "quantity",
+  "service_time",
+  "menu_name",
+  "recipe",
+  "items",
+  "unit_price",
+  "estimated_unit_cost",
+  "total_value",
+  "estimated_cost",
+  "estimated_profit",
+  "estimated_margin_percent",
+  "daily_planned_quantity",
+  "capacity_utilization_percent",
+  "status",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hotel",
+   "fieldtype": "Link",
+   "label": "الفندق / Hotel",
+   "options": "WAFD Hotel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_date",
+   "fieldtype": "Date",
+   "label": "تاريخ الخدمة / Service Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meal_type",
+   "fieldtype": "Select",
+   "label": "نوع الوجبة / Meal Type",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار رمضان / Ramadan Iftar\nسحور / Suhoor\nكوفي بريك / Coffee Break",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "الكمية / Quantity",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_time",
+   "fieldtype": "Time",
+   "label": "وقت الخدمة / Service Time"
+  },
+  {
+   "fieldname": "menu_name",
+   "fieldtype": "Data",
+   "label": "اسم المنيو / Menu Name"
+  },
+  {
+   "fieldname": "recipe",
+   "fieldtype": "Link",
+   "label": "الوصفة الرئيسية / Main Recipe",
+   "options": "WAFD Recipe"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "مكونات الوجبة / Meal Items",
+   "options": "WAFD Meal Plan Item"
+  },
+  {
+   "fieldname": "unit_price",
+   "fieldtype": "Currency",
+   "label": "سعر البيع للوحدة / Unit Price",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "estimated_unit_cost",
+   "fieldtype": "Currency",
+   "label": "التكلفة التقديرية للوحدة / Est. Unit Cost",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "total_value",
+   "fieldtype": "Currency",
+   "label": "إجمالي القيمة / Total Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "التكلفة التقديرية / Estimated Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مسودة / Draft\nمعتمد / Approved\nقيد الإنتاج / In Production\nجاهز / Ready\nتم التسليم / Delivered\nملغي / Cancelled",
+   "default": "مسودة / Draft",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "source_service_row",
+   "fieldtype": "Data",
+   "label": "مرجع خدمة المشروع / Project Service Reference",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_profit",
+   "fieldtype": "Currency",
+   "label": "الربح التقديري / Estimated Profit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_margin_percent",
+   "fieldtype": "Percent",
+   "label": "هامش الربح التقديري / Estimated Margin",
+   "read_only": 1
+  },
+  {
+   "fieldname": "daily_planned_quantity",
+   "fieldtype": "Int",
+   "label": "إجمالي اليوم المخطط / Daily Planned Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity_utilization_percent",
+   "fieldtype": "Percent",
+   "label": "استخدام الطاقة اليومية / Daily Capacity Utilization",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-20 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Meal Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Project Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "WAFD Quality Inspector",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "menu_name"
+}

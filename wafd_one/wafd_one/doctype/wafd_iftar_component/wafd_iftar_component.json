@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ingredient",
+  "component_group",
+  "is_mandatory",
+  "quantity_per_meal",
+  "uom",
+  "unit_cost",
+  "cost_per_meal",
+  "price_source",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "ingredient",
+   "fieldtype": "Link",
+   "label": "المادة / Ingredient",
+   "options": "WAFD Ingredient",
+   "in_list_view": 1,
+   "reqd": 1,
+   "description": "تُحمّل المكونات الأساسية تلقائياً عند إنشاء المشروع / Standard components load automatically"
+  },
+  {
+   "fieldname": "component_group",
+   "fieldtype": "Select",
+   "label": "المجموعة / Group",
+   "options": "أساسي / Core\nإضافة / Add-on\nتغليف / Packaging\nتشغيل / Operations",
+   "default": "أساسي / Core",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_mandatory",
+   "fieldtype": "Check",
+   "label": "إلزامي / Mandatory",
+   "default": 0
+  },
+  {
+   "fieldname": "quantity_per_meal",
+   "fieldtype": "Float",
+   "label": "الكمية لكل وجبة / Qty per Meal",
+   "default": 1,
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "الوحدة / UOM",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "unit_cost",
+   "fieldtype": "Currency",
+   "label": "تكلفة الوحدة / Unit Cost",
+   "in_list_view": 1,
+   "description": "تُجلب تلقائياً من المخزون، ويمكن إدخال التكلفة الفعلية إذا لم توجد / Auto-filled from inventory; enter actual cost only when unavailable"
+  },
+  {
+   "fieldname": "cost_per_meal",
+   "fieldtype": "Currency",
+   "label": "تكلفة لكل وجبة / Cost per Meal",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "price_source",
+   "fieldtype": "Data",
+   "label": "مصدر السعر / Price Source",
+   "read_only": 1,
+   "description": "آخر شراء أو تكلفة معيارية أو إدخال يدوي / Last purchase, standard cost, or manual entry"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-05 07:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Iftar Component",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

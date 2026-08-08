@@ -245,3 +245,6 @@ wafd_one.patches.v10_0_0_rc140.execute
 
 # RC141 migration-safety marker
 wafd_one.patches.v10_0_0_rc141.execute
+
+# RC142 financial consistency and report-label cleanup
+wafd_one.patches.v10_0_0_rc142.execute

@@ -8,6 +8,7 @@ frappe.pages['wafd-iftar-report-center'].on_page_show=function(wrapper){
 };
 
 async function build_report_center(wrapper){
+  const cleanText=(value)=>String(value||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
   const $section=$(wrapper).find('.layout-main-section').off('.wafdReportCenter').attr('dir','rtl').empty();
   const $r=$(`<div class="irc">
     <div class="irc-head"><div><span>WAFD IFTAR PRO</span><h2>مركز التقارير والطباعة</h2><p>ابحث بالمشروع أو صاحب السفرة أو التاريخ، ثم افتح جميع التقارير من مكان واحد.</p></div><button type="button" class="btn irc-back">لوحة التشغيل اليومية</button></div>
@@ -51,8 +52,8 @@ async function build_report_center(wrapper){
   $r.find('.irc-secondary').html(secondary.map((c,i)=>cardHtml(c,i,'s')).join(''));
 
   function resultHtml(row){
-    const title=frappe.utils.escape_html(row.project_title||row.name);
-    const site=frappe.utils.escape_html(row.distribution_site||'');
+    const title=frappe.utils.escape_html(cleanText(row.project_title||row.name));
+    const site=frappe.utils.escape_html(cleanText(row.distribution_site||''));
     const dates=[row.start_date,row.end_date].filter(Boolean).join(' — ');
     return `<button type="button" class="irc-result ${selectedProject===row.name?'selected':''}" data-project="${frappe.utils.escape_html(row.name)}"><b>${title}</b><span>${site}</span><small>${frappe.utils.escape_html(dates)} · ${frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'})} وجبة</small></button>`;
   }
@@ -64,7 +65,7 @@ async function build_report_center(wrapper){
       const options=lastResults.map(row=>{
         const dates=[row.start_date,row.end_date].filter(Boolean).join(' — ');
         const meals=frappe.format(row.total_meals||row.daily_meals||0,{fieldtype:'Int'});
-        const label=[row.name,row.project_title||'',dates,`${meals} وجبة`].filter(Boolean).join(' · ');
+        const label=[row.name,cleanText(row.project_title||''),dates,`${meals} وجبة`].filter(Boolean).join(' · ');
         return `<option value="${frappe.utils.escape_html(row.name)}">${frappe.utils.escape_html(label)}</option>`;
       }).join('');
       const current=projectValue()||routeOptions.project||selectedProject||'';

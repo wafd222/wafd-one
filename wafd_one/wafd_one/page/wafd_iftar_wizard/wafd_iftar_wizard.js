@@ -53,10 +53,7 @@ function build_wizard(wrapper) {
     {step:3, fieldtype:'Data', fieldname:'distribution_type', label:'نوع التوزيع', reqd:1, read_only:1},
     {step:3, fieldtype:'Select', fieldname:'meal_template', label:'نوع الوجبة', options:`\nالوجبة القياسية / Standard Iftar\nوجبة مع زمزم / Iftar + Zamzam\nوجبة مخصصة / Custom Package`, reqd:1},
     {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:`استبدال الماء العادي بزمزم 330 مل`},
-    {step:3, fieldtype:'MultiCheck', fieldname:'optional_items', label:'إضافات الوجبة المخصصة', options:[
-      {label:'معمول',value:'معمول'}, {label:'فواكه مجففة',value:'فواكه مجففة'}, {label:'مكسرات مشكلة',value:'مكسرات مشكلة'},
-      {label:'لوزين',value:'لوزين'}, {label:'عصير برتقال 200 مل',value:'عصير برتقال 200 مل'}, {label:'عصير تفاح 200 مل',value:'عصير تفاح 200 مل'}
-    ]},
+    {step:3, fieldtype:'HTML', fieldname:'optional_items', label:'إضافات الوجبة المخصصة'},
     {step:4, fieldtype:'Check', fieldname:'reuse_last_setup', label:'نسخ أصحاب السفر والطاقم من آخر مشروع لنفس الموقع', default:1},
     {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'سعر الكرتون الواحد (25 وجبة)'},
     {step:4, fieldtype:'Int', fieldname:'tablecloth_count', label:'عدد السفر يومياً'},
@@ -89,32 +86,15 @@ function build_wizard(wrapper) {
   const value = name => controls[name] ? controls[name].get_value() : null;
   const set = (name, val) => controls[name] && controls[name].set_value(val == null ? '' : val);
   const OPTIONAL_ITEMS = ['معمول','فواكه مجففة','مكسرات مشكلة','لوزين','عصير برتقال 200 مل','عصير تفاح 200 مل'];
+  const addonHost = controls.optional_items.$wrapper;
+  addonHost.html(`<div class="iw-addon-title">إضافات الوجبة المخصصة</div><div class="iw-addon-grid">${OPTIONAL_ITEMS.map(item=>{
+    const price=Number((defaults.optional_prices||{})[item]||0);
+    return `<label class="iw-addon-option"><input type="checkbox" value="${frappe.utils.escape_html(item)}"><span><b>${frappe.utils.escape_html(item)}</b><small>+ ${format_currency(price,'SAR')}</small></span></label>`;
+  }).join('')}</div>`);
   const selectedOptionalItems = () => {
-    // Frappe MultiCheck can update its internal value after the native change event.
-    // Read the actual checked inputs first so simultaneous add-ons are always priced together.
-    const $wrap = controls.optional_items && controls.optional_items.$wrapper;
-    if ($wrap && $wrap.length) {
-      const picked = [];
-      $wrap.find('input[type=checkbox]:checked').each(function(){
-        const raw = $(this).val();
-        const label = ($(this).closest('label').text() || $(this).parent().text() || '').trim();
-        const match = OPTIONAL_ITEMS.find(x => x === raw || label.includes(x));
-        if (match && !picked.includes(match)) picked.push(match);
-      });
-      // If the MultiCheck inputs exist, they are the source of truth even when
-      // the last option has just been unchecked. Falling back to get_value() in
-      // that exact moment can return Frappe's stale pre-change value and keep a
-      // removed add-on in the sale price.
-      return picked;
-    }
-    const v = value('optional_items');
-    if (Array.isArray(v)) return v.filter(x=>OPTIONAL_ITEMS.includes(x));
-    if (!v) return [];
-    if (typeof v === 'string') {
-      try { const parsed=JSON.parse(v); return (Array.isArray(parsed)?parsed:[v]).filter(x=>OPTIONAL_ITEMS.includes(x)); }
-      catch(e) { return OPTIONAL_ITEMS.filter(x=>v.includes(x)); }
-    }
-    return [];
+    const picked=[];
+    addonHost.find('.iw-addon-option input:checked').each(function(){ if(OPTIONAL_ITEMS.includes(this.value)) picked.push(this.value); });
+    return picked;
   };
 
   function applyLocationDefaults() {
@@ -187,15 +167,17 @@ function build_wizard(wrapper) {
   }
   function collect() {
     const out={contracting_entity_type:'جهة حكومية / Government Entity'};
-    Object.keys(controls).forEach(k=>out[k]=controls[k].get_value());
+    Object.keys(controls).forEach(k=>{ if(k!=='optional_items') out[k]=controls[k].get_value(); });
     out.optional_items = selectedOptionalItems();
     return out;
   }
 
   // Clean initial state. These values are intentional defaults, never remnants from a previous project.
   Object.entries(controls).forEach(([name,c]) => {
+    if(name === 'optional_items') return;
     try { c.set_value(c.df.fieldtype === 'Check' ? 0 : (['Int','Float','Currency'].includes(c.df.fieldtype) ? 0 : '')); } catch(e) {}
   });
+  addonHost.find('input[type=checkbox]').prop('checked', false);
   set('start_date', frappe.datetime.get_today());
   set('end_date', frappe.datetime.get_today());
   set('sale_price_per_meal', Number(defaults.base_price || 9));
@@ -236,15 +218,12 @@ function build_wizard(wrapper) {
   // Control listeners are attached to each actual control wrapper, including MultiCheck inputs.
   Object.values(controls).forEach(c => { if(c.$wrapper) c.$wrapper.on('change input', renderSummary); });
   controls.project_title.$wrapper.on('change', () => { applyLocationDefaults(); automaticSalePrice(); });
-  controls.optional_items.$wrapper.on('change input click', 'input[type=checkbox]', () => {
-    // Wait until the native checkbox state and Frappe MultiCheck state are both committed.
-    window.requestAnimationFrame(() => setTimeout(automaticSalePrice, 0));
-  });
+  addonHost.on('change', '.iw-addon-option input[type=checkbox]', automaticSalePrice);
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
   controls.meal_template.$wrapper.on('change', () => {
     const meal=value('meal_template');
     if(meal==='وجبة مع زمزم / Iftar + Zamzam') set('include_zamzam',1);
-    if(meal==='الوجبة القياسية / Standard Iftar') { set('include_zamzam',0); try { controls.optional_items.set_value([]); } catch(e) {} }
+    if(meal==='الوجبة القياسية / Standard Iftar') { set('include_zamzam',0); addonHost.find('input[type=checkbox]').prop('checked', false); }
     automaticSalePrice();
   });
 

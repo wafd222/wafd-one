@@ -1,6 +1,8 @@
 frappe.ui.form.on("WAFD Iftar Daily Operation", {
   refresh(frm) {
     frm.$wrapper.find(".wafd-mobile-stage-action").remove();
+    $(document.body).find(".wafd-mobile-stage-action").remove();
+    frm.$wrapper.find(".form-layout").css("padding-bottom", "");
     if (frm.is_new()) return;
     if (!frm.doc.assigned_meals && frm.doc.planned_meals) frm.set_value('assigned_meals', frm.doc.planned_meals);
     const planned = Number(frm.doc.planned_meals || 0);
@@ -88,10 +90,11 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         if (window.matchMedia && window.matchMedia("(max-width: 768px)").matches) {
           const key = `wafd-mobile-stage-${frm.doc.name}`.replace(/[^a-zA-Z0-9_-]/g, "-");
           frm.$wrapper.find(".wafd-mobile-stage-action").remove();
+          frm.$wrapper.find(".form-layout").css("padding-bottom", "92px");
           const mobile = $(`<button type="button" class="btn btn-primary wafd-mobile-stage-action" id="${key}">${label}</button>`);
-          mobile.css({position:"fixed",left:"14px",right:"14px",bottom:"78px",zIndex:1050,height:"48px",fontSize:"16px",fontWeight:700,borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.18)"});
+          mobile.css({position:"fixed",left:"12px",right:"12px",bottom:"calc(12px + env(safe-area-inset-bottom))",zIndex:1050,width:"auto",margin:"0",height:"50px",fontSize:"16px",fontWeight:700,borderRadius:"12px",boxShadow:"0 10px 28px rgba(0,0,0,.26)"});
           mobile.on("click", async (e) => { e.preventDefault(); e.stopPropagation(); await action(); });
-          frm.$wrapper.append(mobile);
+          $(document.body).append(mobile);
         }
         return btn;
       };

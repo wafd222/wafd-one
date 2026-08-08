@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC132 — Migration Hotfix & Daily Report Reliability**
+Current release: **10.0.0 RC135 — Final Mobile QA Hardening**
 
 **Current release: 10.0.0 RC94**
 

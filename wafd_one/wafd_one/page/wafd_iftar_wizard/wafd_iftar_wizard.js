@@ -62,7 +62,7 @@ function build_wizard(wrapper) {
     {step:4, fieldtype:'Currency', fieldname:'supervisors_manager_rate', label:'أجر مدير المشرفين / يوم'},
     {step:4, fieldtype:'Int', fieldname:'supervisors_count', label:'عدد المشرفين'},
     {step:4, fieldtype:'Currency', fieldname:'supervisors_rate', label:'أجر المشرف الواحد / يوم'},
-    {step:4, fieldtype:'Int', fieldname:'assistants_count', label:'عدد المساعدين'},
+    {step:4, fieldtype:'Int', fieldname:'assistants_count', label:'عدد المساعدين', default:10},
     {step:4, fieldtype:'Currency', fieldname:'assistants_rate', label:'أجر المساعد الواحد / يوم'},
     {step:4, fieldtype:'Int', fieldname:'packaging_workers_count', label:'عدد عمال التغليف'},
     {step:4, fieldtype:'Currency', fieldname:'packaging_workers_rate', label:'أجر عامل التغليف / يوم'},
@@ -184,6 +184,7 @@ function build_wizard(wrapper) {
   set('other_cost_basis', 'للمشروع / Per Project');
   set('season_type', 'رمضان / Ramadan');
   set('reuse_last_setup', 1);
+  set('assistants_count', 10);
 
   // Direct listeners: no delegated click handlers. This prevents lost button events after Frappe page re-renders.
   const nextButton = $root.find('.iw-next').get(0);

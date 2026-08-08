@@ -89,7 +89,10 @@ async function build_report_center(wrapper){
     const ops=await frappe.db.get_list('WAFD Iftar Daily Operation',{filters:{project},fields:['name','operation_date','status','planned_meals'],order_by:'operation_date desc',limit:366});
     if(!ops.length)return frappe.msgprint('لا توجد سجلات يومية لهذا المشروع');
     if(routeOptions.operation&&ops.some(x=>x.name===routeOptions.operation))return openPrint('WAFD Iftar Daily Operation',routeOptions.operation,printFormat);
-    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op',label:'السجل اليومي',options:ops.map(x=>`${x.name} — ${x.operation_date||''}`).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){d.hide();openPrint('WAFD Iftar Daily Operation',(v.op||'').split(' — ')[0],printFormat);}});d.show();
+    const choices=ops.map((x,i)=>({name:x.name,label:`${frappe.datetime.str_to_user(x.operation_date||'')} — ${frappe.format(x.planned_meals||0,{fieldtype:'Int'})} وجبة${x.status?` — ${x.status}`:''} — ${i+1}`}));
+    const d=new frappe.ui.Dialog({title:'اختر يوم التشغيل',size:'small',fields:[{fieldtype:'Select',fieldname:'op_label',label:'التاريخ',options:choices.map(x=>x.label).join('\n'),reqd:1}],primary_action_label:'فتح المعاينة والطباعة',primary_action(v){const choice=choices.find(x=>x.label===v.op_label);if(!choice)return frappe.msgprint('تعذر تحديد يوم التشغيل المختار');d.hide();openPrint('WAFD Iftar Daily Operation',choice.name,printFormat);}});
+    d.show();
+    d.$wrapper.addClass('wafd-iftar-day-dialog');
   }
   async function openCard(card){
     if(card.type==='page')return frappe.set_route(card.page);

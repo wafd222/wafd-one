@@ -61,6 +61,7 @@ class WAFDIftarProject(Document):
         self._calculate_quantities()
         self._sync_known_operating_quantities()
         self._hydrate_component_costs()
+        self._enforce_commercial_price()
         self._calculate_operating_costs()
         distribution_complete = self._validate_distribution()
         self._auto_generate_cartons(distribution_complete)
@@ -88,10 +89,9 @@ class WAFDIftarProject(Document):
         if defaults:
             self.distribution_site, self.contracting_entity_type, self.contracting_entity = defaults
             if self.project_title == "المسجد النبوي الشريف / Prophet’s Mosque" and getattr(self, "haram_zone", None):
-                zone = frappe.db.get_value("WAFD Iftar Haram Zone", self.haram_zone, ["location_name", "company_name"], as_dict=True) or {}
+                zone = frappe.db.get_value("WAFD Iftar Haram Zone", self.haram_zone, ["location_name"], as_dict=True) or {}
                 if zone.get("location_name"):
                     self.distribution_site = zone.location_name
-                    self.haram_zone_company = zone.company_name
         elif self.project_title == "مشروع أو موقع آخر / Other Project or Site":
             self.distribution_site = "موقع آخر / Other"
 
@@ -214,14 +214,37 @@ class WAFDIftarProject(Document):
             ) or {}
             row.uom = row.uom or data.get("uom")
             resolved_cost = flt(data.get("latest_market_cost")) or flt(data.get("standard_cost"))
-            if not resolved_cost and data.get("ingredient_name") == ZAMZAM_INGREDIENT_NAME:
-                resolved_cost = flt(self.zamzam_reference_price)
+            if data.get("ingredient_name") == ZAMZAM_INGREDIENT_NAME:
+                # Approved operational assumption: Zamzam 330 ml costs SAR 1.50.
+                # It replaces ordinary water and never changes the SAR 9 selling price.
+                self.zamzam_reference_price = 1.50
+                resolved_cost = 1.50
             if not flt(row.unit_cost):
                 row.unit_cost = resolved_cost
             row.price_source = data.get("latest_price_source") or data.get("cost_basis") or "المخزون / Inventory"
             row.cost_per_meal = flt(row.quantity_per_meal) * flt(row.unit_cost)
             if row.is_mandatory and flt(row.quantity_per_meal) <= 0:
                 frappe.throw(f"الكمية مطلوبة للمادة الإلزامية {row.ingredient} / Quantity is required for mandatory component")
+
+    def _enforce_commercial_price(self):
+        """Keep contracted selling price independent from Zamzam and operating costs.
+
+        Standard Iftar is SAR 9.00 VAT-inclusive. Only explicit paid meal add-ons
+        (component_group = Add-on) can increase selling price. Zamzam is a water
+        replacement and therefore changes cost only.
+        """
+        self.zamzam_reference_price = 1.50
+        if self.meal_template not in ("الوجبة القياسية / Standard Iftar", "وجبة مع زمزم / Iftar + Zamzam"):
+            return
+        add_on_total = 0.0
+        for row in self.components or []:
+            if row.component_group != "إضافة / Add-on":
+                continue
+            name = frappe.db.get_value("WAFD Ingredient", row.ingredient, "ingredient_name") or row.ingredient
+            if name == ZAMZAM_INGREDIENT_NAME:
+                continue
+            add_on_total += flt(row.cost_per_meal)
+        self.sale_price_per_meal = flt(9.0 + add_on_total, 2)
 
     def _calculate_operating_costs(self):
         days = max(cint(self.number_of_days), 1)
@@ -328,9 +351,15 @@ class WAFDIftarProject(Document):
         self.material_cost_total = material_per_meal * cint(self.total_meals)
         self.total_project_cost = flt(self.material_cost_total) + flt(self.operating_cost_total)
         self.actual_cost_per_meal = self.total_project_cost / self.total_meals if self.total_meals else 0
+
+        # Selling price is VAT-inclusive. VAT is extracted from gross revenue
+        # using 15/115 and excluded from profit.
+        self.vat_rate = 15
         self.total_revenue = flt(self.sale_price_per_meal) * cint(self.total_meals)
-        self.expected_profit = flt(self.total_revenue) - flt(self.total_project_cost)
-        self.profit_margin = (self.expected_profit / self.total_revenue * 100) if self.total_revenue else 0
+        self.vat_amount = flt(self.total_revenue) * flt(self.vat_rate) / (100 + flt(self.vat_rate)) if self.total_revenue else 0
+        self.net_revenue_excluding_vat = flt(self.total_revenue) - flt(self.vat_amount)
+        self.expected_profit = flt(self.net_revenue_excluding_vat) - flt(self.total_project_cost)
+        self.profit_margin = (self.expected_profit / self.net_revenue_excluding_vat * 100) if self.net_revenue_excluding_vat else 0
 
     def before_submit(self):
         # RC109: submission is a one-click operational action. Complete any safe,
@@ -476,11 +505,16 @@ def load_standard_components(project_name: str):
     doc = frappe.get_doc("WAFD Iftar Project", project_name)
     doc.check_permission("write")
     standard = list(STANDARD_COMPONENTS)
-    if doc.include_zamzam:
-        standard.append((ZAMZAM_INGREDIENT_NAME, 1, "إضافة / Add-on", 1))
-
+    water_id = _ingredient_name("ماء 330 مل")
     zamzam_id = _ingredient_name(ZAMZAM_INGREDIENT_NAME)
-    if not doc.include_zamzam and zamzam_id:
+    if doc.include_zamzam:
+        # Zamzam is a true replacement: remove ordinary water and use one
+        # SAR 1.50 Zamzam bottle in the meal cost. The selling price is unchanged.
+        standard = [row for row in standard if row[0] != "ماء 330 مل"]
+        standard.append((ZAMZAM_INGREDIENT_NAME, 1, "أساسي / Core", 1))
+        if water_id:
+            doc.set("components", [row for row in (doc.components or []) if row.ingredient != water_id])
+    elif zamzam_id:
         doc.set("components", [row for row in (doc.components or []) if row.ingredient != zamzam_id])
 
     existing = {r.ingredient for r in doc.components or []}

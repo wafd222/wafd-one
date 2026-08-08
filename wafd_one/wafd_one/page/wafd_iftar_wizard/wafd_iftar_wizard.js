@@ -12,14 +12,14 @@ frappe.pages["wafd-iftar-wizard"].on_page_show = async function(wrapper) {
     wrapper.wafd_iftar_defaults = r.message || {};
   } catch (e) {
     console.error("Unable to load Iftar wizard defaults", e);
-    wrapper.wafd_iftar_defaults = {base_price: 9, locations: {}, optional_prices: {}, zamzam_reference_price: 9};
+    wrapper.wafd_iftar_defaults = {base_price: 9, locations: {}, optional_prices: {}, zamzam_reference_price: 1.50};
   }
   build_wizard(wrapper);
 };
 
 function build_wizard(wrapper) {
   const state = wrapper.wafd_iftar_state || (wrapper.wafd_iftar_state = {step:1, creating:false, build_id:1});
-  const defaults = wrapper.wafd_iftar_defaults || {base_price:9, locations:{}, optional_prices:{}, zamzam_reference_price:9};
+  const defaults = wrapper.wafd_iftar_defaults || {base_price:9, locations:{}, optional_prices:{}, zamzam_reference_price:1.50};
   const $section = $(wrapper).find(".layout-main-section").attr("dir", "rtl").empty();
 
   const $root = $(`<div class="iftar-wizard">
@@ -43,7 +43,7 @@ function build_wizard(wrapper) {
   const definitions = [
     {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
-    {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>`${z.zone_code} — ${z.location_name} — ${z.company_name}`).join('\n')}`},
+    {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>z.location_name).join('\n')}`},
     {step:1, fieldtype:'Data', fieldname:'contracting_entity', label:'الجهة المتعاقدة', reqd:1},
     {step:1, fieldtype:'Data', fieldname:'distribution_site', label:'موقع التوزيع', reqd:1},
     {step:1, fieldtype:'Data', fieldname:'site_details', label:'تفاصيل الموقع أو الباب'},
@@ -104,8 +104,7 @@ function build_wizard(wrapper) {
     if (title === 'المسجد النبوي الشريف / Prophet’s Mosque') {
       controls.haram_zone.$wrapper.show();
       const raw = value('haram_zone') || '';
-      const code = String(raw).split(' — ')[0];
-      const zone = (defaults.haram_zones || []).find(z => String(z.zone_code) === code);
+      const zone = (defaults.haram_zones || []).find(z => String(z.location_name) === String(raw));
       if (zone) set('distribution_site', zone.location_name);
       else if (d.distribution_site) set('distribution_site', d.distribution_site);
     } else {
@@ -130,13 +129,12 @@ function build_wizard(wrapper) {
     items.forEach(item => { price += Number((defaults.optional_prices || {})[item] || 0); });
     const zamzam = Number(value('include_zamzam') || 0);
     const waterCost = Number(defaults.water_reference_price || 0);
-    const zamzamCost = Number(defaults.zamzam_reference_price || 0);
-    // Zamzam replaces the normal 330ml water already included in the 9 SAR standard meal.
-    // Therefore add only the price difference, never the full Zamzam bottle price again.
-    if (zamzam) price += Math.max(0, zamzamCost - waterCost);
+    const zamzamCost = 1.50;
+    // Zamzam replaces ordinary water in COST only. Selling price stays unchanged.
     set('sale_price_per_meal', Number(price.toFixed(2)));
     const additions = items.map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
-    if (zamzam) additions.push(`استبدال الماء بزمزم: +${format_currency(Math.max(0,zamzamCost-waterCost),'SAR')}`);
+    if (zamzam) additions.push(`زمزم مختار: تكلفة ${format_currency(zamzamCost,'SAR')} بدلاً من الماء ${format_currency(waterCost,'SAR')} — سعر البيع لا يتغير`);
+    controls.include_zamzam.$wrapper.toggleClass('wafd-zamzam-selected', !!zamzam);
     $root.find('.iw-price-note').html(`<b>السعر الأساسي للوجبة القياسية: ${format_currency(Number(defaults.base_price||9),'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
     renderSummary();
   }
@@ -155,7 +153,8 @@ function build_wizard(wrapper) {
     const basis=value('other_cost_basis');
     const multiplier=basis==='لليوم / Per Day'?days:basis==='للوجبة / Per Meal'?t.meals:1;
     const other=Number(value('other_cost_quantity')||0)*Number(value('other_cost_rate')||0)*multiplier;
-    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>سعر البيع</span><strong>${format_currency(Number(value('sale_price_per_meal')||0),'SAR')}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد المتوقع</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
+    const vat=t.revenue*(15/115); const net=t.revenue-vat;
+    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>سعر البيع شامل الضريبة</span><strong>${format_currency(Number(value('sale_price_per_meal')||0),'SAR')}</strong></div><div><span>ضريبة 15% ضمن الإيراد</span><strong>${format_currency(vat,'SAR')}</strong></div><div><span>الإيراد قبل الضريبة</span><strong>${format_currency(net,'SAR')}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد شامل الضريبة</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
   }
   function showStep(step) {
     state.step=Math.max(1,Math.min(4,step));

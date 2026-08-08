@@ -14,7 +14,6 @@
   "column_break_a",
   "distribution_site",
   "haram_zone",
-  "haram_zone_company",
   "site_details",
   "status",
   "schedule_section",
@@ -60,6 +59,9 @@
   "actual_cost_per_meal",
   "column_break_d",
   "total_revenue",
+  "vat_rate",
+  "vat_amount",
+  "net_revenue_excluding_vat",
   "expected_profit",
   "profit_margin",
   "distribution_variance",
@@ -213,7 +215,9 @@
    "fieldtype": "Currency",
    "label": "سعر البيع للوجبة / Sale Price per Meal",
    "default": 9,
-   "reqd": 1
+   "reqd": 1,
+   "description": "السعر شامل ضريبة القيمة المضافة 15%. الوجبة القياسية 9.00 ر.س؛ زمزم يغيّر التكلفة فقط / VAT-inclusive. Standard meal SAR 9.00; Zamzam changes cost only.",
+   "read_only": 1
   },
   {
    "fieldname": "include_zamzam",
@@ -225,7 +229,9 @@
    "fieldname": "zamzam_reference_price",
    "fieldtype": "Currency",
    "label": "سعر زمزم المرجعي / Zamzam Reference Price",
-   "default": 9
+   "default": 1.5,
+   "description": "تكلفة زمزم المعتمدة للعبوة الواحدة؛ يستبدل الماء ولا يغير سعر بيع الوجبة / Approved Zamzam bottle cost; replaces water without changing meal selling price",
+   "read_only": 1
   },
   {
    "fieldname": "mandatory_tablecloths",
@@ -416,6 +422,25 @@
    "read_only": 1
   },
   {
+   "fieldname": "vat_rate",
+   "fieldtype": "Percent",
+   "label": "ضريبة القيمة المضافة % / VAT Rate",
+   "default": "15",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vat_amount",
+   "fieldtype": "Currency",
+   "label": "ضريبة القيمة المضافة ضمن السعر / VAT Included in Price",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_revenue_excluding_vat",
+   "fieldtype": "Currency",
+   "label": "الإيراد قبل الضريبة / Revenue Excluding VAT",
+   "read_only": 1
+  },
+  {
    "fieldname": "expected_profit",
    "fieldtype": "Currency",
    "label": "الربح المتوقع / Expected Profit",
@@ -479,15 +504,8 @@
   {
    "fieldname": "haram_zone",
    "fieldtype": "Link",
-   "label": "منطقة التوزيع المعتمدة داخل الحرم / Approved Haram Zone",
+   "label": "موقع التوزيع المعتمد داخل الحرم / Approved Haram Location",
    "options": "WAFD Iftar Haram Zone",
-   "depends_on": "eval:doc.project_title=='المسجد النبوي الشريف / Prophet’s Mosque'"
-  },
-  {
-   "fieldname": "haram_zone_company",
-   "fieldtype": "Data",
-   "label": "الشركة المعتمدة للموقع / Approved Company for Zone",
-   "read_only": 1,
    "depends_on": "eval:doc.project_title=='المسجد النبوي الشريف / Prophet’s Mosque'"
   }
  ],

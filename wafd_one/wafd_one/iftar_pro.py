@@ -56,6 +56,23 @@ def _ingredient_reference_cost(name):
     return frappe.utils.flt(row.get("latest_market_cost") or row.get("standard_cost") or 0)
 
 
+def _unique_haram_locations():
+    """Return active Haram locations once each; company/code are internal and never shown to operators."""
+    rows = frappe.get_all(
+        "WAFD Iftar Haram Zone", filters={"active": 1},
+        fields=["name", "location_name"], order_by="creation asc", limit_page_length=100,
+    )
+    seen = set()
+    result = []
+    for row in rows:
+        location = (row.get("location_name") or "").strip()
+        if not location or location in seen:
+            continue
+        seen.add(location)
+        result.append(row)
+    return result
+
+
 @frappe.whitelist()
 def get_wizard_defaults():
     """Single server-owned source for wizard defaults and add-on pricing."""
@@ -65,12 +82,11 @@ def get_wizard_defaults():
         "locations": WIZARD_LOCATION_DEFAULTS,
         "optional_prices": optional_prices,
         "water_reference_price": _ingredient_reference_cost("ماء 330 مل") or 0.62,
-        "zamzam_reference_price": _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50,
-        "haram_zones": frappe.get_all(
-            "WAFD Iftar Haram Zone", filters={"active": 1},
-            fields=["name", "zone_code", "company_name", "location_name"], order_by="creation asc",
-            limit_page_length=100,
-        ),
+        "zamzam_reference_price": 1.50,
+        "haram_zones": [
+            {"name": row["name"], "location_name": row["location_name"]}
+            for row in _unique_haram_locations()
+        ],
     }
 
 
@@ -120,11 +136,9 @@ def create_project(data):
     if isinstance(data, str):
         data = frappe.parse_json(data)
     data = dict(data or {})
-    # The mobile wizard presents the approved Haram zone as "code — location — company".
-    # Store only the stable zone code and let the server resolve its official location.
+    # Operators select only the approved location name. Company names and legacy codes
+    # remain internal implementation details and are not exposed in the workflow.
     raw_zone = (data.get("haram_zone") or "").strip()
-    if raw_zone and " — " in raw_zone:
-        data["haram_zone"] = raw_zone.split(" — ", 1)[0].strip()
     location_default = WIZARD_LOCATION_DEFAULTS.get(data.get("project_title")) or {}
     if location_default.get("distribution_site"):
         data["distribution_site"] = location_default["distribution_site"]
@@ -135,11 +149,18 @@ def create_project(data):
     if data.get("project_title") == WIZARD_PROPHETS_MOSQUE:
         if frappe.db.count("WAFD Iftar Haram Zone", {"active": 1}) and not data.get("haram_zone"):
             frappe.throw(_("اختر منطقة التوزيع المعتمدة داخل الحرم / Select the approved Haram distribution zone"))
-        if data.get("haram_zone"):
-            zone = frappe.db.get_value("WAFD Iftar Haram Zone", data.get("haram_zone"), ["location_name", "company_name"], as_dict=True) or {}
+        if raw_zone:
+            # Accept either an existing Link value (legacy code/name) or the visible location name.
+            zone_name = raw_zone if frappe.db.exists("WAFD Iftar Haram Zone", raw_zone) else frappe.db.get_value(
+                "WAFD Iftar Haram Zone", {"location_name": raw_zone, "active": 1}, "name"
+            )
+            if not zone_name:
+                frappe.throw(_("موقع التوزيع المحدد غير معتمد / Selected distribution location is not approved"))
+            zone = frappe.db.get_value("WAFD Iftar Haram Zone", zone_name, ["location_name"], as_dict=True) or {}
+            data["haram_zone"] = zone_name
             if zone.get("location_name"):
                 data["distribution_site"] = zone.location_name
-                data["haram_zone_company"] = zone.company_name
+            data["haram_zone_company"] = ""
     optional_items_for_price = data.get("optional_items") or []
     if isinstance(optional_items_for_price, str):
         optional_items_for_price = frappe.parse_json(optional_items_for_price)
@@ -156,11 +177,9 @@ def create_project(data):
     calculated_sale_price = WIZARD_BASE_PRICE
     for item in optional_items_for_price:
         calculated_sale_price += frappe.utils.flt(optional_costs.get(item))
-    if cint(data.get("include_zamzam")):
-        water_cost = _ingredient_reference_cost("ماء 330 مل") or 0.62
-        zamzam_cost = _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50
-        calculated_sale_price += max(0, zamzam_cost - water_cost)
-    if not optional_items_for_price and not cint(data.get("include_zamzam")):
+    # Zamzam changes COST only; the contracted selling price stays SAR 9.00
+    # (VAT inclusive) unless a paid optional add-on is selected.
+    if not optional_items_for_price:
         calculated_sale_price = WIZARD_BASE_PRICE
     data["sale_price_per_meal"] = frappe.utils.flt(calculated_sale_price, precision=2)
     required = [
@@ -172,7 +191,7 @@ def create_project(data):
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
         "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
-        "haram_zone", "haram_zone_company"
+        "haram_zone"
     ]
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
@@ -285,6 +304,50 @@ def _copy_supervisor_plans(source_project, target_project):
             dst.append("assistants", {"assistant_name": row.assistant_name, "mobile_no": row.mobile_no, "active": row.active, "notes": row.notes})
         dst.insert(ignore_permissions=True)
 
+
+
+@frappe.whitelist()
+def get_project_field_roster(project_name):
+    """Reusable registered table owners, supervisors, managers and assistants."""
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    project.check_permission("read")
+
+    def unique(values):
+        out, seen = [], set()
+        for value in values:
+            value = (value or "").strip()
+            if value and value not in seen:
+                seen.add(value); out.append(value)
+        return out
+
+    owners, supervisors, managers, assistants = [], [], [], []
+    owner_mobile, assistant_mobile = {}, {}
+    for row in project.distribution_recipients or []:
+        owners.append(row.table_owner_name)
+        supervisors.append(row.supervisor_name)
+        assistants.append(row.assistant_name)
+        if row.table_owner_name and row.table_owner_mobile:
+            owner_mobile[row.table_owner_name] = row.table_owner_mobile
+    for name in frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project_name}, pluck="name", order_by="creation asc"):
+        plan = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
+        supervisors.append(plan.supervisor_name)
+        managers.append(plan.manager_name)
+        for row in plan.table_owners or []:
+            owners.append(row.table_owner_name)
+            if row.table_owner_name and row.mobile_no:
+                owner_mobile[row.table_owner_name] = row.mobile_no
+        for row in plan.assistants or []:
+            assistants.append(row.assistant_name)
+            if row.assistant_name and row.mobile_no:
+                assistant_mobile[row.assistant_name] = row.mobile_no
+    return {
+        "table_owners": unique(owners),
+        "supervisors": unique(supervisors),
+        "managers": unique(managers),
+        "assistants": unique(assistants),
+        "owner_mobile": owner_mobile,
+        "assistant_mobile": assistant_mobile,
+    }
 
 @frappe.whitelist()
 def generate_daily_operations(project_name, ignore_permissions=False):

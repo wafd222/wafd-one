@@ -42,10 +42,9 @@ async function apply_project_setup(frm) {
     if (!setup) return;
     await frm.set_value("distribution_site", setup.site);
     if (frm.doc.project_title === "المسجد النبوي الشريف / Prophet’s Mosque" && frm.doc.haram_zone) {
-        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name", "company_name"]);
+        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name"]);
         if (z && z.message) {
             await frm.set_value("distribution_site", z.message.location_name || setup.site);
-            await frm.set_value("haram_zone_company", z.message.company_name || "");
         }
     }
     await frm.set_value("contracting_entity_type", setup.entity_type);
@@ -60,7 +59,11 @@ async function load_standard_components_client(frm) {
     if ((frm.doc.components || []).length) return;
     const rows = [...STANDARD_IFTAR_COMPONENTS];
     if (frm.doc.distribution_type === 'توزيع خارجي أو جهة / External Distribution or Entity') rows.push(['غلاف شركة وفد المدينة', 1, 'تغليف / Packaging', 1]);
-    if (frm.doc.include_zamzam) rows.push(["ماء زمزم 330 مل", 1, "إضافة / Add-on", 1]);
+    if (frm.doc.include_zamzam) {
+        const idx = rows.findIndex(r => r[0] === 'ماء 330 مل');
+        if (idx >= 0) rows.splice(idx, 1);
+        rows.push(["ماء زمزم 330 مل", 1, "أساسي / Core", 1]);
+    }
     for (const [ingredient_name, qty, group, mandatory] of rows) {
         const r = await frappe.db.get_value("WAFD Ingredient", {ingredient_name}, ["name", "uom", "latest_market_cost", "standard_cost", "latest_price_source", "cost_basis"]);
         const value = r && r.message;
@@ -71,7 +74,7 @@ async function load_standard_components_client(frm) {
         row.component_group = group;
         row.is_mandatory = mandatory;
         row.uom = value.uom;
-        row.unit_cost = value.latest_market_cost || value.standard_cost || (ingredient_name === "ماء زمزم 330 مل" ? (frm.doc.zamzam_reference_price || 9) : 0);
+        row.unit_cost = ingredient_name === "ماء زمزم 330 مل" ? 1.50 : (value.latest_market_cost || value.standard_cost || 0);
         row.cost_per_meal = flt(row.quantity_per_meal) * flt(row.unit_cost);
         row.price_source = value.latest_price_source || value.cost_basis || __("المخزون / Inventory");
     }
@@ -88,14 +91,24 @@ frappe.ui.form.on("WAFD Iftar Project", {
     },
     async haram_zone(frm) {
         if (frm.doc.project_title !== "المسجد النبوي الشريف / Prophet’s Mosque" || !frm.doc.haram_zone) return;
-        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name", "company_name"]);
+        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name"]);
         if (z && z.message) {
             await frm.set_value("distribution_site", z.message.location_name || frm.doc.distribution_site);
-            await frm.set_value("haram_zone_company", z.message.company_name || "");
         }
     },
     async refresh(frm) {
         await apply_project_setup(frm);
+        const isHaram = frm.doc.project_title === "المسجد النبوي الشريف / Prophet’s Mosque";
+        frm.toggle_display("distribution_site", !isHaram);
+        frm.toggle_display("haram_zone", isHaram);
+        frm.toggle_display("zamzam_reference_price", !!frm.doc.include_zamzam);
+        frm.set_value("zamzam_reference_price", 1.50);
+        frm.set_df_property("sale_price_per_meal", "read_only", 1);
+        frm.set_df_property("zamzam_reference_price", "read_only", 1);
+        frm.fields_dict.include_zamzam.$wrapper.toggleClass("wafd-zamzam-selected", !!frm.doc.include_zamzam);
+        if (!document.getElementById("wafd-iftar-project-rc139-style")) {
+            $("<style id=\"wafd-iftar-project-rc139-style\">.wafd-zamzam-selected{background:#eef5e9;border:2px solid #7c9b63;border-radius:10px;padding:8px 10px}.wafd-zamzam-selected label{font-weight:800;color:#36552f}.wafd-zamzam-selected input[type=checkbox]{accent-color:#66874d}.wafd-project-list-sub{font-size:12px;color:var(--text-muted)}</style>").appendTo(document.head);
+        }
         frm.set_query("haram_zone", () => ({ filters: { active: 1 } }));
         frm.set_query("vehicle", "cartons", () => ({ filters: { status: "متاحة / Available" } }));
         const missing_costs = (frm.doc.components || []).filter(row => flt(row.unit_cost) <= 0).map(row => row.ingredient);
@@ -162,11 +175,14 @@ frappe.ui.form.on("WAFD Iftar Project", {
     },
     async project_title(frm) { await apply_project_setup(frm); },
     async include_zamzam(frm) {
+        await frm.set_value("zamzam_reference_price", 1.50);
+        frm.toggle_display("zamzam_reference_price", !!frm.doc.include_zamzam);
+        frm.fields_dict.include_zamzam.$wrapper.toggleClass("wafd-zamzam-selected", !!frm.doc.include_zamzam);
         if (frm.is_new()) {
             frm.clear_table("components");
             await load_standard_components_client(frm);
         } else {
-            frappe.show_alert({message: __("احفظ ثم استخدم تحديث المكونات والتكاليف"), indicator: "blue"}, 5);
+            frappe.show_alert({message: frm.doc.include_zamzam ? __("تم اختيار زمزم: يستبدل الماء، التكلفة 1.50 ر.س، وسعر البيع لا يتغير") : __("تم إلغاء زمزم والعودة إلى الماء العادي"), indicator: frm.doc.include_zamzam ? "green" : "blue"}, 5);
         }
     },
     distribution_plan_basis(frm) { frm.set_value("cartons", []); },

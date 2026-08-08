@@ -17,14 +17,16 @@
    "label": "الرمز / Code",
    "reqd": 1,
    "unique": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1
   },
   {
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "اسم الشركة المعتمدة / Approved Company",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1
   },
   {
    "fieldname": "location_name",

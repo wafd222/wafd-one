@@ -21,17 +21,17 @@ PROJECT_SITE_DEFAULTS = {
     "مسجد قباء / Quba Mosque": (
         "مسجد قباء / Quba Mosque",
         "جهة حكومية / Government Entity",
-        "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي",
+        "هيئة تطوير منطقة المدينة المنورة",
     ),
     "مسجد القبلتين / Qiblatain Mosque": (
         "مسجد القبلتين / Qiblatain Mosque",
         "جهة حكومية / Government Entity",
-        "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي",
+        "هيئة تطوير منطقة المدينة المنورة",
     ),
     "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)": (
         "مسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)",
         "جهة حكومية / Government Entity",
-        "الهيئة العامة للعناية بشؤون المسجد الحرام والمسجد النبوي",
+        "هيئة تطوير منطقة المدينة المنورة",
     ),
 }
 
@@ -43,6 +43,7 @@ STANDARD_COMPONENTS = [
     ("ملعقة", 1, "أساسي / Core", 1),
     ("منديل معطر", 1, "أساسي / Core", 1),
     ("خبز فتوت", 1, "أساسي / Core", 1),
+    ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
 ]
 
 
@@ -86,6 +87,11 @@ class WAFDIftarProject(Document):
         defaults = PROJECT_SITE_DEFAULTS.get(self.project_title)
         if defaults:
             self.distribution_site, self.contracting_entity_type, self.contracting_entity = defaults
+            if self.project_title == "المسجد النبوي الشريف / Prophet’s Mosque" and getattr(self, "haram_zone", None):
+                zone = frappe.db.get_value("WAFD Iftar Haram Zone", self.haram_zone, ["location_name", "company_name"], as_dict=True) or {}
+                if zone.get("location_name"):
+                    self.distribution_site = zone.location_name
+                    self.haram_zone_company = zone.company_name
         elif self.project_title == "مشروع أو موقع آخر / Other Project or Site":
             self.distribution_site = "موقع آخر / Other"
 
@@ -98,7 +104,8 @@ class WAFDIftarProject(Document):
         if self.include_zamzam:
             rows = [row for row in rows if row[0] != "ماء 330 مل"]
             rows.append((ZAMZAM_INGREDIENT_NAME, 1, "أساسي / Core", 1))
-        # Branded WAFD outer wrap is only for external/entity distribution.
+        # The approved Iftar meal wrap is a standard meal cost and is included within the SAR 9 selling price.
+        # The separate WAFD branded outer wrap remains exclusive to external/entity distribution.
         if self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity":
             rows.append(("غلاف شركة وفد المدينة", 1, "تغليف / Packaging", 1))
         missing = []
@@ -133,14 +140,16 @@ class WAFDIftarProject(Document):
         external = self.distribution_type == "توزيع خارجي أو جهة / External Distribution or Entity"
         iftar_wrap = _ingredient_name("غلاف إفطار صائم")
         current = {r.ingredient for r in (self.components or []) if r.ingredient}
+        # Generic approved Iftar packaging is always part of the meal cost, but never raises the fixed SAR 9 sale price.
+        if iftar_wrap and iftar_wrap not in current:
+            self.append("components", {"ingredient": iftar_wrap, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
+            current.add(iftar_wrap)
         if external:
-            for packaging_item in (iftar_wrap, branded):
-                if packaging_item and packaging_item not in current:
-                    self.append("components", {"ingredient": packaging_item, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
-                    current.add(packaging_item)
+            if branded and branded not in current:
+                self.append("components", {"ingredient": branded, "quantity_per_meal": 1, "component_group": "تغليف / Packaging", "is_mandatory": 1})
         else:
-            blocked = {item for item in (iftar_wrap, branded) if item}
-            self.set("components", [r for r in (self.components or []) if r.ingredient not in blocked])
+            if branded:
+                self.set("components", [r for r in (self.components or []) if r.ingredient != branded])
 
     def _validate_dates_and_times(self):
         if self.start_date and self.end_date and self.end_date < self.start_date:

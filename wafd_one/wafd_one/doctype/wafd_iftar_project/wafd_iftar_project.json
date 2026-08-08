@@ -13,6 +13,8 @@
   "contracting_entity",
   "column_break_a",
   "distribution_site",
+  "haram_zone",
+  "haram_zone_company",
   "site_details",
   "status",
   "schedule_section",
@@ -473,6 +475,20 @@
    "fieldname": "notes",
    "fieldtype": "Long Text",
    "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "haram_zone",
+   "fieldtype": "Link",
+   "label": "منطقة التوزيع المعتمدة داخل الحرم / Approved Haram Zone",
+   "options": "WAFD Iftar Haram Zone",
+   "depends_on": "eval:doc.project_title=='المسجد النبوي الشريف / Prophet’s Mosque'"
+  },
+  {
+   "fieldname": "haram_zone_company",
+   "fieldtype": "Data",
+   "label": "الشركة المعتمدة للموقع / Approved Company for Zone",
+   "read_only": 1,
+   "depends_on": "eval:doc.project_title=='المسجد النبوي الشريف / Prophet’s Mosque'"
   }
  ],
  "index_web_pages_for_search": 1,

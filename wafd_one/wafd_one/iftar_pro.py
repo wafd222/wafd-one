@@ -66,6 +66,11 @@ def get_wizard_defaults():
         "optional_prices": optional_prices,
         "water_reference_price": _ingredient_reference_cost("ماء 330 مل") or 0.62,
         "zamzam_reference_price": _ingredient_reference_cost("ماء زمزم 330 مل") or 1.50,
+        "haram_zones": frappe.get_all(
+            "WAFD Iftar Haram Zone", filters={"active": 1},
+            fields=["name", "zone_code", "company_name", "location_name"], order_by="creation asc",
+            limit_page_length=100,
+        ),
     }
 
 
@@ -115,6 +120,11 @@ def create_project(data):
     if isinstance(data, str):
         data = frappe.parse_json(data)
     data = dict(data or {})
+    # The mobile wizard presents the approved Haram zone as "code — location — company".
+    # Store only the stable zone code and let the server resolve its official location.
+    raw_zone = (data.get("haram_zone") or "").strip()
+    if raw_zone and " — " in raw_zone:
+        data["haram_zone"] = raw_zone.split(" — ", 1)[0].strip()
     location_default = WIZARD_LOCATION_DEFAULTS.get(data.get("project_title")) or {}
     if location_default.get("distribution_site"):
         data["distribution_site"] = location_default["distribution_site"]
@@ -122,6 +132,14 @@ def create_project(data):
         data["contracting_entity"] = location_default["contracting_entity"]
     if location_default.get("distribution_type"):
         data["distribution_type"] = location_default["distribution_type"]
+    if data.get("project_title") == WIZARD_PROPHETS_MOSQUE:
+        if frappe.db.count("WAFD Iftar Haram Zone", {"active": 1}) and not data.get("haram_zone"):
+            frappe.throw(_("اختر منطقة التوزيع المعتمدة داخل الحرم / Select the approved Haram distribution zone"))
+        if data.get("haram_zone"):
+            zone = frappe.db.get_value("WAFD Iftar Haram Zone", data.get("haram_zone"), ["location_name", "company_name"], as_dict=True) or {}
+            if zone.get("location_name"):
+                data["distribution_site"] = zone.location_name
+                data["haram_zone_company"] = zone.company_name
     optional_items_for_price = data.get("optional_items") or []
     if isinstance(optional_items_for_price, str):
         optional_items_for_price = frappe.parse_json(optional_items_for_price)
@@ -153,7 +171,8 @@ def create_project(data):
     if missing:
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
-        "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type"
+        "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
+        "haram_zone", "haram_zone_company"
     ]
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
@@ -236,10 +255,35 @@ def create_project(data):
                 doc.assistants = cint(previous_doc.assistants)
             if can_reuse_allocations or not cint(data.get("supervisors_count")) or not cint(data.get("assistants_count")):
                 doc.save(ignore_permissions=True)
+            _copy_supervisor_plans(previous_doc.name, doc.name)
 
     generate_daily_operations(doc.name, ignore_permissions=True)
     first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
     return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
+
+
+def _copy_supervisor_plans(source_project, target_project):
+    """Copy the stable Ramadan field roster once; users can edit only yearly changes."""
+    if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": target_project}):
+        return
+    names = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": source_project}, pluck="name", order_by="creation asc")
+    for name in names:
+        src = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
+        dst = frappe.new_doc("WAFD Iftar Supervisor Plan")
+        dst.project = target_project
+        dst.manager_name = src.manager_name
+        dst.supervisor_name = src.supervisor_name
+        dst.supervisor_mobile = src.supervisor_mobile
+        dst.notes = src.notes
+        for row in src.table_owners or []:
+            dst.append("table_owners", {
+                "table_owner_name": row.table_owner_name, "mobile_no": row.mobile_no,
+                "distribution_point": row.distribution_point, "delivery_location": row.delivery_location,
+                "meal_quantity": row.meal_quantity, "notes": row.notes,
+            })
+        for row in src.assistants or []:
+            dst.append("assistants", {"assistant_name": row.assistant_name, "mobile_no": row.mobile_no, "active": row.active, "notes": row.notes})
+        dst.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()

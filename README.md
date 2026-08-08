@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC135 — Final Mobile QA Hardening**
+Current release: **10.0.0 RC136 — Supervisor Teams, Haram Zones & Executive Gray UI**
 
 **Current release: 10.0.0 RC94**
 

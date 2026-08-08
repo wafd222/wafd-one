@@ -42,7 +42,7 @@ async function build_report_center(wrapper){
   const secondary=[
     {icon:'≡',title:'تعديل تكاليف التشغيل',desc:'إضافة أو تعديل أي اتفاق تشغيلي',type:'project_form',anchor:'advanced_tab'},
     {icon:'▣',title:'تعديل خطة التوزيع',desc:'أصحاب السفر والكراتين والمركبات',type:'project_form',anchor:'advanced_tab'},
-    {icon:'●',title:'إدارة المشرفين والمساعدين',desc:'من سجل التشغيل اليومي',type:'list',doctype:'WAFD Iftar Daily Operation'},
+    {icon:'●',title:'خطط المشرفين والفرق',desc:'لكل مشرف: الوجبات وأصحاب السفر والجوالات والمساعدون',type:'list',doctype:'WAFD Iftar Supervisor Plan'},
     {icon:'▥',title:'لوحة التشغيل اليومية',desc:'متابعة المشروع من الإنتاج حتى الاستلام',type:'page',page:'wafd-iftar-operations'}
   ];
   const cardHtml=(c,i,g)=>`<button type="button" class="irc-card" data-group="${g}" data-i="${i}"><span class="irc-icon">${c.icon}</span><span class="irc-copy"><b>${c.title}</b><small>${c.desc}</small></span><span class="irc-arrow">←</span></button>`;

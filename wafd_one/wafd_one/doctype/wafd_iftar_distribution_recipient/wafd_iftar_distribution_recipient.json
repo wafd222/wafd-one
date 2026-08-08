@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "supervisor_name",
+  "supervisor_mobile",
   "assistant_name",
   "table_owner_name",
   "mobile_no",
@@ -43,7 +44,7 @@
   {
    "fieldname": "mobile_no",
    "fieldtype": "Data",
-   "label": "رقم الجوال / Mobile",
+   "label": "جوال صاحب السفرة / Table Owner Mobile",
    "options": "Phone"
   },
   {
@@ -104,6 +105,12 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "supervisor_mobile",
+   "fieldtype": "Data",
+   "label": "جوال المشرف / Supervisor Mobile",
+   "in_list_view": 1
   }
  ],
  "index_web_pages_for_search": 1,

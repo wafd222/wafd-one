@@ -43,6 +43,7 @@ function build_wizard(wrapper) {
   const definitions = [
     {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
+    {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>`${z.zone_code} — ${z.location_name} — ${z.company_name}`).join('\n')}`},
     {step:1, fieldtype:'Data', fieldname:'contracting_entity', label:'الجهة المتعاقدة', reqd:1},
     {step:1, fieldtype:'Data', fieldname:'distribution_site', label:'موقع التوزيع', reqd:1},
     {step:1, fieldtype:'Data', fieldname:'site_details', label:'تفاصيل الموقع أو الباب'},
@@ -100,8 +101,19 @@ function build_wizard(wrapper) {
   function applyLocationDefaults() {
     const title = value('project_title');
     const d = (defaults.locations || {})[title] || {};
-    if (d.distribution_site) set('distribution_site', d.distribution_site);
-    else if (title && title !== 'مشروع أو موقع آخر / Other Project or Site') set('distribution_site', title);
+    if (title === 'المسجد النبوي الشريف / Prophet’s Mosque') {
+      controls.haram_zone.$wrapper.show();
+      const raw = value('haram_zone') || '';
+      const code = String(raw).split(' — ')[0];
+      const zone = (defaults.haram_zones || []).find(z => String(z.zone_code) === code);
+      if (zone) set('distribution_site', zone.location_name);
+      else if (d.distribution_site) set('distribution_site', d.distribution_site);
+    } else {
+      controls.haram_zone.$wrapper.hide();
+      set('haram_zone','');
+      if (d.distribution_site) set('distribution_site', d.distribution_site);
+      else if (title && title !== 'مشروع أو موقع آخر / Other Project or Site') set('distribution_site', title);
+    }
     if (d.contracting_entity) set('contracting_entity', d.contracting_entity);
     else if (title === 'مشروع أو موقع آخر / Other Project or Site') set('contracting_entity', '');
     set('distribution_type', d.distribution_type || (title === 'مشروع أو موقع آخر / Other Project or Site' ? 'توزيع خارجي أو جهة / External Distribution or Entity' : 'مسجد أو حرم / Mosque or Haram'));
@@ -219,6 +231,7 @@ function build_wizard(wrapper) {
   // Control listeners are attached to each actual control wrapper, including MultiCheck inputs.
   Object.values(controls).forEach(c => { if(c.$wrapper) c.$wrapper.on('change input', renderSummary); });
   controls.project_title.$wrapper.on('change', () => { applyLocationDefaults(); automaticSalePrice(); });
+  controls.haram_zone.$wrapper.on('change', () => { applyLocationDefaults(); renderSummary(); });
   addonHost.on('change', '.iw-addon-option input[type=checkbox]', automaticSalePrice);
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
   controls.meal_template.$wrapper.on('change', () => {

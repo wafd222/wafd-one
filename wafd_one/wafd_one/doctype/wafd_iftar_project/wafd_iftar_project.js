@@ -34,12 +34,20 @@ const STANDARD_IFTAR_COMPONENTS = [
     ["ملعقة", 1, "أساسي / Core", 1],
     ["منديل معطر", 1, "أساسي / Core", 1],
     ["خبز فتوت", 1, "أساسي / Core", 1],
+    ["غلاف إفطار صائم", 1, "تغليف / Packaging", 1],
 ];
 
 async function apply_project_setup(frm) {
     const setup = IFTAR_PROJECT_SETUP[frm.doc.project_title];
     if (!setup) return;
     await frm.set_value("distribution_site", setup.site);
+    if (frm.doc.project_title === "المسجد النبوي الشريف / Prophet’s Mosque" && frm.doc.haram_zone) {
+        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name", "company_name"]);
+        if (z && z.message) {
+            await frm.set_value("distribution_site", z.message.location_name || setup.site);
+            await frm.set_value("haram_zone_company", z.message.company_name || "");
+        }
+    }
     await frm.set_value("contracting_entity_type", setup.entity_type);
     if (setup.entity || frm.doc.project_title !== "مشروع أو موقع آخر / Other Project or Site") {
         await frm.set_value("contracting_entity", setup.entity);
@@ -78,8 +86,17 @@ frappe.ui.form.on("WAFD Iftar Project", {
             await load_standard_components_client(frm);
         }
     },
+    async haram_zone(frm) {
+        if (frm.doc.project_title !== "المسجد النبوي الشريف / Prophet’s Mosque" || !frm.doc.haram_zone) return;
+        const z = await frappe.db.get_value("WAFD Iftar Haram Zone", frm.doc.haram_zone, ["location_name", "company_name"]);
+        if (z && z.message) {
+            await frm.set_value("distribution_site", z.message.location_name || frm.doc.distribution_site);
+            await frm.set_value("haram_zone_company", z.message.company_name || "");
+        }
+    },
     async refresh(frm) {
         await apply_project_setup(frm);
+        frm.set_query("haram_zone", () => ({ filters: { active: 1 } }));
         frm.set_query("vehicle", "cartons", () => ({ filters: { status: "متاحة / Available" } }));
         const missing_costs = (frm.doc.components || []).filter(row => flt(row.unit_cost) <= 0).map(row => row.ingredient);
         if (!frm.is_new() && missing_costs.length) {
@@ -111,6 +128,13 @@ frappe.ui.form.on("WAFD Iftar Project", {
             }, __("إفطار الصائم / Iftar"));
         }
         if (!frm.is_new()) {
+            frm.add_custom_button(__("خطط المشرفين والفرق"), () => {
+                frappe.route_options = { project: frm.doc.name };
+                frappe.set_route("List", "WAFD Iftar Supervisor Plan");
+            }, __("إفطار الصائم / Iftar"));
+            frm.add_custom_button(__("إضافة خطة مشرف"), () => {
+                frappe.new_doc("WAFD Iftar Supervisor Plan", {project: frm.doc.name});
+            }, __("إفطار الصائم / Iftar"));
             frm.add_custom_button(__("حذف التجربة وإرجاع المواد"), () => {
                 frappe.confirm(
                     __("سيتم حذف المشروع وكل السجلات اليومية المرتبطة به، وإلغاء أي حركة مخزون مرتبطة لإرجاع المواد. هل أنت متأكد؟"),

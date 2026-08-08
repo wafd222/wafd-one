@@ -11,6 +11,11 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
     frm.dashboard.add_indicator(__(`المستلم: ${received}`), received >= planned && planned ? "green" : "orange");
 
 
+    frm.add_custom_button(__("خطط المشرفين والفرق"), () => {
+      frappe.route_options = {project: frm.doc.project};
+      frappe.set_route("List", "WAFD Iftar Supervisor Plan");
+    });
+
     frm.add_custom_button(__("📷 التوثيق اليومي"), () => {
       const d = new frappe.ui.Dialog({
         title: __("إضافة صورة للتقرير اليومي"),
@@ -144,7 +149,7 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
               { fieldname: "supervisor_name", fieldtype: "Data", label: __("اسم المشرف"), reqd: 1, default: frm.doc.supervisor_name },
               { fieldname: "supervisors_manager", fieldtype: "Data", label: __("مدير المشرفين"), default: frm.doc.supervisors_manager },
               { fieldname: "assigned_meals", fieldtype: "Int", label: __("عدد الوجبات المسلمة للمشرف"), reqd: 1, default: frm.doc.assigned_meals || frm.doc.planned_meals },
-              { fieldtype: "Section Break", label: __("المساعدون — يمكنك إضافة من 1 إلى 100") },
+              { fieldtype: "Section Break", label: __("المساعدون — العدد مفتوح حسب فريق المشرف") },
               { fieldname: "assistants", fieldtype: "Table", label: __("حضور وغياب المساعدين"), in_place_edit: true,
                 data: (frm.doc.assistants_attendance || []).map(r => ({assistant_name:r.assistant_name,mobile_no:r.mobile_no,attendance_status:r.attendance_status,check_in_time:r.check_in_time,check_out_time:r.check_out_time,notes:r.notes})),
                 fields: [

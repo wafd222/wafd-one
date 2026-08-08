@@ -326,8 +326,8 @@ def get_project_field_roster(project_name):
         owners.append(row.table_owner_name)
         supervisors.append(row.supervisor_name)
         assistants.append(row.assistant_name)
-        if row.table_owner_name and row.table_owner_mobile:
-            owner_mobile[row.table_owner_name] = row.table_owner_mobile
+        if row.table_owner_name and row.mobile_no:
+            owner_mobile[row.table_owner_name] = row.mobile_no
     for name in frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project_name}, pluck="name", order_by="creation asc"):
         plan = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
         supervisors.append(plan.supervisor_name)

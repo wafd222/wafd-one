@@ -1,1 +1,0 @@
-# supervisor receipt print format

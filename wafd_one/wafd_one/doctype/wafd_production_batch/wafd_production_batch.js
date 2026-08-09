@@ -378,11 +378,14 @@ function add_guided_production_action(frm) {
     }
 
     frm.page.set_primary_action(__("اعتماد الإنتاج والانتقال للتغليف / Approve & Continue to Packaging"), () => {
+        if (frm.__wafd_transition_busy) return;
+        frm.__wafd_transition_busy = true;
         frappe.call({
             method: "wafd_one.operations.create_packaging_record",
             args: { batch_name: frm.doc.name },
             freeze: true,
-            callback(r) { route_to_packaging(r.message || {}); }
+            callback(r) { route_to_packaging(r.message || {}); },
+            always() { frm.__wafd_transition_busy = false; }
         });
     });
 }

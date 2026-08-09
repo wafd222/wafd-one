@@ -21,6 +21,9 @@ frappe.ui.form.on("WAFD Loading Record", {
 function add_guided_loading_action(frm) {
     frm.page.clear_primary_action();
     frm.page.set_primary_action(__("اعتماد التحميل وإنشاء رحلة التوصيل / Approve Loading & Create Trip"), async () => {
+        if (frm.__wafd_transition_busy) return;
+        frm.__wafd_transition_busy = true;
+        try {
         if (!frm.doc.vehicle || !frm.doc.driver) {
             frappe.msgprint(__("اختر المركبة والسائق قبل اعتماد التحميل / Select vehicle and driver first."));
             return;
@@ -50,6 +53,9 @@ function add_guided_loading_action(frm) {
         }
         frappe.show_alert({ message: __("تم اعتماد التحميل — جارٍ فتح رحلة التوصيل"), indicator: "green" }, 6);
         await frappe.set_route("Form", "WAFD Delivery Trip", result.name);
+        } finally {
+            frm.__wafd_transition_busy = false;
+        }
     });
 }
 

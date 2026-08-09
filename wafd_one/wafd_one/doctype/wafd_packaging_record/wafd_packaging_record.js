@@ -100,6 +100,9 @@ function add_guided_packaging_action(frm) {
     frm.page.clear_primary_action();
     if (frm.is_new()) return;
     frm.page.set_primary_action(__("اعتماد التغليف والانتقال للتحميل / Approve & Continue to Loading"), async () => {
+        if (frm.__wafd_transition_busy) return;
+        frm.__wafd_transition_busy = true;
+        try {
         if (!frm.doc.label_verified) {
             frappe.msgprint(__("تحقق من ملصقات الصناديق أولاً ثم فعّل حقل التحقق / Verify box labels first."));
             return;
@@ -133,5 +136,8 @@ function add_guided_packaging_action(frm) {
             return;
         }
         frappe.throw(__("تعذر فتح سجل التحميل. أعد المحاولة أو راجع سجل الأخطاء."));
+        } finally {
+            frm.__wafd_transition_busy = false;
+        }
     });
 }

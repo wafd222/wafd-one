@@ -26,7 +26,9 @@ frappe.ui.form.on("WAFD Daily Meal Plan", {
                         }, __("Operations"));
                     } else if (frm.doc.status !== "تم التسليم / Delivered") {
                         frm.add_custom_button(__("Create Production Batches"), () => {
+                            if (frm.__wafd_transition_busy) return;
                             frappe.confirm(__("Create one production batch for every meal and copy all source warehouses?"), () => {
+                                frm.__wafd_transition_busy = true;
                                 frappe.call({
                                     method: "wafd_one.wafd_one.doctype.wafd_daily_meal_plan.wafd_daily_meal_plan.create_production_batches",
                                     args: { daily_plan_name: frm.doc.name }, freeze: true,
@@ -35,7 +37,8 @@ frappe.ui.form.on("WAFD Daily Meal Plan", {
                                         const x = xr.message || {};
                                         if ((x.batch_names || []).length) frappe.set_route("Form", "WAFD Production Batch", x.batch_names[0]);
                                         else frm.reload_doc();
-                                    }
+                                    },
+                                    always() { frm.__wafd_transition_busy = false; }
                                 });
                             });
                         }, __("Operations"));

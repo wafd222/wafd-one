@@ -50,6 +50,17 @@ def _resolve_meal_plan_recipe(meal_plan, daily_plan=None):
 
 
 class WAFDProductionBatch(Document):
+    def before_insert(self):
+        # One production batch per meal plan. This also protects against a rapid
+        # double-click opening/saving the same workflow stage twice.
+        if self.meal_plan:
+            existing = frappe.db.get_value("WAFD Production Batch", {"meal_plan": self.meal_plan}, "name")
+            if existing:
+                frappe.throw(
+                    f"توجد دفعة إنتاج مرتبطة بهذه الخطة بالفعل: {existing} "
+                    "/ A production batch already exists for this meal plan"
+                )
+
     def validate(self):
         self._ensure_traceability_code()
         self._sync_from_meal_plan()

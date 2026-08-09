@@ -4,6 +4,17 @@ from frappe.utils import cint, flt, now_datetime, nowdate
 
 
 class WAFDPackagingRecord(Document):
+    def before_insert(self):
+        # Packaging is a single stage per production batch. Prevent a second
+        # unsaved window or repeated click from becoming a duplicate record.
+        if self.production_batch:
+            existing = frappe.db.get_value("WAFD Packaging Record", {"production_batch": self.production_batch}, "name")
+            if existing:
+                frappe.throw(
+                    f"يوجد سجل تغليف لهذه الدفعة بالفعل: {existing} "
+                    "/ A packaging record already exists for this production batch"
+                )
+
     def validate(self):
         self._sync_batch()
         self._apply_packaging_profile()

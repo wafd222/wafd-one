@@ -11,7 +11,7 @@ from datetime import date
 import frappe
 
 from wafd_one.rc14_catalog import ADDITIONAL_INGREDIENTS, ADDITIONAL_RECIPES, PACKAGING_MATERIALS, PACKAGING_PROFILES
-from wafd_one.rc148_recipe_catalog import ALL_RC148_RECIPES
+from wafd_one.rc148_recipe_catalog import ALL_RC148_RECIPES, _safe_data_url
 from frappe.utils import flt, now_datetime
 
 ACTIVE = "نشط / Active"
@@ -759,6 +759,11 @@ def load_reference_master_data() -> dict[str, int]:
                 recipe.suitable_nationalities = nationalities; changed = True
             for fieldname in ("source_authority", "source_url", "verification_status", "last_verified_on", "source_notes"):
                 value = recipe_spec.get(fieldname)
+                if fieldname == "source_url" and value:
+                    # Frappe Data fields allow at most 140 characters. RC149
+                    # normalizes long reference URLs before saving so migrations
+                    # cannot fail while legacy schema is still active.
+                    value = _safe_data_url(value)
                 if value and recipe.meta.has_field(fieldname) and not recipe.get(fieldname):
                     recipe.set(fieldname, value); changed = True
             valid_rows = [row for row in (recipe.items or []) if row.ingredient and flt(row.quantity) > 0]
@@ -790,7 +795,7 @@ def load_reference_master_data() -> dict[str, int]:
             "instructions": "وصفة تشغيلية معيارية لعدد 100 حصة. يجب اعتماد الكميات والطعم ومستوى التوابل والحساسية مع ممثل البعثة قبل الإنتاج.",
             "verification_status": recipe_spec.get("verification_status") or "تشغيلي داخلي / Internal Operational",
             "source_authority": recipe_spec.get("source_authority") or "WAFD ONE — operational reference",
-            "source_url": recipe_spec.get("source_url") or "",
+            "source_url": _safe_data_url(recipe_spec.get("source_url") or ""),
             "last_verified_on": recipe_spec.get("last_verified_on") or None,
             "source_notes": recipe_spec.get("source_notes") or "مرجع تشغيلي داخلي قابل للتعديل حسب اشتراطات البعثة والعقد.",
             "items": [],

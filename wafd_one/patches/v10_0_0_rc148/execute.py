@@ -7,7 +7,7 @@ def execute():
         return
 
     from wafd_one.master_data import load_reference_master_data
-    from wafd_one.rc148_recipe_catalog import SOURCE_METADATA
+    from wafd_one.rc148_recipe_catalog import SOURCE_METADATA, _safe_data_url
     load_reference_master_data()
 
     # Enrich trusted dish-name provenance without changing user recipes or quantities.
@@ -20,6 +20,8 @@ def execute():
             as_dict=True,
         ) or {}
         updates = {k: v for k, v in metadata.items() if v and not current.get(k)}
+        if updates.get("source_url"):
+            updates["source_url"] = _safe_data_url(updates["source_url"])
         if updates:
             frappe.db.set_value("WAFD Recipe", recipe_name, updates, update_modified=False)
 

@@ -28,8 +28,34 @@ SOURCES = {
 }
 
 
+def _safe_data_url(url: str) -> str:
+    """Return a URL that is safe for Frappe Data fields (max 140 chars).
+
+    RC148 originally used one official Bangladesh Tourism Board PDF URL that
+    is 161 characters long. WAFD Recipe.source_url is a Frappe Data field and
+    therefore rejects values longer than 140 characters during pre-model-sync
+    patches. Keep the exact deep-link in the review CSV, while the live master
+    record stores the stable official site URL when a source URL is too long.
+    """
+    url = (url or "").strip()
+    if len(url) <= 140:
+        return url
+    try:
+        from urllib.parse import urlsplit
+
+        parts = urlsplit(url)
+        if parts.scheme and parts.netloc:
+            root = f"{parts.scheme}://{parts.netloc}/"
+            if len(root) <= 140:
+                return root
+    except Exception:
+        pass
+    return url[:140]
+
+
 def spec(name, category, cuisine, nationalities, items, source_key=None, notes=""):
-    authority, url = SOURCES.get(source_key, ("WAFD ONE — operational reference", ""))
+    authority, raw_url = SOURCES.get(source_key, ("WAFD ONE — operational reference", ""))
+    url = _safe_data_url(raw_url)
     verification = (
         "يحتاج مراجعة / Needs Review" if source_key == "nigeria"
         else "تشغيلي داخلي / Internal Operational" if source_key in (None, "sfda_hajj")
@@ -177,7 +203,8 @@ NATIONALITY_MENU_REFERENCE = {country: GROUPS[group] for country, group in NATIO
 
 # Trusted-name provenance for important recipes that already existed with valid ingredients.
 def source_meta(source_key, note=""):
-    authority, url = SOURCES[source_key]
+    authority, raw_url = SOURCES[source_key]
+    url = _safe_data_url(raw_url)
     return {
         "source_authority": authority,
         "source_url": url,

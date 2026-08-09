@@ -177,13 +177,9 @@ frappe.ui.form.on("WAFD Production Batch", {
             }, __("Operations"));
         }
 
-        if (frm.doc.quality_status === "ناجح / Passed" && frm.doc.food_safety_release_status === "مفرج / Released") {
-            add_action(frm, __("Approve & Create Packaging"),
-                "wafd_one.operations.create_packaging_record",
-                { batch_name: frm.doc.name }, result => route_to_packaging(result));
-        }
-
-        add_guided_production_action(frm);
+        // The primary workflow action is derived from persisted downstream documents.
+        // This prevents old completed projects from exposing creation buttons again.
+        add_contextual_workflow_action(frm);
     },
 
     meal_plan(frm) {
@@ -199,6 +195,37 @@ frappe.ui.form.on("WAFD Production Batch", {
         if (frm.doc.status === "مكتمل / Completed" && !frm.doc.end_time) frm.set_value("end_time", now);
     }
 });
+
+function add_contextual_workflow_action(frm) {
+    frappe.call({
+        method: "wafd_one.operations.get_batch_workflow_state",
+        args: { batch_name: frm.doc.name },
+        callback(r) {
+            const state = r.message || {stage: "production"};
+            if (state.stage === "delivered" && state.trip) {
+                frm.page.set_primary_action(__("فتح التسليم المكتمل / Open Delivered Trip"), () =>
+                    frappe.set_route("Form", "WAFD Delivery Trip", state.trip.name));
+                return;
+            }
+            if (state.stage === "delivery" && state.trip) {
+                frm.page.set_primary_action(__("فتح رحلة التوصيل / Open Delivery Trip"), () =>
+                    frappe.set_route("Form", "WAFD Delivery Trip", state.trip.name));
+                return;
+            }
+            if (state.stage === "loading" && state.loading) {
+                frm.page.set_primary_action(__("فتح التحميل الموجود / Open Existing Loading"), () =>
+                    frappe.set_route("Form", "WAFD Loading Record", state.loading.name));
+                return;
+            }
+            if (state.stage === "packaging" && state.packaging) {
+                frm.page.set_primary_action(__("فتح التغليف الموجود / Open Existing Packaging"), () =>
+                    frappe.set_route("Form", "WAFD Packaging Record", state.packaging.name));
+                return;
+            }
+            add_guided_production_action(frm);
+        }
+    });
+}
 
 function populate_from_meal_plan(frm, force = false) {
     if (!frm.doc.meal_plan || frm.__wafd_loading_plan) return;

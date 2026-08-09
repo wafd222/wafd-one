@@ -682,6 +682,8 @@ def start_production(batch_name):
 
 @frappe.whitelist()
 def complete_production(batch_name, produced_quantity=None, rejected_quantity=None):
+    from wafd_one.operations import assert_batch_not_past
+    assert_batch_not_past(batch_name, "production")
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")
     if batch.status not in ("تحضير / Preparing", "طبخ / Cooking"):
@@ -859,6 +861,8 @@ def add_shortage_stock(batch_name, additions, reason=None):
 
 @frappe.whitelist()
 def create_material_issue(batch_name):
+    from wafd_one.operations import assert_batch_not_past
+    assert_batch_not_past(batch_name, "production")
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
     batch.check_permission("write")
     batch._calculate_material_requirements()

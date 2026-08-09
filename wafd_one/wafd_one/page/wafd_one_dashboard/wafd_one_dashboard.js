@@ -215,8 +215,8 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
       ["المشاريع الجارية", data.active_projects || 0, "تشغيل", "WAFD Catering Project"],
       ["وجبات مخططة", data.planned_meals || 0, "تخطيط", "WAFD Daily Meal Plan"],
       ["وجبات مسلّمة", data.delivered_meals || 0, "توصيل", "WAFD Delivery Proof"],
-      ["قيمة الفواتير", money(data.invoiced_revenue), "فواتير", "WAFD Invoice"],
-      ["المحصّل", money(data.collected_revenue), "تحصيل", "WAFD Payment"],
+      ["قيمة الفواتير شامل الضريبة", money(data.invoiced_revenue), "فواتير", "WAFD Invoice"],
+      ["المحصّل شامل الضريبة", money(data.collected_revenue), "تحصيل", "WAFD Payment"],
       ["المستحق", money(data.receivables), "ذمم", "WAFD Invoice"],
       ["هامش الربح", `${margin.toFixed(1)}%`, "ربحية", "WAFD Catering Project"]
     ];
@@ -232,10 +232,13 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     ].map(x => `<div><strong>${escape(x[1])}</strong><span>${x[0]}</span></div>`).join(""));
 
     $root.find(".wafd-finance-summary").html(`
-      <div><span>الإيراد المفوتر</span><strong>${money(data.recognized_revenue || data.invoiced_revenue)}</strong></div>
-      <div><span>المحصّل نقدًا</span><strong>${money(data.collected_revenue)}</strong></div>
+      <div><span>الإيراد المفوتر قبل الضريبة</span><strong>${money(data.recognized_revenue || 0)}</strong></div>
+      <div><span>ضريبة الفواتير</span><strong>${money(data.invoiced_vat || 0)}</strong></div>
+      <div><span>المحصّل شامل الضريبة</span><strong>${money(data.collected_revenue)}</strong></div>
+      <div><span>صافي المحصّل قبل الضريبة</span><strong>${money(data.net_collected_revenue || 0)}</strong></div>
+      <div><span>ضريبة محصّلة</span><strong>${money(data.collected_vat || 0)}</strong></div>
       <div><span>التكلفة الفعلية</span><strong>${money(data.actual_cost)}</strong></div>
-      <div><span>الربح التشغيلي</span><strong class="${toFloat(data.profit)<0?'is-negative':''}">${money(data.profit)}</strong></div>
+      <div><span>الربح التشغيلي بعد استبعاد الضريبة</span><strong class="${toFloat(data.profit)<0?'is-negative':''}">${money(data.profit)}</strong></div>
       <div><span>المتأخر</span><strong>${money(data.overdue_receivables)}</strong></div>`);
 
     const inv = data.inventory_snapshot || {};

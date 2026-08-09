@@ -251,3 +251,9 @@ wafd_one.patches.v10_0_0_rc142.execute
 
 # RC144 verified report/attendance deployment cache refresh
 wafd_one.patches.v10_0_0_rc144.execute
+
+# RC145 workflow-state synchronization and duplicate-stage protection
+wafd_one.patches.v10_0_0_rc145.execute
+
+# RC146 consolidated VAT, finance, workflow and certificate QA
+wafd_one.patches.v10_0_0_rc146.execute

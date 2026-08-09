@@ -137,6 +137,15 @@ class WAFDDailyMealPlan(Document):
             return
         self.status = "جاهزة للاعتماد / Ready for Approval" if not self.missing_recipe_count else "مسودة / Draft"
 
+    def on_update(self):
+        # Keep the parent project's estimated cost aligned with the detailed
+        # daily planning once plans exist. Financial refresh preserves a manual
+        # non-zero estimate but fills a previously-empty project estimate from
+        # these daily plans.
+        if self.project and frappe.db.exists("WAFD Catering Project", self.project):
+            from wafd_one.finance import refresh_project_financials
+            refresh_project_financials(self.project)
+
 
 MEAL_TYPE_MAP = {
     "إفطار / Breakfast": "إفطار / Breakfast",
@@ -330,6 +339,22 @@ def create_production_batches(daily_plan_name):
         meal_plan_names.append(plan_name)
         frappe.db.set_value(row.doctype, row.name, {"meal_plan": plan_name, "production_batch": batch_name}, update_modified=False)
     daily.reload()
-    daily.status = "قيد الإنتاج / In Production"
+    # Never regress a historical/closed daily plan back to In Production.
+    delivered = 0
+    for batch_name in batch_names:
+        state = frappe.call("wafd_one.operations.get_batch_workflow_state", batch_name=batch_name)
+        if state and state.get("stage") == "delivered":
+            delivered += 1
+    if batch_names and delivered == len(batch_names):
+        daily.status = "تم التسليم / Delivered"
+    elif daily.status not in ("تم التسليم / Delivered", "ملغاة / Cancelled"):
+        daily.status = "قيد الإنتاج / In Production"
     daily.save(ignore_permissions=True)
     return {"created": created, "skipped": skipped, "total": len(daily.meals), "name": daily.name, "batch_names": batch_names, "meal_plan_names": meal_plan_names}
+
+
+@frappe.whitelist()
+def get_existing_production_batches(daily_plan_name):
+    daily = frappe.get_doc("WAFD Daily Meal Plan", daily_plan_name)
+    daily.check_permission("read")
+    return frappe.get_all("WAFD Production Batch", filters={"daily_plan": daily.name}, pluck="name", order_by="creation asc")

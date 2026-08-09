@@ -169,10 +169,13 @@ frappe.ui.form.on("WAFD Catering Project", {
                             <p>${__("Delivered Meals")}: <b>${format_number(x.delivered_meals || 0)}</b> / ${format_number(x.total_meals || 0)}</p>
                             <p>${__("Uninvoiced Delivered Quantity")}: <b>${format_number(x.billable_quantity || 0)}</b></p>
                             <p>${__("Invoices")}: <b>${x.invoice_count || 0}</b></p>
-                            <p>${__("Invoiced Amount")}: <b>${format_currency(x.invoiced_amount || 0)}</b></p>
-                            <p>${__("Collected Revenue")}: <b>${format_currency(x.revenue || 0)}</b></p>
+                            <p>${__("Invoiced Amount incl. VAT")}: <b>${format_currency(x.invoiced_amount || 0)}</b></p>
+                            <p>${__("Collected incl. VAT")}: <b>${format_currency(x.collected_amount_incl_vat || 0)}</b></p>
+                            <p>${__("VAT collected")}: <b>${format_currency(x.actual_vat_amount || 0)}</b></p>
+                            <p>${__("Net Revenue excl. VAT")}: <b>${format_currency(x.revenue || 0)}</b></p>
+                            <p>${__("Actual Cost")}: <b>${format_currency(x.actual_cost || 0)}</b></p>
                             <p>${__("Outstanding Amount")}: <b>${format_currency(x.outstanding_amount || 0)}</b></p>
-                            <p>${__("Profit")}: <b>${format_currency(x.profit || 0)}</b></p>
+                            <p>${__("Profit excl. VAT")}: <b>${format_currency(x.profit || 0)}</b></p>
                             <p><b>${x.ready_for_closure ? __("Ready for financial closure") : __("Financial closure requirements are not complete")}</b></p>`
                     });
                 }
@@ -190,8 +193,16 @@ frappe.ui.form.on("WAFD Catering Project", {
         }
 
         if (frm.doc.status === "مكتمل / Completed" && frm.doc.mission) {
-            frm.add_custom_button(__("شهادة استلام وشكر / Service Acceptance Certificate"), () => {
-                const url = `/api/method/wafd_one.document_studio.download_pdf?template_name=${encodeURIComponent("شهادة استلام وشكر")}&doctype=${encodeURIComponent("WAFD Catering Project")}&docname=${encodeURIComponent(frm.doc.name)}`;
+            frm.add_custom_button(__("شهادة استلام وشكر / Service Acceptance Certificate"), async () => {
+                const r = await frappe.call({
+                    method: "wafd_one.document_studio.get_default_template",
+                    args: { reference_doctype: "WAFD Catering Project" }
+                });
+                if (!r.message) {
+                    frappe.msgprint(__("No service-acceptance template is configured."));
+                    return;
+                }
+                const url = `/api/method/wafd_one.document_studio.download_pdf?template_name=${encodeURIComponent(r.message)}&doctype=${encodeURIComponent("WAFD Catering Project")}&docname=${encodeURIComponent(frm.doc.name)}`;
                 window.open(url, "_blank");
             }, __("الطباعة / Print"));
         }

@@ -88,6 +88,75 @@ def _confirmed_payments(invoice_name, exclude_payment=None):
     )
 
 
+def split_vat_inclusive(amount, tax_rate):
+    """Split a VAT-inclusive amount into net revenue and VAT.
+
+    WAFD cash collections and invoice grand totals are VAT-inclusive. Management
+    profitability must never treat output VAT as company revenue.
+    """
+    gross = flt(amount)
+    rate = flt(tax_rate)
+    if gross <= 0 or rate <= 0:
+        return gross, 0.0
+    net = gross / (1 + rate / 100)
+    return flt(net), flt(gross - net)
+
+
+def _project_invoice_totals(project_name):
+    """Return gross/net/VAT invoice totals for non-cancelled project invoices."""
+    row = frappe.db.sql(
+        """select coalesce(sum(subtotal), 0) net,
+                  coalesce(sum(tax_amount), 0) vat,
+                  coalesce(sum(grand_total), 0) gross,
+                  coalesce(sum(balance), 0) outstanding
+           from `tabWAFD Invoice`
+           where project=%s and status!='ملغاة / Cancelled'""",
+        (project_name,),
+        as_dict=True,
+    )[0]
+    return frappe._dict({key: flt(row.get(key)) for key in ("net", "vat", "gross", "outstanding")})
+
+
+def _project_payment_totals(project_name):
+    """Allocate confirmed payments between invoice net revenue and VAT.
+
+    Partial payments are split in the same proportion as the linked invoice, so
+    actual profit remains correct before an invoice is fully collected.
+    """
+    row = frappe.db.sql(
+        """select
+               coalesce(sum(p.amount), 0) gross,
+               coalesce(sum(case
+                   when i.grand_total > 0 then p.amount * i.subtotal / i.grand_total
+                   else p.amount end), 0) net,
+               coalesce(sum(case
+                   when i.grand_total > 0 then p.amount * i.tax_amount / i.grand_total
+                   else 0 end), 0) vat
+           from `tabWAFD Payment` p
+           inner join `tabWAFD Invoice` i on i.name=p.invoice
+           where p.project=%s and p.docstatus=1 and p.status='معتمد / Confirmed'
+             and i.status!='ملغاة / Cancelled'""",
+        (project_name,),
+        as_dict=True,
+    )[0]
+    return frappe._dict({key: flt(row.get(key)) for key in ("gross", "net", "vat")})
+
+
+def _derived_daily_plan_estimates(project_name):
+    """Return planning totals that can safely fill an otherwise-empty project estimate."""
+    if not frappe.db.exists("DocType", "WAFD Daily Meal Plan"):
+        return frappe._dict(cost=0.0, revenue=0.0)
+    row = frappe.db.sql(
+        """select coalesce(sum(estimated_cost), 0) cost,
+                  coalesce(sum(total_value), 0) revenue
+           from `tabWAFD Daily Meal Plan`
+           where project=%s and status!='ملغاة / Cancelled'""",
+        (project_name,),
+        as_dict=True,
+    )[0]
+    return frappe._dict(cost=flt(row.get("cost")), revenue=flt(row.get("revenue")))
+
+
 def resolve_unit_price(project_name, meal_plan_name=None, meal_type=None):
     """Resolve a billable unit price using explicit and auditable fallbacks."""
     if meal_plan_name:
@@ -170,40 +239,43 @@ def refresh_invoice_and_project(invoice_name):
 
 @frappe.whitelist()
 def refresh_project_financials(project_name):
+    """Refresh project financials using VAT-exclusive management revenue.
+
+    Invoice/payment documents keep their statutory VAT-inclusive totals. Project
+    profitability, margin and per-meal revenue use revenue excluding VAT.
+    """
     if not project_name or not frappe.db.exists("WAFD Catering Project", project_name):
         return
 
     project = frappe.db.get_value(
         "WAFD Catering Project", project_name,
-        ["estimated_cost", "estimated_revenue", "contract_value", "total_meals"],
+        ["estimated_cost", "estimated_revenue", "contract_value", "total_meals", "tax_rate"],
         as_dict=True,
     ) or {}
     direct_costs = _approved_project_costs(project_name=project_name)
     stock_consumption = _posted_stock_consumption(project_name=project_name)
     costs = direct_costs + stock_consumption
-    collected_revenue = flt(_scalar(
+
+    manual_collected_gross = flt(_scalar(
         """select coalesce(sum(amount), 0) from `tabWAFD Project Revenue`
            where project=%s and status='محصل / Collected'""",
         (project_name,),
     ))
-    invoice_paid = flt(_scalar(
-        """select coalesce(sum(p.amount), 0) from `tabWAFD Payment` p
-           inner join `tabWAFD Invoice` i on i.name=p.invoice
-           where p.project=%s and p.docstatus=1 and p.status='معتمد / Confirmed'
-             and i.status!='ملغاة / Cancelled'""",
-        (project_name,),
-    ))
-    invoiced = flt(_scalar(
-        """select coalesce(sum(grand_total), 0) from `tabWAFD Invoice`
-           where project=%s and status!='ملغاة / Cancelled'""",
-        (project_name,),
-    ))
-    outstanding = flt(_scalar(
-        """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
-           where project=%s and status!='ملغاة / Cancelled'""",
-        (project_name,),
-    ))
-    revenue = max(collected_revenue, invoice_paid)
+    invoice_totals = _project_invoice_totals(project_name)
+    payment_totals = _project_payment_totals(project_name)
+
+    # Preserve the historical de-duplication rule: a manual Project Revenue row
+    # and its invoice Payment may describe the same cash. Use the larger source,
+    # never the sum of both. Invoice-linked payments provide the most auditable
+    # VAT split and therefore win on a tie.
+    if flt(payment_totals.gross) >= manual_collected_gross:
+        gross_collected = flt(payment_totals.gross)
+        net_revenue = flt(payment_totals.net)
+        collected_vat = flt(payment_totals.vat)
+    else:
+        gross_collected = manual_collected_gross
+        net_revenue, collected_vat = split_vat_inclusive(gross_collected, project.get("tax_rate"))
+
     delivered = flt(_scalar(
         """select coalesce(sum(received_quantity), 0) from `tabWAFD Delivery Proof`
            where project=%s and status in
@@ -212,27 +284,45 @@ def refresh_project_financials(project_name):
     ))
     total = flt(project.get("total_meals"))
     basis_meals = delivered or total
-    estimated_revenue = flt(project.get("estimated_revenue")) or flt(project.get("contract_value"))
-    estimated_cost = flt(project.get("estimated_cost"))
-    profit = revenue - costs
+
+    planned = _derived_daily_plan_estimates(project_name)
+    estimated_revenue = flt(project.get("estimated_revenue")) or flt(planned.revenue) or flt(project.get("contract_value"))
+    # A manually entered non-zero project estimate remains authoritative. When it
+    # is blank/zero, inherit the already-calculated Daily Plan estimate instead of
+    # showing a misleading zero and a meaningless cost variance.
+    estimated_cost = flt(project.get("estimated_cost")) or flt(planned.cost)
+
+    profit = net_revenue - costs
     values = {
+        "estimated_cost": estimated_cost,
         "actual_cost": costs,
-        "revenue": revenue,
+        "revenue": net_revenue,
         "profit": profit,
-        "profit_margin_percent": profit / revenue * 100 if revenue else 0,
-        "invoiced_amount": invoiced,
-        "outstanding_amount": outstanding,
+        "profit_margin_percent": profit / net_revenue * 100 if net_revenue else 0,
+        "invoiced_amount": flt(invoice_totals.gross),
+        "outstanding_amount": flt(invoice_totals.outstanding),
         "cost_variance": costs - estimated_cost,
-        "revenue_variance": revenue - estimated_revenue,
+        "revenue_variance": net_revenue - estimated_revenue,
         "cost_per_meal": costs / basis_meals if basis_meals else 0,
-        "revenue_per_meal": revenue / basis_meals if basis_meals else 0,
+        "revenue_per_meal": net_revenue / basis_meals if basis_meals else 0,
         "profit_per_meal": profit / basis_meals if basis_meals else 0,
         "delivered_meals": delivered,
         "remaining_meals": max(total - delivered, 0),
         "progress_percent": delivered / total * 100 if total else 0,
     }
+    meta = frappe.get_meta("WAFD Catering Project")
+    if meta.has_field("collected_amount_incl_vat"):
+        values["collected_amount_incl_vat"] = gross_collected
+    if meta.has_field("actual_vat_amount"):
+        values["actual_vat_amount"] = collected_vat
+
     frappe.db.set_value("WAFD Catering Project", project_name, values, update_modified=False)
-    return values
+    return {**values,
+            "gross_collected": gross_collected,
+            "collected_vat": collected_vat,
+            "net_revenue": net_revenue,
+            "invoiced_net": flt(invoice_totals.net),
+            "invoiced_vat": flt(invoice_totals.vat)}
 
 
 @frappe.whitelist()
@@ -247,7 +337,8 @@ def get_financial_intelligence(project_name=None, as_of_date=None):
         fields=["name", "project_name", "contract_value", "estimated_cost", "estimated_revenue",
                 "actual_cost", "revenue", "profit", "profit_margin_percent", "invoiced_amount",
                 "outstanding_amount", "delivered_meals", "cost_per_meal", "revenue_per_meal",
-                "profit_per_meal", "cost_variance", "revenue_variance"],
+                "profit_per_meal", "cost_variance", "revenue_variance",
+                "collected_amount_incl_vat", "actual_vat_amount"],
         order_by="profit desc",
     )
     for row in projects:
@@ -257,7 +348,8 @@ def get_financial_intelligence(project_name=None, as_of_date=None):
         fields=["name", "project_name", "contract_value", "estimated_cost", "estimated_revenue",
                 "actual_cost", "revenue", "profit", "profit_margin_percent", "invoiced_amount",
                 "outstanding_amount", "delivered_meals", "cost_per_meal", "revenue_per_meal",
-                "profit_per_meal", "cost_variance", "revenue_variance"],
+                "profit_per_meal", "cost_variance", "revenue_variance",
+                "collected_amount_incl_vat", "actual_vat_amount"],
         order_by="profit desc",
     )
     ageing = {"current": 0.0, "days_1_30": 0.0, "days_31_60": 0.0, "days_61_90": 0.0, "over_90": 0.0}
@@ -280,7 +372,10 @@ def get_financial_intelligence(project_name=None, as_of_date=None):
     totals = {
         "contract_value": sum(flt(x.contract_value) for x in projects),
         "actual_cost": sum(flt(x.actual_cost) for x in projects),
+        # Project ``revenue`` is deliberately net of VAT.
         "collected_revenue": sum(flt(x.revenue) for x in projects),
+        "gross_collected_revenue": sum(flt(x.collected_amount_incl_vat) for x in projects),
+        "collected_vat": sum(flt(x.actual_vat_amount) for x in projects),
         "invoiced_amount": sum(flt(x.invoiced_amount) for x in projects),
         "outstanding_amount": sum(flt(x.outstanding_amount) for x in projects),
         "profit": sum(flt(x.profit) for x in projects),
@@ -498,12 +593,18 @@ def get_dashboard_data(from_date=None, to_date=None):
            where coalesce(date(delivery_time), date(creation)) between %s and %s""",
         date_values,
     )
-    invoiced = _scalar(
-        """select coalesce(sum(grand_total), 0) from `tabWAFD Invoice`
+    invoice_financials = frappe.db.sql(
+        """select coalesce(sum(grand_total), 0) gross,
+                  coalesce(sum(subtotal), 0) net,
+                  coalesce(sum(tax_amount), 0) vat
+           from `tabWAFD Invoice`
            where coalesce(invoice_date, date(creation)) between %s and %s
              and status!='ملغاة / Cancelled'""",
-        date_values,
-    )
+        date_values, as_dict=True,
+    )[0]
+    invoiced = flt(invoice_financials.gross)
+    invoiced_net = flt(invoice_financials.net)
+    invoiced_vat = flt(invoice_financials.vat)
     receivable = _scalar(
         """select coalesce(sum(balance), 0) from `tabWAFD Invoice`
            where balance > 0 and status not in ('مدفوعة / Paid', 'ملغاة / Cancelled')"""
@@ -516,12 +617,20 @@ def get_dashboard_data(from_date=None, to_date=None):
     direct_costs = _approved_project_costs(from_date=from_date, to_date=to_date)
     stock_consumption = _posted_stock_consumption(from_date=from_date, to_date=to_date)
     costs = direct_costs + stock_consumption
-    revenue = _scalar(
-        """select coalesce(sum(amount), 0) from `tabWAFD Payment`
-           where coalesce(payment_date, date(creation)) between %s and %s
-             and status='معتمد / Confirmed'""",
-        date_values,
-    )
+    payment_financials = frappe.db.sql(
+        """select coalesce(sum(p.amount), 0) gross,
+                  coalesce(sum(case when i.grand_total > 0 then p.amount * i.subtotal / i.grand_total else p.amount end), 0) net,
+                  coalesce(sum(case when i.grand_total > 0 then p.amount * i.tax_amount / i.grand_total else 0 end), 0) vat
+           from `tabWAFD Payment` p
+           inner join `tabWAFD Invoice` i on i.name=p.invoice
+           where coalesce(p.payment_date, date(p.creation)) between %s and %s
+             and p.status='معتمد / Confirmed'
+             and i.status!='ملغاة / Cancelled'""",
+        date_values, as_dict=True,
+    )[0]
+    revenue = flt(payment_financials.gross)
+    net_collected_revenue = flt(payment_financials.net)
+    collected_vat = flt(payment_financials.vat)
 
     # Alerts follow the date selected on the dashboard. This avoids showing KPIs
     # for one period while evaluating exceptions against a different (today-only)
@@ -622,16 +731,19 @@ def get_dashboard_data(from_date=None, to_date=None):
         "delivered_meals": flt(delivered),
         "rejected_meals": flt(rejected),
         "delivery_rate": flt(delivered) / flt(planned) * 100 if planned else 0,
+        # Statutory invoice/payment totals remain VAT-inclusive. Management
+        # profitability uses VAT-exclusive revenue.
         "invoiced_revenue": flt(invoiced),
+        "recognized_revenue": flt(invoiced_net),
+        "invoiced_vat": flt(invoiced_vat),
         "receivables": flt(receivable),
         "overdue_receivables": flt(overdue),
         "actual_cost": flt(costs),
         "collected_revenue": flt(revenue),
-        # Management profitability follows the accrual basis: issued invoices less
-        # actual posted cost. Collection remains a separate cash KPI.
-        "recognized_revenue": flt(invoiced),
-        "profit": flt(invoiced) - flt(costs),
-        "cash_profit": flt(revenue) - flt(costs),
+        "net_collected_revenue": flt(net_collected_revenue),
+        "collected_vat": flt(collected_vat),
+        "profit": flt(invoiced_net) - flt(costs),
+        "cash_profit": flt(net_collected_revenue) - flt(costs),
         "alerts": alerts,
         "projects": projects,
         "upcoming_deliveries": upcoming_deliveries,
@@ -716,6 +828,15 @@ def finance_integrity_check(project_name=None, repair=False):
         as_dict=True,
     )
 
+    invoice_tax_mismatches = frappe.db.sql(
+        f"""select i.name invoice, i.project, i.subtotal, i.tax_rate, i.tax_amount, i.grand_total
+            from `tabWAFD Invoice` i
+            where i.status!='ملغاة / Cancelled'{project_filter}
+              and (abs(i.tax_amount - round(i.subtotal * i.tax_rate / 100, 2)) > 0.01
+                   or abs(i.grand_total - round(i.subtotal + i.tax_amount, 2)) > 0.01)""",
+        values, as_dict=True,
+    )
+
     repaired_invoices = []
     repaired_projects = []
     if cint(repair):
@@ -741,12 +862,13 @@ def finance_integrity_check(project_name=None, repair=False):
             repaired_projects.append(name)
 
     result = {
-        "ok": not any((over_invoiced, invoice_mismatches, payment_overruns, duplicate_invoice_plans)),
+        "ok": not any((over_invoiced, invoice_mismatches, payment_overruns, duplicate_invoice_plans, invoice_tax_mismatches)),
         "project": project_name,
         "over_invoiced_delivery_plans": over_invoiced,
         "invoice_balance_mismatches": invoice_mismatches,
         "payment_overruns": payment_overruns,
         "duplicate_invoice_meal_plans": duplicate_invoice_plans,
+        "invoice_tax_mismatches": invoice_tax_mismatches,
         "repaired_invoices": repaired_invoices,
         "repaired_projects": repaired_projects,
     }
@@ -762,11 +884,14 @@ def get_project_billing_status(project_name):
         frappe.throw("غير مصرح لك بعرض هذا المشروع / You are not permitted to view this project")
 
     refresh_project_financials(project_name)
+    billing_fields = ["total_meals", "delivered_meals", "invoiced_amount", "outstanding_amount",
+                      "revenue", "actual_cost", "profit", "status"]
+    meta = frappe.get_meta("WAFD Catering Project")
+    for optional in ("collected_amount_incl_vat", "actual_vat_amount"):
+        if meta.has_field(optional):
+            billing_fields.append(optional)
     project = frappe.db.get_value(
-        "WAFD Catering Project",
-        project_name,
-        ["total_meals", "delivered_meals", "invoiced_amount", "outstanding_amount", "revenue", "actual_cost", "profit", "status"],
-        as_dict=True,
+        "WAFD Catering Project", project_name, billing_fields, as_dict=True,
     ) or {}
     billable_rows = _get_billable_delivery_rows(project_name)
     billable_quantity = sum(flt(row.delivered_quantity) for row in billable_rows)

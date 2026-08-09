@@ -56,6 +56,8 @@
   "estimated_cost",
   "actual_cost",
   "revenue",
+  "collected_amount_incl_vat",
+  "actual_vat_amount",
   "profit",
   "profit_margin_percent",
   "invoiced_amount",
@@ -270,13 +272,25 @@
   {
    "fieldname": "revenue",
    "fieldtype": "Currency",
-   "label": "الإيراد الفعلي / Actual Revenue",
+   "label": "صافي الإيراد الفعلي قبل الضريبة / Net Actual Revenue Excl. VAT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "collected_amount_incl_vat",
+   "fieldtype": "Currency",
+   "label": "المحصّل شامل الضريبة / Collected Incl. VAT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_vat_amount",
+   "fieldtype": "Currency",
+   "label": "ضريبة القيمة المضافة المحصلة / Collected VAT",
    "read_only": 1
   },
   {
    "fieldname": "profit",
    "fieldtype": "Currency",
-   "label": "الربح الفعلي / Actual Profit",
+   "label": "الربح الفعلي بعد استبعاد الضريبة / Actual Profit Excl. VAT",
    "read_only": 1
   },
   {
@@ -418,7 +432,7 @@
   {
    "fieldname": "invoiced_amount",
    "fieldtype": "Currency",
-   "label": "إجمالي الفواتير / Total Invoiced",
+   "label": "إجمالي الفواتير شامل الضريبة / Total Invoiced Incl. VAT",
    "read_only": 1
   },
   {
@@ -448,7 +462,7 @@
   {
    "fieldname": "revenue_per_meal",
    "fieldtype": "Currency",
-   "label": "الإيراد لكل وجبة / Revenue per Meal",
+   "label": "صافي الإيراد لكل وجبة قبل الضريبة / Net Revenue per Meal Excl. VAT",
    "read_only": 1
   },
   {

@@ -482,3 +482,39 @@ def create_receiving_note(delivery_note_name):
         "delivered_quantity": note.delivered_quantity, "received_quantity": note.delivered_quantity,
         "rejected_quantity": 0, "receiver_name": note.receiver_name,
         "receiver_title": note.receiver_title, "status": "مسودة / Draft"}}
+
+@frappe.whitelist()
+def get_batch_workflow_state(batch_name):
+    """Return the furthest persisted operational stage for a production batch.
+
+    This is deliberately derived from linked documents rather than stale status fields,
+    so old/closed projects cannot accidentally recreate an earlier workflow stage.
+    """
+    batch = frappe.get_doc("WAFD Production Batch", batch_name)
+    batch.check_permission("read")
+    packaging = frappe.db.get_value("WAFD Packaging Record", {"production_batch": batch.name}, ["name", "status"], as_dict=True)
+    loading = frappe.db.get_value("WAFD Loading Record", {"production_batch": batch.name}, ["name", "status"], as_dict=True)
+    trip = None
+    proof = None
+    if loading:
+        trip = frappe.db.get_value("WAFD Delivery Trip", {"loading_record": loading.name, "status": ["!=", "ملغية / Cancelled"]}, ["name", "status"], as_dict=True)
+    if trip:
+        proof = frappe.db.get_value("WAFD Delivery Proof", {"delivery_trip": trip.name}, "name")
+    stage = "production"
+    if packaging: stage = "packaging"
+    if loading: stage = "loading"
+    if trip: stage = "delivery"
+    if proof or (trip and trip.status == "تم التسليم / Delivered"): stage = "delivered"
+    return {"stage": stage, "packaging": packaging, "loading": loading, "trip": trip, "proof": proof}
+
+
+def assert_batch_not_past(batch_name, allowed_stage="production"):
+    """Block destructive/repeating actions when a later stage already exists."""
+    state = get_batch_workflow_state(batch_name)
+    rank = {"production": 0, "packaging": 1, "loading": 2, "delivery": 3, "delivered": 4}
+    if rank.get(state["stage"], 0) > rank.get(allowed_stage, 0):
+        frappe.throw(
+            "هذه الدفعة انتقلت بالفعل إلى مرحلة لاحقة؛ تم منع تكرار العملية لحماية المخزون والبيانات "
+            "/ This batch has already progressed to a later stage; duplicate processing was blocked"
+        )
+    return state

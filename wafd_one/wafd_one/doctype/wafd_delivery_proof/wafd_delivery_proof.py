@@ -70,3 +70,12 @@ class WAFDDeliveryProof(Document):
         planned = cint(frappe.db.get_value("WAFD Meal Plan", self.meal_plan, "quantity") or 0)
         status = "تم التسليم / Delivered" if planned and cint(total) >= planned else "جاهز / Ready"
         frappe.db.set_value("WAFD Meal Plan", self.meal_plan, "status", status, update_modified=False)
+        # Keep the parent daily plan aligned with the real delivered meal plans.
+        daily_plan = frappe.db.get_value("WAFD Production Batch", {"meal_plan": self.meal_plan}, "daily_plan")
+        if daily_plan:
+            linked = frappe.get_all("WAFD Production Batch", filters={"daily_plan": daily_plan}, pluck="meal_plan")
+            linked = list(dict.fromkeys([x for x in linked if x]))
+            if linked:
+                delivered_count = frappe.db.count("WAFD Meal Plan", {"name": ["in", linked], "status": "تم التسليم / Delivered"})
+                daily_status = "تم التسليم / Delivered" if delivered_count == len(linked) else "جاهزة / Ready"
+                frappe.db.set_value("WAFD Daily Meal Plan", daily_plan, "status", daily_status, update_modified=False)

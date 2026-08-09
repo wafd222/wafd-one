@@ -545,7 +545,12 @@ def _recipe_requirements(batch):
     if yield_quantity <= 0:
         frappe.throw("كمية إنتاج الوصفة يجب أن تكون أكبر من صفر / Recipe yield must be greater than zero")
     if not recipe.items:
-        frappe.throw("الوصفة لا تحتوي على مكونات / Recipe has no ingredients")
+        frappe.throw(
+            f"الوصفة «{recipe.recipe_name or recipe.name}» لا تحتوي على مكونات تشغيلية. "
+            "أكمل مكوناتها أو اختر وصفة مكتملة / "
+            f"Recipe “{recipe.recipe_name or recipe.name}” has no operational ingredients. "
+            "Complete its ingredients or select a production-ready recipe."
+        )
     factor = flt(batch.planned_quantity) / yield_quantity
     requirements = []
     for row in recipe.items:

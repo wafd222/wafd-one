@@ -53,6 +53,9 @@ class WAFDContract(Document):
     def _calculate_services(self):
         total_value = 0
         for row in self.get("services") or []:
+            if row.recipe:
+                from wafd_one.recipe_integrity import validate_recipe_ready
+                validate_recipe_ready(row.recipe, row.idx)
             start = getdate(row.service_start_date or self.start_date) if (row.service_start_date or self.start_date) else None
             end = getdate(row.service_end_date or self.end_date) if (row.service_end_date or self.end_date) else None
             if start and end and end < start:

@@ -88,6 +88,9 @@ class WAFDCateringProject(Document):
         default_days = cint(self.duration_days) or 1
         default_beneficiaries = cint(self.beneficiary_count)
         for row in self.get("services") or []:
+            if row.recipe:
+                from wafd_one.recipe_integrity import validate_recipe_ready
+                validate_recipe_ready(row.recipe, row.idx)
             service_start = getdate(row.service_start_date or self.start_date) if self.start_date else None
             service_end = getdate(row.service_end_date or self.end_date) if self.end_date else None
             if service_start and service_end and service_end < service_start:

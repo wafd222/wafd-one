@@ -260,3 +260,6 @@ wafd_one.patches.v10_0_0_rc146.execute
 
 # RC147 one-page certificate and transition idempotency hardening
 wafd_one.patches.v10_0_0_rc147.execute
+
+# RC148 recipe integrity and Hajj nationality cuisine reference
+wafd_one.patches.v10_0_0_rc148.execute

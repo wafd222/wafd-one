@@ -11,7 +11,8 @@ from datetime import date
 import frappe
 
 from wafd_one.rc14_catalog import ADDITIONAL_INGREDIENTS, ADDITIONAL_RECIPES, PACKAGING_MATERIALS, PACKAGING_PROFILES
-from frappe.utils import now_datetime
+from wafd_one.rc148_recipe_catalog import ALL_RC148_RECIPES
+from frappe.utils import flt, now_datetime
 
 ACTIVE = "نشط / Active"
 RECIPE_ACTIVE = "نشطة / Active"
@@ -724,10 +725,30 @@ def load_reference_master_data() -> dict[str, int]:
             _insert("WAFD Warehouse", {"warehouse_name": name, "warehouse_type": warehouse_type, "location": location, "status": ACTIVE})
             counts["warehouses"] += 1
 
-    recipe_specs = [(name, category, "عام / General", "جميع البعثات", items) for name, category, items in RECIPES]
-    recipe_specs.extend(NATIONALITY_RECIPES)
-    recipe_specs.extend(ADDITIONAL_RECIPES)
-    for recipe_name, category, cuisine, nationalities, items in recipe_specs:
+    recipe_specs = [
+        {"recipe_name": name, "meal_category": category, "cuisine": "عام / General",
+         "suitable_nationalities": "جميع البعثات", "items": items}
+        for name, category, items in RECIPES
+    ]
+    recipe_specs.extend({
+        "recipe_name": name, "meal_category": category, "cuisine": cuisine,
+        "suitable_nationalities": nationalities, "items": items
+    } for name, category, cuisine, nationalities, items in NATIONALITY_RECIPES)
+    recipe_specs.extend({
+        "recipe_name": name, "meal_category": category, "cuisine": cuisine,
+        "suitable_nationalities": nationalities, "items": items
+    } for name, category, cuisine, nationalities, items in ADDITIONAL_RECIPES)
+    recipe_specs.extend(ALL_RC148_RECIPES)
+
+    # RC148: existing master rows are preserved. Only an EMPTY ingredient table
+    # is repaired from the reference catalogue; user-edited non-empty recipes
+    # are never overwritten. This removes the legacy empty-recipe production trap.
+    for recipe_spec in recipe_specs:
+        recipe_name = recipe_spec["recipe_name"]
+        category = recipe_spec["meal_category"]
+        cuisine = recipe_spec.get("cuisine") or "عام / General"
+        nationalities = recipe_spec.get("suitable_nationalities") or "جميع البعثات"
+        items = recipe_spec.get("items") or []
         existing = _exists("WAFD Recipe", "recipe_name", recipe_name)
         if existing:
             recipe = frappe.get_doc("WAFD Recipe", existing)
@@ -736,15 +757,42 @@ def load_reference_master_data() -> dict[str, int]:
                 recipe.cuisine = cuisine; changed = True
             if recipe.meta.has_field("suitable_nationalities") and not recipe.suitable_nationalities:
                 recipe.suitable_nationalities = nationalities; changed = True
+            for fieldname in ("source_authority", "source_url", "verification_status", "last_verified_on", "source_notes"):
+                value = recipe_spec.get(fieldname)
+                if value and recipe.meta.has_field(fieldname) and not recipe.get(fieldname):
+                    recipe.set(fieldname, value); changed = True
+            valid_rows = [row for row in (recipe.items or []) if row.ingredient and flt(row.quantity) > 0]
+            if not valid_rows and items:
+                for ingredient, quantity in items:
+                    if frappe.db.exists("WAFD Ingredient", ingredient):
+                        recipe.append("items", {"ingredient": ingredient, "quantity": quantity})
+                    else:
+                        frappe.log_error(f"Missing recipe ingredient {ingredient} for {recipe_name}", "WAFD RC148 Recipe Repair")
+                if recipe.items:
+                    recipe.status = RECIPE_ACTIVE
+                    recipe.meal_category = category or recipe.meal_category
+                    recipe.yield_quantity = recipe.yield_quantity or 100
+                    changed = True
+                elif recipe.status == RECIPE_ACTIVE:
+                    # If a catalogue item itself cannot be resolved, fail safe:
+                    # keep the recipe visible in history but prevent production selection.
+                    recipe.status = "غير نشطة / Inactive"
+                    changed = True
             if changed:
+                recipe.flags.ignore_permissions = True
+                recipe.flags.ignore_version = True
                 recipe.save(ignore_permissions=True)
             continue
+
         recipe_values = {
             "doctype": "WAFD Recipe", "recipe_name": recipe_name, "meal_category": category,
             "yield_quantity": 100, "status": RECIPE_ACTIVE, "cuisine": cuisine,
-            "instructions": "وصفة تشغيلية معيارية لعدد 100 حصة. يجب اعتماد الكميات والطعم ومستوى التوابل مع ممثل البعثة قبل الإنتاج.",
-            "verification_status": "تشغيلي داخلي / Internal Operational",
-            "source_notes": "مرجع تشغيلي داخلي قابل للتعديل حسب اشتراطات البعثة والعقد.",
+            "instructions": "وصفة تشغيلية معيارية لعدد 100 حصة. يجب اعتماد الكميات والطعم ومستوى التوابل والحساسية مع ممثل البعثة قبل الإنتاج.",
+            "verification_status": recipe_spec.get("verification_status") or "تشغيلي داخلي / Internal Operational",
+            "source_authority": recipe_spec.get("source_authority") or "WAFD ONE — operational reference",
+            "source_url": recipe_spec.get("source_url") or "",
+            "last_verified_on": recipe_spec.get("last_verified_on") or None,
+            "source_notes": recipe_spec.get("source_notes") or "مرجع تشغيلي داخلي قابل للتعديل حسب اشتراطات البعثة والعقد.",
             "items": [],
         }
         recipe = frappe.get_doc(recipe_values)
@@ -759,7 +807,10 @@ def load_reference_master_data() -> dict[str, int]:
             else:
                 missing_items.append(ingredient)
         if missing_items:
-            frappe.log_error("Missing recipe ingredients: " + ", ".join(missing_items), "WAFD RC13 Master Data")
+            frappe.log_error("Missing recipe ingredients: " + ", ".join(missing_items), "WAFD RC148 Master Data")
+        if not recipe.items:
+            # Never seed an active recipe that production cannot consume.
+            recipe.status = "غير نشطة / Inactive"
         recipe.flags.ignore_permissions = True
         recipe.flags.ignore_version = True
         recipe.insert(ignore_permissions=True)

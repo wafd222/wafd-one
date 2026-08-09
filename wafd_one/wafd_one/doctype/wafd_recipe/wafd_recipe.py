@@ -9,6 +9,13 @@ class WAFDRecipe(Document):
         if yield_qty <= 0:
             frappe.throw("عدد الحصص يجب أن يكون أكبر من صفر / Yield must be greater than zero")
 
+        valid_items = [row for row in (self.items or []) if row.ingredient and flt(row.quantity) > 0]
+        if self.status == "نشطة / Active" and not valid_items:
+            frappe.throw(
+                f"الوصفة «{self.recipe_name or self.name}» لا يمكن أن تكون نشطة بدون مكونات تشغيلية / "
+                f"Recipe “{self.recipe_name or self.name}” cannot be active without operational ingredients"
+            )
+
         for fieldname, label in (
             ("waste_percent", "نسبة الهدر / Waste percentage"),
             ("overhead_percent", "نسبة المصاريف غير المباشرة / Overhead percentage"),

@@ -507,34 +507,63 @@ PACKAGED_KEYWORDS = ("معلب", "صلصة", "معجون", "زيت", "خل", "ط
 CLEANING_KEYWORDS = ("منظف", "معقم", "صابون", "كلور", "مطهر", "مناديل تنظيف", "قفاز تنظيف", "كيس نفايات")
 EQUIPMENT_KEYWORDS = ("قدر", "صينية", "سكين", "مغرفة", "حافظة", "سخان", "معدات", "أواني")
 FROZEN_KEYWORDS = ("مجمد", "معجنات", "كرواسون", "سمبوس", "بطاطس مجمدة")
+FISH_KEYWORDS = ("سمك", "روبيان", "جمبري", "سلمون", "تونة")
 DRINK_KEYWORDS = ("ماء", "عصير", "مشروب", "لبن", "زبادي", "تمر")
 
 
 def preferred_warehouse_for_ingredient(name: str, category: str | None = None) -> str:
+    """Return the operationally correct storage zone for an ingredient.
+
+    RC150 deliberately gives *material class* precedence over ambiguous name
+    keywords.  Examples: fresh ``فلفل رومي`` must stay with vegetables rather
+    than spices, ``صلصة فلفل حار`` belongs to packaged foods, water/juice
+    cartons belong to the beverage warehouse, and raw fish belongs with the
+    chilled protein store.
+    """
     text = (name or "").strip()
+
     if any(k in text for k in CLEANING_KEYWORDS):
         return "مستودع 7 - أدوات النظافة"
     if any(k in text for k in EQUIPMENT_KEYWORDS):
         return "مستودع 6 - الأواني والمعدات"
-    if any(k in text for k in SPICE_KEYWORDS):
-        return "مستودع 1 - البهارات"
     if category == "تغليف / Packaging":
         return "مستودع 2 - التغليف"
+
+    # Explicit frozen wording always wins over the broader chilled/vegetable
+    # categories (for example frozen peas and pastries).
     if any(k in text for k in FROZEN_KEYWORDS):
         return "ثلاجة 4 - المجمدات والمعجنات"
-    if category in ("لحوم / Meat", "دواجن / Poultry") or "سمك" in text:
+
+    # Sauces, oils and other shelf-stable packaged foods must be resolved before
+    # spice/fish keywords (e.g. صلصة فلفل حار / صلصة سمك).
+    if any(k in text for k in PACKAGED_KEYWORDS):
+        return "مستودع 4 - المواد الغذائية المعبأة"
+
+    if category in ("لحوم / Meat", "دواجن / Poultry") or any(k in text for k in FISH_KEYWORDS):
         return "ثلاجة 2 - اللحوم والدواجن والأسماك"
     if category == "خضار / Vegetables" or any(k in text for k in ("تفاح", "برتقال", "موز", "ليمون", "فواكه")):
         return "ثلاجة 1 - الخضار والفواكه"
     if category == "ألبان / Dairy" or any(k in text for k in DRINK_KEYWORDS):
         return "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور"
-    if any(k in text for k in PACKAGED_KEYWORDS):
-        return "مستودع 4 - المواد الغذائية المعبأة"
     if category == "مشروبات / Beverages":
         return "مستودع 8 - المياه والمشروبات الكرتونية"
     if category == "أرز وحبوب / Rice & Grains" or any(k in text for k in ("دقيق", "سكر", "أرز", "عدس", "حمص حب", "فول", "مكرونة")):
         return "مستودع 3 - المواد الغذائية الجافة"
+    if any(k in text for k in SPICE_KEYWORDS):
+        return "مستودع 1 - البهارات"
     return CATEGORY_WAREHOUSE_MAP.get(category, "مستودع 5 - مواد الاستعمال اليومي")
+
+
+def ingredient_warehouse_is_compatible(name: str, category: str | None, warehouse: str | None) -> bool:
+    """True when ``warehouse`` is the configured storage zone for a material.
+
+    Production allocation uses this guard to prevent a positive balance in an
+    unrelated legacy warehouse from silently winning (the exact RC149 issue
+    where fish was being allocated from the spice warehouse).
+    """
+    if not warehouse:
+        return False
+    return warehouse == preferred_warehouse_for_ingredient(name, category)
 
 
 def _default_company() -> str | None:

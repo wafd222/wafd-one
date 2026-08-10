@@ -263,3 +263,6 @@ wafd_one.patches.v10_0_0_rc147.execute
 
 # RC148 recipe integrity and Hajj nationality cuisine reference
 wafd_one.patches.v10_0_0_rc148.execute
+
+# RC150 ingredient-aware warehouse routing and safe legacy test-stock relocation
+wafd_one.patches.v10_0_0_rc150.execute

@@ -2,6 +2,7 @@ import uuid
 import frappe
 from frappe.model.document import Document
 from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime
+from wafd_one.master_data import preferred_warehouse_for_ingredient, ingredient_warehouse_is_compatible
 
 
 def _resolve_meal_plan_recipe(meal_plan, daily_plan=None):
@@ -176,13 +177,23 @@ class WAFDProductionBatch(Document):
         """
         if not self.recipe:
             return
-        from wafd_one.master_data import preferred_warehouse_for_ingredient
         existing = {row.warehouse for row in (self.source_warehouses or []) if row.warehouse}
         recipe = frappe.get_doc("WAFD Recipe", self.recipe)
         priority = max([cint(row.priority) for row in (self.source_warehouses or [])] or [0])
         for item in recipe.items:
-            ingredient = frappe.db.get_value("WAFD Ingredient", item.ingredient, ["ingredient_name", "category", "preferred_warehouse"], as_dict=True) or {}
-            warehouse = ingredient.get("preferred_warehouse") or preferred_warehouse_for_ingredient(ingredient.get("ingredient_name") or item.ingredient, ingredient.get("category"))
+            ingredient = frappe.db.get_value(
+                "WAFD Ingredient", item.ingredient,
+                ["ingredient_name", "category", "preferred_warehouse"], as_dict=True,
+            ) or {}
+            ingredient_name = ingredient.get("ingredient_name") or item.ingredient
+            category = ingredient.get("category")
+            computed = preferred_warehouse_for_ingredient(ingredient_name, category)
+            stored = ingredient.get("preferred_warehouse")
+            # Never propagate a stale legacy preferred warehouse into a new
+            # production batch.  RC150 repairs the master record at migration,
+            # while this runtime guard also protects sites that have not yet
+            # completed the repair patch.
+            warehouse = stored if ingredient_warehouse_is_compatible(ingredient_name, category, stored) else computed
             if warehouse and frappe.db.exists("WAFD Warehouse", warehouse) and warehouse not in existing:
                 priority += 1
                 self.append("source_warehouses", {"warehouse": warehouse, "priority": priority, "is_default": 0})
@@ -221,6 +232,38 @@ class WAFDProductionBatch(Document):
             available_total = 0
             issued_quantity = 0
 
+            ingredient_meta = frappe.db.get_value(
+                "WAFD Ingredient", req["ingredient"],
+                ["ingredient_name", "category", "preferred_warehouse"], as_dict=True,
+            ) or {}
+            ingredient_name = ingredient_meta.get("ingredient_name") or req["ingredient"]
+            ingredient_category = ingredient_meta.get("category")
+            canonical_warehouse = preferred_warehouse_for_ingredient(ingredient_name, ingredient_category)
+            stored_preferred = ingredient_meta.get("preferred_warehouse")
+            if ingredient_warehouse_is_compatible(ingredient_name, ingredient_category, stored_preferred):
+                canonical_warehouse = stored_preferred
+
+            # Allocation is ingredient-specific.  A positive balance in an
+            # unrelated warehouse must never be treated as usable stock (e.g.
+            # fish in the spice warehouse).  Keep the complete source list for
+            # the mixed recipe, but use only the compatible storage zone for
+            # this ingredient.
+            ingredient_sources = [
+                source for source in sources
+                if ingredient_warehouse_is_compatible(ingredient_name, ingredient_category, source.warehouse)
+            ]
+            if canonical_warehouse and not any(source.warehouse == canonical_warehouse for source in ingredient_sources):
+                existing_source = next((source for source in sources if source.warehouse == canonical_warehouse), None)
+                if existing_source:
+                    ingredient_sources.insert(0, existing_source)
+                elif frappe.db.exists("WAFD Warehouse", canonical_warehouse):
+                    next_priority = max([cint(row.priority) for row in sources] or [0]) + 1
+                    source_row = self.append("source_warehouses", {
+                        "warehouse": canonical_warehouse, "priority": next_priority, "is_default": 0,
+                    })
+                    sources.append(source_row)
+                    ingredient_sources.insert(0, source_row)
+
             # Preserve allocations already consumed by posted issue movements. Once
             # stock has been issued it is no longer in warehouse balance, but it still
             # satisfies this production requirement and must not become a false shortage.
@@ -249,7 +292,7 @@ class WAFDProductionBatch(Document):
 
             # Allocate only the not-yet-issued remainder from current live stock.
             if remaining > 0:
-                for source in sources:
+                for source in ingredient_sources:
                     balance = frappe.db.get_value(
                         "WAFD Stock Balance",
                         {"warehouse": source.warehouse, "ingredient": req["ingredient"]},
@@ -293,10 +336,9 @@ class WAFDProductionBatch(Document):
                     if remaining <= 0:
                         break
 
-                # Stock may physically exist in a different warehouse than the
-                # recipe category default. Search all remaining WAFD stock balances
-                # and add the real warehouse as a source instead of producing an
-                # empty allocation table. User-selected sources keep their priority.
+                # Search remaining balances only inside the ingredient's compatible
+                # storage zone.  Legacy stock in an unrelated warehouse is deliberately
+                # ignored and reported as a shortage instead of being issued incorrectly.
                 if remaining > 0:
                     configured = {row.warehouse for row in sources if row.warehouse}
                     fallback_balances = frappe.get_all(
@@ -309,6 +351,8 @@ class WAFDProductionBatch(Document):
                     for balance in fallback_balances:
                         warehouse = balance.get("warehouse")
                         if not warehouse or warehouse in configured:
+                            continue
+                        if not ingredient_warehouse_is_compatible(ingredient_name, ingredient_category, warehouse):
                             continue
                         actual = flt(balance.get("actual_quantity"))
                         reserved = flt(balance.get("reserved_quantity"))

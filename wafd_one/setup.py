@@ -121,6 +121,13 @@ REQUIRED_WORKSPACE_DOCTYPES = (
 
 
 def ensure_roles():
+    """Ensure every WAFD operational role is a Desk-enabled role.
+
+    Older sites may already contain these roles with ``desk_access = 0``.
+    Merely skipping an existing Role leaves users unable to enter Desk even
+    when their DocType permissions are otherwise correct.  Normalize existing
+    roles as well as creating missing ones.
+    """
     for role_name in ROLES:
         if not frappe.db.exists("Role", role_name):
             frappe.get_doc(
@@ -130,6 +137,8 @@ def ensure_roles():
                     "desk_access": 1,
                 }
             ).insert(ignore_permissions=True)
+        elif not frappe.db.get_value("Role", role_name, "desk_access"):
+            frappe.db.set_value("Role", role_name, "desk_access", 1, update_modified=False)
 
 
 def sync_all_doctypes():

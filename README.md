@@ -1,6 +1,6 @@
 # WAFD ONE
 
-Current release: **10.0.0 RC148 — Recipe Integrity & Hajj Cuisine Library QA**
+Current release: **10.0.0 RC152 — Comprehensive Permissions Baseline**
 
 **Current release: 10.0.0 RC94**
 

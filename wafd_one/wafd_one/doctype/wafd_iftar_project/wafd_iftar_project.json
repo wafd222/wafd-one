@@ -519,8 +519,23 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
    "create": 1,
    "delete": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -531,31 +546,60 @@
    "role": "WAFD Operations Manager",
    "submit": 1,
    "cancel": 1,
-   "amend": 1
+   "amend": 1,
+   "select": 0,
+   "import": 0
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
+   "email": 0,
+   "export": 0,
    "print": 1,
    "read": 1,
    "report": 1,
-   "share": 1,
+   "share": 0,
    "write": 1,
    "role": "WAFD Project Manager",
    "submit": 1,
-   "cancel": 1,
-   "amend": 1
+   "cancel": 0,
+   "amend": 0,
+   "select": 0,
+   "delete": 0,
+   "import": 0
   },
   {
    "read": 1,
    "report": 1,
-   "role": "WAFD Finance User"
+   "role": "WAFD Finance User",
+   "select": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0
   },
   {
    "read": 1,
    "report": 1,
-   "role": "WAFD Storekeeper"
+   "role": "WAFD Storekeeper",
+   "select": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0
   }
  ],
  "sort_field": "modified",

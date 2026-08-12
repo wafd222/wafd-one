@@ -80,7 +80,12 @@
    "export": 1,
    "print": 1,
    "report": 1,
-   "share": 1
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
   },
   {
    "role": "WAFD Operations Manager",
@@ -89,14 +94,32 @@
    "create": 1,
    "export": 1,
    "print": 1,
-   "report": 1
+   "report": 1,
+   "select": 0,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 1,
+   "import": 0,
+   "share": 1
   },
   {
    "role": "WAFD Project Manager",
    "read": 1,
-   "export": 1,
+   "export": 0,
    "print": 1,
-   "report": 1
+   "report": 1,
+   "select": 0,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 0,
+   "import": 0,
+   "share": 0
   }
  ],
  "quick_entry": 0,

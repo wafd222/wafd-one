@@ -1,105 +1,122 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "field:driver_name",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "driver_name",
-    "mobile",
-    "id_number",
-    "license_number",
-    "license_expiry",
-    "status"
-  ],
-  "fields": [
-    {
-      "fieldname": "driver_name",
-      "fieldtype": "Data",
-      "label": "اسم السائق / Driver Name",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "mobile",
-      "fieldtype": "Data",
-      "label": "الجوال / Mobile",
-      "options": "Phone",
-      "reqd": 1
-    },
-    {
-      "fieldname": "id_number",
-      "fieldtype": "Data",
-      "label": "رقم الهوية / ID Number"
-    },
-    {
-      "fieldname": "license_number",
-      "fieldtype": "Data",
-      "label": "رقم الرخصة / License Number"
-    },
-    {
-      "fieldname": "license_expiry",
-      "fieldtype": "Date",
-      "label": "انتهاء الرخصة / License Expiry"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "متاح / Available\nفي مهمة / On Trip\nإجازة / Leave\nغير نشط / Inactive",
-      "default": "متاح / Available",
-      "in_list_view": 1
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Driver",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1,
-  "title_field": "driver_name"
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:driver_name",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "driver_name",
+  "mobile",
+  "id_number",
+  "license_number",
+  "license_expiry",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "اسم السائق / Driver Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mobile",
+   "fieldtype": "Data",
+   "label": "الجوال / Mobile",
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "id_number",
+   "fieldtype": "Data",
+   "label": "رقم الهوية / ID Number"
+  },
+  {
+   "fieldname": "license_number",
+   "fieldtype": "Data",
+   "label": "رقم الرخصة / License Number"
+  },
+  {
+   "fieldname": "license_expiry",
+   "fieldtype": "Date",
+   "label": "انتهاء الرخصة / License Expiry"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "متاح / Available\nفي مهمة / On Trip\nإجازة / Leave\nغير نشط / Inactive",
+   "default": "متاح / Available",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Driver",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "report": 1,
+   "share": 0,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "driver_name"
 }

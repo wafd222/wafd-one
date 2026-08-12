@@ -1,156 +1,179 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:WAFD-COMPLAINT-{#####}",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "project",
-    "hotel",
-    "delivery_trip",
-    "complaint_date",
-    "category",
-    "priority",
-    "description",
-    "attachment",
-    "assigned_to",
-    "resolution",
-    "status"
-  ],
-  "fields": [
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "المشروع / Project",
-      "options": "WAFD Catering Project",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "hotel",
-      "fieldtype": "Link",
-      "label": "الفندق / Hotel",
-      "options": "WAFD Hotel"
-    },
-    {
-      "fieldname": "delivery_trip",
-      "fieldtype": "Link",
-      "label": "رحلة التوصيل / Delivery Trip",
-      "options": "WAFD Delivery Trip"
-    },
-    {
-      "fieldname": "complaint_date",
-      "fieldtype": "Datetime",
-      "label": "تاريخ الشكوى / Complaint Date",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "category",
-      "fieldtype": "Select",
-      "label": "التصنيف / Category",
-      "options": "جودة / Quality\nكمية / Quantity\nتأخير / Delay\nتغليف / Packaging\nسلوك / Conduct\nأخرى / Other",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "priority",
-      "fieldtype": "Select",
-      "label": "الأولوية / Priority",
-      "options": "منخفضة / Low\nمتوسطة / Medium\nعالية / High\nحرجة / Critical",
-      "default": "متوسطة / Medium",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "description",
-      "fieldtype": "Small Text",
-      "label": "وصف الشكوى / Description",
-      "reqd": 1
-    },
-    {
-      "fieldname": "attachment",
-      "fieldtype": "Attach",
-      "label": "مرفق / Attachment"
-    },
-    {
-      "fieldname": "assigned_to",
-      "fieldtype": "Link",
-      "label": "مسندة إلى / Assigned To",
-      "options": "User"
-    },
-    {
-      "fieldname": "resolution",
-      "fieldtype": "Small Text",
-      "label": "الحل / Resolution"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "مفتوحة / Open\nقيد المعالجة / In Progress\nتم الحل / Resolved\nمغلقة / Closed",
-      "default": "مفتوحة / Open",
-      "in_list_view": 1
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Complaint",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Project Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Quality Inspector",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-COMPLAINT-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "hotel",
+  "delivery_trip",
+  "complaint_date",
+  "category",
+  "priority",
+  "description",
+  "attachment",
+  "assigned_to",
+  "resolution",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hotel",
+   "fieldtype": "Link",
+   "label": "الفندق / Hotel",
+   "options": "WAFD Hotel"
+  },
+  {
+   "fieldname": "delivery_trip",
+   "fieldtype": "Link",
+   "label": "رحلة التوصيل / Delivery Trip",
+   "options": "WAFD Delivery Trip"
+  },
+  {
+   "fieldname": "complaint_date",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الشكوى / Complaint Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "التصنيف / Category",
+   "options": "جودة / Quality\nكمية / Quantity\nتأخير / Delay\nتغليف / Packaging\nسلوك / Conduct\nأخرى / Other",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "الأولوية / Priority",
+   "options": "منخفضة / Low\nمتوسطة / Medium\nعالية / High\nحرجة / Critical",
+   "default": "متوسطة / Medium",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "وصف الشكوى / Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "مرفق / Attachment"
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "مسندة إلى / Assigned To",
+   "options": "User"
+  },
+  {
+   "fieldname": "resolution",
+   "fieldtype": "Small Text",
+   "label": "الحل / Resolution"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مفتوحة / Open\nقيد المعالجة / In Progress\nتم الحل / Resolved\nمغلقة / Closed",
+   "default": "مفتوحة / Open",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Complaint",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Project Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "report": 1,
+   "share": 0,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Quality Inspector",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "report": 1,
+   "share": 0,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

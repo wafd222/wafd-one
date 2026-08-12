@@ -1,113 +1,137 @@
 {
-  "doctype": "DocType",
-  "name": "WAFD Packaging Profile",
-  "module": "WAFD ONE",
-  "autoname": "field:profile_name",
-  "title_field": "profile_name",
-  "search_fields": "profile_name,meal_type,service_type",
-  "track_changes": 1,
-  "field_order": [
-    "profile_name",
-    "meal_type",
-    "service_type",
-    "units_per_box",
-    "label_template",
-    "is_active",
-    "materials",
-    "total_cost_per_meal",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "profile_name",
-      "label": "اسم نموذج التغليف / Profile Name",
-      "fieldtype": "Data",
-      "unique": 1,
-      "reqd": 1
-    },
-    {
-      "fieldname": "meal_type",
-      "label": "نوع الوجبة / Meal Type",
-      "fieldtype": "Select",
-      "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nعام / General",
-      "reqd": 1
-    },
-    {
-      "fieldname": "service_type",
-      "label": "نوع الخدمة / Service Type",
-      "fieldtype": "Select",
-      "options": "وجبة فردية / Individual Meal\nوجبة اقتصادية / Economy Meal\nوجبة فاخرة / Premium Meal\nبوفيه / Buffet\nكوفي بريك / Coffee Break\nإفطار صائم / Iftar Pack",
-      "reqd": 1
-    },
-    {
-      "fieldname": "units_per_box",
-      "label": "وجبات لكل صندوق / Units per Box",
-      "fieldtype": "Int",
-      "default": "10",
-      "reqd": 1
-    },
-    {
-      "fieldname": "label_template",
-      "label": "قالب الملصق / Label Template",
-      "fieldtype": "Small Text"
-    },
-    {
-      "fieldname": "is_active",
-      "label": "نشط / Active",
-      "fieldtype": "Check",
-      "default": "1"
-    },
-    {
-      "fieldname": "materials",
-      "label": "مواد التغليف / Packaging Materials",
-      "fieldtype": "Table",
-      "options": "WAFD Packaging Profile Item"
-    },
-    {
-      "fieldname": "total_cost_per_meal",
-      "label": "تكلفة التغليف للوجبة / Packaging Cost per Meal",
-      "fieldtype": "Currency",
-      "read_only": 1
-    },
-    {
-      "fieldname": "notes",
-      "label": "ملاحظات / Notes",
-      "fieldtype": "Small Text"
-    }
-  ],
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "print": 1,
-      "report": 1,
-      "export": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "print": 1,
-      "report": 1,
-      "export": 1
-    },
-    {
-      "role": "WAFD Production Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "print": 1,
-      "report": 1
-    }
-  ],
-  "sort_field": "profile_name",
-  "sort_order": "ASC",
-  "creation": "2026-07-24 16:00:00.000000",
-  "modified": "2026-07-24 16:00:00.000000",
-  "modified_by": "Administrator",
-  "owner": "Administrator"
+ "doctype": "DocType",
+ "name": "WAFD Packaging Profile",
+ "module": "WAFD ONE",
+ "autoname": "field:profile_name",
+ "title_field": "profile_name",
+ "search_fields": "profile_name,meal_type,service_type",
+ "track_changes": 1,
+ "field_order": [
+  "profile_name",
+  "meal_type",
+  "service_type",
+  "units_per_box",
+  "label_template",
+  "is_active",
+  "materials",
+  "total_cost_per_meal",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "profile_name",
+   "label": "اسم نموذج التغليف / Profile Name",
+   "fieldtype": "Data",
+   "unique": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "meal_type",
+   "label": "نوع الوجبة / Meal Type",
+   "fieldtype": "Select",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nعام / General",
+   "reqd": 1
+  },
+  {
+   "fieldname": "service_type",
+   "label": "نوع الخدمة / Service Type",
+   "fieldtype": "Select",
+   "options": "وجبة فردية / Individual Meal\nوجبة اقتصادية / Economy Meal\nوجبة فاخرة / Premium Meal\nبوفيه / Buffet\nكوفي بريك / Coffee Break\nإفطار صائم / Iftar Pack",
+   "reqd": 1
+  },
+  {
+   "fieldname": "units_per_box",
+   "label": "وجبات لكل صندوق / Units per Box",
+   "fieldtype": "Int",
+   "default": "10",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label_template",
+   "label": "قالب الملصق / Label Template",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "is_active",
+   "label": "نشط / Active",
+   "fieldtype": "Check",
+   "default": "1"
+  },
+  {
+   "fieldname": "materials",
+   "label": "مواد التغليف / Packaging Materials",
+   "fieldtype": "Table",
+   "options": "WAFD Packaging Profile Item"
+  },
+  {
+   "fieldname": "total_cost_per_meal",
+   "label": "تكلفة التغليف للوجبة / Packaging Cost per Meal",
+   "fieldtype": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "label": "ملاحظات / Notes",
+   "fieldtype": "Small Text"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 1,
+   "import": 0,
+   "share": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 0,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 1,
+   "import": 0,
+   "share": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "report": 1,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "profile_name",
+ "sort_order": "ASC",
+ "creation": "2026-07-24 16:00:00.000000",
+ "modified": "2026-07-24 16:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
 }

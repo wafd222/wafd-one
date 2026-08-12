@@ -153,17 +153,30 @@
    "report": 1,
    "export": 1,
    "print": 1,
-   "share": 1
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 1,
+   "import": 0
   },
   {
    "role": "WAFD Operations Manager",
    "read": 1,
    "write": 1,
    "create": 1,
-   "delete": 1,
+   "delete": 0,
    "report": 1,
    "export": 1,
-   "print": 1
+   "print": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "email": 1,
+   "import": 0,
+   "share": 1
   }
  ],
  "sort_field": "modified",

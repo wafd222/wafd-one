@@ -1,114 +1,131 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "field:plate_number",
-  "creation": "2026-07-13 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "plate_number",
-    "vehicle_type",
-    "make_model",
-    "capacity_meals",
-    "registration_expiry",
-    "insurance_expiry",
-    "status"
-  ],
-  "fields": [
-    {
-      "fieldname": "plate_number",
-      "fieldtype": "Data",
-      "label": "رقم اللوحة / Plate Number",
-      "reqd": 1,
-      "unique": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "vehicle_type",
-      "fieldtype": "Select",
-      "label": "نوع المركبة / Vehicle Type",
-      "options": "سيارة / Car\nفان / Van\nدينا / Truck\nمبردة / Refrigerated",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "make_model",
-      "fieldtype": "Data",
-      "label": "الماركة والموديل / Make & Model"
-    },
-    {
-      "fieldname": "capacity_meals",
-      "fieldtype": "Int",
-      "label": "سعة الوجبات / Meal Capacity",
-      "non_negative": 1
-    },
-    {
-      "fieldname": "registration_expiry",
-      "fieldtype": "Date",
-      "label": "انتهاء الاستمارة / Registration Expiry"
-    },
-    {
-      "fieldname": "insurance_expiry",
-      "fieldtype": "Date",
-      "label": "انتهاء التأمين / Insurance Expiry"
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "الحالة / Status",
-      "options": "متاحة / Available\nفي مهمة / On Trip\nصيانة / Maintenance\nغير نشطة / Inactive",
-      "default": "متاحة / Available",
-      "in_list_view": 1
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "istable": 0,
-  "is_submittable": 0,
-  "links": [],
-  "modified": "2026-07-13 14:30:00.000000",
-  "modified_by": "Administrator",
-  "module": "WAFD ONE",
-  "name": "WAFD Vehicle",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Operations Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    },
-    {
-      "role": "WAFD Delivery Supervisor",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "report": 1,
-      "share": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1,
-  "title_field": "plate_number"
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:plate_number",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plate_number",
+  "vehicle_type",
+  "make_model",
+  "capacity_meals",
+  "registration_expiry",
+  "insurance_expiry",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "plate_number",
+   "fieldtype": "Data",
+   "label": "رقم اللوحة / Plate Number",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Select",
+   "label": "نوع المركبة / Vehicle Type",
+   "options": "سيارة / Car\nفان / Van\nدينا / Truck\nمبردة / Refrigerated",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "make_model",
+   "fieldtype": "Data",
+   "label": "الماركة والموديل / Make & Model"
+  },
+  {
+   "fieldname": "capacity_meals",
+   "fieldtype": "Int",
+   "label": "سعة الوجبات / Meal Capacity",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "registration_expiry",
+   "fieldtype": "Date",
+   "label": "انتهاء الاستمارة / Registration Expiry"
+  },
+  {
+   "fieldname": "insurance_expiry",
+   "fieldtype": "Date",
+   "label": "انتهاء التأمين / Insurance Expiry"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "متاحة / Available\nفي مهمة / On Trip\nصيانة / Maintenance\nغير نشطة / Inactive",
+   "default": "متاحة / Available",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-13 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Vehicle",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "report": 1,
+   "share": 0,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "plate_number"
 }

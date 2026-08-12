@@ -269,3 +269,6 @@ wafd_one.patches.v10_0_0_rc150.execute
 
 # RC151 centralized WAFD role-permission hardening and stale Custom DocPerm cleanup
 wafd_one.patches.v10_0_0_rc151.execute
+
+# RC152 comprehensive least-privilege permission matrix for every WAFD role
+wafd_one.patches.v10_0_0_rc152.execute

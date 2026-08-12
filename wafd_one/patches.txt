@@ -266,3 +266,6 @@ wafd_one.patches.v10_0_0_rc148.execute
 
 # RC150 ingredient-aware warehouse routing and safe legacy test-stock relocation
 wafd_one.patches.v10_0_0_rc150.execute
+
+# RC151 centralized WAFD role-permission hardening and stale Custom DocPerm cleanup
+wafd_one.patches.v10_0_0_rc151.execute

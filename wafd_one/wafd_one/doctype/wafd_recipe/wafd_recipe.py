@@ -4,6 +4,29 @@ from frappe.utils import flt, now_datetime
 
 
 class WAFDRecipe(Document):
+    def _enforce_recipe_master_permission(self, action):
+        # Defense in depth: recipe master data is governed by Operations/System.
+        # Specialized operational roles consume recipes but must not maintain them.
+        if getattr(self.flags, "ignore_permissions", False):
+            return
+        roles = set(frappe.get_roles(frappe.session.user))
+        if roles.intersection({"System Manager", "WAFD Operations Manager"}):
+            return
+        frappe.throw(
+            "إدارة الوصفات متاحة لمدير العمليات فقط / Recipe master maintenance is restricted to Operations Manager",
+            frappe.PermissionError,
+        )
+
+    def before_insert(self):
+        self._enforce_recipe_master_permission("create")
+
+    def before_save(self):
+        if not self.is_new():
+            self._enforce_recipe_master_permission("write")
+
+    def on_trash(self):
+        self._enforce_recipe_master_permission("delete")
+
     def validate(self):
         yield_qty = flt(self.yield_quantity)
         if yield_qty <= 0:

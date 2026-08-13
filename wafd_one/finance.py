@@ -419,14 +419,28 @@ def _get_billable_delivery_rows(project_name, exclude_invoice=None):
     already reserved by non-cancelled invoices. This allows later incremental deliveries
     for the same meal plan to be invoiced without duplicating earlier quantities.
     """
+    # RC155: the current operational flow closes delivery through WAFD Receiving Note.
+    # Older projects may still use WAFD Delivery Proof, so accept both sources while
+    # preferring the Receiving Note for a trip to prevent double billing.
     plans = frappe.db.sql(
         """select mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price,
-                  coalesce(sum(dp.received_quantity), 0) delivered_quantity
+                  coalesce(sum(src.received_quantity), 0) delivered_quantity
            from `tabWAFD Meal Plan` mp
-           inner join `tabWAFD Delivery Proof` dp
-             on dp.meal_plan=mp.name
-            and dp.project=mp.project
-            and dp.status in ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')
+           inner join (
+               select rn.project, rn.meal_plan, rn.delivery_trip, rn.received_quantity
+                 from `tabWAFD Receiving Note` rn
+                where rn.status='تم الاستلام / Received' and rn.received_quantity > 0
+               union all
+               select dp.project, dp.meal_plan, dp.delivery_trip, dp.received_quantity
+                 from `tabWAFD Delivery Proof` dp
+                where dp.status in ('مقبول بالكامل / Fully Accepted', 'مقبول جزئياً / Partially Accepted')
+                  and dp.received_quantity > 0
+                  and not exists (
+                      select 1 from `tabWAFD Receiving Note` rn
+                       where rn.delivery_trip=dp.delivery_trip
+                         and rn.status='تم الاستلام / Received'
+                  )
+           ) src on src.meal_plan=mp.name and src.project=mp.project
            where mp.project=%s
            group by mp.name, mp.service_date, mp.hotel, mp.meal_type, mp.unit_price
            having delivered_quantity > 0""",

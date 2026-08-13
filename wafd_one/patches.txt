@@ -275,3 +275,6 @@ wafd_one.patches.v10_0_0_rc152.execute
 
 # RC153 normalize Desk access for every WAFD operational role
 wafd_one.patches.v10_0_0_rc153.execute
+
+# RC154 quality-inspector dependency access and CCP one-sided temperature limits
+wafd_one.patches.v10_0_0_rc154.execute

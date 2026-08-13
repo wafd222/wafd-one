@@ -1033,7 +1033,7 @@ def prepare_ccp_check(batch_name, ccp_type="الطهي / Cooking"):
     actual measurement during normal operation.
     """
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
-    batch.check_permission("write")
+    batch.check_permission("read")
     existing = frappe.db.get_value(
         "WAFD CCP Check",
         {"production_batch": batch.name, "ccp_type": ccp_type},
@@ -1107,7 +1107,7 @@ def verify_ccp_and_release(check_name):
 @frappe.whitelist()
 def release_food_safety_batch(batch_name):
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
-    batch.check_permission("write")
+    batch.check_permission("read")
     frappe.db.sql("select name from `tabWAFD Production Batch` where name=%s for update", batch.name)
     batch.reload()
     if batch.food_safety_release_status == "مفرج / Released":

@@ -8,13 +8,14 @@ class WAFDCCPCheck(Document):
             frappe.throw("دفعة الإنتاج غير موجودة / Production batch not found")
         if get_datetime(self.check_time) > now_datetime():
             frappe.throw("وقت الفحص لا يمكن أن يكون مستقبليًا / Check time cannot be in the future")
-        if self.minimum_limit is not None and self.maximum_limit is not None and flt(self.minimum_limit) > flt(self.maximum_limit):
-            frappe.throw("الحد الأدنى لا يمكن أن يتجاوز الحد الأعلى / Minimum limit cannot exceed maximum limit")
         self._apply_default_limits()
+        use_minimum, use_maximum = self._active_limits()
+        if use_minimum and use_maximum and flt(self.minimum_limit) > flt(self.maximum_limit):
+            frappe.throw("الحد الأدنى لا يمكن أن يتجاوز الحد الأعلى / Minimum limit cannot exceed maximum limit")
         compliant = True
-        if self.minimum_limit is not None and flt(self.measured_value) < flt(self.minimum_limit):
+        if use_minimum and flt(self.measured_value) < flt(self.minimum_limit):
             compliant = False
-        if self.maximum_limit is not None and flt(self.measured_value) > flt(self.maximum_limit):
+        if use_maximum and flt(self.measured_value) > flt(self.maximum_limit):
             compliant = False
         self.compliance_status = "مطابق / Compliant" if compliant else "غير مطابق / Noncompliant"
         if not compliant:
@@ -37,6 +38,21 @@ class WAFDCCPCheck(Document):
             self.minimum_limit = settings.minimum_hot_holding_temperature
         elif self.ccp_type == "الحفظ البارد / Cold Holding" and self.maximum_limit is None:
             self.maximum_limit = settings.maximum_cold_holding_temperature
+
+    def _active_limits(self):
+        """Return which bounds are meaningful for the selected CCP.
+
+        Frappe Float fields render an unset value as 0.000.  For minimum-only
+        CCPs (Cooking/Hot Holding), that zero must never be interpreted as a
+        real maximum; likewise Cold Holding is maximum-only.
+        """
+        minimum_only = {"الطهي / Cooking", "الحفظ الساخن / Hot Holding"}
+        maximum_only = {"الحفظ البارد / Cold Holding"}
+        if self.ccp_type in minimum_only:
+            return self.minimum_limit is not None, False
+        if self.ccp_type in maximum_only:
+            return False, self.maximum_limit is not None
+        return self.minimum_limit is not None, self.maximum_limit is not None
 
     def before_save(self):
         if self.is_new():

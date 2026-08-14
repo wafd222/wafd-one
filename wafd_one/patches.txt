@@ -284,3 +284,6 @@ wafd_one.patches.v10_0_0_rc156.execute
 
 # RC157 final role/UI hardening, closed-plan protection, undertaking auto-fill and trip timing repair
 wafd_one.patches.v10_0_0_rc157.execute
+
+# RC158 Desk search/sidebar role visibility repair
+wafd_one.patches.v10_0_0_rc158.execute

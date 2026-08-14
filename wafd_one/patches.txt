@@ -278,3 +278,6 @@ wafd_one.patches.v10_0_0_rc153.execute
 
 # RC154 quality-inspector dependency access and CCP one-sided temperature limits
 wafd_one.patches.v10_0_0_rc154.execute
+
+# RC156 consolidated role matrix and operational hand-off permission repair
+wafd_one.patches.v10_0_0_rc156.execute

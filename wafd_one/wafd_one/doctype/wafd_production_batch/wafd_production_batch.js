@@ -290,6 +290,46 @@ function add_guided_production_action(frm) {
     frm.page.clear_primary_action();
     if (frm.is_new()) return;
 
+    const roles = frappe.user_roles || [];
+    const isOps = roles.includes("System Manager") || roles.includes("WAFD Operations Manager");
+    const isProduction = roles.includes("WAFD Production Supervisor");
+    const isQuality = roles.includes("WAFD Quality Inspector");
+
+    // Quality Inspector owns only Quality + CCP. Do not expose production,
+    // packaging approval, loading or delivery actions from this form.
+    if (isQuality && !isOps && !isProduction) {
+        if (frm.doc.quality_status !== "ناجح / Passed") {
+            frm.page.set_primary_action(__("فحص الجودة / Quality Inspection"), () => {
+                frappe.call({
+                    method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.create_quality_inspection",
+                    args: { batch_name: frm.doc.name },
+                    freeze: true,
+                    callback(r) {
+                        const result = r.message || {};
+                        if (result.name) frappe.set_route("Form", "WAFD Quality Inspection", result.name);
+                        else if (result.values) frappe.new_doc("WAFD Quality Inspection", result.values);
+                    }
+                });
+            });
+            return;
+        }
+        if (frm.doc.food_safety_release_status !== "مفرج / Released") {
+            frm.page.set_primary_action(__("تسجيل قياس سلامة الغذاء / Record Food Safety Measurement"), () => {
+                frappe.call({
+                    method: "wafd_one.wafd_one.doctype.wafd_production_batch.wafd_production_batch.prepare_ccp_check",
+                    args: { batch_name: frm.doc.name },
+                    freeze: true,
+                    callback(r) {
+                        const result = r.message || {};
+                        if (result.name) frappe.set_route("Form", "WAFD CCP Check", result.name);
+                        else if (result.values) frappe.new_doc("WAFD CCP Check", result.values);
+                    }
+                });
+            });
+        }
+        return;
+    }
+
     if (frm.doc.status === "مخطط / Planned") {
         frm.page.set_primary_action(__("صرف المواد وبدء الإنتاج / Issue Materials & Start Production"), () => {
             frappe.call({

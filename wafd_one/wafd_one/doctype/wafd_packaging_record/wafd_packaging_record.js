@@ -26,8 +26,12 @@ frappe.ui.form.on("WAFD Packaging Record", {
             populate_from_batch(frm);
             return;
         }
-        add_guided_packaging_action(frm);
-        if (["مكتمل / Completed", "جاهز للتحميل / Ready for Loading"].includes(frm.doc.status)) {
+        if (frappe.user_roles.some(r => ["System Manager", "WAFD Operations Manager", "WAFD Production Supervisor"].includes(r))) {
+            add_guided_packaging_action(frm);
+        } else {
+            frm.page.clear_primary_action();
+        }
+        if (frappe.user_roles.some(r => ["System Manager", "WAFD Operations Manager", "WAFD Production Supervisor"].includes(r)) && ["مكتمل / Completed", "جاهز للتحميل / Ready for Loading"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Create Loading Record"), () => {
                 frappe.call({
                     method: "wafd_one.operations.create_loading_record",

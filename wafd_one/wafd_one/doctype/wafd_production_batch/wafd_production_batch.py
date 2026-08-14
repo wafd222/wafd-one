@@ -989,7 +989,11 @@ def create_quality_inspection(batch_name):
     invalid Conditional record that requires a corrective action.
     """
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
-    batch.check_permission("write")
+    roles = set(frappe.get_roles())
+    if "WAFD Quality Inspector" in roles:
+        batch.check_permission("read")
+    else:
+        batch.check_permission("write")
     existing = frappe.db.get_value("WAFD Quality Inspection", {"production_batch": batch.name}, "name")
     if existing:
         return {"name": existing, "created": False}

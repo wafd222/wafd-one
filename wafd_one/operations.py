@@ -15,7 +15,11 @@ def _get_or_create(doctype, filters, values):
 def create_packaging_record(batch_name):
     """Open a correctly populated packaging draft, or return the existing record."""
     batch = frappe.get_doc("WAFD Production Batch", batch_name)
-    batch.check_permission("write")
+    roles = set(frappe.get_roles())
+    if "WAFD Quality Inspector" in roles:
+        batch.check_permission("read")
+    else:
+        batch.check_permission("write")
     if batch.quality_status != "ناجح / Passed":
         frappe.throw("يجب نجاح فحص الجودة قبل إنشاء سجل التغليف / Quality inspection must pass first")
 
@@ -30,22 +34,26 @@ def create_packaging_record(batch_name):
         return {"name": existing, "created": False}
 
     packed = cint(batch.packed_quantity) or quantity
-    return {
-        "created": True,
-        "values": {
-            "project": batch.project,
-            "production_batch": batch.name,
-            "meal_plan": batch.meal_plan,
-            "packaging_date": batch.batch_date or nowdate(),
-            "planned_quantity": quantity,
-            "packed_quantity": packed,
-            "rejected_quantity": max(quantity - packed, 0),
-            "box_count": cint(batch.box_count),
-            "units_per_box": cint(batch.units_per_box),
-            "supervisor": batch.packaging_supervisor,
-            "status": "مخطط / Planned",
-        },
+    values = {
+        "project": batch.project,
+        "production_batch": batch.name,
+        "meal_plan": batch.meal_plan,
+        "packaging_date": batch.batch_date or nowdate(),
+        "planned_quantity": quantity,
+        "packed_quantity": packed,
+        "rejected_quantity": max(quantity - packed, 0),
+        "box_count": cint(batch.box_count),
+        "units_per_box": cint(batch.units_per_box),
+        "supervisor": batch.packaging_supervisor or frappe.session.user,
+        "status": "مخطط / Planned",
     }
+    # Quality approval is a hand-off, not permission to operate packaging.
+    # Create the next-stage record server-side, then return it read-only to the inspector.
+    if "WAFD Quality Inspector" in roles:
+        doc = frappe.get_doc({"doctype": "WAFD Packaging Record", **values})
+        doc.insert(ignore_permissions=True)
+        return {"name": doc.name, "created": True}
+    return {"created": True, "values": values}
 
 
 @frappe.whitelist()

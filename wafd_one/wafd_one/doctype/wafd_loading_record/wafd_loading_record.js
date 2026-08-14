@@ -1,10 +1,14 @@
 frappe.ui.form.on("WAFD Loading Record", {
     refresh(frm) {
         if (frm.is_new()) return;
-        add_guided_loading_action(frm);
+        if (frappe.user_roles.some(r => ["System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"].includes(r))) {
+            add_guided_loading_action(frm);
+        } else {
+            frm.page.clear_primary_action();
+        }
         frm.add_custom_button(__("معاينة المستند"), () => open_loading_pdf(frm), __("Print & Documents"));
         frm.add_custom_button(__("طباعة PDF"), () => open_loading_pdf(frm), __("Print & Documents"));
-        if (["تم التحميل / Loaded", "خرجت / Dispatched"].includes(frm.doc.status)) {
+        if (frappe.user_roles.some(r => ["System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"].includes(r)) && ["تم التحميل / Loaded", "خرجت / Dispatched"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Create Delivery Trip"), () => {
                 frappe.call({
                     method: "wafd_one.operations.create_delivery_trip",

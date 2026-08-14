@@ -60,7 +60,7 @@ def _canvas(title_ar, title_en, rows, extra='', delivery=False):
     if extra:
         html += f'<div style="margin-top:16px;border:1px solid #dfdbd0;background:#fbfaf7;padding:12px;direction:rtl;font-size:10px;line-height:1.7;">{extra}</div>'
     if delivery:
-        html += '''{% if doc.hotel_stamp %}<div style="margin-top:14px;text-align:left;direction:rtl;"><div style="font-size:9px;font-weight:700;">ختم الفندق / Hotel Stamp</div><img src="{{ doc.hotel_stamp }}" style="max-width:130px;max-height:85px;object-fit:contain;"></div>{% endif %}'''
+        html += '''{% if doc.delivery_photo %}<div style="margin-top:14px;direction:rtl;"><div style="font-size:9px;font-weight:700;margin-bottom:5px;">صورة التسليم / Delivery Photo</div><div style="border:1px solid #dfdbd0;background:#fbfaf7;padding:6px;text-align:center;"><img src="{{ doc.delivery_photo }}" style="max-width:300px;max-height:150px;object-fit:contain;"></div></div>{% endif %}\n{% if doc.hotel_stamp %}<div style="margin-top:14px;text-align:left;direction:rtl;"><div style="font-size:9px;font-weight:700;">ختم الفندق / Hotel Stamp</div><img src="{{ doc.hotel_stamp }}" style="max-width:130px;max-height:85px;object-fit:contain;"></div>{% endif %}'''
     html += _signature_area(delivery=delivery) + _footer()
     return {"page": {"width": 794, "height": 1123, "background": "#fff"}, "blocks": [{"id": "main", "type": "html", "x": 42, "y": 30, "w": 710, "h": 1015, "html": html}]}
 

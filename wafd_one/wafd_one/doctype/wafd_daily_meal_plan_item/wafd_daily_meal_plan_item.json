@@ -58,37 +58,43 @@
   {
    "fieldname": "unit_price",
    "fieldtype": "Currency",
-   "label": "سعر البيع للوحدة / Unit Price"
+   "label": "سعر البيع للوحدة / Unit Price",
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_unit_cost",
    "fieldtype": "Currency",
    "label": "التكلفة التقديرية للوحدة / Est. Unit Cost",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "total_value",
    "fieldtype": "Currency",
    "label": "إجمالي القيمة / Total Value",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_cost",
    "fieldtype": "Currency",
    "label": "التكلفة التقديرية / Estimated Cost",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_profit",
    "fieldtype": "Currency",
    "label": "الربح التقديري / Estimated Profit",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_margin_percent",
    "fieldtype": "Percent",
    "label": "هامش الربح / Estimated Margin",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "meal_plan",

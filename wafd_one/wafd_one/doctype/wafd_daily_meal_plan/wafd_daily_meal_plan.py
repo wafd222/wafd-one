@@ -5,11 +5,32 @@ from frappe.utils import cint, flt, getdate
 
 class WAFDDailyMealPlan(Document):
     def validate(self):
+        self._enforce_final_state_lock()
         self._validate_project_context()
         self._validate_unique_day()
         self._validate_source_warehouses()
         self._calculate_rows_and_totals()
         self._set_readiness_status()
+
+    def _enforce_final_state_lock(self):
+        """Prevent ordinary users from altering an already delivered/cancelled plan.
+
+        Operational services may still perform controlled synchronization with
+        ``ignore_permissions``.  This protects historical project records from
+        accidental edits after delivery while keeping migrations/idempotent
+        workflow repairs safe.
+        """
+        if self.is_new() or getattr(self.flags, "ignore_permissions", False):
+            return
+        previous_status = frappe.db.get_value(self.doctype, self.name, "status")
+        if previous_status not in ("تم التسليم / Delivered", "ملغاة / Cancelled"):
+            return
+        if "System Manager" in set(frappe.get_roles()):
+            return
+        frappe.throw(
+            "لا يمكن تعديل خطة يومية منتهية أو ملغاة / "
+            "A delivered or cancelled daily plan cannot be modified"
+        )
 
     def _validate_project_context(self):
         if not self.project:
@@ -292,7 +313,16 @@ def get_project_plan_defaults(project_name, service_date=None):
 @frappe.whitelist()
 def create_production_batches(daily_plan_name):
     daily = frappe.get_doc("WAFD Daily Meal Plan", daily_plan_name)
-    daily.check_permission("write")
+    daily.check_permission("read")
+    allowed_roles = {"System Manager", "WAFD Operations Manager", "WAFD Production Supervisor"}
+    if not (set(frappe.get_roles()) & allowed_roles):
+        frappe.throw(
+            "إنشاء دفعات الإنتاج متاح لمشرف الإنتاج أو مدير العمليات فقط / "
+            "Only Production Supervisor or Operations Manager may start production",
+            frappe.PermissionError,
+        )
+    if daily.status in ("تم التسليم / Delivered", "ملغاة / Cancelled"):
+        frappe.throw("الخطة منتهية ولا يمكن بدء إنتاج جديد / The plan is closed and cannot start new production")
     if daily.missing_recipe_count:
         frappe.throw("حدد وصفة لكل وجبة قبل إنشاء الإنتاج / Select a recipe for every meal")
     created = skipped = 0

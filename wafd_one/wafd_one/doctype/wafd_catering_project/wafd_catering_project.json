@@ -236,7 +236,8 @@
   {
    "fieldname": "financial_section",
    "fieldtype": "Section Break",
-   "label": "الملخص المالي / Financial Summary"
+   "label": "الملخص المالي / Financial Summary",
+   "permlevel": 1
   },
   {
    "fieldname": "currency",
@@ -249,55 +250,64 @@
    "fieldname": "contract_value",
    "fieldtype": "Currency",
    "label": "قيمة العقد / Contract Value",
-   "non_negative": 1
+   "non_negative": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_revenue",
    "fieldtype": "Currency",
    "label": "الإيراد التقديري / Estimated Revenue",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "estimated_cost",
    "fieldtype": "Currency",
    "label": "التكلفة التقديرية / Estimated Cost",
-   "non_negative": 1
+   "non_negative": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "actual_cost",
    "fieldtype": "Currency",
    "label": "التكلفة الفعلية / Actual Cost",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "revenue",
    "fieldtype": "Currency",
    "label": "صافي الإيراد الفعلي قبل الضريبة / Net Actual Revenue Excl. VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "collected_amount_incl_vat",
    "fieldtype": "Currency",
    "label": "المحصّل شامل الضريبة / Collected Incl. VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "actual_vat_amount",
    "fieldtype": "Currency",
    "label": "ضريبة القيمة المضافة المحصلة / Collected VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "profit",
    "fieldtype": "Currency",
    "label": "الربح الفعلي بعد استبعاد الضريبة / Actual Profit Excl. VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "profit_margin_percent",
    "fieldtype": "Percent",
    "label": "هامش الربح / Profit Margin",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "progress_section",
@@ -433,43 +443,50 @@
    "fieldname": "invoiced_amount",
    "fieldtype": "Currency",
    "label": "إجمالي الفواتير شامل الضريبة / Total Invoiced Incl. VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "outstanding_amount",
    "fieldtype": "Currency",
    "label": "الذمم المستحقة / Outstanding Receivables",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "cost_variance",
    "fieldtype": "Currency",
    "label": "انحراف التكلفة / Cost Variance",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "revenue_variance",
    "fieldtype": "Currency",
    "label": "انحراف الإيراد / Revenue Variance",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "cost_per_meal",
    "fieldtype": "Currency",
    "label": "التكلفة لكل وجبة / Cost per Meal",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "revenue_per_meal",
    "fieldtype": "Currency",
    "label": "صافي الإيراد لكل وجبة قبل الضريبة / Net Revenue per Meal Excl. VAT",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "profit_per_meal",
    "fieldtype": "Currency",
    "label": "الربح لكل وجبة / Profit per Meal",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "contract_snapshot_section",
@@ -559,19 +576,22 @@
   {
    "fieldname": "financial_contract_section",
    "fieldtype": "Section Break",
-   "label": "البيانات المالية التعاقدية / Contract Financials"
+   "label": "البيانات المالية التعاقدية / Contract Financials",
+   "permlevel": 1
   },
   {
    "fieldname": "tax_rate",
    "fieldtype": "Percent",
    "label": "نسبة الضريبة / VAT Rate",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "tax_amount",
    "fieldtype": "Currency",
    "label": "قيمة الضريبة / VAT Amount",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "grand_total",
@@ -583,13 +603,15 @@
    "fieldname": "discount_amount",
    "fieldtype": "Currency",
    "label": "الخصم / Discount",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "advance_amount",
    "fieldtype": "Currency",
    "label": "الدفعة المقدمة / Advance Amount",
-   "read_only": 1
+   "read_only": 1,
+   "permlevel": 1
   }
  ],
  "index_web_pages_for_search": 0,
@@ -773,6 +795,78 @@
    "export": 0,
    "share": 0,
    "select": 1
+  },
+  {
+   "role": "System Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 0,
+   "email": 0,
+   "report": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0,
+   "select": 0
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 0,
+   "email": 0,
+   "report": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0,
+   "select": 0
+  },
+  {
+   "role": "WAFD Project Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 0,
+   "email": 0,
+   "report": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0,
+   "select": 0
+  },
+  {
+   "role": "WAFD Finance User",
+   "permlevel": 1,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 0,
+   "email": 0,
+   "report": 0,
+   "import": 0,
+   "export": 0,
+   "share": 0,
+   "select": 0
   }
  ],
  "sort_field": "creation",

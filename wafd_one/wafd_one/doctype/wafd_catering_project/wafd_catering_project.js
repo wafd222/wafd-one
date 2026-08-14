@@ -104,7 +104,22 @@ function recalculate(frm, cdt, cdn) {
     frappe.model.set_value(cdt, cdn, "estimated_revenue", total * flt(row.unit_price));
 }
 
-frappe.ui.form.on("WAFD Catering Project", {refresh(frm){if(!frm.is_new()){frm.add_custom_button(__("إنشاء فاتورة من التسليم"),()=>{frappe.call({method:"wafd_one.finance.create_invoice_from_deliveries",args:{project_name:frm.doc.name},freeze:true,callback:r=>{if(r.message) frappe.set_route("Form","WAFD Invoice",r.message);}});},__("المالية"));frm.add_custom_button(__("تحديث الربحية"),()=>frappe.call({method:"wafd_one.finance.refresh_project_financials",args:{project_name:frm.doc.name},callback:()=>frm.reload_doc()}),__("المالية"));}}});
+frappe.ui.form.on("WAFD Catering Project", {
+    refresh(frm) {
+        if (frm.is_new() || !wafd_can_view_finance()) return;
+        frm.add_custom_button(__("إنشاء فاتورة من التسليم"), () => {
+            frappe.call({
+                method: "wafd_one.finance.create_invoice_from_deliveries",
+                args: { project_name: frm.doc.name }, freeze: true,
+                callback: r => { if (r.message) frappe.set_route("Form", "WAFD Invoice", r.message); }
+            });
+        }, __("المالية"));
+        frm.add_custom_button(__("تحديث الربحية"), () => frappe.call({
+            method: "wafd_one.finance.refresh_project_financials",
+            args: { project_name: frm.doc.name }, callback: () => frm.reload_doc()
+        }), __("المالية"));
+    }
+});
 
 frappe.ui.form.on("WAFD Catering Project", {
     refresh(frm) {
@@ -136,8 +151,8 @@ frappe.ui.form.on("WAFD Catering Project", {
 frappe.ui.form.on("WAFD Catering Project", {
     refresh(frm) {
         if (frm.is_new()) return;
-        frm.add_custom_button(__("تعهد فندق"), () => {
-            frappe.new_doc("WAFD Hotel Undertaking", {
+        frm.add_custom_button(__("تعهد فندق"), async () => {
+            const values = {
                 project: frm.doc.name,
                 contract: frm.doc.contract,
                 mission: frm.doc.mission,
@@ -145,7 +160,15 @@ frappe.ui.form.on("WAFD Catering Project", {
                 beneficiary_count: frm.doc.beneficiary_count,
                 start_date: frm.doc.start_date,
                 end_date: frm.doc.end_date
-            });
+            };
+            if (frm.doc.mission) {
+                const r = await frappe.db.get_value("WAFD Mission", frm.doc.mission, ["mission_name", "official_name", "country"]);
+                const mission = r.message || {};
+                values.second_party_name = mission.official_name || mission.mission_name || "";
+                values.party_nationality = mission.country || "";
+                values.nationality = mission.country || "";
+            }
+            frappe.new_doc("WAFD Hotel Undertaking", values);
         }, __("المستندات"));
     }
 });
@@ -153,7 +176,7 @@ frappe.ui.form.on("WAFD Catering Project", {
 
 frappe.ui.form.on("WAFD Catering Project", {
     refresh(frm) {
-        if (frm.is_new()) return;
+        if (frm.is_new() || !wafd_can_view_finance()) return;
 
         frm.add_custom_button(__("Financial Status"), () => {
             frappe.call({
@@ -317,3 +340,8 @@ frappe.ui.form.on("WAFD Catering Project", {
         }, __("Operations"));
     }
 });
+
+function wafd_can_view_finance() {
+    const allowed = ["System Manager", "WAFD Operations Manager", "WAFD Project Manager", "WAFD Finance User", "WAFD Approver", "WAFD Auditor"];
+    return allowed.some(role => frappe.user.has_role(role));
+}

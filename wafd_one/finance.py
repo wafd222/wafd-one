@@ -2,6 +2,19 @@ import frappe
 from frappe.utils import add_days, cint, flt, getdate, now_datetime, nowdate
 
 
+FINANCIAL_VIEW_ROLES = {
+    "System Manager", "WAFD Operations Manager", "WAFD Project Manager",
+    "WAFD Finance User", "WAFD Approver", "WAFD Auditor",
+}
+
+def require_financial_view_access():
+    if not (set(frappe.get_roles()) & FINANCIAL_VIEW_ROLES):
+        frappe.throw(
+            "غير مصرح لك بعرض البيانات المالية / You are not permitted to view financial data",
+            frappe.PermissionError,
+        )
+
+
 
 def get_finance_settings():
     """Return safe finance defaults even during first migration."""
@@ -555,6 +568,7 @@ def get_dashboard_data(from_date=None, to_date=None):
     test cycles. In that case the document creation date is used, so existing data
     does not disappear from the dashboard. Cancelled records are always excluded.
     """
+    require_financial_view_access()
     to_date = getdate(to_date or nowdate())
     from_date = getdate(from_date or add_days(to_date, -29))
     if from_date > to_date:
@@ -878,6 +892,7 @@ def finance_integrity_check(project_name=None, repair=False):
 @frappe.whitelist()
 def get_project_billing_status(project_name):
     """Return a concise, auditable billing and collection status for one project."""
+    require_financial_view_access()
     if not project_name or not frappe.db.exists("WAFD Catering Project", project_name):
         frappe.throw("المشروع غير موجود / Project not found")
     if not frappe.has_permission("WAFD Catering Project", "read", project_name):

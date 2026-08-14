@@ -40,6 +40,28 @@ class WAFDHotelUndertaking(Document):
             frappe.throw(_("عدد المستفيدين يجب أن يكون أكبر من صفر / Beneficiary count must be greater than zero"))
 
     def _fill_linked_data(self):
+        if self.project:
+            project = frappe.db.get_value(
+                "WAFD Catering Project", self.project,
+                ["contract", "mission", "primary_hotel", "beneficiary_count", "start_date", "end_date"],
+                as_dict=True,
+            )
+            if project:
+                self.contract = self.contract or project.contract
+                self.mission = self.mission or project.mission
+                self.hotel = self.hotel or project.primary_hotel
+                self.beneficiary_count = self.beneficiary_count or project.beneficiary_count
+                self.start_date = self.start_date or project.start_date
+                self.end_date = self.end_date or project.end_date
+        if self.mission:
+            mission = frappe.db.get_value(
+                "WAFD Mission", self.mission,
+                ["mission_name", "official_name", "country"], as_dict=True,
+            )
+            if mission:
+                self.second_party_name = self.second_party_name or mission.official_name or mission.mission_name
+                self.party_nationality = self.party_nationality or mission.country
+                self.nationality = self.nationality or mission.country
         if self.saved_beneficiary:
             ref = frappe.db.get_value(
                 "WAFD Undertaking Beneficiary", self.saved_beneficiary,

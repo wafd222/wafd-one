@@ -228,7 +228,6 @@ def _validate_workspace_record(workspace):
         "الخطط اليومية": "WAFD Daily Meal Plan",
         "الوصفات": "WAFD Recipe",
         "مكونات الأغذية": "WAFD Ingredient",
-        "إدارة WAFD ONE": "wafd-administration-console",
     }
     actual = {row.label: row.link_to for row in workspace.shortcuts}
     missing = [label for label, target in expected.items() if actual.get(label) != target]
@@ -237,24 +236,6 @@ def _validate_workspace_record(workspace):
             "WAFD ONE workspace rebuild failed. Missing shortcuts: "
             + ", ".join(missing)
         )
-
-    admin_shortcut = next(
-        (row for row in workspace.shortcuts if row.label == "إدارة WAFD ONE"),
-        None,
-    )
-    if not admin_shortcut or admin_shortcut.type != "Page":
-        frappe.throw("WAFD ONE administration shortcut must target a Desk Page.")
-
-    admin_link = next(
-        (row for row in workspace.links if row.label == "إدارة WAFD ONE"),
-        None,
-    )
-    if (
-        not admin_link
-        or admin_link.link_type != "Page"
-        or admin_link.link_to != "wafd-administration-console"
-    ):
-        frappe.throw("WAFD ONE administration workspace link is invalid.")
 
     import json
 

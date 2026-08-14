@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, get_datetime, getdate, now_datetime, nowdate
+from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, nowdate
 
 ACTIVE = ("مخططة / Planned", "تم التحميل / Loaded", "في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed")
 
@@ -8,7 +8,7 @@ ACTIVE = ("مخططة / Planned", "تم التحميل / Loaded", "في الطر
 class WAFDDeliveryTrip(Document):
     def validate(self):
         loading = frappe.db.get_value("WAFD Loading Record", self.loading_record,
-            ["project", "meal_plan", "vehicle", "driver", "hotel", "quantity", "status", "dispatch_time"], as_dict=True)
+            ["project", "meal_plan", "vehicle", "driver", "hotel", "quantity", "status", "dispatch_time", "loading_date"], as_dict=True)
         if not loading:
             frappe.throw("سجل التحميل غير موجود / Loading record not found")
         if loading.status not in ("تم التحميل / Loaded", "خرجت / Dispatched"):
@@ -24,20 +24,58 @@ class WAFDDeliveryTrip(Document):
             frappe.throw("كمية الرحلة يجب أن تكون أكبر من صفر / Trip quantity must be greater than zero")
         self._validate_resource(self.vehicle, self.driver)
         self._validate_food_safety_release()
-        self._validate_times()
-        self._calculate_trip_metrics()
+        self._fill_planned_times(loading)
 
+        # Populate actual timestamps before validating and calculating metrics.
+        # RC156 calculated transit duration too early, leaving a valid trip at 0.
         if self.status == "في الطريق / In Transit":
             self.actual_departure = self.actual_departure or loading.dispatch_time or now_datetime()
         if self.status in ("وصلت / Arrived", "تم التسليم / Delivered"):
             self.actual_arrival = self.actual_arrival or now_datetime()
             if not self.actual_departure:
+                self.actual_departure = loading.dispatch_time or loading.loading_date
+            if not self.actual_departure:
                 frappe.throw("سجل وقت المغادرة قبل الوصول / Record departure time before arrival")
+
+        self._validate_times()
+        self._calculate_trip_metrics()
+
         if self.status == "متأخرة / Delayed" and not (self.delay_reason or "").strip():
             frappe.throw("سبب التأخير مطلوب / Delay reason is required")
         if self.status == "تم التسليم / Delivered" and not frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
             frappe.throw("لا يمكن اعتماد الرحلة مسلمة دون إثبات تسليم / Delivery proof is required")
 
+
+    def _fill_planned_times(self, loading):
+        """Derive auditable trip targets from the meal service schedule.
+
+        Planned arrival is the service time minus the configured delivery lead
+        minutes. Planned departure uses the loading schedule timestamp because
+        the current data model has no route-duration master; we do not invent a
+        travel duration.
+        """
+        if not self.planned_departure:
+            self.planned_departure = loading.loading_date or loading.dispatch_time
+        if self.planned_arrival:
+            return
+        plan = frappe.db.get_value(
+            "WAFD Meal Plan", self.meal_plan,
+            ["service_date", "service_time", "meal_type", "project"], as_dict=True,
+        )
+        if not plan or not plan.service_date or not plan.service_time:
+            return
+        lead_minutes = frappe.db.get_value(
+            "WAFD Project Service",
+            {
+                "parent": plan.project or self.project,
+                "parenttype": "WAFD Catering Project",
+                "service_type": plan.meal_type,
+            },
+            "delivery_lead_minutes",
+        )
+        lead_minutes = cint(lead_minutes) if lead_minutes not in (None, "") else 45
+        service_dt = get_datetime(f"{plan.service_date} {plan.service_time}")
+        self.planned_arrival = add_to_date(service_dt, minutes=-lead_minutes, as_datetime=True)
 
     def _calculate_trip_metrics(self):
         self.delay_minutes = 0

@@ -281,3 +281,6 @@ wafd_one.patches.v10_0_0_rc154.execute
 
 # RC156 consolidated role matrix and operational hand-off permission repair
 wafd_one.patches.v10_0_0_rc156.execute
+
+# RC157 final role/UI hardening, closed-plan protection, undertaking auto-fill and trip timing repair
+wafd_one.patches.v10_0_0_rc157.execute

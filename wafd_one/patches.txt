@@ -290,3 +290,6 @@ wafd_one.patches.v10_0_0_rc158.execute
 
 # RC159 Production Batch Awesomebar/workspace visibility hardening
 wafd_one.patches.v10_0_0_rc159.execute
+
+# RC160 Frappe v16 curated Workspace Sidebar and Production Batch command-palette navigation
+wafd_one.patches.v10_0_0_rc160.execute

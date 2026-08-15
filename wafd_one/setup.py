@@ -690,7 +690,7 @@ _RC161_RIGHTS = (
 )
 
 _RC161_SIDEBAR_ITEMS = (
-    {"label": "WAFD ONE", "type": "Link", "link_type": "Page", "link_to": "wafd-one-dashboard", "icon": "home", "idx": 1},
+    {"label": "WAFD ONE", "type": "Link", "link_type": "Page", "link_to": "wafd-role-home", "icon": "home", "idx": 1},
     {"label": "التشغيل", "type": "Link", "link_type": "Page", "link_to": "wafd-operations-hub", "icon": "activity", "idx": 2},
     {"label": "المخزون والمشتريات", "type": "Link", "link_type": "Page", "link_to": "wafd-inventory-hub", "icon": "package", "idx": 3},
     {"label": "التوصيل", "type": "Link", "link_type": "Page", "link_to": "wafd-delivery-hub", "icon": "truck", "idx": 4},
@@ -820,6 +820,21 @@ def ensure_rc161_navigation_repair():
     frappe.clear_cache(doctype="WAFD Production Batch")
     frappe.clear_cache()
 
+
+def ensure_rc168_mobile_role_navigation():
+    """Keep the executive dashboard executive-only and make the role home authoritative.
+
+    Standard Page roles are synchronized from source during migrate.  A System
+    Manager can also create a Custom Role override for a Page; Frappe adds those
+    roles to the standard Page roles.  Remove any stale override on the executive
+    dashboard so staff cannot regain access through an old manual setting.
+    """
+    if frappe.db.exists("DocType", "Custom Role"):
+        for name in frappe.get_all("Custom Role", filters={"page": "wafd-one-dashboard"}, pluck="name"):
+            frappe.delete_doc("Custom Role", name, ignore_permissions=True)
+    frappe.clear_cache()
+
+
 def after_migrate():
     """Keep normal upgrades lightweight.
 
@@ -842,6 +857,11 @@ def after_migrate():
         ensure_rc161_navigation_repair()
     except Exception:
         frappe.log_error(frappe.get_traceback(), "WAFD ONE RC161 navigation repair")
+
+    try:
+        ensure_rc168_mobile_role_navigation()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE RC168 mobile role navigation")
 
     if frappe.conf.get("wafd_one_full_post_migrate"):
         sync_all_doctypes()

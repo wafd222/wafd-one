@@ -1,0 +1,22 @@
+# WAFD ONE 10.0.0 RC168 — Mobile Role-Based Dashboard & Executive Access Hardening
+
+- Adds a dedicated **WAFD role home** designed for phones and tablets while keeping the approved black/gold WAFD visual identity.
+- Routes WAFD ONE app/home navigation to the role home. On desktop, System Manager and WAFD Operations Manager are redirected to the approved executive command center; on mobile they receive a compact executive home with an explicit full-dashboard link.
+- Gives each operational role a focused mobile task surface:
+  - Project Manager: projects, daily plans, operations, delivery, documents, Iftar.
+  - Production Supervisor: production batches, daily plans, packaging and recipes.
+  - Quality Inspector: quality inspections, production batches, CCP checks and packaging reference.
+  - Storekeeper: stock movements, balances, purchasing and Iftar inventory access.
+  - Cleaning Supervisor: cleaning stock and assigned cleaning issues only.
+  - Delivery Supervisor: trips, loading, delivery/receiving notes and Iftar delivery.
+  - Driver: assigned delivery trips only.
+  - Finance User: invoices, payments, contracts and project references only.
+  - Approver/Auditor: focused approval or financial-review surfaces.
+- Restricts the full `wafd-one-dashboard` Page to **System Manager** and **WAFD Operations Manager** only.
+- Adds a client-side redirect as defense in depth for non-executive users who attempt to open the executive dashboard route.
+- Removes stale Frappe `Custom Role` overrides for the executive dashboard after migrate so an old manual Page grant cannot silently re-expose it.
+- Updates the Frappe v16 Workspace Sidebar home link to the role home, including private/stale WAFD sidebar copies via the existing migration-safe navigation repair.
+- Removes Finance User from broad master-data and document-hub Page access; finance remains available through its dedicated financial tools.
+- Removes Driver from the generic documents hub; driver access remains intentionally centered on assigned trips.
+- Preserves RC167 Cleaning Supervisor row-level security, RC163 driver row-level security, the RC166 executive dashboard, Iftar module, operational workflows and all historical business records.
+- No stock quantities, invoices, projects, payments, delivery records or Iftar records are modified by this release.

@@ -11,7 +11,7 @@
    "label": "WAFD ONE",
    "type": "Link",
    "link_type": "Page",
-   "link_to": "wafd-one-dashboard",
+   "link_to": "wafd-role-home",
    "icon": "home",
    "idx": 1
   },

@@ -1,4 +1,9 @@
 frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
+  const dashboardRoles = new Set(frappe.user_roles || []);
+  if (!(dashboardRoles.has("System Manager") || dashboardRoles.has("WAFD Operations Manager"))) {
+    frappe.set_route("wafd-role-home");
+    return;
+  }
   frappe.ui.make_app_page({ parent: wrapper, title: __("WAFD ONE"), single_column: true });
   const $root = $(wrapper).find(".layout-main-section").attr("dir", "rtl");
   const today = frappe.datetime.get_today();

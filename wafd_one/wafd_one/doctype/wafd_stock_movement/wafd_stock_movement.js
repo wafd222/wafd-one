@@ -34,3 +34,20 @@ frappe.ui.form.on("WAFD Stock Movement Item", {
         });
     },
 });
+
+frappe.ui.form.on("WAFD Stock Movement", {
+  source_warehouse(frm) {
+    if (!frm.doc.source_warehouse || frm.doc.movement_type !== "صرف / Issue") return;
+    frappe.db.get_value("WAFD Warehouse", frm.doc.source_warehouse, "warehouse_type").then(r => {
+      if (r.message && r.message.warehouse_type === "نظافة / Cleaning") {
+        frm.set_value("issue_purpose", "نظافة / Cleaning");
+      }
+    });
+  },
+  movement_type(frm) {
+    if (frm.doc.movement_type !== "صرف / Issue") {
+      frm.set_value("issue_purpose", "");
+      frm.set_value("issued_to_user", "");
+    }
+  }
+});

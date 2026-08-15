@@ -13,6 +13,7 @@ ROLES = (
     "WAFD Driver",
     "WAFD Finance User",
     "WAFD Storekeeper",
+    "WAFD Cleaning Supervisor",
     "WAFD Approver",
     "WAFD Auditor",
 )
@@ -222,37 +223,24 @@ def _load_workspace_source():
 
 def _validate_workspace_record(workspace):
     expected = {
-        "المشاريع": "WAFD Catering Project",
-        "البعثات والعملاء": "WAFD Mission",
-        "الفنادق": "WAFD Hotel",
-        "العقود": "WAFD Contract",
-        "الخطط اليومية": "WAFD Daily Meal Plan",
-        "دفعات الإنتاج": "WAFD Production Batch",
-        "الوصفات": "WAFD Recipe",
-        "مكونات الأغذية": "WAFD Ingredient",
+        "التشغيل": "wafd-operations-hub",
+        "المخزون والمشتريات": "wafd-inventory-hub",
+        "التوصيل": "wafd-delivery-hub",
+        "المالية": "wafd-finance-hub",
+        "البيانات المرجعية": "wafd-master-data-hub",
+        "المستندات والتعهدات": "wafd-documents-hub",
     }
     actual = {row.label: row.link_to for row in workspace.shortcuts}
     missing = [label for label, target in expected.items() if actual.get(label) != target]
     if missing:
-        frappe.throw(
-            "WAFD ONE workspace rebuild failed. Missing shortcuts: "
-            + ", ".join(missing)
-        )
+        frappe.throw("WAFD ONE workspace rebuild failed. Missing hub shortcuts: " + ", ".join(missing))
 
     import json
-
     blocks = json.loads(workspace.content or "[]")
-    block_names = {
-        row.get("data", {}).get("shortcut_name")
-        for row in blocks
-        if row.get("type") == "shortcut"
-    }
+    block_names = {row.get("data", {}).get("shortcut_name") for row in blocks if row.get("type") == "shortcut"}
     missing_blocks = [label for label in expected if label not in block_names]
     if missing_blocks:
-        frappe.throw(
-            "WAFD ONE workspace content is incomplete. Missing blocks: "
-            + ", ".join(missing_blocks)
-        )
+        frappe.throw("WAFD ONE workspace content is incomplete. Missing hubs: " + ", ".join(missing_blocks))
 
 
 def rebuild_workspace_from_source():
@@ -703,18 +691,12 @@ _RC161_RIGHTS = (
 
 _RC161_SIDEBAR_ITEMS = (
     {"label": "WAFD ONE", "type": "Link", "link_type": "Workspace", "link_to": "WAFD ONE", "icon": "home", "idx": 1},
-    {"label": "المشاريع", "type": "Link", "link_type": "DocType", "link_to": "WAFD Catering Project", "icon": "folder", "idx": 2},
-    {"label": "الخطط اليومية", "type": "Link", "link_type": "DocType", "link_to": "WAFD Daily Meal Plan", "icon": "calendar", "idx": 3},
-    {"label": "دفعات الإنتاج / WAFD Production Batch", "type": "Link", "link_type": "DocType", "link_to": "WAFD Production Batch", "icon": "package", "idx": 4},
-    {"label": "فحص الجودة", "type": "Link", "link_type": "DocType", "link_to": "WAFD Quality Inspection", "icon": "check-circle", "idx": 5},
-    {"label": "سجلات التغليف", "type": "Link", "link_type": "DocType", "link_to": "WAFD Packaging Record", "icon": "package", "idx": 6},
-    {"label": "حركة المخزون", "type": "Link", "link_type": "DocType", "link_to": "WAFD Stock Movement", "icon": "warehouse", "idx": 7},
-    {"label": "رحلات التوصيل", "type": "Link", "link_type": "DocType", "link_to": "WAFD Delivery Trip", "icon": "truck", "idx": 8},
-    {"label": "الفواتير", "type": "Link", "link_type": "DocType", "link_to": "WAFD Invoice", "icon": "file-text", "idx": 9},
-    {"label": "التحصيل", "type": "Link", "link_type": "DocType", "link_to": "WAFD Payment", "icon": "credit-card", "idx": 10},
-    {"label": "الوصفات", "type": "Link", "link_type": "DocType", "link_to": "WAFD Recipe", "icon": "book-open", "idx": 11},
-    {"label": "مكونات الأغذية", "type": "Link", "link_type": "DocType", "link_to": "WAFD Ingredient", "icon": "list", "idx": 12},
-    {"label": "تعهدات الفنادق", "type": "Link", "link_type": "DocType", "link_to": "WAFD Hotel Undertaking", "icon": "file-signature", "idx": 13},
+    {"label": "التشغيل", "type": "Link", "link_type": "Page", "link_to": "wafd-operations-hub", "icon": "activity", "idx": 2},
+    {"label": "المخزون والمشتريات", "type": "Link", "link_type": "Page", "link_to": "wafd-inventory-hub", "icon": "package", "idx": 3},
+    {"label": "التوصيل", "type": "Link", "link_type": "Page", "link_to": "wafd-delivery-hub", "icon": "truck", "idx": 4},
+    {"label": "المالية", "type": "Link", "link_type": "Page", "link_to": "wafd-finance-hub", "icon": "credit-card", "idx": 5},
+    {"label": "البيانات المرجعية", "type": "Link", "link_type": "Page", "link_to": "wafd-master-data-hub", "icon": "database", "idx": 6},
+    {"label": "المستندات والتعهدات", "type": "Link", "link_type": "Page", "link_to": "wafd-documents-hub", "icon": "file-text", "idx": 7},
 )
 
 
@@ -776,6 +758,8 @@ def _rc161_make_sidebar(name="WAFD ONE", standard=True, for_user=None):
         link_to = item.get("link_to")
         if link_type == "DocType" and not frappe.db.exists("DocType", link_to):
             continue
+        if link_type == "Page" and not frappe.db.exists("Page", link_to):
+            continue
         if link_type == "Workspace" and not frappe.db.exists("Workspace", link_to):
             continue
         sidebar.append("items", dict(item))
@@ -795,12 +779,12 @@ def _rc161_repair_private_sidebars():
     if not frappe.db.has_column("Workspace Sidebar", "for_user"):
         return
 
-    users = frappe.get_all(
-        "Has Role",
-        filters={"parenttype": "User", "role": "WAFD Production Supervisor"},
-        pluck="parent",
-    )
-    for user in users:
+    users = set()
+    for role in ROLES:
+        users.update(frappe.get_all(
+            "Has Role", filters={"parenttype": "User", "role": role}, pluck="parent"
+        ))
+    for user in sorted(users):
         for row in frappe.get_all(
             "Workspace Sidebar",
             filters={"for_user": user},
@@ -813,45 +797,18 @@ def _rc161_repair_private_sidebars():
 
 
 def _rc161_ensure_workspace_shortcut():
-    """Make Production Batch visible on the WAFD ONE landing workspace as well."""
+    """Keep the landing workspace aligned with the compact category-hub source."""
     if not frappe.db.exists("Workspace", "WAFD ONE"):
         return
+    source = _load_workspace_source()
     workspace = frappe.get_doc("Workspace", "WAFD ONE")
-
-    found = False
-    for row in workspace.shortcuts:
-        if row.link_to == "WAFD Production Batch":
-            row.label = "دفعات الإنتاج"
-            row.type = "DocType"
-            if hasattr(row, "doc_view"):
-                row.doc_view = "List"
-            found = True
-            break
-    if not found:
-        workspace.append("shortcuts", {
-            "label": "دفعات الإنتاج",
-            "type": "DocType",
-            "link_to": "WAFD Production Batch",
-            "doc_view": "List",
-            "color": "Orange",
-            "restrict_to_domain": "",
-        })
-
-    try:
-        blocks = json.loads(workspace.content or "[]")
-    except Exception:
-        blocks = []
-    if not any(
-        block.get("type") == "shortcut"
-        and block.get("data", {}).get("shortcut_name") == "دفعات الإنتاج"
-        for block in blocks
-    ):
-        blocks.append({"type": "shortcut", "data": {"shortcut_name": "دفعات الإنتاج", "col": 4}})
-        workspace.content = json.dumps(blocks, ensure_ascii=False)
-
+    workspace.content = source.get("content") or "[]"
+    workspace.set("shortcuts", source.get("shortcuts") or [])
+    workspace.set("links", source.get("links") or [])
     workspace.flags.ignore_permissions = True
     workspace.flags.ignore_version = True
     workspace.save(ignore_permissions=True)
+    _validate_workspace_record(workspace)
 
 
 def ensure_rc161_navigation_repair():

@@ -7,6 +7,8 @@ from wafd_one.uom import canonical_uom, uom_matches
 
 class WAFDStockMovement(Document):
     def validate(self):
+        if self.get("is_pre_go_live_test") and not self.is_new():
+            frappe.throw("هذه حركة اختبار مؤرشفة قبل التشغيل الفعلي ولا يمكن تعديلها أو ترحيلها / Archived pre-Go-Live test movements cannot be edited or posted")
         if self.status == "مرحلة / Posted" and not self.posted_on:
             frappe.throw("استخدم زر ترحيل الحركة / Use the Post Movement button")
         total = 0
@@ -17,6 +19,7 @@ class WAFDStockMovement(Document):
             total += row.amount
         self.total_amount = total
         self._validate_warehouses()
+        self._validate_issue_recipient()
         self._validate_reference()
         self._validate_master_data()
         if self.posting_date and get_datetime(self.posting_date) > now_datetime():
@@ -44,6 +47,20 @@ class WAFDStockMovement(Document):
                 frappe.throw(f"لا يمكن استلام صنف منتهي أو ينتهي في تاريخ الاستلام: {row.ingredient} / Expired item cannot be received")
             if row.receiving_temperature is not None and (flt(row.receiving_temperature) < -50 or flt(row.receiving_temperature) > 100):
                 frappe.throw(f"حرارة استلام غير منطقية للصنف {row.ingredient} / Invalid receiving temperature")
+
+
+    def _validate_issue_recipient(self):
+        if self.movement_type != "صرف / Issue":
+            return
+        if self.issued_to_user and not frappe.db.get_value("User", self.issued_to_user, "enabled"):
+            frappe.throw("المستخدم المستلم غير نشط / Issued-to user is disabled")
+        warehouse_type = frappe.db.get_value("WAFD Warehouse", self.source_warehouse, "warehouse_type") if self.source_warehouse else None
+        if warehouse_type == "نظافة / Cleaning":
+            self.issue_purpose = "نظافة / Cleaning"
+            if not self.issued_to_user:
+                frappe.throw("حدد مشرف النظافة المستلم قبل صرف مواد النظافة / Select the Cleaning Supervisor receiving the cleaning materials")
+            if "WAFD Cleaning Supervisor" not in frappe.get_roles(self.issued_to_user):
+                frappe.throw("مواد مستودع النظافة يجب صرفها لمستخدم بدور WAFD Cleaning Supervisor / Cleaning-store issues must be assigned to a Cleaning Supervisor")
 
     def _validate_reference(self):
         if self.reference_type == "WAFD Purchase Order" and self.reference_name:
@@ -92,6 +109,7 @@ def _posted_purchase_receipts(purchase_order_name, exclude_movement=None):
         "reference_type": "WAFD Purchase Order",
         "reference_name": purchase_order_name,
         "status": "مرحلة / Posted",
+        "is_pre_go_live_test": 0,
     }
     movements = frappe.get_all("WAFD Stock Movement", filters=filters, pluck="name")
     for name in movements:
@@ -223,7 +241,7 @@ def analyze_reversal_safety(doc):
                 """select distinct sm.name, sm.movement_type, sm.posting_date
                    from `tabWAFD Stock Movement` sm
                    join `tabWAFD Stock Movement Item` i on i.parent=sm.name
-                  where sm.status='مرحلة / Posted' and sm.name!=%s and i.ingredient=%s
+                  where sm.status='مرحلة / Posted' and coalesce(sm.is_pre_go_live_test,0)=0 and sm.name!=%s and i.ingredient=%s
                     and sm.posting_date >= %s
                     and ((sm.source_warehouse=%s and sm.movement_type in ('صرف / Issue','هالك / Waste','تحويل / Transfer'))
                          or (sm.target_warehouse=%s and sm.movement_type='تسوية / Adjustment'))
@@ -246,6 +264,8 @@ def reverse_posted_movement(doc, reason=None):
     """
     if isinstance(doc, str):
         doc = frappe.get_doc("WAFD Stock Movement", doc)
+    if doc.get("is_pre_go_live_test"):
+        return {"name": doc.name, "reversed": False, "items": 0, "archived_pre_go_live": True}
     if doc.status != "مرحلة / Posted":
         return {"name": doc.name, "reversed": False, "items": 0}
     if doc.movement_type == "تسوية / Adjustment":
@@ -302,6 +322,8 @@ def reverse_posted_movement(doc, reason=None):
 def post_movement(movement_name):
     doc = frappe.get_doc("WAFD Stock Movement", movement_name)
     doc.check_permission("write")
+    if doc.get("is_pre_go_live_test"):
+        frappe.throw("هذه حركة اختبار مؤرشفة قبل التشغيل الفعلي ولا يمكن ترحيلها / Archived pre-Go-Live test movements cannot be posted")
     frappe.db.sql("select name from `tabWAFD Stock Movement` where name=%s for update", movement_name)
     doc.reload()
     if doc.status == "مرحلة / Posted":

@@ -31,7 +31,12 @@ page_css = {
     "wafd-document-studio": "wafd_one/page/wafd_document_studio/wafd_document_studio.css",
     "wafd-launch-center": "public/css/wafd_launch_center.css",
 }
+app_include_js = [
+    "/assets/wafd_one/js/wafd_hub.js",
+]
+
 app_include_css = [
+    "/assets/wafd_one/css/wafd_hub.css",
     "/assets/wafd_one/css/wafd_one_dashboard.css",
     "/assets/wafd_one/css/wafd_one_enterprise.css",
     "/assets/wafd_one/css/wafd_launch_center.css",
@@ -85,9 +90,15 @@ scheduler_events = {
 permission_query_conditions = {
     "WAFD Delivery Trip": "wafd_one.driver_security.delivery_trip_query",
     "WAFD Delivery Proof": "wafd_one.driver_security.delivery_proof_query",
+    "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_query",
+    "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_query",
+    "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_query",
 }
 
 has_permission = {
     "WAFD Delivery Trip": "wafd_one.driver_security.delivery_trip_has_permission",
     "WAFD Delivery Proof": "wafd_one.driver_security.delivery_proof_has_permission",
+    "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_has_permission",
+    "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_has_permission",
+    "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_has_permission",
 }

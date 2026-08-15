@@ -11,6 +11,13 @@
   "database_summary",
   "section_master",
   "install_master_data",
+  "section_go_live",
+  "go_live_inventory_status",
+  "preview_go_live_inventory",
+  "prepare_go_live_inventory",
+  "go_live_inventory_prepared",
+  "go_live_prepared_on",
+  "go_live_prepared_by",
   "section_reset",
   "reset_database"
  ],
@@ -54,6 +61,47 @@
    "fieldtype": "Button",
    "label": "إعادة التهيئة معطلة لحماية البيانات",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_go_live",
+   "fieldtype": "Section Break",
+   "label": "تهيئة المخزون للتشغيل الفعلي / Inventory Go-Live"
+  },
+  {
+   "fieldname": "go_live_inventory_status",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "preview_go_live_inventory",
+   "fieldtype": "Button",
+   "label": "معاينة تهيئة المخزون / Preview Inventory Reset"
+  },
+  {
+   "fieldname": "prepare_go_live_inventory",
+   "fieldtype": "Button",
+   "label": "تهيئة المخزون للتشغيل الفعلي / Prepare Inventory for Go-Live"
+  },
+  {
+   "fieldname": "go_live_inventory_prepared",
+   "fieldtype": "Check",
+   "label": "تمت تهيئة المخزون / Inventory Prepared",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "go_live_prepared_on",
+   "fieldtype": "Datetime",
+   "label": "وقت التهيئة / Prepared On",
+   "read_only": 1,
+   "depends_on": "eval:doc.go_live_inventory_prepared"
+  },
+  {
+   "fieldname": "go_live_prepared_by",
+   "fieldtype": "Link",
+   "label": "تمت بواسطة / Prepared By",
+   "options": "User",
+   "read_only": 1,
+   "depends_on": "eval:doc.go_live_inventory_prepared"
   }
  ],
  "index_web_pages_for_search": 1,

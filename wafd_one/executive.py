@@ -310,6 +310,7 @@ def _inventory_snapshot(limit: int = 8):
                  from `tabWAFD Stock Movement Item` smi
                  inner join `tabWAFD Stock Movement` sm on sm.name=smi.parent
                 where sm.status in ('مرحلة / Posted','مرحّل / Posted','معتمد / Confirmed')
+                  and coalesce(sm.is_pre_go_live_test,0)=0
                   and sm.movement_type in ('صرف / Issue','استهلاك / Consumption','هالك / Waste')
                 group by smi.ingredient
                 order by quantity desc

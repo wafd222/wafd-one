@@ -89,6 +89,7 @@ def _has_posted_receipts(purchase_order_name):
         "reference_type": "WAFD Purchase Order",
         "reference_name": purchase_order_name,
         "status": "مرحلة / Posted",
+        "is_pre_go_live_test": 0,
     }))
 
 
@@ -101,6 +102,7 @@ def _receipt_totals(purchase_order_name):
             "reference_type": "WAFD Purchase Order",
             "reference_name": purchase_order_name,
             "status": "مرحلة / Posted",
+            "is_pre_go_live_test": 0,
         },
         pluck="name",
     )

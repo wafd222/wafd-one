@@ -54,6 +54,7 @@ def _posted_stock_consumption(project_name=None, from_date=None, to_date=None):
     """
     conditions = [
         "sm.status='مرحلة / Posted'",
+        "coalesce(sm.is_pre_go_live_test,0)=0",
         "sm.movement_type in ('صرف / Issue', 'هالك / Waste')",
     ]
     values = []

@@ -1,0 +1,3 @@
+frappe.pages["wafd-documents-hub"].on_page_load = function(wrapper) {
+  window.wafd_one_render_hub(wrapper, { title: "المستندات والتعهدات", items: [{"label": "تعهدات الفنادق", "icon": "✍️", "doctype": "WAFD Hotel Undertaking"}, {"label": "سندات التسليم", "icon": "📄", "doctype": "WAFD Delivery Note"}, {"label": "سندات الاستلام", "icon": "🧾", "doctype": "WAFD Receiving Note"}, {"label": "الفواتير", "icon": "💵", "doctype": "WAFD Invoice"}, {"label": "أوامر الإنتاج", "icon": "🏭", "doctype": "WAFD Production Batch"}, {"label": "سجلات التغليف", "icon": "📦", "doctype": "WAFD Packaging Record"}, {"label": "سجلات التحميل", "icon": "🚛", "doctype": "WAFD Loading Record"}] });
+};

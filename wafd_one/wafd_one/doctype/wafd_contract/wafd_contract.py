@@ -431,6 +431,10 @@ def _stock_reversal_preflight(records):
             continue
         doc = frappe.get_doc("WAFD Stock Movement", name)
         result = {"name": name, "safe": True, "blockers": [], "items": []}
+        if doc.get("is_pre_go_live_test"):
+            result["archived_pre_go_live"] = True
+            diagnostics.append(result)
+            continue
         if doc.status != "مرحلة / Posted":
             diagnostics.append(result)
             continue
@@ -517,7 +521,7 @@ def _stock_reversal_preflight(records):
                         sm.reference_type, sm.reference_name
                  from `tabWAFD Stock Movement` sm
                  join `tabWAFD Stock Movement Item` i on i.parent=sm.name
-                where sm.status='مرحلة / Posted' and i.ingredient=%s
+                where sm.status='مرحلة / Posted' and coalesce(sm.is_pre_go_live_test,0)=0 and i.ingredient=%s
                   and sm.source_warehouse=%s
                 order by sm.posting_date desc, sm.creation desc limit 30""",
             (blocker["ingredient"], blocker["warehouse"]), as_dict=True,
@@ -703,7 +707,12 @@ def _prepare_and_delete(doctype, name, reason=None, preserve_stock=False):
     # WAFD Stock Movement uses its own posting state rather than docstatus.
     # Reverse its quantities and valuation before deletion; never bypass this.
     if doctype == "WAFD Stock Movement" and doc.get("status") == "مرحلة / Posted":
-        if preserve_stock:
+        if doc.get("is_pre_go_live_test"):
+            # The Go-Live reset already neutralized this movement in current stock.
+            # Delete the archived test transaction without touching live balances.
+            doc.db_set({"status": "ملغاة / Cancelled", "posted_by": None, "posted_on": None}, update_modified=False)
+            doc.reload()
+        elif preserve_stock:
             # Immediate cleanup mode: preserve the live physical balance. Issued or
             # wasted quantities remain consumed; unused quantities already remain
             # in their warehouse/cold room and are not added a second time.

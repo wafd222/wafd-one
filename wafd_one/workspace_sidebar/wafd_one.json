@@ -1,115 +1,67 @@
 {
-  "doctype": "Workspace Sidebar",
-  "name": "WAFD ONE",
-  "title": "WAFD ONE",
-  "header_icon": "package",
-  "module": "WAFD ONE",
-  "standard": 1,
-  "app": "wafd_one",
-  "items": [
-    {
-      "label": "WAFD ONE",
-      "type": "Link",
-      "link_type": "Workspace",
-      "link_to": "WAFD ONE",
-      "icon": "home",
-      "idx": 1
-    },
-    {
-      "label": "المشاريع",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Catering Project",
-      "icon": "folder",
-      "idx": 2
-    },
-    {
-      "label": "الخطط اليومية",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Daily Meal Plan",
-      "icon": "calendar",
-      "idx": 3
-    },
-    {
-      "label": "دفعات الإنتاج / WAFD Production Batch",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Production Batch",
-      "icon": "package",
-      "idx": 4
-    },
-    {
-      "label": "فحص الجودة",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Quality Inspection",
-      "icon": "check-circle",
-      "idx": 5
-    },
-    {
-      "label": "سجلات التغليف",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Packaging Record",
-      "icon": "package",
-      "idx": 6
-    },
-    {
-      "label": "حركة المخزون",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Stock Movement",
-      "icon": "warehouse",
-      "idx": 7
-    },
-    {
-      "label": "رحلات التوصيل",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Delivery Trip",
-      "icon": "truck",
-      "idx": 8
-    },
-    {
-      "label": "الفواتير",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Invoice",
-      "icon": "file-text",
-      "idx": 9
-    },
-    {
-      "label": "التحصيل",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Payment",
-      "icon": "credit-card",
-      "idx": 10
-    },
-    {
-      "label": "الوصفات",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Recipe",
-      "icon": "book-open",
-      "idx": 11
-    },
-    {
-      "label": "مكونات الأغذية",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Ingredient",
-      "icon": "list",
-      "idx": 12
-    },
-    {
-      "label": "تعهدات الفنادق",
-      "type": "Link",
-      "link_type": "DocType",
-      "link_to": "WAFD Hotel Undertaking",
-      "icon": "file-signature",
-      "idx": 13
-    }
-  ]
+ "doctype": "Workspace Sidebar",
+ "name": "WAFD ONE",
+ "title": "WAFD ONE",
+ "header_icon": "package",
+ "module": "WAFD ONE",
+ "standard": 1,
+ "app": "wafd_one",
+ "items": [
+  {
+   "label": "WAFD ONE",
+   "type": "Link",
+   "link_type": "Workspace",
+   "link_to": "WAFD ONE",
+   "icon": "home",
+   "idx": 1
+  },
+  {
+   "label": "التشغيل",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-operations-hub",
+   "icon": "activity",
+   "idx": 2
+  },
+  {
+   "label": "المخزون والمشتريات",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-inventory-hub",
+   "icon": "package",
+   "idx": 3
+  },
+  {
+   "label": "التوصيل",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-delivery-hub",
+   "icon": "truck",
+   "idx": 4
+  },
+  {
+   "label": "المالية",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-finance-hub",
+   "icon": "credit-card",
+   "idx": 5
+  },
+  {
+   "label": "البيانات المرجعية",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-master-data-hub",
+   "icon": "database",
+   "idx": 6
+  },
+  {
+   "label": "المستندات والتعهدات",
+   "type": "Link",
+   "link_type": "Page",
+   "link_to": "wafd-documents-hub",
+   "icon": "file-text",
+   "idx": 7
+  }
+ ]
 }

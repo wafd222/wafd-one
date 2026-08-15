@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "driver_name",
+  "system_user",
   "mobile",
   "id_number",
   "license_number",
@@ -20,6 +21,14 @@
    "label": "اسم السائق / Driver Name",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "system_user",
+   "fieldtype": "Link",
+   "label": "مستخدم النظام / System User",
+   "options": "User",
+   "unique": 1,
+   "description": "يربط سجل السائق بحساب WAFD Driver لتقييد الرحلات على السائق نفسه / Links this driver to the WAFD Driver account for row-level trip access."
   },
   {
    "fieldname": "mobile",
@@ -56,7 +65,7 @@
  "istable": 0,
  "is_submittable": 0,
  "links": [],
- "modified": "2026-07-13 14:30:00.000000",
+ "modified": "2026-08-15 08:20:00.000000",
  "modified_by": "Administrator",
  "module": "WAFD ONE",
  "name": "WAFD Driver",
@@ -118,5 +127,6 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1,
- "title_field": "driver_name"
+ "title_field": "driver_name",
+ "search_fields": "driver_name,mobile,system_user"
 }

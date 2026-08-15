@@ -80,3 +80,14 @@ scheduler_events = {
         "wafd_one.quality.refresh_food_safety_alerts",
     ]
 }
+
+# Row-level security for driver-facing delivery records.
+permission_query_conditions = {
+    "WAFD Delivery Trip": "wafd_one.driver_security.delivery_trip_query",
+    "WAFD Delivery Proof": "wafd_one.driver_security.delivery_proof_query",
+}
+
+has_permission = {
+    "WAFD Delivery Trip": "wafd_one.driver_security.delivery_trip_has_permission",
+    "WAFD Delivery Proof": "wafd_one.driver_security.delivery_proof_has_permission",
+}

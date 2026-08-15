@@ -31,14 +31,15 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <button class="wafd-action" data-list="WAFD Payment"><b>✓</b><span>التحصيلات</span><small>الدفعات والأرصدة</small></button>
       </section>
 
-      <section class="wafd-section-head wafd-hub-section-head"><div><span>أقسام النظام</span><small>الوصول إلى التفاصيل عند الحاجة دون ازدحام الواجهة الرئيسية</small></div></section>
+      <section class="wafd-section-head wafd-hub-section-head"><div><span>أقسام النظام</span><small>وصول سريع من نفس لوحة القيادة — التفاصيل تظهر عند فتح القسم فقط</small></div></section>
       <section class="wafd-hub-grid">
-        <button class="wafd-hub-card" data-route="wafd-operations-hub"><b>⚙</b><span>التشغيل</span><small>المشاريع والخطط والإنتاج والجودة والتغليف</small></button>
-        <button class="wafd-hub-card" data-route="wafd-inventory-hub"><b>▣</b><span>المخزون والمشتريات</span><small>المواد والمستودعات والثلاجات والحركات والمشتريات</small></button>
-        <button class="wafd-hub-card" data-route="wafd-delivery-hub"><b>➜</b><span>التوصيل</span><small>التحميل والرحلات والتسليم والاستلام</small></button>
-        <button class="wafd-hub-card" data-route="wafd-finance-hub"><b>ر.س</b><span>المالية</span><small>الفواتير والتحصيل والمراجعة المالية</small></button>
-        <button class="wafd-hub-card" data-route="wafd-master-data-hub"><b>◆</b><span>البيانات المرجعية</span><small>الفنادق والوصفات والمواد والبيانات الأساسية</small></button>
-        <button class="wafd-hub-card" data-route="wafd-documents-hub"><b>▤</b><span>المستندات والتعهدات</span><small>التعهدات والمستندات والطباعة</small></button>
+        <button class="wafd-hub-card" data-route="wafd-operations-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Production Supervisor|WAFD Quality Inspector|WAFD Delivery Supervisor"><b>⚙</b><span>التشغيل</span><small>المشاريع والخطط والإنتاج والجودة والتغليف</small></button>
+        <button class="wafd-hub-card" data-route="wafd-inventory-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Storekeeper|WAFD Cleaning Supervisor|WAFD Production Supervisor|WAFD Project Manager"><b>▣</b><span>المخزون والمشتريات</span><small>المواد والمستودعات والثلاجات والحركات والمشتريات</small></button>
+        <button class="wafd-hub-card" data-route="wafd-delivery-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Delivery Supervisor|WAFD Driver"><b>➜</b><span>التوصيل</span><small>التحميل والرحلات والتسليم والاستلام</small></button>
+        <button class="wafd-hub-card" data-route="wafd-finance-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Finance User|WAFD Approver|WAFD Auditor"><b>ر.س</b><span>المالية</span><small>الفواتير والتحصيل والمراجعة المالية</small></button>
+        <button class="wafd-hub-card wafd-hub-card-iftar" data-route="wafd-iftar-operations" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Delivery Supervisor|WAFD Storekeeper"><b>☾</b><span>إفطار صائم</span><small>المشاريع الموسمية والتشغيل اليومي والتقارير</small></button>
+        <button class="wafd-hub-card" data-route="wafd-master-data-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Production Supervisor|WAFD Quality Inspector|WAFD Storekeeper|WAFD Delivery Supervisor|WAFD Finance User"><b>◆</b><span>البيانات المرجعية</span><small>الفنادق والوصفات والمواد والبيانات الأساسية</small></button>
+        <button class="wafd-hub-card" data-route="wafd-documents-hub" data-roles="System Manager|WAFD Operations Manager|WAFD Project Manager|WAFD Production Supervisor|WAFD Quality Inspector|WAFD Storekeeper|WAFD Delivery Supervisor|WAFD Driver|WAFD Finance User|WAFD Approver|WAFD Auditor"><b>▤</b><span>المستندات والتعهدات</span><small>التعهدات والمستندات والطباعة</small></button>
       </section>
 
       <section class="wafd-control-strip">
@@ -48,65 +49,54 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <button class="wafd-refresh">تحديث البيانات</button>
       </section>
 
-      <section class="wafd-section-head"><div><span>مسار التشغيل المتكامل</span><small>افتح أي مرحلة مباشرة</small></div></section>
-      <section class="wafd-flow-pro"></section>
-
-      <section class="wafd-section-head"><div><span>ملخص الإدارة</span><small>صورة شاملة عن التشغيل والمالية والمخزون</small></div></section>
+      <section class="wafd-section-head wafd-summary-head"><div><span>ملخص الإدارة</span><small>أهم مؤشرات القرار في نظرة واحدة</small></div></section>
       <section class="wafd-kpi-grid wafd-kpi-grid-wide"></section>
 
-      <section class="wafd-manager-overview">
-        <article class="wafd-card wafd-overview-card">
-          <div class="wafd-card-head"><div><h3>ملخص اليوم</h3><small>التخطيط والإنتاج والتوصيل</small></div></div>
-          <div class="wafd-today-ops"></div>
-        </article>
-        <article class="wafd-card wafd-overview-card">
-          <div class="wafd-card-head"><div><h3>الوضع المالي</h3><small>الفوترة والتحصيل والربحية</small></div></div>
-          <div class="wafd-finance-summary"></div>
-        </article>
-        <article class="wafd-card wafd-overview-card">
-          <div class="wafd-card-head"><div><h3>حالة المخزون</h3><small>القيمة والعجز والمستودعات</small></div></div>
-          <div class="wafd-inventory-summary"></div>
-        </article>
+      <section class="wafd-priority-strip wafd-card">
+        <div class="wafd-card-head"><div><h3>تنبيهات تحتاج متابعة</h3><small>الأولوية التشغيلية اليوم</small></div><button class="wafd-refresh-alerts">تحديث التنبيهات</button></div>
+        <div class="wafd-alerts-pro"></div>
       </section>
 
-      <section class="wafd-dashboard-grid">
-        <article class="wafd-card wafd-project-card">
-          <div class="wafd-card-head"><div><h3>المشاريع الحالية</h3><small>التقدم والمرحلة التالية</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div>
-          <div class="wafd-projects"></div>
-        </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>تنبيهات تحتاج متابعة</h3><small>الأولوية التشغيلية اليوم</small></div></div>
-          <div class="wafd-alerts-pro"></div>
-        </article>
-      </section>
+      <section class="wafd-section-head wafd-flow-head"><div><span>مسار التشغيل المتكامل</span><small>افتح أي مرحلة مباشرة</small></div></section>
+      <section class="wafd-flow-pro"></section>
 
-      <section class="wafd-dashboard-grid wafd-bottom-grid">
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>التوصيلات القادمة</h3><small>الرحلات والفنادق والكميات</small></div><button data-list="WAFD Delivery Trip">عرض الكل</button></div>
-          <div class="wafd-deliveries"></div>
+      <section class="wafd-section-head wafd-details-head"><div><span>التفاصيل التنفيذية</span><small>البيانات التفصيلية محفوظة بالكامل وتظهر عند الحاجة فقط</small></div></section>
+      <section class="wafd-detail-groups">
+        <article class="wafd-detail-group">
+          <button class="wafd-detail-toggle" type="button" aria-expanded="false"><span><b>⚙</b><strong>التشغيل والأداء</strong><small>ملخص اليوم، المشاريع الحالية، التوصيلات وأداء التشغيل</small></span><i>＋</i></button>
+          <div class="wafd-detail-panel">
+            <section class="wafd-manager-overview wafd-ops-overview">
+              <article class="wafd-card wafd-overview-card"><div class="wafd-card-head"><div><h3>ملخص اليوم</h3><small>التخطيط والإنتاج والتوصيل</small></div></div><div class="wafd-today-ops"></div></article>
+            </section>
+            <section class="wafd-dashboard-grid">
+              <article class="wafd-card wafd-project-card"><div class="wafd-card-head"><div><h3>المشاريع الحالية</h3><small>التقدم والمرحلة التالية</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div><div class="wafd-projects"></div></article>
+              <article class="wafd-card"><div class="wafd-card-head"><div><h3>التوصيلات القادمة</h3><small>الرحلات والفنادق والكميات</small></div><button data-list="WAFD Delivery Trip">عرض الكل</button></div><div class="wafd-deliveries"></div></article>
+            </section>
+            <section class="wafd-executive-grid wafd-executive-secondary">
+              <article class="wafd-card"><div class="wafd-card-head"><div><h3>أداء التوصيل</h3><small>السائقون والالتزام بالمواعيد</small></div><button data-list="WAFD Delivery Trip">الرحلات</button></div><div class="wafd-driver-performance"></div></article>
+              <article class="wafd-card"><div class="wafd-card-head"><div><h3>أداء الفنادق</h3><small>الكميات المقبولة والمرفوضة</small></div><button data-list="WAFD Hotel">الفنادق</button></div><div class="wafd-hotel-performance"></div></article>
+            </section>
+          </div>
         </article>
-      </section>
 
-      <section class="wafd-section-head"><div><span>لوحة المدير التنفيذية</span><small>المخاطر والأداء والربحية في شاشة واحدة</small></div></section>
-      <section class="wafd-executive-grid">
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>المخاطر الإدارية</h3><small>العقود والوثائق والربحية والتنبيهات</small></div><button class="wafd-refresh-alerts">تحديث التنبيهات</button></div>
-          <div class="wafd-risk-grid"></div>
+        <article class="wafd-detail-group">
+          <button class="wafd-detail-toggle" type="button" aria-expanded="false"><span><b>ر.س</b><strong>المالية والربحية</strong><small>الفوترة والتحصيل والتكلفة وترتيب المشاريع</small></span><i>＋</i></button>
+          <div class="wafd-detail-panel">
+            <section class="wafd-executive-grid">
+              <article class="wafd-card wafd-overview-card"><div class="wafd-card-head"><div><h3>الوضع المالي</h3><small>الفوترة والتحصيل والربحية</small></div></div><div class="wafd-finance-summary"></div></article>
+              <article class="wafd-card"><div class="wafd-card-head"><div><h3>أفضل المشاريع</h3><small>الإيراد والربح والهامش</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div><div class="wafd-project-rankings"></div></article>
+            </section>
+          </div>
         </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>أفضل المشاريع</h3><small>الإيراد والربح والهامش</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div>
-          <div class="wafd-project-rankings"></div>
-        </article>
-      </section>
 
-      <section class="wafd-executive-grid wafd-executive-secondary">
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>أداء التوصيل</h3><small>السائقون والالتزام بالمواعيد</small></div><button data-list="WAFD Delivery Trip">الرحلات</button></div>
-          <div class="wafd-driver-performance"></div>
-        </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>أداء الفنادق</h3><small>الكميات المقبولة والمرفوضة</small></div><button data-list="WAFD Hotel">الفنادق</button></div>
-          <div class="wafd-hotel-performance"></div>
+        <article class="wafd-detail-group">
+          <button class="wafd-detail-toggle" type="button" aria-expanded="false"><span><b>▣</b><strong>المخزون والمخاطر</strong><small>حالة المخزون والتنبيهات الإدارية والمخاطر</small></span><i>＋</i></button>
+          <div class="wafd-detail-panel">
+            <section class="wafd-executive-grid">
+              <article class="wafd-card wafd-overview-card"><div class="wafd-card-head"><div><h3>حالة المخزون</h3><small>القيمة والعجز والمستودعات</small></div></div><div class="wafd-inventory-summary"></div></article>
+              <article class="wafd-card"><div class="wafd-card-head"><div><h3>المخاطر الإدارية</h3><small>العقود والوثائق والربحية والتنبيهات</small></div></div><div class="wafd-risk-grid"></div></article>
+            </section>
+          </div>
         </article>
       </section>
 
@@ -125,6 +115,24 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
   $root.find(".wafd-flow-pro").html(flow.map((item, index) => `
     <button data-list="${item[2]}"><i>${item[0]}</i><span>${item[1]}</span>${index < flow.length - 1 ? "<em>←</em>" : ""}</button>
   `).join(""));
+
+  // Keep the management dashboard visually clean while respecting the target page roles.
+  const currentRoles = new Set(frappe.user_roles || []);
+  $root.find(".wafd-hub-card[data-roles]").each(function () {
+    const allowed = String($(this).data("roles") || "").split("|").filter(Boolean);
+    if (!currentRoles.has("System Manager") && allowed.length && !allowed.some((role) => currentRoles.has(role))) {
+      $(this).remove();
+    }
+  });
+
+  $root.on("click", ".wafd-detail-toggle", function () {
+    const $toggle = $(this);
+    const $group = $toggle.closest(".wafd-detail-group");
+    const open = !$group.hasClass("is-open");
+    $group.toggleClass("is-open", open);
+    $toggle.attr("aria-expanded", open ? "true" : "false");
+    $toggle.find("i").text(open ? "−" : "＋");
+  });
 
   $root.on("click", "[data-route]", function () { frappe.set_route($(this).data("route")); });
   $root.on("click", "[data-stock-receipt]", function () {

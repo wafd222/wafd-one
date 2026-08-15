@@ -1,0 +1,245 @@
+frappe.pages["wafd-iftar-wizard"].on_page_load = function(wrapper) {
+  frappe.ui.make_app_page({parent: wrapper, title: __("إنشاء مشروع إفطار صائم"), single_column: true});
+  wrapper.wafd_iftar_defaults = null;
+  wrapper.wafd_iftar_state = { step: 1, creating: false, build_id: 0 };
+};
+
+frappe.pages["wafd-iftar-wizard"].on_page_show = async function(wrapper) {
+  sessionStorage.removeItem("wafd_iftar_wizard_draft");
+  wrapper.wafd_iftar_state = { step: 1, creating: false, build_id: (wrapper.wafd_iftar_state?.build_id || 0) + 1 };
+  try {
+    const r = await frappe.call({method: "wafd_one.wafd_one.iftar_pro.get_wizard_defaults"});
+    wrapper.wafd_iftar_defaults = r.message || {};
+  } catch (e) {
+    console.error("Unable to load Iftar wizard defaults", e);
+    wrapper.wafd_iftar_defaults = {base_price: 9, locations: {}, optional_prices: {}, zamzam_reference_price: 1.50};
+  }
+  build_wizard(wrapper);
+};
+
+function build_wizard(wrapper) {
+  const state = wrapper.wafd_iftar_state || (wrapper.wafd_iftar_state = {step:1, creating:false, build_id:1});
+  const defaults = wrapper.wafd_iftar_defaults || {base_price:9, locations:{}, optional_prices:{}, zamzam_reference_price:1.50};
+  const $section = $(wrapper).find(".layout-main-section").attr("dir", "rtl").empty();
+
+  const $root = $(`<div class="iftar-wizard">
+    <section class="iw-hero">
+      <div><span>WAFD IFTAR PRO</span><h2>إنشاء مشروع إفطار صائم</h2><p>أربع خطوات واضحة من الموقع حتى بدء التشغيل.</p></div>
+      <div class="iw-steps">${[1,2,3,4].map((n,i)=>`<button type="button" data-step="${n}" class="${i===0?'active':''}">${n}</button>${i<3?'<i></i>':''}`).join('')}</div>
+    </section>
+    <section class="iw-card">
+      <div class="iw-step-title"></div>
+      <div class="iw-grid"></div>
+      <div class="iw-price-note"></div>
+      <div class="iw-summary"></div>
+      <div class="iw-actions">
+        <button type="button" class="btn btn-default iw-prev">السابق</button>
+        <button type="button" class="btn btn-primary iw-next">التالي</button>
+        <button type="button" class="btn btn-primary iw-create">إنشاء المشروع وبدء التشغيل</button>
+      </div>
+    </section>
+  </div>`).appendTo($section);
+
+  const definitions = [
+    {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
+    {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
+    {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>z.location_name).join('\n')}`},
+    {step:1, fieldtype:'Data', fieldname:'contracting_entity', label:'الجهة المتعاقدة', reqd:1},
+    {step:1, fieldtype:'Data', fieldname:'distribution_site', label:'موقع التوزيع', reqd:1},
+    {step:1, fieldtype:'Data', fieldname:'site_details', label:'تفاصيل الموقع أو الباب'},
+    {step:2, fieldtype:'Date', fieldname:'start_date', label:'تاريخ البداية', reqd:1},
+    {step:2, fieldtype:'Date', fieldname:'end_date', label:'تاريخ النهاية', reqd:1},
+    {step:2, fieldtype:'Int', fieldname:'daily_meals', label:'الوجبات اليومية', reqd:1},
+    {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'سعر البيع للوجبة', reqd:1, read_only:1},
+    {step:3, fieldtype:'Data', fieldname:'distribution_type', label:'نوع التوزيع', reqd:1, read_only:1},
+    {step:3, fieldtype:'Select', fieldname:'meal_template', label:'نوع الوجبة', options:`\nالوجبة القياسية / Standard Iftar\nوجبة مع زمزم / Iftar + Zamzam\nوجبة مخصصة / Custom Package`, reqd:1},
+    {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:`استبدال الماء العادي بزمزم 330 مل`},
+    {step:3, fieldtype:'HTML', fieldname:'optional_items', label:'إضافات الوجبة المخصصة'},
+    {step:4, fieldtype:'Check', fieldname:'reuse_last_setup', label:'نسخ أصحاب السفر والطاقم من آخر مشروع لنفس الموقع', default:1},
+    {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'سعر الكرتون الواحد (25 وجبة)'},
+    {step:4, fieldtype:'Int', fieldname:'tablecloth_count', label:'عدد السفر يومياً'},
+    {step:4, fieldtype:'Currency', fieldname:'tablecloth_unit_cost', label:'سعر السفرة الواحدة'},
+    {step:4, fieldtype:'Int', fieldname:'supervisors_manager_count', label:'عدد مديري المشرفين'},
+    {step:4, fieldtype:'Currency', fieldname:'supervisors_manager_rate', label:'أجر مدير المشرفين / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'supervisors_count', label:'عدد المشرفين'},
+    {step:4, fieldtype:'Currency', fieldname:'supervisors_rate', label:'أجر المشرف الواحد / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'assistants_count', label:'عدد المساعدين', default:10},
+    {step:4, fieldtype:'Currency', fieldname:'assistants_rate', label:'أجر المساعد الواحد / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'packaging_workers_count', label:'عدد عمال التغليف'},
+    {step:4, fieldtype:'Currency', fieldname:'packaging_workers_rate', label:'أجر عامل التغليف / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'loading_workers_count', label:'عدد عمال التحميل'},
+    {step:4, fieldtype:'Currency', fieldname:'loading_workers_rate', label:'أجر عامل التحميل / يوم'},
+    {step:4, fieldtype:'Int', fieldname:'drivers_count', label:'عدد السائقين'},
+    {step:4, fieldtype:'Currency', fieldname:'drivers_rate', label:'أجر السائق / يوم'},
+    {step:4, fieldtype:'Data', fieldname:'other_cost_description', label:'تكلفة إضافية — الوصف'},
+    {step:4, fieldtype:'Float', fieldname:'other_cost_quantity', label:'التكلفة الإضافية — الكمية'},
+    {step:4, fieldtype:'Currency', fieldname:'other_cost_rate', label:'التكلفة الإضافية — السعر'},
+    {step:4, fieldtype:'Select', fieldname:'other_cost_basis', label:'التكلفة الإضافية — طريقة الاحتساب', options:`للمشروع / Per Project\nلليوم / Per Day\nللوجبة / Per Meal\nللوحدة / Per Unit`}
+  ];
+
+  const controls = {};
+  definitions.forEach(df => {
+    const box = $(`<div class="iw-field" data-field-step="${df.step}"></div>`).appendTo($root.find('.iw-grid'));
+    controls[df.fieldname] = frappe.ui.form.make_control({parent: box, df, render_input: true});
+  });
+  wrapper.wafd_iftar_controls = controls;
+
+  const value = name => controls[name] ? controls[name].get_value() : null;
+  const set = (name, val) => controls[name] && controls[name].set_value(val == null ? '' : val);
+  const OPTIONAL_ITEMS = ['معمول','فواكه مجففة','مكسرات مشكلة','لوزين','عصير برتقال 200 مل','عصير تفاح 200 مل'];
+  const addonHost = controls.optional_items.$wrapper;
+  addonHost.html(`<div class="iw-addon-title">إضافات الوجبة المخصصة</div><div class="iw-addon-grid">${OPTIONAL_ITEMS.map(item=>{
+    const price=Number((defaults.optional_prices||{})[item]||0);
+    return `<label class="iw-addon-option"><input type="checkbox" value="${frappe.utils.escape_html(item)}"><span><b>${frappe.utils.escape_html(item)}</b><small>+ ${format_currency(price,'SAR')}</small></span></label>`;
+  }).join('')}</div>`);
+  const selectedOptionalItems = () => {
+    const picked=[];
+    addonHost.find('.iw-addon-option input:checked').each(function(){ if(OPTIONAL_ITEMS.includes(this.value)) picked.push(this.value); });
+    return picked;
+  };
+
+  function applyLocationDefaults() {
+    const title = value('project_title');
+    const d = (defaults.locations || {})[title] || {};
+    if (title === 'المسجد النبوي الشريف / Prophet’s Mosque') {
+      controls.haram_zone.$wrapper.show();
+      const raw = value('haram_zone') || '';
+      const zone = (defaults.haram_zones || []).find(z => String(z.location_name) === String(raw));
+      if (zone) set('distribution_site', zone.location_name);
+      else if (d.distribution_site) set('distribution_site', d.distribution_site);
+    } else {
+      controls.haram_zone.$wrapper.hide();
+      set('haram_zone','');
+      if (d.distribution_site) set('distribution_site', d.distribution_site);
+      else if (title && title !== 'مشروع أو موقع آخر / Other Project or Site') set('distribution_site', title);
+    }
+    if (d.contracting_entity) set('contracting_entity', d.contracting_entity);
+    else if (title === 'مشروع أو موقع آخر / Other Project or Site') set('contracting_entity', '');
+    set('distribution_type', d.distribution_type || (title === 'مشروع أو موقع آخر / Other Project or Site' ? 'توزيع خارجي أو جهة / External Distribution or Entity' : 'مسجد أو حرم / Mosque or Haram'));
+    const external = title === 'مشروع أو موقع آخر / Other Project or Site';
+    controls.distribution_site.df.read_only = external ? 0 : 1;
+    controls.distribution_site.refresh();
+    controls.contracting_entity.df.read_only = (d.contracting_entity && title !== 'مشروع أو موقع آخر / Other Project or Site') ? 1 : 0;
+    controls.contracting_entity.refresh();
+  }
+
+  function automaticSalePrice() {
+    const items = selectedOptionalItems();
+    let price = Number(defaults.base_price || 9);
+    items.forEach(item => { price += Number((defaults.optional_prices || {})[item] || 0); });
+    const zamzam = Number(value('include_zamzam') || 0);
+    const waterCost = Number(defaults.water_reference_price || 0);
+    const zamzamCost = 1.50;
+    // Zamzam replaces ordinary water in COST only. Selling price stays unchanged.
+    set('sale_price_per_meal', Number(price.toFixed(2)));
+    const additions = items.map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
+    if (zamzam) additions.push(`زمزم مختار: تكلفة ${format_currency(zamzamCost,'SAR')} بدلاً من الماء ${format_currency(waterCost,'SAR')} — سعر البيع لا يتغير`);
+    controls.include_zamzam.$wrapper.toggleClass('wafd-zamzam-selected', !!zamzam);
+    $root.find('.iw-price-note').html(`<b>السعر الأساسي للوجبة القياسية: ${format_currency(Number(defaults.base_price||9),'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
+    renderSummary();
+  }
+
+  function totals() {
+    const start=value('start_date'), end=value('end_date'), daily=Number(value('daily_meals')||0), sale=Number(value('sale_price_per_meal')||0);
+    const days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
+    const meals=days*daily, cartons=Math.ceil(meals/25);
+    return {days, meals, cartons, revenue:meals*sale};
+  }
+  function renderSummary() {
+    const t=totals();
+    const cartonCost=t.cartons*Number(value('carton_unit_cost')||0);
+    const days=t.days||1;
+    const dailyCosts=[['tablecloth_count','tablecloth_unit_cost'],['supervisors_manager_count','supervisors_manager_rate'],['supervisors_count','supervisors_rate'],['assistants_count','assistants_rate'],['packaging_workers_count','packaging_workers_rate'],['loading_workers_count','loading_workers_rate'],['drivers_count','drivers_rate']].reduce((a,p)=>a+Number(value(p[0])||0)*Number(value(p[1])||0)*days,0);
+    const basis=value('other_cost_basis');
+    const multiplier=basis==='لليوم / Per Day'?days:basis==='للوجبة / Per Meal'?t.meals:1;
+    const other=Number(value('other_cost_quantity')||0)*Number(value('other_cost_rate')||0)*multiplier;
+    const vat=t.revenue*(15/115); const net=t.revenue-vat;
+    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>سعر البيع شامل الضريبة</span><strong>${format_currency(Number(value('sale_price_per_meal')||0),'SAR')}</strong></div><div><span>ضريبة 15% ضمن الإيراد</span><strong>${format_currency(vat,'SAR')}</strong></div><div><span>الإيراد قبل الضريبة</span><strong>${format_currency(net,'SAR')}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد شامل الضريبة</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
+  }
+  function showStep(step) {
+    state.step=Math.max(1,Math.min(4,step));
+    $root.find('[data-field-step]').hide().filter(`[data-field-step="${state.step}"]`).show();
+    const titles={1:'1. بيانات الجهة والموقع',2:'2. المدة والكميات والسعر',3:'3. مكونات الوجبة وطريقة التوزيع',4:'4. التكاليف التشغيلية والمراجعة'};
+    $root.find('.iw-step-title').text(titles[state.step]);
+    $root.find('.iw-steps button').removeClass('active done').each(function(){const n=Number($(this).data('step')); if(n===state.step)$(this).addClass('active'); else if(n<state.step)$(this).addClass('done');});
+    $root.find('.iw-prev').toggle(state.step>1);
+    $root.find('.iw-next').toggle(state.step<4);
+    $root.find('.iw-create').toggle(state.step===4);
+    $root.find('.iw-summary').toggle(state.step>=2);
+    $root.find('.iw-price-note').toggle(state.step===2 || state.step===3);
+    renderSummary();
+  }
+  function validateStep(step) {
+    const missing=definitions.filter(f=>f.step===step&&f.reqd&&!value(f.fieldname));
+    if(missing.length){frappe.msgprint({title:'بيانات ناقصة',message:`أكمل الحقول المطلوبة: ${missing.map(x=>x.label).join('، ')}`,indicator:'orange'});return false;}
+    if(step===2 && value('end_date') < value('start_date')){frappe.msgprint('تاريخ النهاية يجب ألا يسبق تاريخ البداية');return false;}
+    if(step===2 && Number(value('daily_meals')||0)<=0){frappe.msgprint('أدخل عدد الوجبات اليومية');return false;}
+    return true;
+  }
+  function collect() {
+    const out={contracting_entity_type:'جهة حكومية / Government Entity'};
+    Object.keys(controls).forEach(k=>{ if(k!=='optional_items') out[k]=controls[k].get_value(); });
+    out.optional_items = selectedOptionalItems();
+    return out;
+  }
+
+  // Clean initial state. These values are intentional defaults, never remnants from a previous project.
+  Object.entries(controls).forEach(([name,c]) => {
+    if(name === 'optional_items') return;
+    try { c.set_value(c.df.fieldtype === 'Check' ? 0 : (['Int','Float','Currency'].includes(c.df.fieldtype) ? 0 : '')); } catch(e) {}
+  });
+  addonHost.find('input[type=checkbox]').prop('checked', false);
+  set('start_date', frappe.datetime.get_today());
+  set('end_date', frappe.datetime.get_today());
+  set('sale_price_per_meal', Number(defaults.base_price || 9));
+  set('other_cost_basis', 'للمشروع / Per Project');
+  set('season_type', 'رمضان / Ramadan');
+  set('reuse_last_setup', 1);
+  set('assistants_count', 10);
+
+  // Direct listeners: no delegated click handlers. This prevents lost button events after Frappe page re-renders.
+  const nextButton = $root.find('.iw-next').get(0);
+  const prevButton = $root.find('.iw-prev').get(0);
+  const createButton = $root.find('.iw-create').get(0);
+  nextButton.addEventListener('click', e => { e.preventDefault(); if(validateStep(state.step)) showStep(state.step+1); });
+  prevButton.addEventListener('click', e => { e.preventDefault(); showStep(state.step-1); });
+  $root.find('.iw-steps button').each(function(){ this.addEventListener('click', e => { e.preventDefault(); const target=Number(this.dataset.step); if(target<state.step || validateStep(state.step)) showStep(target); }); });
+  createButton.addEventListener('click', async e => {
+    e.preventDefault();
+    if(state.creating || !validateStep(4)) return;
+    state.creating=true;
+    createButton.disabled=true; createButton.textContent='جارٍ إنشاء المشروع...';
+    try {
+      const data=collect();
+      if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam') data.include_zamzam=1;
+      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
+      sessionStorage.removeItem('wafd_iftar_wizard_draft');
+      frappe.show_alert({message:'تم إنشاء المشروع بنجاح — فتح أول يوم تشغيل',indicator:'green'},5);
+      const msg=response.message||{};
+      if(msg.first_operation) frappe.set_route('Form','WAFD Iftar Daily Operation',msg.first_operation);
+      else if(msg.name) frappe.set_route('Form','WAFD Iftar Project',msg.name);
+      else frappe.set_route('wafd-iftar-operations');
+    } catch(err) {
+      console.error(err);
+      frappe.msgprint({title:'تعذر إنشاء المشروع',message:(err?.message||'لم يتم إنشاء المشروع. راجع الرسالة الظاهرة ثم حاول مرة أخرى.'),indicator:'red'});
+    } finally {
+      state.creating=false; createButton.disabled=false; createButton.textContent='إنشاء المشروع وبدء التشغيل';
+    }
+  });
+
+  // Control listeners are attached to each actual control wrapper, including MultiCheck inputs.
+  Object.values(controls).forEach(c => { if(c.$wrapper) c.$wrapper.on('change input', renderSummary); });
+  controls.project_title.$wrapper.on('change', () => { applyLocationDefaults(); automaticSalePrice(); });
+  controls.haram_zone.$wrapper.on('change', () => { applyLocationDefaults(); renderSummary(); });
+  addonHost.on('change', '.iw-addon-option input[type=checkbox]', automaticSalePrice);
+  controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
+  controls.meal_template.$wrapper.on('change', () => {
+    const meal=value('meal_template');
+    if(meal==='وجبة مع زمزم / Iftar + Zamzam') set('include_zamzam',1);
+    if(meal==='الوجبة القياسية / Standard Iftar') { set('include_zamzam',0); addonHost.find('input[type=checkbox]').prop('checked', false); }
+    automaticSalePrice();
+  });
+
+  automaticSalePrice();
+  showStep(1);
+}

@@ -680,6 +680,189 @@ def ensure_madinah_central_and_nearby_hotels():
         installed += 1
     return {"catalogue_count": len(rows), "installed_or_updated": installed}
 
+
+# RC161 migration-safe v16 navigation repair.
+#
+# Important: this intentionally lives in the existing top-level ``wafd_one.setup``
+# module instead of a new ``wafd_one.patches.*`` module.  Frappe Cloud already
+# imports this module for the before/after-migrate hooks, so a partial repository
+# upload cannot strand the site on a missing nested patch package.
+_RC161_PRODUCTION_BATCH_MATRIX = {
+    "System Manager": {"read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "export": 1, "share": 1, "select": 1},
+    "WAFD Operations Manager": {"read": 1, "write": 1, "create": 1, "print": 1, "email": 1, "report": 1, "export": 1, "share": 1, "select": 1},
+    "WAFD Production Supervisor": {"read": 1, "write": 1, "create": 1, "print": 1, "report": 1, "select": 1},
+    "WAFD Quality Inspector": {"read": 1, "print": 1, "report": 1, "select": 1},
+    "WAFD Project Manager": {"read": 1, "print": 1, "report": 1, "select": 1},
+    "WAFD Delivery Supervisor": {"read": 1, "print": 1, "report": 1, "select": 1},
+}
+
+_RC161_RIGHTS = (
+    "select", "read", "write", "create", "delete", "submit", "cancel",
+    "amend", "print", "email", "report", "import", "export", "share",
+)
+
+_RC161_SIDEBAR_ITEMS = (
+    {"label": "WAFD ONE", "type": "Link", "link_type": "Workspace", "link_to": "WAFD ONE", "icon": "home", "idx": 1},
+    {"label": "المشاريع", "type": "Link", "link_type": "DocType", "link_to": "WAFD Catering Project", "icon": "folder", "idx": 2},
+    {"label": "الخطط اليومية", "type": "Link", "link_type": "DocType", "link_to": "WAFD Daily Meal Plan", "icon": "calendar", "idx": 3},
+    {"label": "دفعات الإنتاج / WAFD Production Batch", "type": "Link", "link_type": "DocType", "link_to": "WAFD Production Batch", "icon": "package", "idx": 4},
+    {"label": "فحص الجودة", "type": "Link", "link_type": "DocType", "link_to": "WAFD Quality Inspection", "icon": "check-circle", "idx": 5},
+    {"label": "سجلات التغليف", "type": "Link", "link_type": "DocType", "link_to": "WAFD Packaging Record", "icon": "package", "idx": 6},
+    {"label": "حركة المخزون", "type": "Link", "link_type": "DocType", "link_to": "WAFD Stock Movement", "icon": "warehouse", "idx": 7},
+    {"label": "رحلات التوصيل", "type": "Link", "link_type": "DocType", "link_to": "WAFD Delivery Trip", "icon": "truck", "idx": 8},
+    {"label": "الفواتير", "type": "Link", "link_type": "DocType", "link_to": "WAFD Invoice", "icon": "file-text", "idx": 9},
+    {"label": "التحصيل", "type": "Link", "link_type": "DocType", "link_to": "WAFD Payment", "icon": "credit-card", "idx": 10},
+    {"label": "الوصفات", "type": "Link", "link_type": "DocType", "link_to": "WAFD Recipe", "icon": "book-open", "idx": 11},
+    {"label": "مكونات الأغذية", "type": "Link", "link_type": "DocType", "link_to": "WAFD Ingredient", "icon": "list", "idx": 12},
+    {"label": "تعهدات الفنادق", "type": "Link", "link_type": "DocType", "link_to": "WAFD Hotel Undertaking", "icon": "file-signature", "idx": 13},
+)
+
+
+def _rc161_enforce_production_batch_permissions():
+    """Make Production Batch permissions deterministic on upgraded test sites."""
+    if not frappe.db.exists("DocType", "WAFD Production Batch"):
+        return
+
+    from frappe.permissions import setup_custom_perms
+
+    setup_custom_perms("WAFD Production Batch")
+    frappe.db.delete("Custom DocPerm", {"parent": "WAFD Production Batch"})
+    for role, grants in _RC161_PRODUCTION_BATCH_MATRIX.items():
+        if not frappe.db.exists("Role", role):
+            continue
+        row = frappe.get_doc({
+            "doctype": "Custom DocPerm",
+            "parent": "WAFD Production Batch",
+            "parenttype": "DocType",
+            "parentfield": "permissions",
+            "role": role,
+            "permlevel": 0,
+        })
+        for right in _RC161_RIGHTS:
+            row.set(right, int(grants.get(right, 0)))
+        row.insert(ignore_permissions=True)
+
+    # Search visibility also depends on a Desk-enabled role in v16.
+    for role in ("WAFD Production Supervisor", "WAFD Operations Manager", "System Manager"):
+        if not frappe.db.exists("Role", role):
+            continue
+        values = {"desk_access": 1}
+        if frappe.db.has_column("Role", "search_bar"):
+            values["search_bar"] = 1
+        frappe.db.set_value("Role", role, values, update_modified=False)
+
+
+def _rc161_make_sidebar(name="WAFD ONE", standard=True, for_user=None):
+    """Create/update a v16 Workspace Sidebar without depending on a Page route."""
+    if not frappe.db.exists("DocType", "Workspace Sidebar"):
+        return
+
+    if frappe.db.exists("Workspace Sidebar", name):
+        sidebar = frappe.get_doc("Workspace Sidebar", name)
+    else:
+        sidebar = frappe.new_doc("Workspace Sidebar")
+        sidebar.title = name
+
+    sidebar.header_icon = "package"
+    sidebar.module = "WAFD ONE"
+    sidebar.standard = 1 if standard else 0
+    if hasattr(sidebar, "app"):
+        sidebar.app = "wafd_one" if standard else None
+    if hasattr(sidebar, "for_user") and for_user is not None:
+        sidebar.for_user = for_user
+    sidebar.set("items", [])
+    for item in _RC161_SIDEBAR_ITEMS:
+        link_type = item.get("link_type")
+        link_to = item.get("link_to")
+        if link_type == "DocType" and not frappe.db.exists("DocType", link_to):
+            continue
+        if link_type == "Workspace" and not frappe.db.exists("Workspace", link_to):
+            continue
+        sidebar.append("items", dict(item))
+
+    sidebar.flags.ignore_permissions = True
+    sidebar.flags.ignore_version = True
+    if sidebar.is_new():
+        sidebar.insert(ignore_permissions=True)
+    else:
+        sidebar.save(ignore_permissions=True)
+
+
+def _rc161_repair_private_sidebars():
+    """Refresh only stale WAFD ONE sidebar copies for Production Supervisors."""
+    if not frappe.db.exists("DocType", "Workspace Sidebar"):
+        return
+    if not frappe.db.has_column("Workspace Sidebar", "for_user"):
+        return
+
+    users = frappe.get_all(
+        "Has Role",
+        filters={"parenttype": "User", "role": "WAFD Production Supervisor"},
+        pluck="parent",
+    )
+    for user in users:
+        for row in frappe.get_all(
+            "Workspace Sidebar",
+            filters={"for_user": user},
+            fields=["name", "title"],
+        ):
+            title = row.title or ""
+            if not (row.name.startswith("WAFD ONE-") or title.startswith("WAFD ONE-")):
+                continue
+            _rc161_make_sidebar(row.name, standard=False, for_user=user)
+
+
+def _rc161_ensure_workspace_shortcut():
+    """Make Production Batch visible on the WAFD ONE landing workspace as well."""
+    if not frappe.db.exists("Workspace", "WAFD ONE"):
+        return
+    workspace = frappe.get_doc("Workspace", "WAFD ONE")
+
+    found = False
+    for row in workspace.shortcuts:
+        if row.link_to == "WAFD Production Batch":
+            row.label = "دفعات الإنتاج"
+            row.type = "DocType"
+            if hasattr(row, "doc_view"):
+                row.doc_view = "List"
+            found = True
+            break
+    if not found:
+        workspace.append("shortcuts", {
+            "label": "دفعات الإنتاج",
+            "type": "DocType",
+            "link_to": "WAFD Production Batch",
+            "doc_view": "List",
+            "color": "Orange",
+            "restrict_to_domain": "",
+        })
+
+    try:
+        blocks = json.loads(workspace.content or "[]")
+    except Exception:
+        blocks = []
+    if not any(
+        block.get("type") == "shortcut"
+        and block.get("data", {}).get("shortcut_name") == "دفعات الإنتاج"
+        for block in blocks
+    ):
+        blocks.append({"type": "shortcut", "data": {"shortcut_name": "دفعات الإنتاج", "col": 4}})
+        workspace.content = json.dumps(blocks, ensure_ascii=False)
+
+    workspace.flags.ignore_permissions = True
+    workspace.flags.ignore_version = True
+    workspace.save(ignore_permissions=True)
+
+
+def ensure_rc161_navigation_repair():
+    """Idempotent, migration-safe recovery for the RC160 navigation failure."""
+    _rc161_enforce_production_batch_permissions()
+    _rc161_make_sidebar()
+    _rc161_repair_private_sidebars()
+    _rc161_ensure_workspace_shortcut()
+    frappe.clear_cache(doctype="WAFD Production Batch")
+    frappe.clear_cache()
+
 def after_migrate():
     """Keep normal upgrades lightweight.
 
@@ -694,6 +877,14 @@ def after_migrate():
     """
     ensure_roles()
     ensure_default_app()
+
+    # RC161: recover from the RC160 nested-patch import failure using the
+    # already-loaded top-level setup module.  Navigation repair is deliberately
+    # non-fatal so a cosmetic/sidebar problem can never block site migration.
+    try:
+        ensure_rc161_navigation_repair()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE RC161 navigation repair")
 
     if frappe.conf.get("wafd_one_full_post_migrate"):
         sync_all_doctypes()

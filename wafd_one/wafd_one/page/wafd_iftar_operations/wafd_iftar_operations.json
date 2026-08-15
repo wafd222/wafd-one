@@ -1,0 +1,28 @@
+{
+ "doctype": "Page",
+ "name": "wafd-iftar-operations",
+ "page_name": "wafd-iftar-operations",
+ "title": "تشغيل إفطار الصائم",
+ "module": "WAFD ONE",
+ "standard": "Yes",
+ "icon": "dashboard",
+ "creation": "2026-08-06 00:00:00.000000",
+ "modified": "2026-08-06 00:00:00.000000",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Project Manager"
+  },
+  {
+   "role": "WAFD Delivery Supervisor"
+  },
+  {
+   "role": "WAFD Storekeeper"
+  }
+ ]
+}

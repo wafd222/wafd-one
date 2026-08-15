@@ -293,3 +293,5 @@ wafd_one.patches.v10_0_0_rc159.execute
 
 # RC160 Frappe v16 curated Workspace Sidebar and Production Batch command-palette navigation
 # RC160 withdrawn: v16 navigation repair now runs from wafd_one.setup.after_migrate (RC161)
+
+# RC162 fixes app-level Workspace Sidebar schema sync (mandatory name field); no executable patch required

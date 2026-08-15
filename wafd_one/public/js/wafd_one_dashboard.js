@@ -31,6 +31,16 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <button class="wafd-action" data-list="WAFD Payment"><b>✓</b><span>التحصيلات</span><small>الدفعات والأرصدة</small></button>
       </section>
 
+      <section class="wafd-section-head wafd-hub-section-head"><div><span>أقسام النظام</span><small>الوصول إلى التفاصيل عند الحاجة دون ازدحام الواجهة الرئيسية</small></div></section>
+      <section class="wafd-hub-grid">
+        <button class="wafd-hub-card" data-route="wafd-operations-hub"><b>⚙</b><span>التشغيل</span><small>المشاريع والخطط والإنتاج والجودة والتغليف</small></button>
+        <button class="wafd-hub-card" data-route="wafd-inventory-hub"><b>▣</b><span>المخزون والمشتريات</span><small>المواد والمستودعات والثلاجات والحركات والمشتريات</small></button>
+        <button class="wafd-hub-card" data-route="wafd-delivery-hub"><b>➜</b><span>التوصيل</span><small>التحميل والرحلات والتسليم والاستلام</small></button>
+        <button class="wafd-hub-card" data-route="wafd-finance-hub"><b>ر.س</b><span>المالية</span><small>الفواتير والتحصيل والمراجعة المالية</small></button>
+        <button class="wafd-hub-card" data-route="wafd-master-data-hub"><b>◆</b><span>البيانات المرجعية</span><small>الفنادق والوصفات والمواد والبيانات الأساسية</small></button>
+        <button class="wafd-hub-card" data-route="wafd-documents-hub"><b>▤</b><span>المستندات والتعهدات</span><small>التعهدات والمستندات والطباعة</small></button>
+      </section>
+
       <section class="wafd-control-strip">
         <div class="wafd-control-title"><span>الفترة التشغيلية</span><small>تحديث المؤشرات والمشاريع حسب التاريخ</small></div>
         <label>من<input type="date" class="form-control wafd-from"></label>
@@ -75,18 +85,6 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
           <div class="wafd-card-head"><div><h3>التوصيلات القادمة</h3><small>الرحلات والفنادق والكميات</small></div><button data-list="WAFD Delivery Trip">عرض الكل</button></div>
           <div class="wafd-deliveries"></div>
         </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>وصول سريع</h3><small>المخزون والمستندات الأساسية</small></div></div>
-          <div class="wafd-shortcuts">
-            <button class="wafd-stock-receipt-shortcut" data-stock-receipt="1">استلام مواد مشتراة</button>
-            <button data-list="WAFD Warehouse">المستودعات والثلاجات</button>
-            <button data-list="WAFD Stock Movement">حركات المخزون</button>
-            <button data-list="WAFD Production Batch">دفعات الإنتاج</button>
-            <button data-list="WAFD Delivery Proof">إثباتات التسليم</button>
-            <button data-list="WAFD Hotel">الفنادق</button>
-            <button data-list="WAFD Recipe">الوصفات</button>
-          </div>
-        </article>
       </section>
 
       <section class="wafd-section-head"><div><span>لوحة المدير التنفيذية</span><small>المخاطر والأداء والربحية في شاشة واحدة</small></div></section>
@@ -112,20 +110,6 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         </article>
       </section>
 
-      <section class="wafd-executive-grid wafd-executive-secondary">
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>أكثر الأصناف استهلاكًا</h3><small>الأصناف الأعلى صرفًا من المخزون</small></div><button data-list="WAFD Stock Movement">الحركات</button></div>
-          <div class="wafd-top-consumed"></div>
-        </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>المستودعات والثلاجات</h3><small>قيمة المخزون والمواد المنخفضة</small></div><button data-list="WAFD Warehouse">عرض الكل</button></div>
-          <div class="wafd-warehouse-status"></div>
-        </article>
-        <article class="wafd-card">
-          <div class="wafd-card-head"><div><h3>تتبع السخانات والسفندشات</h3><small>السخانات لدى الفنادق ومواعيد إرجاعها</small></div><button data-list="WAFD Hot Cabinet">عرض الكل</button></div>
-          <div class="wafd-hot-cabinet-status"></div>
-        </article>
-      </section>
     </div>`);
 
   $root.find(".wafd-to").val(today);

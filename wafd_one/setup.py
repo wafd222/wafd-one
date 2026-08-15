@@ -690,7 +690,7 @@ _RC161_RIGHTS = (
 )
 
 _RC161_SIDEBAR_ITEMS = (
-    {"label": "WAFD ONE", "type": "Link", "link_type": "Workspace", "link_to": "WAFD ONE", "icon": "home", "idx": 1},
+    {"label": "WAFD ONE", "type": "Link", "link_type": "Page", "link_to": "wafd-one-dashboard", "icon": "home", "idx": 1},
     {"label": "التشغيل", "type": "Link", "link_type": "Page", "link_to": "wafd-operations-hub", "icon": "activity", "idx": 2},
     {"label": "المخزون والمشتريات", "type": "Link", "link_type": "Page", "link_to": "wafd-inventory-hub", "icon": "package", "idx": 3},
     {"label": "التوصيل", "type": "Link", "link_type": "Page", "link_to": "wafd-delivery-hub", "icon": "truck", "idx": 4},
@@ -797,7 +797,7 @@ def _rc161_repair_private_sidebars():
 
 
 def _rc161_ensure_workspace_shortcut():
-    """Keep the landing workspace aligned with the compact category-hub source."""
+    """Keep the fallback workspace available; the primary manager landing route is the approved dashboard."""
     if not frappe.db.exists("Workspace", "WAFD ONE"):
         return
     source = _load_workspace_source()

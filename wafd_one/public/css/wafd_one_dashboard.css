@@ -31,3 +31,15 @@
 
 .wafd-low-stock-button{border:0;cursor:pointer;min-width:34px}.wafd-low-stock-button:hover{filter:brightness(.94);transform:translateY(-1px)}
 .wafd-low-stock-dialog table{direction:rtl}.wafd-low-stock-dialog tbody tr{cursor:pointer}.wafd-low-stock-dialog tbody tr:hover{background:#faf7ef}
+
+/* RC165 — keep the approved command center and move secondary detail behind section icons */
+.wafd-hub-section-head{margin-top:18px}
+.wafd-hub-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin:0 0 15px}
+.wafd-hub-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:15px;text-align:right;min-height:106px;transition:.18s;box-shadow:0 5px 20px rgba(18,20,23,.035)}
+.wafd-hub-card:hover{transform:translateY(-3px);border-color:var(--gold2);box-shadow:0 12px 28px rgba(18,20,23,.08)}
+.wafd-hub-card b{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#f5f0e4;color:#7e6427;font-size:14px;margin-bottom:10px}
+.wafd-hub-card span{display:block;font-size:13px;font-weight:850}
+.wafd-hub-card small{display:block;color:var(--muted);font-size:10px;margin-top:4px;line-height:1.55}
+.wafd-bottom-grid{grid-template-columns:1fr}
+@media(max-width:1200px){.wafd-hub-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.wafd-hub-grid{grid-template-columns:repeat(2,1fr)}}

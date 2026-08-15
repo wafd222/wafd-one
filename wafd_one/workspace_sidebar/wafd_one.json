@@ -10,8 +10,8 @@
   {
    "label": "WAFD ONE",
    "type": "Link",
-   "link_type": "Workspace",
-   "link_to": "WAFD ONE",
+   "link_type": "Page",
+   "link_to": "wafd-one-dashboard",
    "icon": "home",
    "idx": 1
   },

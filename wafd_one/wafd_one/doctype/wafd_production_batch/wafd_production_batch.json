@@ -370,7 +370,7 @@
    "print": 1,
    "report": 1,
    "share": 0,
-   "select": 0,
+   "select": 1,
    "delete": 0,
    "submit": 0,
    "cancel": 0,
@@ -432,5 +432,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "track_changes": 1,
+ "search_fields": "project,meal_plan,daily_plan,recipe,status,traceability_code"
 }

@@ -287,3 +287,6 @@ wafd_one.patches.v10_0_0_rc157.execute
 
 # RC158 Desk search/sidebar role visibility repair
 wafd_one.patches.v10_0_0_rc158.execute
+
+# RC159 Production Batch Awesomebar/workspace visibility hardening
+wafd_one.patches.v10_0_0_rc159.execute

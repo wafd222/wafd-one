@@ -115,6 +115,7 @@ REQUIRED_WORKSPACE_DOCTYPES = (
     "WAFD Contract",
     "WAFD Daily Meal Plan",
     "WAFD Meal Plan",
+    "WAFD Production Batch",
     "WAFD Recipe",
     "WAFD Ingredient",
 )
@@ -226,6 +227,7 @@ def _validate_workspace_record(workspace):
         "الفنادق": "WAFD Hotel",
         "العقود": "WAFD Contract",
         "الخطط اليومية": "WAFD Daily Meal Plan",
+        "دفعات الإنتاج": "WAFD Production Batch",
         "الوصفات": "WAFD Recipe",
         "مكونات الأغذية": "WAFD Ingredient",
     }

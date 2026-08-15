@@ -1,3 +1,5 @@
+Current release: **10.0.0 RC167 — Cleaning Supervisor UI Hardening**
+
 # WAFD ONE
 
 Current release: **10.0.0 RC152 — Comprehensive Permissions Baseline**

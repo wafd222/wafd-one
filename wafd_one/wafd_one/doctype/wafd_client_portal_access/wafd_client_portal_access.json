@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-15 18:10:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["naming_series","user","active","entity_type","entity_name","project","contract","notes"],
+ "fields": [
+  {"fieldname":"naming_series","fieldtype":"Select","label":"سلسلة الترقيم / Naming Series","options":"WAFD-CLIENT-ACCESS-.#####","default":"WAFD-CLIENT-ACCESS-.#####","hidden":1},
+  {"fieldname":"user","fieldtype":"Link","label":"مستخدم البوابة / Portal User","options":"User","reqd":1,"in_list_view":1},
+  {"fieldname":"active","fieldtype":"Check","label":"نشط / Active","default":"1","in_list_view":1},
+  {"fieldname":"entity_type","fieldtype":"Select","label":"نوع الجهة / Entity Type","options":"بعثة / Mission\nشركة / Company\nجهة حكومية / Government Entity\nالحرم / Haram\nمسجد / Mosque\nفندق / Hotel\nأخرى / Other","reqd":1},
+  {"fieldname":"entity_name","fieldtype":"Data","label":"اسم الجهة / Entity Name","reqd":1,"in_list_view":1},
+  {"fieldname":"project","fieldtype":"Link","label":"المشروع / Project","options":"WAFD Catering Project","reqd":1,"in_list_view":1},
+  {"fieldname":"contract","fieldtype":"Link","label":"العقد / Contract","options":"WAFD Contract","read_only":1,"fetch_from":"project.contract"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"ملاحظات / Notes"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-15 18:10:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Client Portal Access",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"print":1,"report":1,"export":1,"share":1},
+  {"role":"WAFD Operations Manager","read":1,"write":1,"create":1,"print":1,"report":1,"export":1},
+  {"role":"WAFD Project Manager","read":1,"write":1,"create":1,"print":1,"report":1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,4 +1,4 @@
-Current release: **10.0.0 RC168 — Mobile Role-Based Dashboard & Executive Access Hardening**
+Current release: **10.0.0 RC169 — Secure External Client Portal**
 
 # WAFD ONE
 

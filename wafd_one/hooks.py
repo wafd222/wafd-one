@@ -8,6 +8,15 @@ app_logo_url = "/assets/wafd_one/images/wafd-one-logo.svg"
 app_color = "#B38A3E"
 app_home = "/desk/wafd-role-home"
 
+# RC169 external client portal. Website users never receive Desk access.
+website_route_rules = [
+    {"from_route": "/wafd-client", "to_route": "wafd_client"},
+]
+
+portal_menu_items = [
+    {"title": "WAFD Client Portal", "route": "/wafd-client", "role": "WAFD Client Portal User"},
+]
+
 add_to_apps_screen = [
     {
         "name": "wafd_one",

@@ -298,3 +298,6 @@ wafd_one.patches.v10_0_0_rc159.execute
 
 # RC163 link driver records to System Users and enforce row-level trip/proof access
 wafd_one.patches.v10_0_0_rc163.execute
+
+# RC169 secure external client portal for missions, companies, Haram and mosques
+wafd_one.patches.v10_0_0_rc169.execute

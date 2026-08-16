@@ -62,8 +62,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "المستخدم":{en:"User",id:"Pengguna",ur:"صارف",hi:"उपयोगकर्ता",bn:"ব্যবহারকারী",fr:"Utilisateur",ha:"Mai amfani",sw:"Mtumiaji",uz:"Foydalanuvchi"},
     "الدور":{en:"Role",id:"Peran",ur:"کردار",hi:"भूमिका",bn:"ভূমিকা",fr:"Rôle",ha:"Matsayi",sw:"Jukumu",uz:"Rol"},
     "التاريخ":{en:"Date",id:"Tanggal",ur:"تاریخ",hi:"तारीख",bn:"তারিখ",fr:"Date",ha:"Kwanan wata",sw:"Tarehe",uz:"Sana"},
-    "مهامك":{en:"Your Tasks",id:"Tugas Anda",ur:"آپ کے کام",hi:"आपके कार्य",bn:"আপনার কাজ",fr:"Vos tâches",ha:"Ayyukanka",sw:"Majukumu Yako",uz:"Vazifalaringiz"},
-    "الأدوات الظاهرة مرتبطة بصلاحيات حسابك فقط":{en:"Visible tools follow your account permissions only",id:"Alat yang terlihat hanya sesuai izin akun Anda",ur:"صرف آپ کے اکاؤنٹ کی اجازت والی ٹولز دکھائی جاتی ہیں",hi:"केवल आपके खाते की अनुमतियों वाले उपकरण दिखाई देते हैं",bn:"শুধু আপনার অ্যাকাউন্টের অনুমোদিত টুল দেখানো হয়",fr:"Seuls les outils autorisés par votre compte sont affichés",ha:"Ana nuna kayan aikin da izinin asusunka ya yarda kawai",sw:"Zana zinazoruhusiwa na akaunti yako pekee",uz:"Faqat hisobingiz ruxsat bergan vositalar ko‘rsatiladi"},
     "تظهر لك فقط الوظائف والبيانات التي يسمح بها دورك في النظام.":{en:"Only functions and data allowed by your system role are shown.",id:"Hanya fungsi dan data yang diizinkan oleh peran Anda yang ditampilkan.",ur:"صرف وہی افعال اور ڈیٹا دکھایا جاتا ہے جو آپ کے کردار کو اجازت ہے۔",hi:"केवल आपकी भूमिका द्वारा अनुमत कार्य और डेटा दिखाए जाते हैं।",bn:"শুধু আপনার ভূমিকা অনুযায়ী অনুমোদিত কাজ ও তথ্য দেখানো হয়।",fr:"Seules les fonctions et données autorisées par votre rôle sont affichées.",ha:"Ana nuna ayyuka da bayanan da matsayinka ya ba da izini kawai.",sw:"Kazi na data zinazoruhusiwa na jukumu lako pekee ndizo huonekana.",uz:"Faqat rolingiz ruxsat bergan funksiyalar va ma’lumotlar ko‘rsatiladi."}
   };
   const tr = (text) => text === "اللغة" ? ({ar:"اللغة",en:"Language",id:"Bahasa",ur:"زبان",hi:"भाषा",bn:"ভাষা",fr:"Langue",ha:"Harshe",sw:"Lugha",uz:"Til"}[uiLang]||"Language") : uiLang === "ar" ? text : (D[text] && (D[text][uiLang] || D[text].en)) || text;
@@ -204,7 +202,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
           <div class="wafd-mobile-lang"><label>${tr("اللغة") || "Language"}</label><select id="wafd-role-lang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select></div>
           <div class="wafd-mobile-brand">
             <div class="wafd-mobile-logo"><img src="/assets/wafd_one/images/wafd-almadinah-dashboard.png" alt="WAFD ONE"></div>
-            <div><span>${uiLang==='ar'?'شركة وفد المدينة لخدمات الإعاشة':'Wafd Al Madinah Catering Services'}</span><h1>WAFD ONE</h1><p>${frappe.utils.escape_html(tr(profile.subtitle || ""))}</p></div>
+            <div><span>${uiLang==='ar'?'شركة وفد المدينة لخدمات الإعاشة':'Wafd Al Madinah Catering Services'}</span><h1>WAFD ONE</h1></div>
           </div>
           <div class="wafd-mobile-user">
             <div><small>${tr("المستخدم")}</small><strong>${escapedUser}</strong></div>
@@ -212,12 +210,10 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
             <div><small>${tr("التاريخ")}</small><strong>${frappe.utils.escape_html(today)}</strong></div>
           </div>
         </section>
-        <section class="wafd-mobile-section-head"><div><span>${tr("مهامك")}</span><small>${tr("الأدوات الظاهرة مرتبطة بصلاحيات حسابك فقط")}</small></div><span class="wafd-mobile-count">${items.length}</span></section>
         <section class="wafd-mobile-grid">
           ${items.map((item, idx) => `<button type="button" class="wafd-mobile-card ${item.primary ? "is-primary" : ""} ${item.special ? "is-special" : ""}" data-idx="${idx}"><b>${item.icon || "•"}</b><span>${frappe.utils.escape_html(tr(item.label || ""))}</span><small>${frappe.utils.escape_html(tr(item.desc || ""))}</small><i>${rtl()?"←":"→"}</i></button>`).join("")}
         </section>
         ${items.length ? "" : `<div class="wafd-mobile-empty">${uiLang==='ar'?'لا توجد أدوات متاحة لهذا الحساب. راجع الدور والصلاحيات مع مسؤول النظام.':'No tools are available for this account. Please review the assigned role and permissions.'}</div>`}
-        <section class="wafd-mobile-security-note"><b>WAFD ONE</b><span>${tr("تظهر لك فقط الوظائف والبيانات التي يسمح بها دورك في النظام.")}</span></section>
       </div>`);
 
     $root.find("#wafd-role-lang").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});

@@ -184,6 +184,10 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         fields=["name", "status", "planned_quantity", "packed_quantity", "rejected_quantity", "completion_percent", "box_count", "ready_for_loading", "start_time", "end_time"],
         order_by="modified desc",
     )
+    # Start with loading records on the selected service date. Historical data may
+    # have a loading timestamp shortly before midnight / on the previous date while
+    # the delivery trip is dated to the service day, so we also merge any loading
+    # records explicitly linked from the day's delivery trips below.
     loading_rows = frappe.get_all(
         "WAFD Loading Record",
         filters={"project": project, "loading_date": ["between", [day_start, day_end]]},
@@ -194,19 +198,36 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         "WAFD Delivery Trip",
         filters={"project": project, "trip_date": service_date},
         fields=[
-            "name", "status", "quantity", "vehicle", "driver", "hotel", "planned_departure", "actual_departure",
+            "name", "status", "quantity", "vehicle", "driver", "hotel", "loading_record", "planned_departure", "actual_departure",
             "planned_arrival", "actual_arrival", "on_time_status", "delay_minutes", "transit_duration_minutes",
         ],
         order_by="actual_departure asc, modified asc",
     )
     trip_names = [row.name for row in trip_rows]
+
+    # Merge loading records referenced by the delivery trips. This makes the
+    # loading stage reliable even when legacy/test data has a loading timestamp
+    # on the previous calendar date.
+    linked_loading_names = [row.get("loading_record") for row in trip_rows if row.get("loading_record")]
+    if linked_loading_names:
+        linked_rows = frappe.get_all(
+            "WAFD Loading Record",
+            filters={"name": ["in", linked_loading_names], "project": project},
+            fields=["name", "status", "quantity", "vehicle", "driver", "loading_date", "dispatch_time", "hotel", "box_count", "hot_cabinet_count"],
+            order_by="loading_date desc",
+        )
+        by_name = {row.get("name"): row for row in loading_rows}
+        for row in linked_rows:
+            by_name[row.get("name")] = row
+        loading_rows = list(by_name.values())
+
     receipt_rows = []
     acknowledgement_rows = []
     if trip_names:
         receipt_rows = frappe.get_all(
             "WAFD Receiving Note",
             filters={"delivery_trip": ["in", trip_names]},
-            fields=["name", "delivery_trip", "status", "receipt_time", "delivered_quantity", "received_quantity", "rejected_quantity", "condition_status", "receiver_name"],
+            fields=["name", "delivery_trip", "status", "receipt_time", "delivered_quantity", "received_quantity", "rejected_quantity", "condition_status", "receiver_name", "receiver_title"],
             order_by="receipt_time desc",
         )
         acknowledgement_rows = frappe.get_all(
@@ -221,7 +242,14 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
     packed_qty = _sum(packaging_rows, "packed_quantity")
     loaded_qty = _sum(loading_rows, "quantity")
     trip_qty = _sum(trip_rows, "quantity")
-    received_qty = _sum(receipt_rows, "received_quantity")
+    # A receiving note only counts as an actual receipt after its workflow status
+    # is explicitly marked Received. Client acknowledgement is also an explicit
+    # receipt event. Draft receiving notes must not create a receiver/time.
+    completed_receipts = [
+        row for row in receipt_rows
+        if _safe_status(row.get("status")) == "تم الاستلام / Received"
+    ]
+    received_qty = _sum(completed_receipts, "received_quantity")
     acknowledged_qty = _sum(acknowledgement_rows, "received_quantity")
     final_received_qty = max(received_qty, acknowledged_qty)
 
@@ -241,7 +269,7 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         _safe_status(row.get("status")) in ("وصلت / Arrived", "تم التسليم / Delivered") or row.get("actual_arrival")
         for row in trip_rows
     )
-    receipt_done = any(_safe_status(row.get("status")) == "تم الاستلام / Received" for row in receipt_rows) or bool(acknowledgement_rows)
+    receipt_done = bool(completed_receipts) or bool(acknowledgement_rows)
 
     stages = [
         {"key":"planned","label":"مجدولة","done": bool(daily_rows), "status": _status_from_rows(daily_rows, "status"), "qty": planned_qty},
@@ -250,37 +278,62 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         {"key":"packaging","label":"التغليف","done": packed_qty > 0 or any(row.get("ready_for_loading") for row in packaging_rows), "status": _status_from_rows(packaging_rows, "status"), "qty": packed_qty},
         {"key":"loading","label":"التحميل","done": loading_done, "status": _status_from_rows(loading_rows, "status"), "qty": loaded_qty},
         {"key":"transit","label":"في الطريق","done": transit_done, "status": _status_from_rows(trip_rows, "status"), "qty": trip_qty},
-        {"key":"arrival","label":"الوصول","done": arrival_done, "status": _status_from_rows(trip_rows, "on_time_status"), "qty": trip_qty},
-        {"key":"receipt","label":"الاستلام","done": receipt_done, "status": _status_from_rows(receipt_rows, "condition_status") or ("مؤكد من الجهة" if acknowledgement_rows else ""), "qty": final_received_qty},
+        {"key":"arrival","label":"الوصول","done": arrival_done, "status": ("وصلت / Arrived" if arrival_done else ""), "qty": trip_qty},
+        {"key":"receipt","label":"الاستلام","done": receipt_done, "status": _status_from_rows(completed_receipts, "condition_status") or ("مؤكد من الجهة" if acknowledgement_rows else ""), "qty": final_received_qty},
     ]
 
-    # Delivery duration requested by operations: start from the first actual
-    # departure (fallback to loading dispatch) and end at the final receiving
-    # note/client acknowledgement. This naturally renders minutes or hours.
+    # Delivery timing is based on REAL operational events only. Never use planned
+    # departure or arrival as a substitute for an actual event, and never use
+    # arrival as a substitute for receipt. This prevents false zero-minute trips
+    # and false receipt timestamps.
     delivery_start = _first_datetime([row.get("actual_departure") for row in trip_rows])
     if not delivery_start:
         delivery_start = _first_datetime([row.get("dispatch_time") for row in loading_rows])
-    if not delivery_start:
-        delivery_start = _first_datetime([row.get("planned_departure") for row in trip_rows])
 
-    receipt_end = _last_datetime([row.get("receipt_time") for row in receipt_rows])
-    if not receipt_end:
-        receipt_end = _last_datetime([row.get("confirmed_at") for row in acknowledgement_rows])
-    if not receipt_end:
-        receipt_end = _last_datetime([row.get("actual_arrival") for row in trip_rows])
+    actual_arrival = _last_datetime([row.get("actual_arrival") for row in trip_rows])
+    receipt_end = _last_datetime([row.get("receipt_time") for row in completed_receipts])
+    ack_end = _last_datetime([row.get("confirmed_at") for row in acknowledgement_rows])
+    if ack_end and (not receipt_end or ack_end > receipt_end):
+        receipt_end = ack_end
 
     delivery_timing = _duration_payload(delivery_start, receipt_end)
+    delivery_timing["arrival"] = actual_arrival
+
+    # Receiver comes only from a completed receiving note or an explicit client
+    # acknowledgement. Prefer the latest event and keep name/title together.
+    receiver_candidates = []
+    for row in completed_receipts:
+        if row.get("receipt_time"):
+            receiver_candidates.append((get_datetime(row.get("receipt_time")), row.get("receiver_name"), row.get("receiver_title"), row.get("received_quantity"), "receiving_note"))
+    for row in acknowledgement_rows:
+        if row.get("confirmed_at"):
+            receiver_candidates.append((get_datetime(row.get("confirmed_at")), row.get("receiver_name"), row.get("receiver_title"), row.get("received_quantity"), "client_ack"))
+    receiver_candidates.sort(key=lambda item: item[0], reverse=True)
+    if receiver_candidates:
+        _, receiver_name, receiver_title, receiver_qty, receiver_source = receiver_candidates[0]
+        delivery_timing["receiver_name"] = receiver_name or ""
+        delivery_timing["receiver_title"] = receiver_title or ""
+        delivery_timing["received_quantity"] = cint(receiver_qty)
+        delivery_timing["receiver_source"] = receiver_source
+    else:
+        delivery_timing["receiver_name"] = ""
+        delivery_timing["receiver_title"] = ""
+        delivery_timing["received_quantity"] = 0
+        delivery_timing["receiver_source"] = ""
 
     # Per-trip timing gives large daily clients a useful audit trail while
     # exposing only their assigned project delivery information.
-    receipts_by_trip = {row.get("delivery_trip"): row for row in receipt_rows}
+    receipts_by_trip = {row.get("delivery_trip"): row for row in completed_receipts}
     acks_by_trip = {row.get("delivery_trip"): row for row in acknowledgement_rows}
     trip_details = []
     for trip in trip_rows:
         rec = receipts_by_trip.get(trip.name)
         ack = acks_by_trip.get(trip.name)
-        start = trip.get("actual_departure") or trip.get("planned_departure")
-        end = (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at") or trip.get("actual_arrival")
+        start = trip.get("actual_departure")
+        if not start and trip.get("loading_record"):
+            linked_loading = next((row for row in loading_rows if row.get("name") == trip.get("loading_record")), None)
+            start = (linked_loading or {}).get("dispatch_time")
+        end = (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at")
         timing = _duration_payload(start, end)
         trip_details.append({
             **dict(trip),
@@ -300,14 +353,20 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         "packaging": packaging_rows[0] if packaging_rows else None,
         "loading": loading_rows[0] if loading_rows else None,
         "trip": trip_rows[0] if trip_rows else None,
-        "receipt": receipt_rows[0] if receipt_rows else None,
+        "receipt": completed_receipts[0] if completed_receipts else None,
         "client_acknowledgement": acknowledgement_rows[0] if acknowledgement_rows else None,
+        "receiver": {
+            "name": delivery_timing.get("receiver_name") or "",
+            "title": delivery_timing.get("receiver_title") or "",
+            "received_quantity": delivery_timing.get("received_quantity") or 0,
+            "received_at": delivery_timing.get("end"),
+        } if receipt_done else None,
         "delivery_timing": delivery_timing,
         "delivery_trips": trip_details,
         "counts": {
             "daily_plans": len(daily_rows), "production_batches": len(batch_rows), "quality_inspections": len(quality_rows),
             "packaging_records": len(packaging_rows), "loading_records": len(loading_rows), "delivery_trips": len(trip_rows),
-            "receipts": len(receipt_rows),
+            "receipts": len(completed_receipts),
         },
     }
 

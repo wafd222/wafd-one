@@ -1,0 +1,20 @@
+{
+  "id": "/wafd-mobile",
+  "name": "WAFD ONE",
+  "short_name": "WAFD ONE",
+  "description": "Wafd Al Madinah Catering operations and beneficiary portal",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/wafd-mobile",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#18191d",
+  "theme_color": "#18191d",
+  "orientation": "any",
+  "icons": [
+    {"src":"/assets/wafd_one/pwa/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/assets/wafd_one/pwa/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"/assets/wafd_one/pwa/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}

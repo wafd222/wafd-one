@@ -1,3 +1,5 @@
+Current release: **10.0.0 RC178 — PWA Mobile Install**
+
 Current release: **10.0.0 RC176 — Comprehensive Client Portal Localization**
 
 # WAFD ONE

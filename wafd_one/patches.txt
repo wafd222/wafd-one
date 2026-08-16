@@ -301,3 +301,6 @@ wafd_one.patches.v10_0_0_rc163.execute
 
 # RC169 secure external client portal for missions, companies, Haram and mosques
 wafd_one.patches.v10_0_0_rc169.execute
+
+# RC170 client portal website-route placement and cache refresh
+wafd_one.patches.v10_0_0_rc170.execute

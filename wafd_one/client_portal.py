@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import timedelta
 
 import frappe
 from frappe import _
@@ -134,11 +135,34 @@ def _last_datetime(values: list[Any]):
     return max(parsed) if parsed else None
 
 
-def _duration_payload(start, end) -> dict[str, Any]:
+def _event_matches_trip_day(value: Any, trip_date: Any, grace_hours: int = 6) -> bool:
+    """Return True only when an event belongs to the operational trip window.
+
+    Legacy/test data can contain timestamps copied from another day.  The client
+    portal must never calculate a delivery duration from such stale timestamps.
+    A trip may legitimately cross midnight, so allow a small grace window into
+    the following day while rejecting events from earlier days or far-future days.
+    """
+    if not value or not trip_date:
+        return False
+    event_dt = get_datetime(value)
+    base = get_datetime(f"{getdate(trip_date)} 00:00:00")
+    return base <= event_dt <= base + timedelta(days=1, hours=grace_hours)
+
+
+def _valid_trip_event(value: Any, trip_date: Any):
+    return get_datetime(value) if _event_matches_trip_day(value, trip_date) else None
+
+
+def _safe_duration_payload(start, end, max_hours: int = 24) -> dict[str, Any]:
+    """Calculate a duration only for a plausible same-trip time window."""
     if not start or not end:
-        return {"start": start, "end": end, "minutes": None, "display": "—"}
+        return {"start": start, "end": end, "minutes": None, "display": "—", "valid": False}
     start_dt, end_dt = get_datetime(start), get_datetime(end)
-    minutes = max(0, int((end_dt - start_dt).total_seconds() // 60))
+    delta_seconds = (end_dt - start_dt).total_seconds()
+    if delta_seconds < 0 or delta_seconds > max_hours * 3600:
+        return {"start": start_dt, "end": end_dt, "minutes": None, "display": "—", "valid": False}
+    minutes = int(delta_seconds // 60)
     hours, mins = divmod(minutes, 60)
     if hours and mins:
         display = f"{hours} ساعة و {mins} دقيقة"
@@ -146,7 +170,11 @@ def _duration_payload(start, end) -> dict[str, Any]:
         display = f"{hours} ساعة"
     else:
         display = f"{mins} دقيقة"
-    return {"start": start_dt, "end": end_dt, "minutes": minutes, "display": display}
+    return {"start": start_dt, "end": end_dt, "minutes": minutes, "display": display, "valid": True}
+
+
+def _duration_payload(start, end) -> dict[str, Any]:
+    return _safe_duration_payload(start, end)
 
 
 def _day_tracking(project: str, service_date: str | None = None) -> dict[str, Any]:
@@ -198,7 +226,7 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         "WAFD Delivery Trip",
         filters={"project": project, "trip_date": service_date},
         fields=[
-            "name", "status", "quantity", "vehicle", "driver", "hotel", "loading_record", "planned_departure", "actual_departure",
+            "name", "trip_date", "status", "quantity", "vehicle", "driver", "hotel", "loading_record", "planned_departure", "actual_departure",
             "planned_arrival", "actual_arrival", "on_time_status", "delay_minutes", "transit_duration_minutes",
         ],
         order_by="actual_departure asc, modified asc",
@@ -282,22 +310,43 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         {"key":"receipt","label":"الاستلام","done": receipt_done, "status": _status_from_rows(completed_receipts, "condition_status") or ("مؤكد من الجهة" if acknowledgement_rows else ""), "qty": final_received_qty},
     ]
 
-    # Delivery timing is based on REAL operational events only. Never use planned
-    # departure or arrival as a substitute for an actual event, and never use
-    # arrival as a substitute for receipt. This prevents false zero-minute trips
-    # and false receipt timestamps.
-    delivery_start = _first_datetime([row.get("actual_departure") for row in trip_rows])
-    if not delivery_start:
-        delivery_start = _first_datetime([row.get("dispatch_time") for row in loading_rows])
+    # Delivery timing is based on REAL events from the SAME operational trip.
+    # Reject stale timestamps from earlier/later test days.  This prevents the
+    # portal from showing durations such as 272 hours for an old test project.
+    valid_trip_starts = []
+    valid_trip_arrivals = []
+    valid_trip_receipts = []
+    receipts_by_trip_for_time = {row.get("delivery_trip"): row for row in completed_receipts}
+    acks_by_trip_for_time = {row.get("delivery_trip"): row for row in acknowledgement_rows}
+    loading_by_name_for_time = {row.get("name"): row for row in loading_rows}
 
-    actual_arrival = _last_datetime([row.get("actual_arrival") for row in trip_rows])
-    receipt_end = _last_datetime([row.get("receipt_time") for row in completed_receipts])
-    ack_end = _last_datetime([row.get("confirmed_at") for row in acknowledgement_rows])
-    if ack_end and (not receipt_end or ack_end > receipt_end):
-        receipt_end = ack_end
+    for trip in trip_rows:
+        trip_day = trip.get("trip_date") or service_date
+        start_event = _valid_trip_event(trip.get("actual_departure"), trip_day)
+        if not start_event and trip.get("loading_record"):
+            linked_loading = loading_by_name_for_time.get(trip.get("loading_record")) or {}
+            start_event = _valid_trip_event(linked_loading.get("dispatch_time"), trip_day)
+        arrival_event = _valid_trip_event(trip.get("actual_arrival"), trip_day)
+        rec = receipts_by_trip_for_time.get(trip.name) or {}
+        ack = acks_by_trip_for_time.get(trip.name) or {}
+        receipt_event = _valid_trip_event(rec.get("receipt_time"), trip_day) or _valid_trip_event(ack.get("confirmed_at"), trip_day)
+        if start_event:
+            valid_trip_starts.append(start_event)
+        if arrival_event:
+            valid_trip_arrivals.append(arrival_event)
+        if receipt_event:
+            valid_trip_receipts.append(receipt_event)
 
-    delivery_timing = _duration_payload(delivery_start, receipt_end)
+    delivery_start = min(valid_trip_starts) if valid_trip_starts else None
+    actual_arrival = max(valid_trip_arrivals) if valid_trip_arrivals else None
+    receipt_end = max(valid_trip_receipts) if valid_trip_receipts else None
+    delivery_timing = _safe_duration_payload(delivery_start, receipt_end)
     delivery_timing["arrival"] = actual_arrival
+    raw_start_exists = any(row.get("actual_departure") for row in trip_rows) or any(row.get("dispatch_time") for row in loading_rows)
+    raw_end_exists = any(row.get("receipt_time") for row in completed_receipts) or any(row.get("confirmed_at") for row in acknowledgement_rows)
+    delivery_timing["timing_warning"] = "" if delivery_timing.get("valid") else (
+        "TIMING_NOT_COMPARABLE" if receipt_done and raw_start_exists and raw_end_exists else ""
+    )
 
     # Receiver comes only from a completed receiving note or an explicit client
     # acknowledgement. Prefer the latest event and keep name/title together.
@@ -329,18 +378,23 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
     for trip in trip_rows:
         rec = receipts_by_trip.get(trip.name)
         ack = acks_by_trip.get(trip.name)
-        start = trip.get("actual_departure")
+        trip_day = trip.get("trip_date") or service_date
+        start = _valid_trip_event(trip.get("actual_departure"), trip_day)
         if not start and trip.get("loading_record"):
             linked_loading = next((row for row in loading_rows if row.get("name") == trip.get("loading_record")), None)
-            start = (linked_loading or {}).get("dispatch_time")
-        end = (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at")
-        timing = _duration_payload(start, end)
+            start = _valid_trip_event((linked_loading or {}).get("dispatch_time"), trip_day)
+        end = _valid_trip_event((rec or {}).get("receipt_time"), trip_day) or _valid_trip_event((ack or {}).get("confirmed_at"), trip_day)
+        timing = _safe_duration_payload(start, end)
+        clean_arrival = _valid_trip_event(trip.get("actual_arrival"), trip_day)
         trip_details.append({
             **dict(trip),
-            "receipt_time": (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at"),
+            "actual_departure": start,
+            "actual_arrival": clean_arrival,
+            "receipt_time": end,
             "received_quantity": max(cint((rec or {}).get("received_quantity")), cint((ack or {}).get("received_quantity"))),
             "delivery_duration_minutes": timing.get("minutes"),
             "delivery_duration_display": timing.get("display"),
+            "timing_valid": timing.get("valid"),
         })
 
     return {
@@ -352,7 +406,7 @@ def _day_tracking(project: str, service_date: str | None = None) -> dict[str, An
         "quality": quality_rows[0] if quality_rows else None,
         "packaging": packaging_rows[0] if packaging_rows else None,
         "loading": loading_rows[0] if loading_rows else None,
-        "trip": trip_rows[0] if trip_rows else None,
+        "trip": trip_details[0] if trip_details else None,
         "receipt": completed_receipts[0] if completed_receipts else None,
         "client_acknowledgement": acknowledgement_rows[0] if acknowledgement_rows else None,
         "receiver": {

@@ -1,4 +1,4 @@
-Current release: **10.0.0 RC169 — Secure External Client Portal**
+Current release: **10.0.0 RC174 — Multilingual Client Portal + Delivery Timing Integrity**
 
 # WAFD ONE
 

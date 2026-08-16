@@ -1,4 +1,4 @@
-Current release: **10.0.0 RC174 — Multilingual Client Portal + Delivery Timing Integrity**
+Current release: **10.0.0 RC175 — Turkish Client Portal + Multilingual Status Cleanup**
 
 # WAFD ONE
 

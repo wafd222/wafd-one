@@ -11,6 +11,8 @@ app_home = "/desk/wafd-role-home"
 # RC169 external client portal. Website users never receive Desk access.
 website_route_rules = [
     {"from_route": "/wafd-client", "to_route": "wafd_client"},
+    # Keep old installed PWA shortcuts valid; wafd_mobile performs the role-aware redirect.
+    {"from_route": "/wafd-mobile", "to_route": "wafd_mobile"},
 ]
 
 portal_menu_items = [

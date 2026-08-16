@@ -1,4 +1,4 @@
-Current release: **10.0.0 RC175 — Turkish Client Portal + Multilingual Status Cleanup**
+Current release: **10.0.0 RC176 — Comprehensive Client Portal Localization**
 
 # WAFD ONE
 

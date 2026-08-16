@@ -4,7 +4,7 @@ from typing import Any
 
 import frappe
 from frappe import _
-from frappe.utils import cint, getdate, now_datetime, today
+from frappe.utils import cint, getdate, get_datetime, now_datetime, today
 
 CLIENT_ROLE = "WAFD Client Portal User"
 
@@ -86,94 +86,229 @@ def _project_summary(project_name: str, access: dict | None = None) -> dict[str,
     }
 
 
-def _day_tracking(project: str, service_date: str | None = None) -> dict[str, Any]:
-    service_date = str(getdate(service_date or today()))
-    daily = _latest(
-        "WAFD Daily Meal Plan",
-        {"project": project, "service_date": service_date},
-        ["name", "service_date", "status", "total_quantity", "hotel", "production_batch_count"],
-        "modified desc",
-    )
-    batch = _latest(
-        "WAFD Production Batch",
-        {"project": project, "batch_date": service_date},
-        ["name", "quality_status", "planned_quantity", "produced_quantity", "rejected_quantity", "completion_percent", "daily_plan"],
-        "modified desc",
-    )
-    quality = None
-    if batch:
-        quality = _latest(
-            "WAFD Quality Inspection",
-            {"production_batch": batch.name},
-            ["name", "inspection_date", "result", "decision_time"],
-            "inspection_date desc",
+def _latest_service_date(project: str) -> str:
+    """Return the most recent operational date for the project.
+
+    The portal is often opened after a project/day has finished. Defaulting to
+    today's date made a completed historical project look like it had zero
+    production/delivery activity. Prefer the latest real service/trip date.
+    """
+    candidates: list[str] = []
+    for doctype, field in (
+        ("WAFD Daily Meal Plan", "service_date"),
+        ("WAFD Production Batch", "batch_date"),
+        ("WAFD Packaging Record", "packaging_date"),
+        ("WAFD Delivery Trip", "trip_date"),
+    ):
+        row = frappe.get_all(
+            doctype,
+            filters={"project": project},
+            fields=[field],
+            order_by=f"{field} desc",
+            limit=1,
         )
-    packaging = _latest(
+        if row and row[0].get(field):
+            candidates.append(str(getdate(row[0].get(field))))
+    return max(candidates) if candidates else str(getdate(today()))
+
+
+def _sum(rows: list[dict[str, Any]], field: str) -> int:
+    return sum(cint(row.get(field)) for row in rows)
+
+
+def _status_from_rows(rows: list[dict[str, Any]], field: str) -> str:
+    values = [_safe_status(row.get(field)) for row in rows if _safe_status(row.get(field))]
+    if not values:
+        return ""
+    # Keep the newest/last visible status while aggregation uses all rows.
+    return values[0]
+
+
+def _first_datetime(values: list[Any]):
+    parsed = [get_datetime(value) for value in values if value]
+    return min(parsed) if parsed else None
+
+
+def _last_datetime(values: list[Any]):
+    parsed = [get_datetime(value) for value in values if value]
+    return max(parsed) if parsed else None
+
+
+def _duration_payload(start, end) -> dict[str, Any]:
+    if not start or not end:
+        return {"start": start, "end": end, "minutes": None, "display": "—"}
+    start_dt, end_dt = get_datetime(start), get_datetime(end)
+    minutes = max(0, int((end_dt - start_dt).total_seconds() // 60))
+    hours, mins = divmod(minutes, 60)
+    if hours and mins:
+        display = f"{hours} ساعة و {mins} دقيقة"
+    elif hours:
+        display = f"{hours} ساعة"
+    else:
+        display = f"{mins} دقيقة"
+    return {"start": start_dt, "end": end_dt, "minutes": minutes, "display": display}
+
+
+def _day_tracking(project: str, service_date: str | None = None) -> dict[str, Any]:
+    # If no date is explicitly selected, open on the latest day that actually
+    # contains project operations instead of today's empty date.
+    service_date = str(getdate(service_date)) if service_date else _latest_service_date(project)
+    day_start = f"{service_date} 00:00:00"
+    day_end = f"{service_date} 23:59:59"
+
+    daily_rows = frappe.get_all(
+        "WAFD Daily Meal Plan",
+        filters={"project": project, "service_date": service_date},
+        fields=["name", "service_date", "status", "total_quantity", "hotel", "production_batch_count"],
+        order_by="modified desc",
+    )
+    batch_rows = frappe.get_all(
+        "WAFD Production Batch",
+        filters={"project": project, "batch_date": service_date},
+        fields=["name", "quality_status", "status", "planned_quantity", "produced_quantity", "rejected_quantity", "completion_percent", "daily_plan", "start_time", "end_time"],
+        order_by="modified desc",
+    )
+    batch_names = [row.name for row in batch_rows]
+    quality_rows = []
+    if batch_names:
+        quality_rows = frappe.get_all(
+            "WAFD Quality Inspection",
+            filters={"production_batch": ["in", batch_names]},
+            fields=["name", "production_batch", "inspection_date", "result", "decision_time"],
+            order_by="inspection_date desc",
+        )
+
+    packaging_rows = frappe.get_all(
         "WAFD Packaging Record",
-        {"project": project, "packaging_date": service_date},
-        ["name", "status", "planned_quantity", "packed_quantity", "rejected_quantity", "completion_percent", "box_count", "ready_for_loading"],
-        "modified desc",
+        filters={"project": project, "packaging_date": service_date},
+        fields=["name", "status", "planned_quantity", "packed_quantity", "rejected_quantity", "completion_percent", "box_count", "ready_for_loading", "start_time", "end_time"],
+        order_by="modified desc",
     )
-    loading = _latest(
+    loading_rows = frappe.get_all(
         "WAFD Loading Record",
-        {"project": project, "loading_date": ["between", [f"{service_date} 00:00:00", f"{service_date} 23:59:59"]]},
-        ["name", "status", "quantity", "vehicle", "driver", "loading_date", "dispatch_time", "hotel", "box_count", "hot_cabinet_count"],
-        "loading_date desc",
+        filters={"project": project, "loading_date": ["between", [day_start, day_end]]},
+        fields=["name", "status", "quantity", "vehicle", "driver", "loading_date", "dispatch_time", "hotel", "box_count", "hot_cabinet_count"],
+        order_by="loading_date desc",
     )
-    trip = _latest(
+    trip_rows = frappe.get_all(
         "WAFD Delivery Trip",
-        {"project": project, "trip_date": service_date},
-        [
+        filters={"project": project, "trip_date": service_date},
+        fields=[
             "name", "status", "quantity", "vehicle", "driver", "hotel", "planned_departure", "actual_departure",
             "planned_arrival", "actual_arrival", "on_time_status", "delay_minutes", "transit_duration_minutes",
         ],
-        "modified desc",
+        order_by="actual_departure asc, modified asc",
     )
-    receipt = None
-    acknowledgement = None
-    if trip:
-        receipt = _latest(
+    trip_names = [row.name for row in trip_rows]
+    receipt_rows = []
+    acknowledgement_rows = []
+    if trip_names:
+        receipt_rows = frappe.get_all(
             "WAFD Receiving Note",
-            {"delivery_trip": trip.name},
-            ["name", "status", "receipt_time", "delivered_quantity", "received_quantity", "rejected_quantity", "condition_status", "receiver_name"],
-            "receipt_time desc",
+            filters={"delivery_trip": ["in", trip_names]},
+            fields=["name", "delivery_trip", "status", "receipt_time", "delivered_quantity", "received_quantity", "rejected_quantity", "condition_status", "receiver_name"],
+            order_by="receipt_time desc",
         )
-        acknowledgement = _latest(
+        acknowledgement_rows = frappe.get_all(
             "WAFD Client Receipt Acknowledgement",
-            {"delivery_trip": trip.name},
-            ["name", "confirmed_at", "received_quantity", "receiver_name", "receiver_title"],
-            "confirmed_at desc",
+            filters={"delivery_trip": ["in", trip_names]},
+            fields=["name", "delivery_trip", "confirmed_at", "received_quantity", "receiver_name", "receiver_title"],
+            order_by="confirmed_at desc",
         )
 
-    planned_qty = cint((daily or {}).get("total_quantity"))
-    produced_qty = cint((batch or {}).get("produced_quantity"))
-    packed_qty = cint((packaging or {}).get("packed_quantity"))
-    loaded_qty = cint((loading or {}).get("quantity"))
-    trip_qty = cint((trip or {}).get("quantity"))
-    received_qty = cint((receipt or {}).get("received_quantity"))
+    planned_qty = _sum(daily_rows, "total_quantity")
+    produced_qty = _sum(batch_rows, "produced_quantity")
+    packed_qty = _sum(packaging_rows, "packed_quantity")
+    loaded_qty = _sum(loading_rows, "quantity")
+    trip_qty = _sum(trip_rows, "quantity")
+    received_qty = _sum(receipt_rows, "received_quantity")
+    acknowledged_qty = _sum(acknowledgement_rows, "received_quantity")
+    final_received_qty = max(received_qty, acknowledged_qty)
+
+    passed_batches = {
+        row.get("production_batch")
+        for row in quality_rows
+        if _safe_status(row.get("result")) in ("ناجح / Passed", "مشروط / Conditional")
+    }
+    quality_qty = sum(cint(row.get("produced_quantity")) for row in batch_rows if row.name in passed_batches)
+
+    loading_done = any(_safe_status(row.get("status")) in ("تم التحميل / Loaded", "خرجت / Dispatched") for row in loading_rows) or loaded_qty > 0
+    transit_done = any(
+        _safe_status(row.get("status")) in ("في الطريق / In Transit", "وصلت / Arrived", "تم التسليم / Delivered") or row.get("actual_departure")
+        for row in trip_rows
+    )
+    arrival_done = any(
+        _safe_status(row.get("status")) in ("وصلت / Arrived", "تم التسليم / Delivered") or row.get("actual_arrival")
+        for row in trip_rows
+    )
+    receipt_done = any(_safe_status(row.get("status")) == "تم الاستلام / Received" for row in receipt_rows) or bool(acknowledgement_rows)
 
     stages = [
-        {"key":"planned","label":"مجدولة","done": bool(daily), "status": _safe_status((daily or {}).get("status")), "qty": planned_qty},
-        {"key":"production","label":"الإنتاج","done": bool(batch and produced_qty > 0), "status": _safe_status((batch or {}).get("quality_status")), "qty": produced_qty},
-        {"key":"quality","label":"الجودة","done": bool(quality and _safe_status(quality.get("result")) in ("ناجح / Passed", "مشروط / Conditional")), "status": _safe_status((quality or {}).get("result")), "qty": produced_qty},
-        {"key":"packaging","label":"التغليف","done": bool(packaging and (packaging.get("ready_for_loading") or _safe_status(packaging.get("status")) in ("مكتمل / Completed", "جاهز للتحميل / Ready for Loading"))), "status": _safe_status((packaging or {}).get("status")), "qty": packed_qty},
-        {"key":"loading","label":"التحميل","done": bool(loading and _safe_status(loading.get("status")) in ("تم التحميل / Loaded", "خرجت / Dispatched")), "status": _safe_status((loading or {}).get("status")), "qty": loaded_qty},
-        {"key":"transit","label":"في الطريق","done": bool(trip and _safe_status(trip.get("status")) in ("في الطريق / In Transit", "وصلت / Arrived", "تم التسليم / Delivered")), "status": _safe_status((trip or {}).get("status")), "qty": trip_qty},
-        {"key":"arrival","label":"الوصول","done": bool(trip and (_safe_status(trip.get("status")) in ("وصلت / Arrived", "تم التسليم / Delivered") or trip.get("actual_arrival"))), "status": _safe_status((trip or {}).get("on_time_status")), "qty": trip_qty},
-        {"key":"receipt","label":"الاستلام","done": bool(receipt and _safe_status(receipt.get("status")) == "تم الاستلام / Received"), "status": _safe_status((receipt or {}).get("condition_status")), "qty": received_qty},
+        {"key":"planned","label":"مجدولة","done": bool(daily_rows), "status": _status_from_rows(daily_rows, "status"), "qty": planned_qty},
+        {"key":"production","label":"الإنتاج","done": produced_qty > 0, "status": _status_from_rows(batch_rows, "status") or _status_from_rows(batch_rows, "quality_status"), "qty": produced_qty},
+        {"key":"quality","label":"الجودة","done": bool(passed_batches), "status": _status_from_rows(quality_rows, "result"), "qty": quality_qty},
+        {"key":"packaging","label":"التغليف","done": packed_qty > 0 or any(row.get("ready_for_loading") for row in packaging_rows), "status": _status_from_rows(packaging_rows, "status"), "qty": packed_qty},
+        {"key":"loading","label":"التحميل","done": loading_done, "status": _status_from_rows(loading_rows, "status"), "qty": loaded_qty},
+        {"key":"transit","label":"في الطريق","done": transit_done, "status": _status_from_rows(trip_rows, "status"), "qty": trip_qty},
+        {"key":"arrival","label":"الوصول","done": arrival_done, "status": _status_from_rows(trip_rows, "on_time_status"), "qty": trip_qty},
+        {"key":"receipt","label":"الاستلام","done": receipt_done, "status": _status_from_rows(receipt_rows, "condition_status") or ("مؤكد من الجهة" if acknowledgement_rows else ""), "qty": final_received_qty},
     ]
+
+    # Delivery duration requested by operations: start from the first actual
+    # departure (fallback to loading dispatch) and end at the final receiving
+    # note/client acknowledgement. This naturally renders minutes or hours.
+    delivery_start = _first_datetime([row.get("actual_departure") for row in trip_rows])
+    if not delivery_start:
+        delivery_start = _first_datetime([row.get("dispatch_time") for row in loading_rows])
+    if not delivery_start:
+        delivery_start = _first_datetime([row.get("planned_departure") for row in trip_rows])
+
+    receipt_end = _last_datetime([row.get("receipt_time") for row in receipt_rows])
+    if not receipt_end:
+        receipt_end = _last_datetime([row.get("confirmed_at") for row in acknowledgement_rows])
+    if not receipt_end:
+        receipt_end = _last_datetime([row.get("actual_arrival") for row in trip_rows])
+
+    delivery_timing = _duration_payload(delivery_start, receipt_end)
+
+    # Per-trip timing gives large daily clients a useful audit trail while
+    # exposing only their assigned project delivery information.
+    receipts_by_trip = {row.get("delivery_trip"): row for row in receipt_rows}
+    acks_by_trip = {row.get("delivery_trip"): row for row in acknowledgement_rows}
+    trip_details = []
+    for trip in trip_rows:
+        rec = receipts_by_trip.get(trip.name)
+        ack = acks_by_trip.get(trip.name)
+        start = trip.get("actual_departure") or trip.get("planned_departure")
+        end = (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at") or trip.get("actual_arrival")
+        timing = _duration_payload(start, end)
+        trip_details.append({
+            **dict(trip),
+            "receipt_time": (rec or {}).get("receipt_time") or (ack or {}).get("confirmed_at"),
+            "received_quantity": max(cint((rec or {}).get("received_quantity")), cint((ack or {}).get("received_quantity"))),
+            "delivery_duration_minutes": timing.get("minutes"),
+            "delivery_duration_display": timing.get("display"),
+        })
+
     return {
         "service_date": service_date,
         "planned_quantity": planned_qty,
         "stages": stages,
-        "daily_plan": daily,
-        "production": batch,
-        "quality": quality,
-        "packaging": packaging,
-        "loading": loading,
-        "trip": trip,
-        "receipt": receipt,
-        "client_acknowledgement": acknowledgement,
+        "daily_plan": daily_rows[0] if daily_rows else None,
+        "production": batch_rows[0] if batch_rows else None,
+        "quality": quality_rows[0] if quality_rows else None,
+        "packaging": packaging_rows[0] if packaging_rows else None,
+        "loading": loading_rows[0] if loading_rows else None,
+        "trip": trip_rows[0] if trip_rows else None,
+        "receipt": receipt_rows[0] if receipt_rows else None,
+        "client_acknowledgement": acknowledgement_rows[0] if acknowledgement_rows else None,
+        "delivery_timing": delivery_timing,
+        "delivery_trips": trip_details,
+        "counts": {
+            "daily_plans": len(daily_rows), "production_batches": len(batch_rows), "quality_inspections": len(quality_rows),
+            "packaging_records": len(packaging_rows), "loading_records": len(loading_rows), "delivery_trips": len(trip_rows),
+            "receipts": len(receipt_rows),
+        },
     }
 
 

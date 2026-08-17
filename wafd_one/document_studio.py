@@ -270,6 +270,12 @@ def _render(template_name, doctype=None, docname=None):
             frappe.throw(frappe._("The selected document does not match the template DocType."))
         doc = frappe.get_doc(doctype, docname)
         doc.check_permission("read")
+        # RC188: legacy/submitted Hotel Undertakings may rely on the default
+        # signature/stamp stored in WAFD Print Settings.  Fill those assets on
+        # the render copy so Preview and PDF always match even before a legacy
+        # record is persisted again.
+        if doctype == "WAFD Hotel Undertaking" and hasattr(doc, "_fill_company_approval_assets"):
+            doc._fill_company_approval_assets()
     else:
         doc = frappe._dict(name="PREVIEW", title=frappe._("Preview"))
     return frappe.render_template(html, {"doc": doc, "template": template})

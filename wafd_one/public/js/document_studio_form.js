@@ -5,7 +5,7 @@
     'WAFD Packaging Record', 'WAFD Loading Record', 'WAFD Delivery Proof', 'WAFD Mission'
   ];
 
-  supported.forEach((doctype) => {
+  supported.filter((doctype) => doctype !== 'WAFD Hotel Undertaking').forEach((doctype) => {
     frappe.ui.form.on(doctype, {
       refresh(frm) {
         if (frm.is_new()) return;

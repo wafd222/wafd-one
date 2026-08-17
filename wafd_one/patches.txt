@@ -304,3 +304,6 @@ wafd_one.patches.v10_0_0_rc169.execute
 
 # RC170 client portal website-route placement and cache refresh
 wafd_one.patches.v10_0_0_rc170.execute
+
+# RC188 undertaking direct mobile actions, global back navigation, PDF sharing/save and signature persistence repair
+wafd_one.patches.v10_0_0_rc188.execute

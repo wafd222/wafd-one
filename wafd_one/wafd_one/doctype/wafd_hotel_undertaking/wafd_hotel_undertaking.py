@@ -144,6 +144,29 @@ def get_saved_beneficiary(name):
     return frappe.db.get_value("WAFD Undertaking Beneficiary", name,
         ["beneficiary_name", "identity_number", "nationality", "representative_name"], as_dict=True) or {}
 
+def _persist_approval_assets(doc):
+    """Persist default signature/stamp before a renderer reloads the document.
+
+    Submitted legacy undertakings cannot be saved normally.  Rendering through
+    Document Studio loads a fresh database copy, so assets filled only in memory
+    disappear.  Persist only the missing approval assets/flags and never alter
+    business data or submission state.
+    """
+    doc._fill_company_approval_assets()
+    values = {}
+    for fieldname in ("signature_image", "company_stamp"):
+        value = doc.get(fieldname)
+        if value and frappe.db.get_value(doc.doctype, doc.name, fieldname) != value:
+            values[fieldname] = value
+    for fieldname in ("include_signature", "include_stamp"):
+        value = cint(doc.get(fieldname))
+        current = frappe.db.get_value(doc.doctype, doc.name, fieldname)
+        if current is None or cint(current) != value:
+            values[fieldname] = value
+    if values:
+        frappe.db.set_value(doc.doctype, doc.name, values, update_modified=False)
+    return values
+
 @frappe.whitelist()
 def approve_and_generate_pdf(name):
     doc=frappe.get_doc("WAFD Hotel Undertaking", name); doc.check_permission("write")
@@ -152,6 +175,8 @@ def approve_and_generate_pdf(name):
         doc.save(); doc.submit(); doc.reload()
     if doc.docstatus == 2:
         frappe.throw(_("لا يمكن إصدار PDF لتعهد ملغي / Cannot generate a PDF for a cancelled undertaking"))
+    _persist_approval_assets(doc)
+    doc.reload()
     from wafd_one.document_studio import get_default_template, render_pdf_bytes
     template_name = get_default_template("WAFD Hotel Undertaking")
     if not template_name:

@@ -48,6 +48,7 @@ page_css = {
 app_include_js = [
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
+    "/assets/wafd_one/js/wafd_mobile_navigation.js",
 ]
 
 app_include_css = [

@@ -15,3 +15,16 @@
   .wafd-mobile-brand{padding-top:0}
   .wafd-mobile-grid{margin-top:14px}
 }
+
+/* RC185 mobile final polish: keep the approved layout, add safe logo inset, and hide page-level scrollbars on mobile. */
+@media(max-width:900px){
+  .wafd-mobile-logo{margin-inline-start:6px}
+  .wafd-role-home-page,
+  .wafd-role-home-page .page-body,
+  .wafd-role-home-page .layout-main-section-wrapper,
+  .wafd-role-home-page .layout-main-section{scrollbar-width:none;-ms-overflow-style:none;overflow-x:hidden}
+  .wafd-role-home-page::-webkit-scrollbar,
+  .wafd-role-home-page .page-body::-webkit-scrollbar,
+  .wafd-role-home-page .layout-main-section-wrapper::-webkit-scrollbar,
+  .wafd-role-home-page .layout-main-section::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+}

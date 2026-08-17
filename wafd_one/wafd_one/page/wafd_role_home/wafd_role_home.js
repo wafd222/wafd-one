@@ -1,4 +1,5 @@
 frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
+  $(wrapper).addClass("wafd-role-home-page");
   const roles = new Set(frappe.user_roles || []);
   const isExecutive = roles.has("System Manager") || roles.has("WAFD Operations Manager");
   const isMobile = window.matchMedia("(max-width: 900px)").matches;

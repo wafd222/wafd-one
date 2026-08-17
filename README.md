@@ -1,4 +1,4 @@
-Current release: **10.0.0 RC184 — Final Static QA & Release Metadata Alignment**
+Current release: **10.0.0 RC185 — Mobile Final Polish & Permission QA**
 
 # WAFD ONE
 

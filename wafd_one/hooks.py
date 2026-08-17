@@ -6,10 +6,12 @@ app_email = "wafd.almadinah@gmail.com"
 app_license = "proprietary"
 app_logo_url = "/assets/wafd_one/images/wafd-one-logo.svg"
 app_color = "#B38A3E"
-app_home = "/app/wafd-role-home"
+app_home = "/desk/wafd-role-home"
 
 # RC169 external client portal. Website users never receive Desk access.
 website_route_rules = [
+    # RC182 compatibility: rescue RC181-installed shortcuts that still open the deprecated /app route.
+    {"from_route": "/app/wafd-role-home", "to_route": "wafd_mobile"},
     {"from_route": "/wafd-client", "to_route": "wafd_client"},
     # Keep old installed PWA shortcuts valid; wafd_mobile performs the role-aware redirect.
     {"from_route": "/wafd-mobile", "to_route": "wafd_mobile"},
@@ -24,7 +26,7 @@ add_to_apps_screen = [
         "name": "wafd_one",
         "logo": "/assets/wafd_one/images/wafd-one-logo.svg",
         "title": "WAFD ONE",
-        "route": "/app/wafd-role-home",
+        "route": "/desk/wafd-role-home",
         "has_permission": "wafd_one.api.check_app_permission",
     }
 ]

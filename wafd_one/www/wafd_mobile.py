@@ -13,6 +13,6 @@ def get_context(context):
     if "WAFD Client Portal User" in roles and not ({"System Manager", "WAFD Operations Manager"} & roles):
         target = "/wafd-client"
     else:
-        target = "/app/wafd-role-home"
+        target = "/desk/wafd-role-home"
     frappe.local.flags.redirect_location = target
     raise frappe.Redirect

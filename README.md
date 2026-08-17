@@ -1,49 +1,31 @@
-Current release: **10.0.0 RC185 — Mobile Final Polish & Permission QA**
-
 # WAFD ONE
 
-Current release: **10.0.0 RC152 — Comprehensive Permissions Baseline**
+**Current release: 10.0.0 RC187 — Final Integrity Review**
 
-**Current release: 10.0.0 RC94**
+نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 
-**Current release: 10.0.0 RC94**
-
-# WAFD ONE — 10.0.0 RC94
-
-# WAFD ONE 10.0.0 RC94
-
-Production governance, approvals, auditability, operations, food safety and financial intelligence.
-
-# WAFD ONE
-
-نظام تشغيل وإدارة متكامل لشركة وفد المدينة لخدمات الإعاشة، مبني على Frappe Framework v16.
-
-## الوحدات
+## الوحدات الرئيسية
 
 - المشاريع والبعثات والفنادق والعقود
 - خطط الوجبات والوصفات والمكونات
-- الإنتاج وفحص الجودة والتحميل
-- التوصيل وإثبات التسليم والشكاوى
+- الإنتاج والجودة وسلامة الغذاء والتغليف
+- التحميل والتوصيل وإثبات التسليم
 - الأسطول والسائقون والمركبات
 - الموردون والمشتريات والمستودعات والمخزون
-- التكاليف والإيرادات والفواتير وربحية المشاريع
+- الفواتير والتحصيل والتكاليف وربحية المشاريع
+- بوابة العميل الخارجية
+- إفطار صائم والتقارير التشغيلية
 
 ## المسار التشغيلي
 
-المشروع → خطة الوجبات → الإنتاج → الجودة → التحميل → التوصيل → إثبات التسليم → التقارير المالية.
+المشروع → خطة الوجبات → الإنتاج → الجودة → التغليف → التحميل → التوصيل → إثبات التسليم → الفاتورة → التحصيل.
 
-## التثبيت السحابي
+## التثبيت والتحديث على Frappe Cloud
 
-أضف المستودع إلى Bench يعمل بـ Frappe v16، ثبّت التطبيق على الموقع، ثم نفّذ التحديث. يقوم التطبيق بمزامنة مساحة WAFD ONE تلقائيًا بعد كل migration.
+استخدم المستودع مع Frappe Framework v16، ثم نفّذ التثبيت أو التحديث المعتاد للتطبيق وتشغيل `migrate`. يقوم WAFD ONE بمزامنة الإعدادات والواجهات المطلوبة عبر hooks وعمليات ما بعد الترحيل.
 
+## ملاحظات سلامة الترقية
 
-## Version 5.0.1
-Smart Kitchen & Warehouse: stock balances, controlled stock posting, production workflow, packaging tracking, and quality gates.
-
-
-## WAFD ONE v5.9.0 — Financial Intelligence
-- Actual project profitability and per-meal economics.
-- Invoice totals, outstanding receivables, and ageing buckets.
-- Cost and revenue variance against estimates.
-- Approval locks for posted costs and collected revenue.
-- Automatic project financial refresh after financial transactions.
+- لا تحذف أو تعيد ترتيب السجل التاريخي في `wafd_one/patches.txt`.
+- ملفات البيانات المرجعية وقوالب الاستيراد محفوظة لاستخدامها عند تجهيز بيانات التشغيل الحقيقية.
+- لا يتضمن RC187 أي تغيير في مخطط البيانات أو سير العمل؛ لذلك لا يحتاج migration patch جديدًا خاصًا به.

@@ -1,3 +1,5 @@
+Current release: **10.0.0 RC181 — Mobile Launch Root Fix**
+
 Current release: **10.0.0 RC179 — Mobile Home Polish**
 
 Current release: **10.0.0 RC176 — Comprehensive Client Portal Localization**

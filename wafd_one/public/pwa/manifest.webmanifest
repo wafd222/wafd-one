@@ -1,11 +1,11 @@
 {
-  "id": "/desk/wafd-role-home",
+  "id": "/app/wafd-role-home",
   "name": "WAFD ONE",
   "short_name": "WAFD ONE",
   "description": "Wafd Al Madinah Catering operations and beneficiary portal",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/desk/wafd-role-home",
+  "start_url": "/app/wafd-role-home",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],

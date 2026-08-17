@@ -1,4 +1,8 @@
 import json
+import base64
+import mimetypes
+import os
+import re
 from html import escape
 from jinja2 import Environment, TemplateSyntaxError
 import frappe
@@ -321,13 +325,73 @@ def _remove_trailing_blank_pages(pdf_bytes):
         frappe.log_error(frappe.get_traceback(), "WAFD PDF blank-page cleanup")
         return pdf_bytes
 
+def _file_url_to_data_uri(src):
+    """Resolve Frappe files/app assets locally so wkhtmltopdf never needs HTTP.
+
+    Frappe Cloud PDF workers can reject otherwise valid /assets, /files and
+    /private/files URLs with ContentNotFoundError. Embedding the bytes also
+    keeps private signatures/stamps private and makes preview/issue identical.
+    """
+    src = (src or "").strip()
+    if not src or src.startswith("data:"):
+        return src
+
+    raw = None
+    filename = src.split("?", 1)[0]
+    try:
+        if filename.startswith("/assets/"):
+            parts = filename[len("/assets/"):].split("/", 1)
+            if len(parts) == 2:
+                app, rel = parts
+                path = frappe.get_app_path(app, "public", *rel.split("/"))
+                if os.path.isfile(path):
+                    with open(path, "rb") as fh:
+                        raw = fh.read()
+        elif filename.startswith(("/files/", "/private/files/")):
+            file_name = frappe.db.get_value("File", {"file_url": filename}, "name")
+            if file_name:
+                raw = frappe.get_doc("File", file_name).get_content()
+                if isinstance(raw, str):
+                    raw = raw.encode()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD PDF local image resolution")
+        return ""
+
+    if not raw:
+        return ""
+    mime = mimetypes.guess_type(filename)[0] or "image/png"
+    return f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+
+
+def _embed_pdf_images(html):
+    """Embed local image sources and drop only unresolved images.
+
+    A missing optional image must never make the whole undertaking PDF fail.
+    """
+    pattern = re.compile(r"(<img\\b[^>]*?\\bsrc\\s*=\\s*)([\"'])(.*?)(\\2)([^>]*>)", re.I | re.S)
+
+    def repl(match):
+        src = match.group(3).strip()
+        # Dynamic values are already rendered by this point.
+        if src.startswith("data:"):
+            return match.group(0)
+        if src.startswith(("/assets/", "/files/", "/private/files/")):
+            embedded = _file_url_to_data_uri(src)
+            if embedded:
+                return f"{match.group(1)}{match.group(2)}{embedded}{match.group(4)}{match.group(5)}"
+            return ""  # optional broken image: omit instead of aborting PDF
+        return match.group(0)
+
+    return pattern.sub(repl, html)
+
+
 def render_pdf_bytes(template_name, doctype=None, docname=None):
     """Render a Document Studio template and return cleaned PDF bytes.
 
     This is the single PDF path used by both preview downloads and approved
     undertaking attachments, so the two outputs cannot drift apart.
     """
-    html = _render(template_name, doctype, docname)
+    html = _embed_pdf_images(_render(template_name, doctype, docname))
     pdf = get_pdf(html, options={
         "page-size": "A4",
         "margin-top": "0mm",

@@ -97,7 +97,7 @@ function wafd_render_undertaking_actions(frm) {
   frm.$wrapper.find(`#${id}`).remove();
   if (frm.is_new()) return;
   const hasPdf = !!frm.doc.generated_pdf;
-  const canIssue = frm.doc.docstatus !== 2;
+  const canIssue = true;
   const $bar = $(
     `<div id="${id}" class="wafd-undertaking-actions" dir="rtl">
       <div class="wafd-und-assets">
@@ -105,7 +105,7 @@ function wafd_render_undertaking_actions(frm) {
         <span class="${frm.doc.company_stamp ? "is-ready" : "is-missing"}">الختم: ${frm.doc.company_stamp ? "محفوظ ✓" : "غير محفوظ"}</span>
       </div>
       <button type="button" class="btn btn-default wafd-und-preview">معاينة التعهد</button>
-      <button type="button" class="btn btn-primary wafd-und-issue" ${canIssue ? "" : "disabled"}>اعتماد وإصدار PDF</button>
+      <button type="button" class="btn btn-primary wafd-und-issue">${frm.doc.docstatus === 2 ? "إنشاء نسخة واعتماد وإصدار PDF" : "اعتماد وإصدار PDF"}</button>
       <button type="button" class="btn btn-default wafd-und-share" ${hasPdf ? "" : "disabled"}>مشاركة PDF</button>
       <button type="button" class="btn btn-default wafd-und-save" ${hasPdf ? "" : "disabled"}>حفظ PDF</button>
     </div>`
@@ -115,6 +115,9 @@ function wafd_render_undertaking_actions(frm) {
     const pdfWindow = window.open("about:blank", "_blank");
     const result = await wafd_issue_pdf(frm);
     if (result?.file_url) {
+      if (result.created_from_cancelled && result.docname) {
+        frappe.show_alert({message: __("تم إنشاء نسخة جديدة من التعهد الملغي وإصدارها"), indicator: "green"}, 5);
+      }
       if (pdfWindow) pdfWindow.location.href = result.file_url; else window.location.href = result.file_url;
     } else if (pdfWindow) pdfWindow.close();
   });

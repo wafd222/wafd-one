@@ -79,6 +79,62 @@ class WAFDHotelUndertaking(Document):
         if not self.meal_types:
             self.meal_types = DEFAULT_MEALS
 
+    def _discover_uploaded_company_asset(self, kind):
+        """Recover a previously uploaded company signature/stamp from Frappe File records.
+
+        Older releases stored approval images in more than one place. Search only
+        company print/template attachments and clearly named image files; never
+        select an unrelated arbitrary attachment.
+        """
+        tokens = ("signature", "sign", "توقيع") if kind == "signature" else ("stamp", "seal", "ختم")
+        candidates = []
+        file_meta = frappe.get_meta("File")
+        file_fields = ["file_url", "file_name", "creation"]
+        if file_meta.has_field("attached_to_field"):
+            file_fields.append("attached_to_field")
+        # Highest confidence: files attached to the print settings/template doctypes.
+        for attached_doctype in ("WAFD Print Settings", "WAFD Document Template"):
+            if not frappe.db.exists("DocType", attached_doctype):
+                continue
+            rows = frappe.get_all(
+                "File",
+                filters={"attached_to_doctype": attached_doctype},
+                fields=file_fields,
+                order_by="creation desc",
+                limit=100,
+            )
+            # Exact attachment-field matches win even when the uploaded filename
+            # was something generic such as image.png.
+            for row in rows:
+                attached_field = (row.get("attached_to_field") or "").lower()
+                expected = ("default_signature", "signature") if kind == "signature" else ("default_stamp", "stamp")
+                if attached_field in expected and row.file_url:
+                    return row.file_url
+            candidates.extend(rows)
+        # Compatibility fallback: old uploads may not have retained attachment metadata.
+        rows = frappe.get_all(
+            "File",
+            filters={"is_folder": 0},
+            fields=["file_url", "file_name", "creation"],
+            order_by="creation desc",
+            limit=250,
+        )
+        candidates.extend(rows)
+        seen = set()
+        for row in candidates:
+            url = (row.file_url or "").strip()
+            name = (row.file_name or "").lower().strip()
+            key = (url, name)
+            if not url or key in seen:
+                continue
+            seen.add(key)
+            if not url.lower().split("?", 1)[0].endswith((".png", ".jpg", ".jpeg", ".webp")):
+                continue
+            haystack = f"{name} {url.lower()}"
+            if any(token in haystack for token in tokens):
+                return url
+        return ""
+
     def _fill_company_approval_assets(self):
         if not frappe.db.exists("DocType", "WAFD Print Settings"):
             return
@@ -97,6 +153,27 @@ class WAFDHotelUndertaking(Document):
                 template = frappe.get_doc("WAFD Document Template", template_name)
                 default_signature = default_signature or (template.signature or "")
                 default_stamp = default_stamp or (template.stamp or "")
+        # A legacy template may still hold the original uploaded assets even if
+        # the current default template was later regenerated.
+        if frappe.db.exists("DocType", "WAFD Document Template"):
+            if not default_signature:
+                default_signature = frappe.db.get_value(
+                    "WAFD Document Template",
+                    {"reference_doctype": self.doctype, "signature": ["!=", ""]},
+                    "signature",
+                    order_by="modified desc",
+                ) or ""
+            if not default_stamp:
+                default_stamp = frappe.db.get_value(
+                    "WAFD Document Template",
+                    {"reference_doctype": self.doctype, "stamp": ["!=", ""]},
+                    "stamp",
+                    order_by="modified desc",
+                ) or ""
+        if not default_signature:
+            default_signature = self._discover_uploaded_company_asset("signature")
+        if not default_stamp:
+            default_stamp = self._discover_uploaded_company_asset("stamp")
         if not self.signature_image and default_signature:
             self.signature_image = default_signature
         if not self.company_stamp and default_stamp:
@@ -183,23 +260,66 @@ def _persist_approval_assets(doc):
 
 @frappe.whitelist()
 def approve_and_generate_pdf(name):
-    doc=frappe.get_doc("WAFD Hotel Undertaking", name); doc.check_permission("write")
+    source = frappe.get_doc("WAFD Hotel Undertaking", name)
+    source.check_permission("write")
+
+    # A cancelled Frappe document (docstatus=2) is immutable. Instead of leaving
+    # the mobile action disabled, create a clean draft copy and issue that copy.
+    if source.docstatus == 2:
+        doc = frappe.copy_doc(source)
+        doc.name = None
+        doc.docstatus = 0
+        doc.status = "مسودة / Draft"
+        doc.generated_pdf = None
+        doc.generated_on = None
+        doc.generated_by = None
+        doc.signature_image = source.signature_image or None
+        doc.company_stamp = source.company_stamp or None
+        doc._fill_company_approval_assets()
+        doc.insert(ignore_permissions=False)
+    else:
+        doc = source
+
     doc._validate_for_issue()
     if doc.docstatus == 0:
-        doc.save(); doc.submit(); doc.reload()
-    if doc.docstatus == 2:
-        frappe.throw(_("لا يمكن إصدار PDF لتعهد ملغي / Cannot generate a PDF for a cancelled undertaking"))
+        doc.save()
+        doc.submit()
+        doc.reload()
     _persist_approval_assets(doc)
     doc.reload()
+
     from wafd_one.document_studio import get_default_template, render_pdf_bytes
     template_name = get_default_template("WAFD Hotel Undertaking")
     if not template_name:
         frappe.throw(_("لا يوجد قالب تعهد مفعل / No active undertaking template was found"))
     pdf_content = render_pdf_bytes(template_name, doc.doctype, doc.name)
-    filename=f"{doc.name}.pdf"
-    existing=frappe.db.get_value("File", {"attached_to_doctype":doc.doctype,"attached_to_name":doc.name,"file_name":filename}, "name")
-    if existing: frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
-    file_doc=frappe.get_doc({"doctype":"File","file_name":filename,"attached_to_doctype":doc.doctype,"attached_to_name":doc.name,"is_private":1,"content":pdf_content}).insert(ignore_permissions=True)
-    generated_on=now_datetime()
-    frappe.db.set_value(doc.doctype, doc.name, {"generated_pdf":file_doc.file_url,"generated_on":generated_on,"generated_by":frappe.session.user,"status":"تم إصدار PDF / PDF Generated"}, update_modified=True)
-    return {"file_url":file_doc.file_url,"file_name":filename}
+    filename = f"{doc.name}.pdf"
+    existing = frappe.db.get_value("File", {
+        "attached_to_doctype": doc.doctype,
+        "attached_to_name": doc.name,
+        "file_name": filename,
+    }, "name")
+    if existing:
+        frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+    file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": filename,
+        "attached_to_doctype": doc.doctype,
+        "attached_to_name": doc.name,
+        "is_private": 1,
+        "content": pdf_content,
+    }).insert(ignore_permissions=True)
+    generated_on = now_datetime()
+    frappe.db.set_value(doc.doctype, doc.name, {
+        "generated_pdf": file_doc.file_url,
+        "generated_on": generated_on,
+        "generated_by": frappe.session.user,
+        "status": "تم إصدار PDF / PDF Generated",
+    }, update_modified=True)
+    return {
+        "file_url": file_doc.file_url,
+        "file_name": filename,
+        "docname": doc.name,
+        "created_from_cancelled": source.docstatus == 2,
+    }
+

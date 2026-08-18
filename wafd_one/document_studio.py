@@ -325,15 +325,37 @@ def _remove_trailing_blank_pages(pdf_bytes):
         frappe.log_error(frappe.get_traceback(), "WAFD PDF blank-page cleanup")
         return pdf_bytes
 
-def _file_url_to_data_uri(src):
-    """Resolve Frappe files/app assets locally so wkhtmltopdf never needs HTTP.
+def _normalise_image_src(src):
+    """Return a local Frappe path when possible; never require network access."""
+    from urllib.parse import urlsplit
+    from html import unescape
+    src = unescape((src or "").strip())
+    if not src:
+        return ""
+    if src.startswith("data:"):
+        return src
+    if src.startswith("//"):
+        src = "https:" + src
+    if src.startswith(("http://", "https://")):
+        try:
+            parsed = urlsplit(src)
+            path = parsed.path or ""
+            if path.startswith(("/assets/", "/files/", "/private/files/")):
+                return path
+            return ""
+        except Exception:
+            return ""
+    if src.startswith(("/assets/", "/files/", "/private/files/")):
+        return src.split("?", 1)[0].split("#", 1)[0]
+    return ""
 
-    Frappe Cloud PDF workers can reject otherwise valid /assets, /files and
-    /private/files URLs with ContentNotFoundError. Embedding the bytes also
-    keeps private signatures/stamps private and makes preview/issue identical.
-    """
-    src = (src or "").strip()
-    if not src or src.startswith("data:"):
+
+def _file_url_to_data_uri(src):
+    """Resolve local Frappe image assets into data URIs for wkhtmltopdf."""
+    src = _normalise_image_src(src)
+    if not src:
+        return ""
+    if src.startswith("data:"):
         return src
 
     raw = None
@@ -364,25 +386,35 @@ def _file_url_to_data_uri(src):
 
 
 def _embed_pdf_images(html):
-    """Embed local image sources and drop only unresolved images.
+    """Make PDF HTML fully self-contained.
 
-    A missing optional image must never make the whole undertaking PDF fail.
+    Every IMG source that is not already data: is either embedded from the
+    local site/app or removed. CSS url(...) image references are treated the
+    same way. This prevents wkhtmltopdf ContentNotFoundError on Frappe Cloud.
     """
-    pattern = re.compile(r"(<img\\b[^>]*?\\bsrc\\s*=\\s*)([\"'])(.*?)(\\2)([^>]*>)", re.I | re.S)
+    img_pattern = re.compile(r"(<img\\b[^>]*?\\bsrc\\s*=\\s*)([\"'])(.*?)(\\2)([^>]*>)", re.I | re.S)
 
-    def repl(match):
+    def img_repl(match):
         src = match.group(3).strip()
-        # Dynamic values are already rendered by this point.
         if src.startswith("data:"):
             return match.group(0)
-        if src.startswith(("/assets/", "/files/", "/private/files/")):
-            embedded = _file_url_to_data_uri(src)
-            if embedded:
-                return f"{match.group(1)}{match.group(2)}{embedded}{match.group(4)}{match.group(5)}"
-            return ""  # optional broken image: omit instead of aborting PDF
-        return match.group(0)
+        embedded = _file_url_to_data_uri(src)
+        if embedded:
+            return f"{match.group(1)}{match.group(2)}{embedded}{match.group(4)}{match.group(5)}"
+        # Never allow a network/broken image to abort the whole undertaking.
+        return ""
 
-    return pattern.sub(repl, html)
+    html = img_pattern.sub(img_repl, html)
+
+    css_pattern = re.compile(r"url\\(\\s*([\"']?)(.*?)\\1\\s*\\)", re.I | re.S)
+    def css_repl(match):
+        src = (match.group(2) or "").strip()
+        if not src or src.startswith("data:"):
+            return match.group(0)
+        embedded = _file_url_to_data_uri(src)
+        return f'url("{embedded}")' if embedded else "none"
+
+    return css_pattern.sub(css_repl, html)
 
 
 def render_pdf_bytes(template_name, doctype=None, docname=None):

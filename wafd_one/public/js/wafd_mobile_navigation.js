@@ -13,8 +13,8 @@
     if(!isMobile()||isHome()){ if(btn)btn.remove(); return; }
     if(!btn){
       btn=document.createElement('button'); btn.id='wafd-global-mobile-back'; btn.type='button';
-      btn.className='btn btn-default wafd-global-mobile-back'; btn.setAttribute('aria-label','رجوع');
-      btn.innerHTML='<span aria-hidden="true">‹</span><span>رجوع</span>'; btn.addEventListener('click',goBack);
+      btn.className='btn btn-default wafd-global-mobile-back'; btn.setAttribute('aria-label','رجوع'); btn.setAttribute('title','رجوع');
+      btn.innerHTML='<span aria-hidden="true">‹</span>'; btn.addEventListener('click',goBack);
     }
     const host=document.querySelector('.navbar .container, .navbar, header .container, header');
     if(host && btn.parentElement!==host) host.appendChild(btn); else if(!host && !btn.parentElement) document.body.appendChild(btn);

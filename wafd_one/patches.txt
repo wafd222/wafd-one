@@ -312,3 +312,7 @@ wafd_one.patches.v10_0_0_rc188.execute
 wafd_one.patches.v10_0_0_rc189.execute
 wafd_one.patches.v10_0_0_rc190.execute
 wafd_one.patches.v10_0_0_rc192.execute
+wafd_one.wafd_one.patches.v10_0_0_rc195.execute
+
+# RC196 undertaking officer template lockdown
+wafd_one.patches.v10_0_0_rc196.execute

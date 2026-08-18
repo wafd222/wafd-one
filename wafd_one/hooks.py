@@ -110,6 +110,7 @@ permission_query_conditions = {
     "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_query",
     "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_query",
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_query",
+    "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_query",
 }
 
 has_permission = {
@@ -118,4 +119,5 @@ has_permission = {
     "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_has_permission",
     "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_has_permission",
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_has_permission",
+    "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_has_permission",
 }

@@ -1,5 +1,27 @@
 const WAFD_DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner";
 
+const WAFD_UNDERTAKING_PROTECTED_FIELDS = [
+  "company_logo", "additional_terms", "authorized_signatory", "signatory_title",
+  "include_signature", "include_stamp", "signature_image", "company_stamp"
+];
+
+function wafd_is_restricted_undertaking_officer() {
+  const roles = new Set(frappe.user_roles || []);
+  return roles.has("WAFD Undertaking Officer") &&
+    !roles.has("System Manager") && !roles.has("WAFD Operations Manager");
+}
+
+function wafd_apply_undertaking_lockdown(frm) {
+  if (!wafd_is_restricted_undertaking_officer()) return;
+  WAFD_UNDERTAKING_PROTECTED_FIELDS.forEach((fieldname) => {
+    frm.set_df_property(fieldname, "read_only", 1);
+    frm.set_df_property(fieldname, "hidden", 1);
+  });
+  ["terms_section", "approval_section"].forEach((fieldname) => {
+    if (frm.fields_dict[fieldname]) frm.set_df_property(fieldname, "hidden", 1);
+  });
+}
+
 function wafd_pdf_url(file_url) {
   if (!file_url) return "";
   try { return new URL(file_url, window.location.origin).href; }
@@ -141,6 +163,7 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
   },
   before_save(frm) { if (!frm.doc.meal_types) frm.set_value("meal_types", WAFD_DEFAULT_MEALS); },
   refresh(frm) {
+    wafd_apply_undertaking_lockdown(frm);
     wafd_render_undertaking_actions(frm);
     frm.add_custom_button(__("إدارة المستفيدين المحفوظين"), () => frappe.set_route("List", "WAFD Undertaking Beneficiary"), __("المستفيدون"));
     if (frm.is_new()) return;

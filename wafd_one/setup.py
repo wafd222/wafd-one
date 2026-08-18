@@ -16,6 +16,8 @@ ROLES = (
     "WAFD Cleaning Supervisor",
     "WAFD Approver",
     "WAFD Auditor",
+    "WAFD Undertaking Officer",
+    "WAFD Undertaking Reviewer",
 )
 
 def _resolve_doctype_root():

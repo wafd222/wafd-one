@@ -7,8 +7,71 @@ PRINT_FORMAT = "تعهد والتزام إعاشة — WAFD"
 DEFAULT_MEALS = "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner"
 DEFAULT_SIGNATORY = "نزار بن نذير بن ظفر"
 
+PROTECTED_TEMPLATE_FIELDS = (
+    "company_logo",
+    "additional_terms",
+    "authorized_signatory",
+    "signatory_title",
+    "include_signature",
+    "include_stamp",
+    "signature_image",
+    "company_stamp",
+)
+UNDERTAKING_OFFICER_ROLE = "WAFD Undertaking Officer"
+UNDERTAKING_TEMPLATE_ADMIN_ROLES = {"System Manager", "WAFD Operations Manager"}
+
 class WAFDHotelUndertaking(Document):
+    def _is_restricted_undertaking_officer(self):
+        roles = set(frappe.get_roles(frappe.session.user))
+        return UNDERTAKING_OFFICER_ROLE in roles and not (roles & UNDERTAKING_TEMPLATE_ADMIN_ROLES)
+
+    def _protect_template_controlled_fields(self):
+        """Prevent undertaking officers from changing company identity or template-controlled content.
+
+        This is intentionally enforced server-side in addition to DocField permlevels/UI hiding.
+        It protects against crafted API requests and future client-side regressions.
+        """
+        if not self._is_restricted_undertaking_officer():
+            return
+
+        if self.is_new():
+            # Never trust protected values submitted by an officer on a new document.
+            # They are re-populated from the management-controlled print/template settings.
+            self.company_logo = ""
+            self.additional_terms = ""
+            self.authorized_signatory = ""
+            self.signatory_title = ""
+            self.include_signature = 1
+            self.include_stamp = 1
+            self.signature_image = ""
+            self.company_stamp = ""
+            return
+
+        before = self.get_doc_before_save()
+        if not before:
+            return
+        changed = []
+        for fieldname in PROTECTED_TEMPLATE_FIELDS:
+            old_value = before.get(fieldname)
+            new_value = self.get(fieldname)
+            if old_value != new_value:
+                changed.append(fieldname)
+            # Always restore the database value. Protected permlevel fields may be
+            # absent from an officer's client payload, so rejecting on None would
+            # incorrectly block ordinary beneficiary/data edits.
+            self.set(fieldname, old_value)
+        if changed:
+            frappe.logger("wafd_one").warning(
+                "Blocked protected undertaking field changes by %s on %s: %s",
+                frappe.session.user, self.name, ", ".join(changed),
+            )
+
+    def before_insert(self):
+        self.prepared_by_user = frappe.session.user
+        self.prepared_by_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
+
     def validate(self):
+        self._protect_template_controlled_fields()
         self._fill_linked_data()
         self._fill_meals()
         self._fill_company_approval_assets()
@@ -27,6 +90,9 @@ class WAFDHotelUndertaking(Document):
     def before_submit(self):
         self._validate_for_issue()
         self.status = "معتمد / Approved"
+        self.approved_by_user = frappe.session.user
+        self.approved_by_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
+        self.approved_on = now_datetime()
 
     def on_cancel(self):
         self.db_set("status", "ملغي / Cancelled", update_modified=False)

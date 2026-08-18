@@ -70,6 +70,19 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
   const profiles = [
     {
+      role: "WAFD Undertaking Officer", title: "مسؤول التعهدات", subtitle: "إنشاء واعتماد وإرسال التعهدات",
+      items: [
+        { label: "إنشاء تعهد", desc: "تسجيل بيانات تعهد جديد بالكامل", icon: "✦", new_doctype: "WAFD Hotel Undertaking", primary: true },
+        { label: "تعهداتي", desc: "مراجعة واعتماد ومشاركة التعهدات التي أعددتها", icon: "▤", doctype: "WAFD Hotel Undertaking" }
+      ]
+    },
+    {
+      role: "WAFD Undertaking Reviewer", title: "مراجع التعهدات", subtitle: "مراجعة جميع التعهدات ومعرفة من أعدّها",
+      items: [
+        { label: "مراجعة التعهدات", desc: "جميع التعهدات واسم مُعدّ كل تعهد", icon: "▤", doctype: "WAFD Hotel Undertaking", primary: true }
+      ]
+    },
+    {
       role: "System Manager", title: "الإدارة", subtitle: "لوحة قيادة مختصرة للجوال",
       items: [
         { label: "لوحة الإدارة الكاملة", desc: "المؤشرات والربحية والمخاطر", icon: "▦", page: "wafd-one-dashboard", primary: true },
@@ -180,7 +193,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     }
   ];
 
-  const profile = profiles.find((candidate) => roles.has(candidate.role)) || {
+  const preferredRole = (!isExecutive && roles.has("WAFD Undertaking Officer")) ? "WAFD Undertaking Officer" : ((!isExecutive && roles.has("WAFD Undertaking Reviewer")) ? "WAFD Undertaking Reviewer" : null);
+  const profile = (preferredRole ? profiles.find((candidate) => candidate.role === preferredRole) : profiles.find((candidate) => roles.has(candidate.role))) || {
     role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []
   };
 
@@ -221,6 +235,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (item.page) { frappe.set_route(item.page); return; }
+      if (item.new_doctype) { frappe.new_doc(item.new_doctype); return; }
       if (item.doctype) frappe.set_route("List", item.doctype, item.filters || {});
     });
   }

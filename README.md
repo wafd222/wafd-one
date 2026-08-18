@@ -1,6 +1,6 @@
 # WAFD ONE
 
-**Current release: 10.0.0 RC193 — Non-Intrusive Mobile Back Navigation**
+**Current release: 10.0.0 RC196 — Undertaking Officer Template Lockdown**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 

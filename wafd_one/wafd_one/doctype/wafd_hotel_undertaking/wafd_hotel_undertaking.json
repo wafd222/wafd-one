@@ -127,7 +127,8 @@
    "fieldname": "company_logo",
    "fieldtype": "Attach Image",
    "label": "شعار الشركة / Company Logo",
-   "default": "/assets/wafd_one/images/wafd-almadinah-official.png"
+   "default": "/assets/wafd_one/images/wafd-almadinah-official.png",
+   "permlevel": 2
   },
   {
    "fieldname": "party_section",
@@ -279,7 +280,8 @@
    "fieldname": "additional_terms",
    "fieldtype": "Text Editor",
    "label": "بنود إضافية / Additional Terms",
-   "description": "تظهر بعد البنود العشرة المعتمدة في القالب."
+   "description": "تظهر بعد البنود العشرة المعتمدة في القالب.",
+   "permlevel": 2
   },
   {
    "fieldname": "approval_section",
@@ -291,37 +293,88 @@
    "fieldtype": "Data",
    "label": "الموقّع المعتمد / Authorized Signatory",
    "default": "نزار نذير بن ظفر",
-   "reqd": 1
+   "reqd": 1,
+   "permlevel": 2
   },
   {
    "fieldname": "signatory_title",
    "fieldtype": "Data",
    "label": "صفة الموقّع / Signatory Title",
-   "default": "المدير العام / General Manager"
+   "default": "المدير العام / General Manager",
+   "permlevel": 2
   },
   {
    "fieldname": "include_signature",
    "label": "إظهار توقيع الشركة / Include Company Signature",
    "fieldtype": "Check",
    "default": "1",
-   "description": "يمكن إخفاء التوقيع لهذا التعهد فقط دون حذف الصورة المحفوظة."
+   "description": "يمكن إخفاء التوقيع لهذا التعهد فقط دون حذف الصورة المحفوظة.",
+   "permlevel": 2
   },
   {
    "fieldname": "include_stamp",
    "label": "إظهار ختم الشركة / Include Company Stamp",
    "fieldtype": "Check",
    "default": "1",
-   "description": "يمكن إخفاء الختم لهذا التعهد فقط دون حذف الصورة المحفوظة."
+   "description": "يمكن إخفاء الختم لهذا التعهد فقط دون حذف الصورة المحفوظة.",
+   "permlevel": 2
   },
   {
    "fieldname": "signature_image",
    "fieldtype": "Attach Image",
-   "label": "صورة التوقيع / Signature Image"
+   "label": "صورة التوقيع / Signature Image",
+   "permlevel": 2
   },
   {
    "fieldname": "company_stamp",
    "fieldtype": "Attach Image",
-   "label": "ختم الشركة / Company Stamp"
+   "label": "ختم الشركة / Company Stamp",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "management_audit_section",
+   "fieldtype": "Section Break",
+   "label": "مراجعة الإدارة / Management Review",
+   "permlevel": 1,
+   "collapsible": 1
+  },
+  {
+   "fieldname": "prepared_by_user",
+   "fieldtype": "Link",
+   "label": "أعدّ التعهد بواسطة / Prepared By",
+   "options": "User",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "prepared_by_name",
+   "fieldtype": "Data",
+   "label": "اسم مُعدّ التعهد / Prepared By Name",
+   "read_only": 1,
+   "permlevel": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approved_by_user",
+   "fieldtype": "Link",
+   "label": "اعتمد بواسطة / Approved By",
+   "options": "User",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "approved_by_name",
+   "fieldtype": "Data",
+   "label": "اسم المعتمد / Approved By Name",
+   "read_only": 1,
+   "permlevel": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "وقت الاعتماد / Approved On",
+   "read_only": 1,
+   "permlevel": 1
   },
   {
    "fieldname": "pdf_section",
@@ -407,6 +460,62 @@
    "cancel": 0,
    "amend": 0,
    "import": 0
+  },
+  {
+   "role": "WAFD Undertaking Officer",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "print": 1,
+   "email": 1,
+   "select": 1
+  },
+  {
+   "role": "WAFD Undertaking Reviewer",
+   "read": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 1
+  },
+  {
+   "role": "System Manager",
+   "permlevel": 1,
+   "read": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 1
+  },
+  {
+   "role": "WAFD Undertaking Reviewer",
+   "permlevel": 1,
+   "read": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 1
+  },
+  {
+   "role": "System Manager",
+   "permlevel": 2,
+   "read": 1,
+   "write": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "permlevel": 2,
+   "read": 1,
+   "write": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1,
+   "select": 1
   }
  ],
  "sort_field": "creation",

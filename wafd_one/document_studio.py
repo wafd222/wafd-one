@@ -392,7 +392,7 @@ def _embed_pdf_images(html):
     local site/app or removed. CSS url(...) image references are treated the
     same way. This prevents wkhtmltopdf ContentNotFoundError on Frappe Cloud.
     """
-    img_pattern = re.compile(r"(<img\\b[^>]*?\\bsrc\\s*=\\s*)([\"'])(.*?)(\\2)([^>]*>)", re.I | re.S)
+    img_pattern = re.compile(r"(<img\b[^>]*?\bsrc\s*=\s*)([\"'])(.*?)(\2)([^>]*>)", re.I | re.S)
 
     def img_repl(match):
         src = match.group(3).strip()
@@ -406,7 +406,7 @@ def _embed_pdf_images(html):
 
     html = img_pattern.sub(img_repl, html)
 
-    css_pattern = re.compile(r"url\\(\\s*([\"']?)(.*?)\\1\\s*\\)", re.I | re.S)
+    css_pattern = re.compile(r"url\(\s*([\"']?)(.*?)\1\s*\)", re.I | re.S)
     def css_repl(match):
         src = (match.group(2) or "").strip()
         if not src or src.startswith("data:"):

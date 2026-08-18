@@ -1,0 +1,46 @@
+/* RC193 — Mobile back control lives on the page overlay, never in navbar layout. */
+#wafd-global-mobile-back.wafd-global-mobile-back {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  #wafd-global-mobile-back.wafd-global-mobile-back {
+    position: fixed !important;
+    top: 64px !important;
+    right: 10px !important;
+    left: auto !important;
+    z-index: 1040 !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid rgba(0, 0, 0, .10) !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, .94) !important;
+    color: #2f3135 !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .08) !important;
+    line-height: 1 !important;
+    font-size: 0 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  #wafd-global-mobile-back.wafd-global-mobile-back svg {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+  }
+
+  #wafd-global-mobile-back.wafd-global-mobile-back:active {
+    transform: scale(.96);
+    background: #f4f2ec !important;
+  }
+}

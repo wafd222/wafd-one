@@ -52,6 +52,7 @@ app_include_js = [
 ]
 
 app_include_css = [
+    "/assets/wafd_one/css/wafd_mobile_navigation.css",
     "/assets/wafd_one/css/wafd_hub.css",
     "/assets/wafd_one/css/wafd_one_dashboard.css",
     "/assets/wafd_one/css/wafd_one_enterprise.css",

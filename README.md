@@ -1,6 +1,6 @@
 # WAFD ONE
 
-**Current release: 10.0.0 RC192 — Undertaking Issue, Signature Recovery & Mobile Navigation Fix**
+**Current release: 10.0.0 RC193 — Non-Intrusive Mobile Back Navigation**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 

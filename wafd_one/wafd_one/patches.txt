@@ -1,0 +1,3 @@
+
+# RC194 replace undertaking terms with approved 1-7 wording
+wafd_one.patches.v10_0_0_rc194.execute

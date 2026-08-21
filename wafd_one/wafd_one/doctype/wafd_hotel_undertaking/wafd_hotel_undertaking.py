@@ -354,8 +354,10 @@ def approve_and_generate_pdf(name):
     _persist_approval_assets(doc)
     doc.reload()
 
-    from wafd_one.document_studio import get_default_template, render_pdf_bytes
-    template_name = get_default_template("WAFD Hotel Undertaking")
+    from wafd_one.document_studio import render_pdf_bytes
+    # Resolve the management-controlled template internally; undertaking officers
+    # do not need WAFD Document Studio permission to issue their own document.
+    template_name = _default_undertaking_template()
     if not template_name:
         frappe.throw(_("لا يوجد قالب تعهد مفعل / No active undertaking template was found"))
     pdf_content = render_pdf_bytes(template_name, doc.doctype, doc.name, trusted_template=True)

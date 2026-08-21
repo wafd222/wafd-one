@@ -1,0 +1,12 @@
+{
+ "doctype": "Page",
+ "name": "wafd-undertaking-team",
+ "module": "WAFD ONE",
+ "page_name": "wafd-undertaking-team",
+ "title": "فريق التعهدات",
+ "standard": "Yes",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "WAFD Operations Manager"}
+ ]
+}

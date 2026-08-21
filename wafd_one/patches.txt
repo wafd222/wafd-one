@@ -336,3 +336,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc201.execute
 wafd_one.wafd_one.patches.v10_0_0_rc204.execute
 # RC208 undertaking navigation, contract number and signature-label cleanup
 wafd_one.wafd_one.patches.v10_0_0_rc208.execute
+
+# RC209 multi-user undertaking team management
+wafd_one.wafd_one.patches.v10_0_0_rc209.execute

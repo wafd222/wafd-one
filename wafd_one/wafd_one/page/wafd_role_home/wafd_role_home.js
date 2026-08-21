@@ -91,7 +91,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
-        { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" }
+        { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
+        { label: "فريق التعهدات", desc: "إضافة وإدارة موظفي التعهدات", icon: "♙", page: "wafd-undertaking-team" }
       ]
     },
     {
@@ -102,7 +103,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "المخزون والمشتريات", desc: "المواد والحركات والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
-        { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true }
+        { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
+        { label: "فريق التعهدات", desc: "إضافة وإدارة موظفي التعهدات", icon: "♙", page: "wafd-undertaking-team" }
       ]
     },
     {

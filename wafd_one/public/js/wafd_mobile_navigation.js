@@ -55,26 +55,65 @@
     if (btn.parentElement !== host) host.appendChild(btn);
   }
 
-  function forceInitialUndertakingHome() {
-    if (!isMobile()) return;
-    const key = 'wafd_rc205_initial_home_done';
-    if (sessionStorage.getItem(key)) return;
+  // RC207: keep an entry guard alive until Frappe has finished restoring its
+  // initial route. Safari/Frappe may restore the last open Form *after* our
+  // first redirect. We therefore redirect any initial non-home route back to
+  // role home and only release the guard after home has stayed stable briefly.
+  const entryGuard = {
+    active: true,
+    deadline: Date.now() + 10000,
+    homeSeenAt: 0,
+    redirecting: false,
+    timer: null,
+  };
+
+  function isRestrictedUndertakingOfficer() {
     const roles = window.frappe?.user_roles || [];
-    if (!roles.length) { setTimeout(forceInitialUndertakingHome, 120); return; }
-    if (!roles.includes('WAFD Undertaking Officer')) {
-      sessionStorage.setItem(key, '1');
-      return;
-    }
-    sessionStorage.setItem(key, '1');
-    if (isHome()) return;
-    if (window.frappe?.set_route) frappe.set_route('wafd-role-home');
-    else window.location.replace(HOME);
+    return roles.includes('WAFD Undertaking Officer') &&
+      !roles.includes('System Manager') && !roles.includes('WAFD Operations Manager');
   }
 
-  document.addEventListener('DOMContentLoaded', () => { setTimeout(render, 60); setTimeout(forceInitialUndertakingHome, 100); });
+  function releaseEntryGuardSoon() {
+    clearTimeout(entryGuard.timer);
+    entryGuard.timer = setTimeout(() => {
+      if (isHome()) entryGuard.active = false;
+    }, 900);
+  }
+
+  function enforceInitialUndertakingHome() {
+    if (!entryGuard.active || !isMobile()) return;
+    if (Date.now() > entryGuard.deadline) { entryGuard.active = false; return; }
+    const roles = window.frappe?.user_roles || [];
+    if (!roles.length) { setTimeout(enforceInitialUndertakingHome, 120); return; }
+    if (!isRestrictedUndertakingOfficer()) { entryGuard.active = false; return; }
+
+    if (isHome()) {
+      if (!entryGuard.homeSeenAt) entryGuard.homeSeenAt = Date.now();
+      releaseEntryGuardSoon();
+      return;
+    }
+
+    // If Frappe restores a last-open form after our first redirect, cancel the
+    // pending release and route home again. The redirect lock prevents loops.
+    entryGuard.homeSeenAt = 0;
+    clearTimeout(entryGuard.timer);
+    if (entryGuard.redirecting) return;
+    entryGuard.redirecting = true;
+    try {
+      if (window.frappe?.set_route) frappe.set_route('wafd-role-home');
+      else window.location.replace(HOME);
+    } finally {
+      setTimeout(() => { entryGuard.redirecting = false; enforceInitialUndertakingHome(); }, 180);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { setTimeout(render, 60); setTimeout(enforceInitialUndertakingHome, 100); });
   window.addEventListener('popstate', () => setTimeout(render, 60));
   window.addEventListener('resize', render);
-  if (window.frappe?.router?.on) frappe.router.on('change', () => setTimeout(render, 80));
+  if (window.frappe?.router?.on) frappe.router.on('change', () => { setTimeout(render, 80); setTimeout(enforceInitialUndertakingHome, 20); });
   setTimeout(render, 250);
-  setTimeout(forceInitialUndertakingHome, 320);
+  setTimeout(enforceInitialUndertakingHome, 320);
+  setTimeout(enforceInitialUndertakingHome, 900);
+  window.addEventListener('pageshow', () => setTimeout(enforceInitialUndertakingHome, 40));
+  window.addEventListener('focus', () => setTimeout(enforceInitialUndertakingHome, 40));
 })();

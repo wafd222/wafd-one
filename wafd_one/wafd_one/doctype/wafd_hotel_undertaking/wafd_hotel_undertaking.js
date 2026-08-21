@@ -134,11 +134,16 @@ function wafd_install_preview_panel_style() {
   const style = document.createElement("style");
   style.id = "wafd-undertaking-preview-style";
   style.textContent = `
-    .wafd-und-preview-overlay{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column}
+    .wafd-und-preview-overlay{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column;overscroll-behavior:none}
     .wafd-und-preview-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
     .wafd-und-preview-title{font-weight:700;font-size:16px}
     .wafd-und-preview-close{border:0;background:transparent;font-size:28px;line-height:1;padding:4px 8px}
-    .wafd-und-preview-frame{flex:1;width:100%;border:0;background:#f4f4f4;touch-action:manipulation}
+    .wafd-und-preview-view{position:relative;flex:1;min-height:0;background:#f4f4f4;display:flex;flex-direction:column}
+    .wafd-und-preview-zoom{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;padding:5px 8px;background:#f7f7f7;border-bottom:1px solid var(--border-color,#ddd);direction:ltr}
+    .wafd-und-preview-zoom button{width:38px;height:32px;border:1px solid #d7d7d7;border-radius:9px;background:#fff;font-size:20px;line-height:1}
+    .wafd-und-preview-zoom .wafd-zoom-fit{width:auto;padding:0 12px;font-size:13px;font-weight:700}
+    .wafd-und-preview-zoom .wafd-zoom-label{min-width:54px;text-align:center;font-size:12px;font-weight:700;color:#555}
+    .wafd-und-preview-frame{flex:1;min-height:0;width:100%;border:0;background:#f4f4f4;touch-action:auto}
     .wafd-und-preview-actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
     .wafd-und-preview-actions .btn{flex:1 1 130px;min-height:42px}
     .wafd-undertaking-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;direction:rtl}
@@ -166,7 +171,15 @@ function wafd_open_undertaking_preview(frm) {
       <div class="wafd-und-preview-title">${__("معاينة التعهد")}</div>
       <button type="button" class="wafd-und-preview-close" aria-label="${__("إغلاق")}">×</button>
     </div>
-    <iframe class="wafd-und-preview-frame" sandbox="allow-same-origin" title="${__("معاينة التعهد")}"></iframe>
+    <div class="wafd-und-preview-view">
+      <div class="wafd-und-preview-zoom" aria-label="${__("تكبير وتصغير المعاينة")}">
+        <button type="button" class="wafd-zoom-out" aria-label="${__("تصغير")}">−</button>
+        <span class="wafd-zoom-label">100%</span>
+        <button type="button" class="wafd-zoom-in" aria-label="${__("تكبير")}">+</button>
+        <button type="button" class="wafd-zoom-fit">${__("ملاءمة الشاشة")}</button>
+      </div>
+      <iframe class="wafd-und-preview-frame" sandbox="allow-same-origin" title="${__("معاينة التعهد")}"></iframe>
+    </div>
     <div class="wafd-und-preview-actions">
       <button type="button" class="btn btn-primary wafd-preview-issue">${frm.doc.docstatus === 2 ? __("إنشاء نسخة واعتماد وإصدار") : __("اعتماد وإصدار")}</button>
       <button type="button" class="btn btn-default wafd-preview-save" ${generated ? "" : "disabled"}>${__("حفظ PDF")}</button>
@@ -178,71 +191,125 @@ function wafd_open_undertaking_preview(frm) {
   const issueBtn = overlay.querySelector(".wafd-preview-issue");
   const saveBtn = overlay.querySelector(".wafd-preview-save");
   const shareBtn = overlay.querySelector(".wafd-preview-share");
-  frame.src = wafd_undertaking_preview_url(currentName);
+  const zoomOutBtn = overlay.querySelector(".wafd-zoom-out");
+  const zoomInBtn = overlay.querySelector(".wafd-zoom-in");
+  const zoomFitBtn = overlay.querySelector(".wafd-zoom-fit");
+  const zoomLabel = overlay.querySelector(".wafd-zoom-label");
 
-  // RC205: fit the full undertaking to the mobile viewport while preserving
-  // pinch-to-zoom. The preview remains inside the same-origin HTML iframe.
-  let previewZoom = 1;
-  let fitZoom = 1;
-  const applyPreviewZoom = (value) => {
+  // RC207: treat the HTML undertaking as a fixed A4 page and scale the whole
+  // page as one visual surface. We do NOT use CSS zoom because Safari relayouts
+  // fixed/absolute elements at different rates, which caused the overlapping
+  // signature/terms seen in RC205. transform:scale() preserves the exact layout.
+  let previewScale = 1;
+  let fitScale = 1;
+  let stage = null;
+  let viewport = null;
+  let pinchStartDistance = 0;
+  let pinchStartScale = 1;
+
+  const distance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const applyScale = (value) => {
+    if (!stage || !viewport) return;
+    previewScale = Math.max(fitScale * 0.8, Math.min(4, value));
+    stage.style.transform = `scale(${previewScale})`;
+    viewport.style.width = `${Math.ceil(stage.__w * previewScale)}px`;
+    viewport.style.height = `${Math.ceil(stage.__h * previewScale)}px`;
+    if (zoomLabel) zoomLabel.textContent = `${Math.round((previewScale / Math.max(fitScale, 0.001)) * 100)}%`;
+  };
+
+  const preparePreview = () => {
     try {
       const doc = frame.contentDocument;
-      if (!doc?.body) return;
-      previewZoom = Math.max(0.25, Math.min(4, value));
-      doc.documentElement.style.overflowX = "auto";
+      if (!doc?.body || doc.body.dataset.wafdRc207Prepared) return;
+      doc.body.dataset.wafdRc207Prepared = "1";
+      doc.documentElement.style.overflow = "auto";
       doc.documentElement.style.webkitTextSizeAdjust = "100%";
-      doc.body.style.marginInline = "auto";
-      doc.body.style.zoom = String(previewZoom);
+      doc.documentElement.style.touchAction = "pan-x pan-y";
+      doc.body.style.margin = "0";
+      doc.body.style.padding = "0";
+      doc.body.style.background = "#f3f3f3";
+      doc.body.style.overflow = "visible";
+
+      const children = Array.from(doc.body.childNodes);
+      viewport = doc.createElement("div");
+      viewport.id = "wafd-preview-viewport";
+      viewport.style.position = "relative";
+      viewport.style.margin = "12px auto 28px";
+      viewport.style.overflow = "visible";
+
+      stage = doc.createElement("div");
+      stage.id = "wafd-preview-stage";
+      stage.style.position = "absolute";
+      stage.style.left = "0";
+      stage.style.top = "0";
+      stage.style.transformOrigin = "top left";
+      stage.style.background = "#fff";
+      stage.style.boxShadow = "0 1px 8px rgba(0,0,0,.12)";
+      children.forEach((node) => stage.appendChild(node));
+      viewport.appendChild(stage);
+      doc.body.appendChild(viewport);
+
+      // Measure the original page only after moving all nodes into a single stage.
+      stage.style.transform = "none";
+      const rect = stage.getBoundingClientRect();
+      const measuredW = Math.max(stage.scrollWidth || 0, stage.offsetWidth || 0, rect.width || 0, 794);
+      const measuredH = Math.max(stage.scrollHeight || 0, stage.offsetHeight || 0, rect.height || 0, 1123);
+      stage.__w = measuredW;
+      stage.__h = measuredH;
+      stage.style.width = `${measuredW}px`;
+      stage.style.minHeight = `${measuredH}px`;
+
+      const available = Math.max(280, frame.clientWidth - 24);
+      fitScale = Math.min(1, available / measuredW);
+      previewScale = fitScale;
+      applyScale(previewScale);
+
+      doc.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 2) {
+          pinchStartDistance = distance(e.touches);
+          pinchStartScale = previewScale;
+        }
+      }, {passive:true});
+      doc.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 2 && pinchStartDistance > 0) {
+          e.preventDefault();
+          applyScale(pinchStartScale * (distance(e.touches) / pinchStartDistance));
+        }
+      }, {passive:false});
+      doc.addEventListener("touchend", (e) => {
+        if (e.touches.length < 2) pinchStartDistance = 0;
+      }, {passive:true});
+
+      // Double tap resets to fit-width, useful on iPhone if pinch gestures are
+      // intercepted by browser accessibility settings.
+      let lastTap = 0;
+      doc.addEventListener("touchend", (e) => {
+        if (e.changedTouches?.length !== 1) return;
+        const now = Date.now();
+        if (now - lastTap < 320) applyScale(fitScale);
+        lastTap = now;
+      }, {passive:true});
     } catch (_e) {}
   };
-  const fitPreview = () => {
-    try {
-      const doc = frame.contentDocument;
-      if (!doc?.body) return;
-      doc.body.style.zoom = "1";
-      const contentWidth = Math.max(
-        doc.documentElement.scrollWidth || 0,
-        doc.body.scrollWidth || 0,
-        doc.documentElement.offsetWidth || 0,
-        doc.body.offsetWidth || 0
-      );
-      const viewportWidth = Math.max(1, frame.clientWidth - 8);
-      fitZoom = contentWidth > viewportWidth ? viewportWidth / contentWidth : 1;
-      applyPreviewZoom(Math.min(1, fitZoom));
 
-      // Pinch gesture support inside the iframe.
-      let pinchStartDistance = 0;
-      let pinchStartZoom = previewZoom;
-      const distance = (touches) => {
-        const dx = touches[0].clientX - touches[1].clientX;
-        const dy = touches[0].clientY - touches[1].clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-      };
-      if (!doc.documentElement.dataset.wafdPinchBound) {
-        doc.documentElement.dataset.wafdPinchBound = "1";
-        doc.addEventListener("touchstart", (e) => {
-          if (e.touches.length === 2) {
-            pinchStartDistance = distance(e.touches);
-            pinchStartZoom = previewZoom;
-          }
-        }, {passive:true});
-        doc.addEventListener("touchmove", (e) => {
-          if (e.touches.length === 2 && pinchStartDistance > 0) {
-            const next = pinchStartZoom * (distance(e.touches) / pinchStartDistance);
-            applyPreviewZoom(next);
-            e.preventDefault();
-          }
-        }, {passive:false});
-        doc.addEventListener("touchend", (e) => {
-          if (e.touches.length < 2) pinchStartDistance = 0;
-        }, {passive:true});
-      }
-    } catch (_e) {}
+  zoomOutBtn.addEventListener("click", () => applyScale(previewScale / 1.2));
+  zoomInBtn.addEventListener("click", () => applyScale(previewScale * 1.2));
+  zoomFitBtn.addEventListener("click", () => applyScale(fitScale));
+
+  const reloadPreview = () => {
+    stage = null;
+    viewport = null;
+    frame.src = `${wafd_undertaking_preview_url(currentName)}&t=${Date.now()}`;
   };
-  frame.addEventListener("load", () => setTimeout(fitPreview, 80));
-  window.addEventListener("resize", fitPreview, {passive:true});
+  frame.addEventListener("load", () => setTimeout(preparePreview, 120));
+  reloadPreview();
 
-  const close = () => { overlay.remove(); window.removeEventListener("resize", fitPreview); wafd_clear_ios_media_session(); };
+  const close = () => { overlay.remove(); wafd_clear_ios_media_session(); };
   overlay.querySelector(".wafd-und-preview-close").addEventListener("click", close);
 
   issueBtn.addEventListener("click", async () => {
@@ -257,7 +324,7 @@ function wafd_open_undertaking_preview(frm) {
     }
     currentName = result.docname || currentName;
     generated = true;
-    frame.src = `${wafd_undertaking_preview_url(currentName)}&t=${Date.now()}`;
+    reloadPreview();
     wafd_clear_ios_media_session();
     saveBtn.disabled = false;
     shareBtn.disabled = false;

@@ -28,120 +28,198 @@ function wafd_pdf_url(file_url) {
   catch (e) { return file_url; }
 }
 
-function wafd_undertaking_preview_url(frm) {
-  const q = new URLSearchParams({name: frm.doc.name});
-  return `/api/method/wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.preview_undertaking_pdf?${q.toString()}`;
+function wafd_undertaking_preview_url(name) {
+  const q = new URLSearchParams({name});
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.preview_undertaking_html?${q.toString()}`;
 }
 
-function wafd_generated_pdf_url(frm) {
-  const q = new URLSearchParams({name: frm.doc.name});
+function wafd_clear_ios_media_session() {
+  try {
+    document.querySelectorAll("audio,video").forEach((node) => {
+      try { node.pause(); node.removeAttribute("src"); node.load?.(); } catch (_e) {}
+    });
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.metadata = null; } catch (_e) {}
+      try { navigator.mediaSession.playbackState = "none"; } catch (_e) {}
+    }
+  } catch (_e) {}
+}
+
+async function wafd_fetch_generated_pdf_blob(name) {
+  const response = await fetch(wafd_generated_pdf_url(name, false), {
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: {Accept: "application/pdf"}
+  });
+  if (!response.ok) throw new Error("PDF fetch failed");
+  const source = await response.blob();
+  return source.type === "application/pdf" ? source : new Blob([source], {type: "application/pdf"});
+}
+
+function wafd_generated_pdf_url(name, download=false) {
+  const q = new URLSearchParams({name});
+  if (download) q.set("download", "1");
   return `/api/method/wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.download_generated_pdf?${q.toString()}`;
 }
 
-async function wafd_preview_undertaking(frm) {
-  const previewWindow = window.open("about:blank", "_blank");
-  const url = wafd_undertaking_preview_url(frm);
-  if (previewWindow) previewWindow.location.href = url; else window.location.href = url;
-}
-
-async function wafd_issue_pdf(frm) {
+async function wafd_issue_pdf(name, frm) {
   return new Promise((resolve) => {
     frappe.call({
       method: "wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.approve_and_generate_pdf",
-      args: { name: frm.doc.name },
+      args: { name },
       freeze: true,
       freeze_message: __("جارٍ اعتماد التعهد وإصدار ملف PDF..."),
       callback: async (r) => {
-        if (r.message?.file_url) {
+        const result = r.message || null;
+        if (result?.file_url && frm && result.docname === frm.doc.name) {
           await frm.reload_doc();
-          resolve(r.message);
-        } else {
-          resolve(null);
         }
-      }
+        resolve(result);
+      },
+      error: () => resolve(null)
     });
   });
 }
 
-async function wafd_share_pdf(frm) {
-  let fileUrl = frm.doc.generated_pdf;
-  if (!fileUrl) {
-    frappe.msgprint({
-      title: __("ملف PDF غير موجود"),
-      message: __("اعتمد التعهد وأصدر PDF أولاً، ثم استخدم زر المشاركة."),
-      indicator: "orange"
-    });
-    return;
-  }
-  const url = wafd_generated_pdf_url(frm);
+async function wafd_share_generated_pdf(name) {
+  wafd_clear_ios_media_session();
   try {
-    const response = await fetch(url, {credentials: "same-origin"});
-    if (!response.ok) throw new Error("PDF fetch failed");
-    const blob = await response.blob();
-    const filename = `${frm.doc.name || "undertaking"}.pdf`;
+    const blob = await wafd_fetch_generated_pdf_blob(name);
+    const filename = `${name || "undertaking"}.pdf`;
     const file = new File([blob], filename, {type: "application/pdf"});
     if (navigator.share && (!navigator.canShare || navigator.canShare({files: [file]}))) {
       await navigator.share({title: __("تعهد وفد المدينة"), files: [file]});
+      wafd_clear_ios_media_session();
       return;
     }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
   } catch (e) {
     if (e?.name === "AbortError") return;
+    frappe.msgprint(__("تعذر تجهيز ملف PDF للمشاركة."));
+  } finally {
+    wafd_clear_ios_media_session();
   }
-  window.open(url, "_blank");
 }
 
-function wafd_save_pdf(frm) {
-  if (!frm.doc.generated_pdf) {
-    frappe.msgprint({
-      title: __("ملف PDF غير موجود"),
-      message: __("اعتمد التعهد وأصدر PDF أولاً، ثم استخدم زر الحفظ."),
-      indicator: "orange"
-    });
+async function wafd_save_generated_pdf(name) {
+  wafd_clear_ios_media_session();
+  try {
+    const blob = await wafd_fetch_generated_pdf_blob(name);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name || "undertaking"}.pdf`;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (_e) {
+    frappe.msgprint(__("تعذر حفظ ملف PDF."));
+  } finally {
+    wafd_clear_ios_media_session();
+  }
+}
+
+function wafd_install_preview_panel_style() {
+  if (document.getElementById("wafd-undertaking-preview-style")) return;
+  const style = document.createElement("style");
+  style.id = "wafd-undertaking-preview-style";
+  style.textContent = `
+    .wafd-und-preview-overlay{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column}
+    .wafd-und-preview-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
+    .wafd-und-preview-title{font-weight:700;font-size:16px}
+    .wafd-und-preview-close{border:0;background:transparent;font-size:28px;line-height:1;padding:4px 8px}
+    .wafd-und-preview-frame{flex:1;width:100%;border:0;background:#f4f4f4}
+    .wafd-und-preview-actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
+    .wafd-und-preview-actions .btn{flex:1 1 130px;min-height:42px}
+    .wafd-undertaking-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;direction:rtl}
+    .wafd-und-assets{font-size:13px;color:var(--text-muted,#6c757d);width:100%}
+    @media(max-width:767px){.wafd-und-preview-actions{gap:6px}.wafd-und-preview-actions .btn{font-size:14px}.wafd-undertaking-actions .btn{width:100%;min-height:44px}}
+  `;
+  document.head.appendChild(style);
+}
+
+function wafd_open_undertaking_preview(frm) {
+  wafd_clear_ios_media_session();
+  if (frm.is_new()) {
+    frappe.msgprint(__("احفظ التعهد أولاً ثم افتح المعاينة."));
     return;
   }
-  const a = document.createElement("a");
-  a.href = wafd_generated_pdf_url(frm);
-  a.download = `${frm.doc.name || "undertaking"}.pdf`;
-  a.target = "_blank";
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  wafd_install_preview_panel_style();
+  document.querySelector(".wafd-und-preview-overlay")?.remove();
+
+  let currentName = frm.doc.name;
+  let generated = !!frm.doc.generated_pdf;
+  const overlay = document.createElement("div");
+  overlay.className = "wafd-und-preview-overlay";
+  overlay.innerHTML = `
+    <div class="wafd-und-preview-head">
+      <div class="wafd-und-preview-title">${__("معاينة التعهد")}</div>
+      <button type="button" class="wafd-und-preview-close" aria-label="${__("إغلاق")}">×</button>
+    </div>
+    <iframe class="wafd-und-preview-frame" sandbox="allow-same-origin" title="${__("معاينة التعهد")}"></iframe>
+    <div class="wafd-und-preview-actions">
+      <button type="button" class="btn btn-primary wafd-preview-issue">${frm.doc.docstatus === 2 ? __("إنشاء نسخة واعتماد وإصدار") : __("اعتماد وإصدار")}</button>
+      <button type="button" class="btn btn-default wafd-preview-save" ${generated ? "" : "disabled"}>${__("حفظ PDF")}</button>
+      <button type="button" class="btn btn-default wafd-preview-share" ${generated ? "" : "disabled"}>${__("مشاركة PDF")}</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const frame = overlay.querySelector(".wafd-und-preview-frame");
+  const issueBtn = overlay.querySelector(".wafd-preview-issue");
+  const saveBtn = overlay.querySelector(".wafd-preview-save");
+  const shareBtn = overlay.querySelector(".wafd-preview-share");
+  frame.src = wafd_undertaking_preview_url(currentName);
+
+  const close = () => { overlay.remove(); wafd_clear_ios_media_session(); };
+  overlay.querySelector(".wafd-und-preview-close").addEventListener("click", close);
+
+  issueBtn.addEventListener("click", async () => {
+    issueBtn.disabled = true;
+    const oldText = issueBtn.textContent;
+    issueBtn.textContent = __("جارٍ الاعتماد والإصدار...");
+    const result = await wafd_issue_pdf(currentName, frm);
+    if (!result?.file_url) {
+      issueBtn.disabled = false;
+      issueBtn.textContent = oldText;
+      return;
+    }
+    currentName = result.docname || currentName;
+    generated = true;
+    frame.src = `${wafd_undertaking_preview_url(currentName)}&t=${Date.now()}`;
+    wafd_clear_ios_media_session();
+    saveBtn.disabled = false;
+    shareBtn.disabled = false;
+    issueBtn.textContent = __("تم الاعتماد والإصدار ✓");
+    frappe.show_alert({message: __("تم اعتماد التعهد وإصدار PDF"), indicator: "green"}, 4);
+  });
+  saveBtn.addEventListener("click", async () => generated && await wafd_save_generated_pdf(currentName));
+  shareBtn.addEventListener("click", () => generated && wafd_share_generated_pdf(currentName));
 }
 
 function wafd_render_undertaking_actions(frm) {
   const id = "wafd-undertaking-direct-actions";
   frm.$wrapper.find(`#${id}`).remove();
   if (frm.is_new()) return;
-  const hasPdf = !!frm.doc.generated_pdf;
-  const canIssue = true;
-  const $bar = $(
-    `<div id="${id}" class="wafd-undertaking-actions" dir="rtl">
+  wafd_install_preview_panel_style();
+  const $bar = $(`
+    <div id="${id}" class="wafd-undertaking-actions" dir="rtl">
       <div class="wafd-und-assets">
-        <span class="${frm.doc.signature_image ? "is-ready" : "is-missing"}">التوقيع: ${frm.doc.signature_image ? "محفوظ ✓" : "غير محفوظ"}</span>
-        <span class="${frm.doc.company_stamp ? "is-ready" : "is-missing"}">الختم: ${frm.doc.company_stamp ? "محفوظ ✓" : "غير محفوظ"}</span>
+        <span>التوقيع: ${frm.doc.signature_image ? "محفوظ ✓" : "غير محفوظ"}</span>
+        <span style="margin-inline-start:12px">الختم: ${frm.doc.company_stamp ? "محفوظ ✓" : "غير محفوظ"}</span>
       </div>
-      <button type="button" class="btn btn-default wafd-und-preview">معاينة التعهد</button>
-      <button type="button" class="btn btn-primary wafd-und-issue">${frm.doc.docstatus === 2 ? "إنشاء نسخة واعتماد وإصدار PDF" : "اعتماد وإصدار PDF"}</button>
-      <button type="button" class="btn btn-default wafd-und-share" ${hasPdf ? "" : "disabled"}>مشاركة PDF</button>
-      <button type="button" class="btn btn-default wafd-und-save" ${hasPdf ? "" : "disabled"}>حفظ PDF</button>
-    </div>`
-  );
-  $bar.find(".wafd-und-preview").on("click", () => wafd_preview_undertaking(frm));
-  $bar.find(".wafd-und-issue").on("click", async () => {
-    const pdfWindow = window.open("about:blank", "_blank");
-    const result = await wafd_issue_pdf(frm);
-    if (result?.file_url) {
-      if (result.created_from_cancelled && result.docname) {
-        frappe.show_alert({message: __("تم إنشاء نسخة جديدة من التعهد الملغي وإصدارها"), indicator: "green"}, 5);
-      }
-      const secureUrl = wafd_generated_pdf_url(frm);
-      if (pdfWindow) pdfWindow.location.href = secureUrl; else window.location.href = secureUrl;
-    } else if (pdfWindow) pdfWindow.close();
-  });
-  $bar.find(".wafd-und-share").on("click", () => wafd_share_pdf(frm));
-  $bar.find(".wafd-und-save").on("click", () => wafd_save_pdf(frm));
-
+      <button type="button" class="btn btn-primary wafd-und-preview">معاينة التعهد</button>
+    </div>`);
+  $bar.find(".wafd-und-preview").on("click", () => wafd_open_undertaking_preview(frm));
   const $target = frm.$wrapper.find(".form-layout").first();
   if ($target.length) $target.before($bar); else frm.$wrapper.prepend($bar);
 }

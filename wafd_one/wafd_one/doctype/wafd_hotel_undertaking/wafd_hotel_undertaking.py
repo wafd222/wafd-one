@@ -416,6 +416,30 @@ def _default_undertaking_template():
 
 
 @frappe.whitelist()
+def preview_undertaking_html(name):
+    """Render the undertaking as self-contained HTML for in-app preview.
+
+    iOS Safari can promote an inline PDF viewer into a system media/Quick Look
+    session.  The undertaking preview therefore stays HTML-only; PDF bytes are
+    produced only for explicit issue/save/share actions.
+    """
+    doc = _secure_undertaking_doc(name, "read")
+    _persist_approval_assets(doc)
+    from wafd_one.document_studio import _render, _embed_pdf_images
+    template_name = _default_undertaking_template()
+    if not template_name:
+        frappe.throw(_("لا يوجد قالب تعهد مفعل / No active undertaking template was found"))
+    html = _embed_pdf_images(_render(template_name, doc.doctype, doc.name, trusted_template=True))
+    if "<meta name=\"viewport\"" not in html.lower():
+        html = html.replace("<head>", '<head><meta name="viewport" content="width=device-width, initial-scale=1">', 1)
+    frappe.local.response.filename = f"{doc.name}.html"
+    frappe.local.response.filecontent = html.encode("utf-8")
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "inline"
+    frappe.local.response.content_type = "text/html; charset=utf-8"
+
+
+@frappe.whitelist()
 def preview_undertaking_pdf(name):
     """Preview an undertaking without exposing Document Studio to officers."""
     doc = _secure_undertaking_doc(name, "read")
@@ -431,7 +455,7 @@ def preview_undertaking_pdf(name):
 
 
 @frappe.whitelist()
-def download_generated_pdf(name):
+def download_generated_pdf(name, download=0):
     """Serve the generated private PDF after checking access to the undertaking."""
     doc = _secure_undertaking_doc(name, "read")
     if not doc.generated_pdf:
@@ -453,4 +477,6 @@ def download_generated_pdf(name):
         content = content.encode()
     frappe.local.response.filename = file_doc.file_name or f"{doc.name}.pdf"
     frappe.local.response.filecontent = content
-    frappe.local.response.type = "pdf"
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "attachment" if cint(download) else "inline"
+    frappe.local.response.content_type = "application/pdf"

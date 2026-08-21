@@ -325,3 +325,6 @@ wafd_one.patches.v10_0_0_rc198.execute
 
 # RC199 allow undertaking officers to add new hotels without editing existing hotel records
 wafd_one.patches.v10_0_0_rc199.execute
+
+# RC200 undertaking users land on their dedicated role home
+wafd_one.patches.v10_0_0_rc200.execute

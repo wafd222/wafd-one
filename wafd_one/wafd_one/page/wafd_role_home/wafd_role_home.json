@@ -7,18 +7,48 @@
  "standard": "Yes",
  "system_page": 0,
  "roles": [
-  {"role": "System Manager"},
-  {"role": "WAFD Operations Manager"},
-  {"role": "WAFD Project Manager"},
-  {"role": "WAFD Production Supervisor"},
-  {"role": "WAFD Quality Inspector"},
-  {"role": "WAFD Storekeeper"},
-  {"role": "WAFD Cleaning Supervisor"},
-  {"role": "WAFD Delivery Supervisor"},
-  {"role": "WAFD Driver"},
-  {"role": "WAFD Finance User"},
-  {"role": "WAFD Approver"},
-  {"role": "WAFD Auditor"}
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Project Manager"
+  },
+  {
+   "role": "WAFD Production Supervisor"
+  },
+  {
+   "role": "WAFD Quality Inspector"
+  },
+  {
+   "role": "WAFD Storekeeper"
+  },
+  {
+   "role": "WAFD Cleaning Supervisor"
+  },
+  {
+   "role": "WAFD Delivery Supervisor"
+  },
+  {
+   "role": "WAFD Driver"
+  },
+  {
+   "role": "WAFD Finance User"
+  },
+  {
+   "role": "WAFD Approver"
+  },
+  {
+   "role": "WAFD Auditor"
+  },
+  {
+   "role": "WAFD Undertaking Officer"
+  },
+  {
+   "role": "WAFD Undertaking Reviewer"
+  }
  ],
  "creation": "2026-08-15 16:21:00.000000",
  "modified": "2026-08-15 16:21:00.000000",

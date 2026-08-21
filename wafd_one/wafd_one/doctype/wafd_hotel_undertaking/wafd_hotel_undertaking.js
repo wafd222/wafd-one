@@ -138,7 +138,7 @@ function wafd_install_preview_panel_style() {
     .wafd-und-preview-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
     .wafd-und-preview-title{font-weight:700;font-size:16px}
     .wafd-und-preview-close{border:0;background:transparent;font-size:28px;line-height:1;padding:4px 8px}
-    .wafd-und-preview-frame{flex:1;width:100%;border:0;background:#f4f4f4}
+    .wafd-und-preview-frame{flex:1;width:100%;border:0;background:#f4f4f4;touch-action:manipulation}
     .wafd-und-preview-actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
     .wafd-und-preview-actions .btn{flex:1 1 130px;min-height:42px}
     .wafd-undertaking-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;direction:rtl}
@@ -180,7 +180,69 @@ function wafd_open_undertaking_preview(frm) {
   const shareBtn = overlay.querySelector(".wafd-preview-share");
   frame.src = wafd_undertaking_preview_url(currentName);
 
-  const close = () => { overlay.remove(); wafd_clear_ios_media_session(); };
+  // RC205: fit the full undertaking to the mobile viewport while preserving
+  // pinch-to-zoom. The preview remains inside the same-origin HTML iframe.
+  let previewZoom = 1;
+  let fitZoom = 1;
+  const applyPreviewZoom = (value) => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc?.body) return;
+      previewZoom = Math.max(0.25, Math.min(4, value));
+      doc.documentElement.style.overflowX = "auto";
+      doc.documentElement.style.webkitTextSizeAdjust = "100%";
+      doc.body.style.marginInline = "auto";
+      doc.body.style.zoom = String(previewZoom);
+    } catch (_e) {}
+  };
+  const fitPreview = () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc?.body) return;
+      doc.body.style.zoom = "1";
+      const contentWidth = Math.max(
+        doc.documentElement.scrollWidth || 0,
+        doc.body.scrollWidth || 0,
+        doc.documentElement.offsetWidth || 0,
+        doc.body.offsetWidth || 0
+      );
+      const viewportWidth = Math.max(1, frame.clientWidth - 8);
+      fitZoom = contentWidth > viewportWidth ? viewportWidth / contentWidth : 1;
+      applyPreviewZoom(Math.min(1, fitZoom));
+
+      // Pinch gesture support inside the iframe.
+      let pinchStartDistance = 0;
+      let pinchStartZoom = previewZoom;
+      const distance = (touches) => {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+      if (!doc.documentElement.dataset.wafdPinchBound) {
+        doc.documentElement.dataset.wafdPinchBound = "1";
+        doc.addEventListener("touchstart", (e) => {
+          if (e.touches.length === 2) {
+            pinchStartDistance = distance(e.touches);
+            pinchStartZoom = previewZoom;
+          }
+        }, {passive:true});
+        doc.addEventListener("touchmove", (e) => {
+          if (e.touches.length === 2 && pinchStartDistance > 0) {
+            const next = pinchStartZoom * (distance(e.touches) / pinchStartDistance);
+            applyPreviewZoom(next);
+            e.preventDefault();
+          }
+        }, {passive:false});
+        doc.addEventListener("touchend", (e) => {
+          if (e.touches.length < 2) pinchStartDistance = 0;
+        }, {passive:true});
+      }
+    } catch (_e) {}
+  };
+  frame.addEventListener("load", () => setTimeout(fitPreview, 80));
+  window.addEventListener("resize", fitPreview, {passive:true});
+
+  const close = () => { overlay.remove(); window.removeEventListener("resize", fitPreview); wafd_clear_ios_media_session(); };
   overlay.querySelector(".wafd-und-preview-close").addEventListener("click", close);
 
   issueBtn.addEventListener("click", async () => {

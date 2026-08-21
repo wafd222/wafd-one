@@ -55,9 +55,26 @@
     if (btn.parentElement !== host) host.appendChild(btn);
   }
 
-  document.addEventListener('DOMContentLoaded', () => setTimeout(render, 60));
+  function forceInitialUndertakingHome() {
+    if (!isMobile()) return;
+    const key = 'wafd_rc205_initial_home_done';
+    if (sessionStorage.getItem(key)) return;
+    const roles = window.frappe?.user_roles || [];
+    if (!roles.length) { setTimeout(forceInitialUndertakingHome, 120); return; }
+    if (!roles.includes('WAFD Undertaking Officer')) {
+      sessionStorage.setItem(key, '1');
+      return;
+    }
+    sessionStorage.setItem(key, '1');
+    if (isHome()) return;
+    if (window.frappe?.set_route) frappe.set_route('wafd-role-home');
+    else window.location.replace(HOME);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { setTimeout(render, 60); setTimeout(forceInitialUndertakingHome, 100); });
   window.addEventListener('popstate', () => setTimeout(render, 60));
   window.addEventListener('resize', render);
   if (window.frappe?.router?.on) frappe.router.on('change', () => setTimeout(render, 80));
   setTimeout(render, 250);
+  setTimeout(forceInitialUndertakingHome, 320);
 })();

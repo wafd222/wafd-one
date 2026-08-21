@@ -137,7 +137,7 @@ function wafd_install_preview_panel_style() {
     .wafd-und-preview-overlay{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column;overscroll-behavior:none}
     .wafd-und-preview-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border-color,#ddd);background:#fff;direction:rtl}
     .wafd-und-preview-title{font-weight:700;font-size:16px}
-    .wafd-und-preview-close{border:0;background:transparent;font-size:28px;line-height:1;padding:4px 8px}
+    .wafd-und-preview-close{border:1px solid #e5e1d7;background:#fff;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.05)}.wafd-und-preview-close svg{width:21px;height:21px;display:block}
     .wafd-und-preview-view{position:relative;flex:1;min-height:0;background:#f4f4f4;display:flex;flex-direction:column}
     .wafd-und-preview-zoom{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;padding:5px 8px;background:#f7f7f7;border-bottom:1px solid var(--border-color,#ddd);direction:ltr}
     .wafd-und-preview-zoom button{width:38px;height:32px;border:1px solid #d7d7d7;border-radius:9px;background:#fff;font-size:20px;line-height:1}
@@ -151,6 +151,13 @@ function wafd_install_preview_panel_style() {
     @media(max-width:767px){.wafd-und-preview-actions{gap:6px}.wafd-und-preview-actions .btn{font-size:14px}.wafd-undertaking-actions .btn{width:100%;min-height:44px}}
   `;
   document.head.appendChild(style);
+}
+
+function wafd_return_to_role_home(delay = 450) {
+  setTimeout(() => {
+    try { frappe.set_route("wafd-role-home"); }
+    catch (_e) { window.location.assign("/desk/wafd-role-home"); }
+  }, delay);
 }
 
 function wafd_open_undertaking_preview(frm) {
@@ -169,7 +176,7 @@ function wafd_open_undertaking_preview(frm) {
   overlay.innerHTML = `
     <div class="wafd-und-preview-head">
       <div class="wafd-und-preview-title">${__("معاينة التعهد")}</div>
-      <button type="button" class="wafd-und-preview-close" aria-label="${__("إغلاق")}">×</button>
+      <button type="button" class="wafd-und-preview-close" aria-label="${__("رجوع")}" title="${__("رجوع")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <div class="wafd-und-preview-view">
       <div class="wafd-und-preview-zoom" aria-label="${__("تكبير وتصغير المعاينة")}">
@@ -329,10 +336,20 @@ function wafd_open_undertaking_preview(frm) {
     saveBtn.disabled = false;
     shareBtn.disabled = false;
     issueBtn.textContent = __("تم الاعتماد والإصدار ✓");
-    frappe.show_alert({message: __("تم اعتماد التعهد وإصدار PDF"), indicator: "green"}, 4);
+    frappe.show_alert({message: __("تم اعتماد التعهد وإصدار PDF — اختر حفظ أو مشاركة لإتمام التعهد"), indicator: "green"}, 5);
   });
-  saveBtn.addEventListener("click", async () => generated && await wafd_save_generated_pdf(currentName));
-  shareBtn.addEventListener("click", () => generated && wafd_share_generated_pdf(currentName));
+  saveBtn.addEventListener("click", async () => {
+    if (!generated) return;
+    await wafd_save_generated_pdf(currentName);
+    close();
+    wafd_return_to_role_home();
+  });
+  shareBtn.addEventListener("click", async () => {
+    if (!generated) return;
+    await wafd_share_generated_pdf(currentName);
+    close();
+    wafd_return_to_role_home(700);
+  });
 }
 
 function wafd_render_undertaking_actions(frm) {
@@ -416,6 +433,15 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
     const x=r.message||{};
     await frm.set_value({second_party_name:x.beneficiary_name||"",second_party_cr:x.identity_number||"",party_nationality:x.nationality||"",second_party_representative:x.representative_name||""});
   },
-  project(frm){ if(!frm.doc.project)return; frappe.db.get_doc("WAFD Catering Project",frm.doc.project).then(p=>frm.set_value({contract:frm.doc.contract||p.contract,mission:frm.doc.mission||p.mission,hotel:frm.doc.hotel||p.primary_hotel,beneficiary_count:frm.doc.beneficiary_count||p.beneficiary_count,start_date:frm.doc.start_date||p.start_date,end_date:frm.doc.end_date||p.end_date})); },
+  async project(frm){
+    if(!frm.doc.project) return;
+    const p = await frappe.db.get_doc("WAFD Catering Project", frm.doc.project);
+    const values = {contract:frm.doc.contract||p.contract, mission:frm.doc.mission||p.mission, hotel:frm.doc.hotel||p.primary_hotel, beneficiary_count:frm.doc.beneficiary_count||p.beneficiary_count, start_date:frm.doc.start_date||p.start_date, end_date:frm.doc.end_date||p.end_date};
+    if (p.contract) {
+      const r = await frappe.db.get_value("WAFD Contract", p.contract, "contract_number");
+      if (r.message?.contract_number) values.contract_number = r.message.contract_number;
+    }
+    await frm.set_value(values);
+  },
   hotel(frm){if(!frm.doc.hotel)return;frappe.db.get_value("WAFD Hotel",frm.doc.hotel,"hotel_name").then(r=>{if(r.message?.hotel_name)frm.set_value("supply_location",r.message.hotel_name);});}
 });

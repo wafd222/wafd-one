@@ -6,10 +6,10 @@
 @media (max-width: 767px) {
   #wafd-global-mobile-back.wafd-global-mobile-back {
     position: fixed !important;
-    top: 64px !important;
-    right: 10px !important;
-    left: auto !important;
-    z-index: 1040 !important;
+    top: 122px !important;
+    left: 12px !important;
+    right: auto !important;
+    z-index: 1095 !important;
     display: inline-grid !important;
     place-items: center !important;
     width: 36px !important;

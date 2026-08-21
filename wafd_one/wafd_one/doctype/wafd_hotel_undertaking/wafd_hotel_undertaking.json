@@ -26,7 +26,9 @@
   "second_party_representative",
   "links_section",
   "project",
+  "project_display_name",
   "contract",
+  "contract_number",
   "mission",
   "hotel",
   "service_section",
@@ -192,12 +194,27 @@
    "read_only": 1
   },
   {
+   "fieldname": "project_display_name",
+   "fieldtype": "Data",
+   "label": "اسم المشروع / Project Name",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
    "fieldname": "contract",
    "fieldtype": "Link",
    "label": "العقد / Contract",
    "options": "WAFD Contract",
    "hidden": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "contract_number",
+   "fieldtype": "Data",
+   "label": "رقم العقد / Contract No.",
+   "description": "يُجلب تلقائياً من عقد المشروع، ويمكن إدخاله يدوياً للتعهد المستقل مثل عقد منصة مسار.",
+   "in_list_view": 0,
+   "allow_in_quick_entry": 1
   },
   {
    "fieldname": "mission",

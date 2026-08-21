@@ -51,7 +51,7 @@
 
     // RC193: mount on the page layer, never inside Frappe's navbar/flex layout.
     // position:fixed in CSS guarantees zero layout width/height consumption.
-    const host = document.querySelector('.page-body') || document.querySelector('#body') || document.body;
+    const host = document.body;
     if (btn.parentElement !== host) host.appendChild(btn);
   }
 

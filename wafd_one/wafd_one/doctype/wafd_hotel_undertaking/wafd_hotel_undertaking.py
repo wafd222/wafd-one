@@ -109,7 +109,7 @@ class WAFDHotelUndertaking(Document):
         if self.project:
             project = frappe.db.get_value(
                 "WAFD Catering Project", self.project,
-                ["contract", "mission", "primary_hotel", "beneficiary_count", "start_date", "end_date"],
+                ["contract", "mission", "primary_hotel", "beneficiary_count", "start_date", "end_date", "project_name"],
                 as_dict=True,
             )
             if project:
@@ -119,6 +119,12 @@ class WAFDHotelUndertaking(Document):
                 self.beneficiary_count = self.beneficiary_count or project.beneficiary_count
                 self.start_date = self.start_date or project.start_date
                 self.end_date = self.end_date or project.end_date
+                # Expose a human project title to templates without replacing the Link value.
+                self.project_display_name = project.project_name or self.project
+        if self.contract:
+            contract_no = frappe.db.get_value("WAFD Contract", self.contract, "contract_number")
+            if contract_no:
+                self.contract_number = contract_no
         if self.mission:
             mission = frappe.db.get_value(
                 "WAFD Mission", self.mission,

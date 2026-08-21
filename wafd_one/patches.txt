@@ -334,3 +334,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc201.execute
 
 # RC204 undertaking issue/share permission fix and approved terms enforcement
 wafd_one.wafd_one.patches.v10_0_0_rc204.execute
+# RC208 undertaking navigation, contract number and signature-label cleanup
+wafd_one.wafd_one.patches.v10_0_0_rc208.execute

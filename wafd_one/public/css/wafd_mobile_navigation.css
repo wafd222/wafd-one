@@ -7,8 +7,8 @@
   #wafd-global-mobile-back.wafd-global-mobile-back {
     position: fixed !important;
     top: 122px !important;
-    left: 12px !important;
-    right: auto !important;
+    right: 14px !important;
+    left: auto !important;
     z-index: 1095 !important;
     display: inline-grid !important;
     place-items: center !important;
@@ -20,8 +20,8 @@
     padding: 0 !important;
     border: 1px solid rgba(0, 0, 0, .10) !important;
     border-radius: 11px !important;
-    background: rgba(255, 255, 255, .94) !important;
-    color: #2f3135 !important;
+    background: #f5f0e4 !important;
+    color: #765b20 !important;
     box-shadow: 0 3px 12px rgba(0, 0, 0, .08) !important;
     line-height: 1 !important;
     font-size: 0 !important;
@@ -31,11 +31,14 @@
     -webkit-backdrop-filter: blur(8px);
   }
 
-  #wafd-global-mobile-back.wafd-global-mobile-back svg {
+  #wafd-global-mobile-back.wafd-global-mobile-back span {
     display: block !important;
-    width: 20px !important;
-    height: 20px !important;
-    margin: 0 !important;
+    color: #765b20 !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 30px !important;
+    font-weight: 700 !important;
+    line-height: 28px !important;
+    transform: translateY(-1px) !important;
     pointer-events: none !important;
   }
 

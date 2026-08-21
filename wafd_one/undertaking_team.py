@@ -57,6 +57,23 @@ def set_officer_enabled(user, enabled=1):
         frappe.throw(_("This user is not an undertaking officer."))
     if user == frappe.session.user:
         frappe.throw(_("You cannot disable your own active account here."))
-    frappe.db.set_value("User", user, "enabled", 1 if int(enabled) else 0)
+
+    target_enabled = 1 if int(enabled) else 0
+    # RC214: update the User document through its controller so Frappe runs the
+    # normal enable/disable hooks. A raw db.set_value leaves existing browser
+    # sessions alive, which allowed a disabled undertaking officer to keep
+    # creating documents until the session naturally expired.
+    officer = frappe.get_doc("User", user)
+    officer.enabled = target_enabled
+    officer.flags.ignore_permissions = True
+    officer.save()
+
+    if not target_enabled:
+        # Defence in depth: invalidate every active session for this user now.
+        # This makes the change effective even on another phone/browser that
+        # already had WAFD ONE open.
+        from frappe.sessions import clear_sessions
+        clear_sessions(user=user, keep_current=False, force=True)
+
     frappe.clear_cache(user=user)
-    return True
+    return {"user": user, "enabled": target_enabled}

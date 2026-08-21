@@ -398,6 +398,21 @@ function wafd_add_hotel_dialog(frm) {
   dialog.show();
 }
 
+function wafd_keep_created_undertaking_open(frm) {
+  if (!frm?.doc?.name || frm.is_new()) return;
+  const target = ["Form", frm.doctype, frm.doc.name];
+  const ensure = () => {
+    const r = frappe.get_route?.() || [];
+    if (!(r[0] === "Form" && r[1] === frm.doctype && r[2] === frm.doc.name)) {
+      frappe.set_route(...target);
+    }
+  };
+  // Frappe can perform a late list redirect after the save callback on mobile.
+  // Enforce the just-created Form twice after that redirect window.
+  setTimeout(ensure, 120);
+  setTimeout(ensure, 650);
+}
+
 frappe.ui.form.on("WAFD Hotel Undertaking", {
   setup(frm) {
     frm.set_query("hotel", () => ({ query: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.hotel_link_query_for_undertaking" }));
@@ -409,7 +424,21 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
     if (frm.is_new() && frm.doc.include_signature == null) frm.set_value("include_signature", 1);
     if (frm.is_new() && frm.doc.include_stamp == null) frm.set_value("include_stamp", 1);
   },
-  before_save(frm) { if (!frm.doc.meal_types) frm.set_value("meal_types", WAFD_DEFAULT_MEALS); },
+  before_save(frm) {
+    frm.__wafd_was_new_before_save = frm.is_new();
+    if (!frm.doc.meal_types) frm.set_value("meal_types", WAFD_DEFAULT_MEALS);
+  },
+  after_save(frm) {
+    if (frm.__wafd_was_new_before_save) {
+      frm.__wafd_was_new_before_save = false;
+      wafd_keep_created_undertaking_open(frm);
+    }
+  },
+  on_submit(frm) {
+    // If a newly-created undertaking is submitted immediately, keep the user
+    // on that same undertaking instead of falling back to the list screen.
+    wafd_keep_created_undertaking_open(frm);
+  },
   refresh(frm) {
     if (!wafd_is_restricted_undertaking_officer()) {
       ["company_logo", "signature_image", "company_stamp"].forEach((fieldname) => {

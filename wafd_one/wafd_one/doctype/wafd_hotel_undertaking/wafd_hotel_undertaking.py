@@ -25,6 +25,12 @@ class WAFDHotelUndertaking(Document):
         roles = set(frappe.get_roles(frappe.session.user))
         return UNDERTAKING_OFFICER_ROLE in roles and not (roles & UNDERTAKING_TEMPLATE_ADMIN_ROLES)
 
+    def _assert_active_undertaking_officer(self):
+        if not self._is_restricted_undertaking_officer():
+            return
+        if not cint(frappe.db.get_value("User", frappe.session.user, "enabled") or 0):
+            frappe.throw(_("تم إيقاف حساب مسؤول التعهدات. تواصل مع الإدارة لإعادة التفعيل."), frappe.PermissionError)
+
     def _protect_template_controlled_fields(self):
         """Prevent undertaking officers from changing company identity or template-controlled content.
 
@@ -67,10 +73,12 @@ class WAFDHotelUndertaking(Document):
             )
 
     def before_insert(self):
+        self._assert_active_undertaking_officer()
         self.prepared_by_user = frappe.session.user
         self.prepared_by_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
 
     def validate(self):
+        self._assert_active_undertaking_officer()
         self._protect_template_controlled_fields()
         self._fill_linked_data()
         self._fill_meals()

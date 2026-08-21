@@ -35,7 +35,10 @@
     btn.className = 'wafd-global-mobile-back';
     btn.setAttribute('aria-label', 'رجوع');
     btn.setAttribute('title', 'رجوع');
-    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    // Use a text glyph rather than an SVG/currentColor dependency. Some iOS
+    // Safari/Frappe combinations rendered the floating white button but dropped
+    // the SVG stroke, leaving an apparently blank control.
+    btn.innerHTML = '<span aria-hidden="true">›</span>';
     btn.addEventListener('click', goBack);
     return btn;
   }

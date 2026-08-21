@@ -358,7 +358,7 @@ def approve_and_generate_pdf(name):
     template_name = get_default_template("WAFD Hotel Undertaking")
     if not template_name:
         frappe.throw(_("لا يوجد قالب تعهد مفعل / No active undertaking template was found"))
-    pdf_content = render_pdf_bytes(template_name, doc.doctype, doc.name)
+    pdf_content = render_pdf_bytes(template_name, doc.doctype, doc.name, trusted_template=True)
     filename = f"{doc.name}.pdf"
     existing = frappe.db.get_value("File", {
         "attached_to_doctype": doc.doctype,
@@ -389,3 +389,68 @@ def approve_and_generate_pdf(name):
         "created_from_cancelled": source.docstatus == 2,
     }
 
+
+
+def _secure_undertaking_doc(name, permission_type="read"):
+    doc = frappe.get_doc("WAFD Hotel Undertaking", name)
+    doc.check_permission(permission_type)
+    return doc
+
+
+def _default_undertaking_template():
+    """Resolve the management-controlled template without granting template access."""
+    if not frappe.db.exists("DocType", "WAFD Document Template"):
+        return None
+    return (
+        frappe.db.get_value(
+            "WAFD Document Template",
+            {"reference_doctype": "WAFD Hotel Undertaking", "enabled": 1, "is_default": 1},
+            "name",
+        )
+        or frappe.db.get_value(
+            "WAFD Document Template",
+            {"reference_doctype": "WAFD Hotel Undertaking", "enabled": 1},
+            "name",
+        )
+    )
+
+
+@frappe.whitelist()
+def preview_undertaking_pdf(name):
+    """Preview an undertaking without exposing Document Studio to officers."""
+    doc = _secure_undertaking_doc(name, "read")
+    _persist_approval_assets(doc)
+    from wafd_one.document_studio import render_pdf_bytes
+    template_name = _default_undertaking_template()
+    if not template_name:
+        frappe.throw(_("لا يوجد قالب تعهد مفعل / No active undertaking template was found"))
+    pdf = render_pdf_bytes(template_name, doc.doctype, doc.name, trusted_template=True)
+    frappe.local.response.filename = f"{doc.name}.pdf"
+    frappe.local.response.filecontent = pdf
+    frappe.local.response.type = "pdf"
+
+
+@frappe.whitelist()
+def download_generated_pdf(name):
+    """Serve the generated private PDF after checking access to the undertaking."""
+    doc = _secure_undertaking_doc(name, "read")
+    if not doc.generated_pdf:
+        frappe.throw(_("لم يتم إصدار ملف PDF لهذا التعهد / No PDF has been generated for this undertaking"))
+    file_name = frappe.db.get_value(
+        "File",
+        {
+            "file_url": doc.generated_pdf,
+            "attached_to_doctype": doc.doctype,
+            "attached_to_name": doc.name,
+        },
+        "name",
+    )
+    if not file_name:
+        frappe.throw(_("ملف PDF غير موجود / PDF file was not found"))
+    file_doc = frappe.get_doc("File", file_name)
+    content = file_doc.get_content()
+    if isinstance(content, str):
+        content = content.encode()
+    frappe.local.response.filename = file_doc.file_name or f"{doc.name}.pdf"
+    frappe.local.response.filecontent = content
+    frappe.local.response.type = "pdf"

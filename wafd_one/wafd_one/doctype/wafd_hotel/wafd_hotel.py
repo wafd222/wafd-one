@@ -37,3 +37,46 @@ def hotel_link_query(doctype, txt, searchfield, start, page_len, filters):
            limit %(start)s, %(page_len)s""",
         {"txt": txt, "like": like, "start": int(start), "page_len": int(page_len)},
     )
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def hotel_link_query_for_undertaking(doctype, txt, searchfield, start, page_len, filters):
+    """All active hotels are selectable for undertakings, including newly added hotels."""
+    txt = (txt or "").strip()
+    like = f"%{txt}%"
+    return frappe.db.sql(
+        """select name, hotel_name, coalesce(hotel_name_en, ''), coalesce(district, ''), coalesce(city, '')
+           from `tabWAFD Hotel`
+           where status = 'نشط / Active'
+             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_en like %(like)s or district like %(like)s)
+           order by hotel_name
+           limit %(start)s, %(page_len)s""",
+        {"txt": txt, "like": like, "start": int(start), "page_len": int(page_len)},
+    )
+
+
+@frappe.whitelist()
+def create_hotel_for_undertaking(hotel_name, hotel_name_en=None, district=None):
+    """Create a minimal hotel from the undertaking screen without granting edit rights."""
+    roles = set(frappe.get_roles())
+    allowed = {"System Manager", "WAFD Operations Manager", "WAFD Undertaking Officer"}
+    if not roles.intersection(allowed):
+        frappe.throw(frappe._("You are not permitted to add hotels."), frappe.PermissionError)
+    hotel_name = (hotel_name or "").strip()
+    if not hotel_name:
+        frappe.throw(frappe._("اسم الفندق مطلوب / Hotel name is required"))
+    existing = frappe.db.get_value("WAFD Hotel", {"hotel_name": hotel_name}, "name")
+    if existing:
+        return {"name": existing, "created": False}
+    doc = frappe.get_doc({
+        "doctype": "WAFD Hotel",
+        "hotel_name": hotel_name,
+        "hotel_name_en": (hotel_name_en or "").strip(),
+        "district": (district or "").strip(),
+        "city": "المدينة المنورة",
+        "status": "نشط / Active",
+        "verification_status": "يحتاج مراجعة / Needs Review",
+    })
+    doc.insert(ignore_permissions=False)
+    return {"name": doc.name, "created": True}

@@ -28,24 +28,19 @@ function wafd_pdf_url(file_url) {
   catch (e) { return file_url; }
 }
 
-async function wafd_get_template(frm) {
-  const r = await frappe.call({
-    method: "wafd_one.document_studio.get_default_template",
-    args: { reference_doctype: frm.doctype }
-  });
-  if (!r.message) {
-    frappe.msgprint(__("لا يوجد قالب تعهد مفعل"));
-    return null;
-  }
-  return r.message;
+function wafd_undertaking_preview_url(frm) {
+  const q = new URLSearchParams({name: frm.doc.name});
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.preview_undertaking_pdf?${q.toString()}`;
+}
+
+function wafd_generated_pdf_url(frm) {
+  const q = new URLSearchParams({name: frm.doc.name});
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_hotel_undertaking.wafd_hotel_undertaking.download_generated_pdf?${q.toString()}`;
 }
 
 async function wafd_preview_undertaking(frm) {
   const previewWindow = window.open("about:blank", "_blank");
-  const template = await wafd_get_template(frm);
-  if (!template) { if (previewWindow) previewWindow.close(); return; }
-  const q = new URLSearchParams({template_name: template, doctype: frm.doctype, docname: frm.doc.name});
-  const url = `/api/method/wafd_one.document_studio.download_pdf?${q.toString()}`;
+  const url = wafd_undertaking_preview_url(frm);
   if (previewWindow) previewWindow.location.href = url; else window.location.href = url;
 }
 
@@ -78,7 +73,7 @@ async function wafd_share_pdf(frm) {
     });
     return;
   }
-  const url = wafd_pdf_url(fileUrl);
+  const url = wafd_generated_pdf_url(frm);
   try {
     const response = await fetch(url, {credentials: "same-origin"});
     if (!response.ok) throw new Error("PDF fetch failed");
@@ -105,7 +100,7 @@ function wafd_save_pdf(frm) {
     return;
   }
   const a = document.createElement("a");
-  a.href = frm.doc.generated_pdf;
+  a.href = wafd_generated_pdf_url(frm);
   a.download = `${frm.doc.name || "undertaking"}.pdf`;
   a.target = "_blank";
   a.rel = "noopener";
@@ -140,7 +135,8 @@ function wafd_render_undertaking_actions(frm) {
       if (result.created_from_cancelled && result.docname) {
         frappe.show_alert({message: __("تم إنشاء نسخة جديدة من التعهد الملغي وإصدارها"), indicator: "green"}, 5);
       }
-      if (pdfWindow) pdfWindow.location.href = result.file_url; else window.location.href = result.file_url;
+      const secureUrl = wafd_generated_pdf_url(frm);
+      if (pdfWindow) pdfWindow.location.href = secureUrl; else window.location.href = secureUrl;
     } else if (pdfWindow) pdfWindow.close();
   });
   $bar.find(".wafd-und-share").on("click", () => wafd_share_pdf(frm));
@@ -150,9 +146,41 @@ function wafd_render_undertaking_actions(frm) {
   if ($target.length) $target.before($bar); else frm.$wrapper.prepend($bar);
 }
 
+
+function wafd_add_hotel_dialog(frm) {
+  const dialog = new frappe.ui.Dialog({
+    title: __("إضافة فندق جديد"),
+    fields: [
+      {fieldname: "hotel_name", fieldtype: "Data", label: __("اسم الفندق / Hotel Name"), reqd: 1},
+      {fieldname: "hotel_name_en", fieldtype: "Data", label: __("الاسم الإنجليزي / English Name")},
+      {fieldname: "district", fieldtype: "Data", label: __("الحي / District")}
+    ],
+    primary_action_label: __("حفظ الفندق"),
+    primary_action: async (values) => {
+      dialog.get_primary_btn().prop("disabled", true);
+      try {
+        const r = await frappe.call({
+          method: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.create_hotel_for_undertaking",
+          args: values,
+          freeze: true,
+          freeze_message: __("جارٍ حفظ الفندق...")
+        });
+        if (r.message?.name) {
+          await frm.set_value("hotel", r.message.name);
+          dialog.hide();
+          frappe.show_alert({message: r.message.created ? __("تمت إضافة الفندق") : __("الفندق موجود وتم اختياره"), indicator: "green"}, 4);
+        }
+      } finally {
+        dialog.get_primary_btn().prop("disabled", false);
+      }
+    }
+  });
+  dialog.show();
+}
+
 frappe.ui.form.on("WAFD Hotel Undertaking", {
   setup(frm) {
-    frm.set_query("hotel", () => ({ query: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.hotel_link_query" }));
+    frm.set_query("hotel", () => ({ query: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.hotel_link_query_for_undertaking" }));
     frm.set_query("saved_beneficiary", () => ({ filters: { disabled: 0 } }));
   },
   onload(frm) {
@@ -166,6 +194,7 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
     wafd_apply_undertaking_lockdown(frm);
     wafd_render_undertaking_actions(frm);
     frm.add_custom_button(__("إدارة المستفيدين المحفوظين"), () => frappe.set_route("List", "WAFD Undertaking Beneficiary"), __("المستفيدون"));
+    frm.add_custom_button(__("إضافة فندق جديد"), () => wafd_add_hotel_dialog(frm));
     if (frm.is_new()) return;
     if (frm.doc.docstatus === 0) {
       frm.add_custom_button(__("تحديث البيانات المرتبطة"), () => frappe.call({

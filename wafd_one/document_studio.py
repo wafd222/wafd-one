@@ -265,9 +265,10 @@ def save_template(template_name, canvas_json, page_settings=None):
     return {"name": doc.name, "revision": doc.revision}
 
 
-def _render(template_name, doctype=None, docname=None):
+def _render(template_name, doctype=None, docname=None, trusted_template=False):
     template = frappe.get_doc("WAFD Document Template", template_name)
-    template.check_permission("read")
+    if not trusted_template:
+        template.check_permission("read")
     html = template.compiled_html or compile_template(template)
     if doctype and docname:
         if doctype != template.reference_doctype:
@@ -417,13 +418,13 @@ def _embed_pdf_images(html):
     return css_pattern.sub(css_repl, html)
 
 
-def render_pdf_bytes(template_name, doctype=None, docname=None):
+def render_pdf_bytes(template_name, doctype=None, docname=None, trusted_template=False):
     """Render a Document Studio template and return cleaned PDF bytes.
 
     This is the single PDF path used by both preview downloads and approved
     undertaking attachments, so the two outputs cannot drift apart.
     """
-    html = _embed_pdf_images(_render(template_name, doctype, docname))
+    html = _embed_pdf_images(_render(template_name, doctype, docname, trusted_template=trusted_template))
     pdf = get_pdf(html, options={
         "page-size": "A4",
         "margin-top": "0mm",

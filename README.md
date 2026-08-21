@@ -1,6 +1,6 @@
 # WAFD ONE
 
-**Current release: 10.0.0 RC200 — Undertaking Officer Dedicated Home Access**
+**Current release: 10.0.0 RC201 — Undertaking Officer Dedicated Home Access**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 

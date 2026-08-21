@@ -293,7 +293,7 @@
    "fieldtype": "Data",
    "label": "الموقّع المعتمد / Authorized Signatory",
    "default": "نزار نذير بن ظفر",
-   "reqd": 1,
+   "reqd": 0,
    "permlevel": 2
   },
   {

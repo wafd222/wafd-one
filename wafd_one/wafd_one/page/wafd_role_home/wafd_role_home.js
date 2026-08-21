@@ -237,7 +237,18 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (item.page) { frappe.set_route(item.page); return; }
-      if (item.new_doctype) { frappe.new_doc(item.new_doctype); return; }
+      if (item.new_doctype) {
+        // RC210: open the full unsaved form directly. Quick Entry saves in a
+        // dialog then closes back to the previous route, which forced the
+        // officer to return to home/list and reopen the undertaking. Keeping
+        // the document in the full Form means Save -> Preview happens in one
+        // continuous workflow on the same record.
+        frappe.model.with_doctype(item.new_doctype, () => {
+          const doc = frappe.model.get_new_doc(item.new_doctype);
+          frappe.set_route("Form", item.new_doctype, doc.name);
+        });
+        return;
+      }
       if (item.doctype) frappe.set_route("List", item.doctype, item.filters || {});
     });
   }

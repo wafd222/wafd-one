@@ -1,4 +1,15 @@
 frappe.pages["wafd-undertaking-team"].on_page_load = function(wrapper) {
+  // RC210: this page is admin-only. When the same Safari/browser is reused
+  // after logout, Frappe can restore the manager's last route before the new
+  // officer home redirect finishes. Never render the team page for officers;
+  // redirect immediately so no admin UI flashes on screen.
+  const roles = new Set(frappe.user_roles || []);
+  const canManageTeam = roles.has("System Manager") || roles.has("WAFD Operations Manager");
+  if (!canManageTeam) {
+    wrapper.innerHTML = "";
+    requestAnimationFrame(() => frappe.set_route("wafd-role-home"));
+    return;
+  }
   const page = frappe.ui.make_app_page({parent: wrapper, title: __("فريق التعهدات"), single_column: true});
   const $root = $(page.body).attr("dir", "rtl").html(`
     <div style="max-width:850px;margin:20px auto;padding:0 12px">

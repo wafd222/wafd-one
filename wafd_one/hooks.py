@@ -121,4 +121,6 @@ has_permission = {
     "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_has_permission",
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_has_permission",
     "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_has_permission",
+    # RC213: narrow read bridge for private undertaking PDF/signature/stamp files.
+    "File": "wafd_one.undertaking_file_security.file_has_permission",
 }

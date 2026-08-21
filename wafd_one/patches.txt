@@ -339,3 +339,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc208.execute
 
 # RC209 multi-user undertaking team management
 wafd_one.wafd_one.patches.v10_0_0_rc209.execute
+
+# RC213 undertaking private-file least-privilege permission repair
+wafd_one.wafd_one.patches.v10_0_0_rc213.execute

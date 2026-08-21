@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC212
+# WAFD ONE 10.0.0 RC213
 
-**Current release: 10.0.0 RC212 — iOS Lock-Screen Media Session Fix**
+**Current release: 10.0.0 RC213 — Undertaking Private-File Permission Repair**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 
@@ -33,3 +33,7 @@
 
 ## RC211
 Removes undertaking signature/stamp status chips and prevents restricted officers from triggering protected attachment-file reads while keeping the approved assets automatic in Preview/PDF.
+
+
+## RC213
+Repairs least-privilege access to undertaking-generated PDFs and the centrally managed signature/stamp assets for undertaking officers, without granting general File access.

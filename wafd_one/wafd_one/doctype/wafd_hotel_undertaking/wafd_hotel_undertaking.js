@@ -359,10 +359,6 @@ function wafd_render_undertaking_actions(frm) {
   wafd_install_preview_panel_style();
   const $bar = $(`
     <div id="${id}" class="wafd-undertaking-actions" dir="rtl">
-      <div class="wafd-und-assets">
-        <span>التوقيع: ${frm.doc.signature_image ? "محفوظ ✓" : "غير محفوظ"}</span>
-        <span style="margin-inline-start:12px">الختم: ${frm.doc.company_stamp ? "محفوظ ✓" : "غير محفوظ"}</span>
-      </div>
       <button type="button" class="btn btn-primary wafd-und-preview">معاينة التعهد</button>
     </div>`);
   $bar.find(".wafd-und-preview").on("click", () => wafd_open_undertaking_preview(frm));
@@ -415,6 +411,11 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
   },
   before_save(frm) { if (!frm.doc.meal_types) frm.set_value("meal_types", WAFD_DEFAULT_MEALS); },
   refresh(frm) {
+    if (!wafd_is_restricted_undertaking_officer()) {
+      ["company_logo", "signature_image", "company_stamp"].forEach((fieldname) => {
+        if (frm.fields_dict[fieldname]) frm.set_df_property(fieldname, "hidden", 0);
+      });
+    }
     wafd_apply_undertaking_lockdown(frm);
     wafd_render_undertaking_actions(frm);
     frm.add_custom_button(__("إدارة المستفيدين المحفوظين"), () => frappe.set_route("List", "WAFD Undertaking Beneficiary"), __("المستفيدون"));

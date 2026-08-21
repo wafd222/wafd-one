@@ -46,6 +46,7 @@ page_css = {
     "wafd-launch-center": "public/css/wafd_launch_center.css",
 }
 app_include_js = [
+    "/assets/wafd_one/js/wafd_ios_silent_mode.js",
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
     "/assets/wafd_one/js/wafd_mobile_navigation.js",

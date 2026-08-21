@@ -6,7 +6,13 @@
  "title": "فريق التعهدات",
  "standard": "Yes",
  "roles": [
-  {"role": "System Manager"},
-  {"role": "WAFD Operations Manager"}
- ]
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  }
+ ],
+ "creation": "2026-08-21 15:30:00.000000",
+ "modified": "2026-08-21 15:30:00.000000"
 }

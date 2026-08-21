@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC208
+# WAFD ONE 10.0.0 RC212
 
-**Current release: 10.0.0 RC201 — Undertaking Officer Dedicated Home Access**
+**Current release: 10.0.0 RC212 — iOS Lock-Screen Media Session Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 
@@ -29,3 +29,7 @@
 - لا تحذف أو تعيد ترتيب السجل التاريخي في `wafd_one/patches.txt`.
 - ملفات البيانات المرجعية وقوالب الاستيراد محفوظة لاستخدامها عند تجهيز بيانات التشغيل الحقيقية.
 - يتضمن RC192 patch آمنًا لاستعادة التوقيع/الختم القديمين وتحديث قالب التعهد؛ لذلك يجب تشغيل `migrate` بعد الرفع.
+
+
+## RC211
+Removes undertaking signature/stamp status chips and prevents restricted officers from triggering protected attachment-file reads while keeping the approved assets automatic in Preview/PDF.

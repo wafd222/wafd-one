@@ -130,7 +130,8 @@
    "fieldtype": "Attach Image",
    "label": "شعار الشركة / Company Logo",
    "default": "/assets/wafd_one/images/wafd-almadinah-official.png",
-   "permlevel": 2
+   "permlevel": 2,
+   "hidden": 1
   },
   {
    "fieldname": "party_section",
@@ -340,13 +341,15 @@
    "fieldname": "signature_image",
    "fieldtype": "Attach Image",
    "label": "صورة التوقيع / Signature Image",
-   "permlevel": 2
+   "permlevel": 2,
+   "hidden": 1
   },
   {
    "fieldname": "company_stamp",
    "fieldtype": "Attach Image",
    "label": "ختم الشركة / Company Stamp",
-   "permlevel": 2
+   "permlevel": 2,
+   "hidden": 1
   },
   {
    "fieldname": "management_audit_section",

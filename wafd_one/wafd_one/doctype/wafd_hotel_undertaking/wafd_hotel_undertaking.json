@@ -469,7 +469,14 @@
    "submit": 1,
    "print": 1,
    "email": 1,
-   "select": 1
+   "select": 1,
+   "cancel": 1,
+   "amend": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "share": 1,
+   "import": 0
   },
   {
    "role": "WAFD Undertaking Reviewer",

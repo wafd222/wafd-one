@@ -316,3 +316,12 @@ wafd_one.wafd_one.patches.v10_0_0_rc195.execute
 
 # RC196 undertaking officer template lockdown
 wafd_one.patches.v10_0_0_rc196.execute
+
+# RC197 allow undertaking officers to select required reference data
+wafd_one.patches.v10_0_0_rc197.execute
+
+# RC198 undertaking officers can manage their own undertaking lifecycle
+wafd_one.patches.v10_0_0_rc198.execute
+
+# RC199 allow undertaking officers to add new hotels without editing existing hotel records
+wafd_one.patches.v10_0_0_rc199.execute

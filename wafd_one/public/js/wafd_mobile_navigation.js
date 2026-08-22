@@ -12,7 +12,12 @@
 
   function isHome() {
     const p = location.pathname.replace(/\/$/, '');
-    return p === HOME || p === '/app/wafd-role-home' || p === '/wafd-mobile' || route()[0] === 'wafd-role-home';
+    const r = route();
+    // RC216: DOM detection is the final authority because Frappe/Safari can
+    // temporarily report /app or a stale route while the role-home page is
+    // already mounted. Never show a back button on the actual home screen.
+    if (document.querySelector('.wafd-role-home')) return true;
+    return p === HOME || p === '/app/wafd-role-home' || p === '/wafd-mobile' || r[0] === 'wafd-role-home';
   }
 
   function goBack() {
@@ -35,16 +40,60 @@
     btn.className = 'wafd-global-mobile-back';
     btn.setAttribute('aria-label', 'رجوع');
     btn.setAttribute('title', 'رجوع');
-    // Use a text glyph rather than an SVG/currentColor dependency. Some iOS
-    // Safari/Frappe combinations rendered the floating white button but dropped
-    // the SVG stroke, leaving an apparently blank control.
-    btn.innerHTML = '<span aria-hidden="true">›</span>';
+
+    // RC216: draw the arrow from CSS borders rather than a font glyph, SVG,
+    // pseudo-element, or icon font. This survives iOS Safari text/icon quirks.
+    const arrow = document.createElement('span');
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.style.cssText = [
+      'display:block!important',
+      'width:13px!important',
+      'height:13px!important',
+      'box-sizing:border-box!important',
+      'border-left:3px solid #765b20!important',
+      'border-bottom:3px solid #765b20!important',
+      'border-top:0!important',
+      'border-right:0!important',
+      'transform:rotate(45deg)!important',
+      'transform-origin:center!important',
+      'margin-left:5px!important',
+      'background:transparent!important',
+      'opacity:1!important',
+      'visibility:visible!important'
+    ].join(';');
+    btn.appendChild(arrow);
+
+    btn.style.cssText = [
+      'position:fixed!important',
+      'top:122px!important',
+      'right:14px!important',
+      'left:auto!important',
+      'z-index:1095!important',
+      'display:flex!important',
+      'align-items:center!important',
+      'justify-content:center!important',
+      'width:42px!important',
+      'height:42px!important',
+      'min-width:42px!important',
+      'min-height:42px!important',
+      'padding:0!important',
+      'margin:0!important',
+      'border:1px solid rgba(118,91,32,.30)!important',
+      'border-radius:12px!important',
+      'background:#f5f0e4!important',
+      'box-shadow:0 3px 12px rgba(0,0,0,.08)!important',
+      'appearance:none!important',
+      '-webkit-appearance:none!important',
+      'overflow:visible!important'
+    ].join(';');
     btn.addEventListener('click', goBack);
     return btn;
   }
 
   function render() {
-    let btn = document.getElementById(ID);
+    const all = Array.from(document.querySelectorAll('#' + ID));
+    let btn = all.shift() || null;
+    all.forEach((node) => node.remove());
     if (!isMobile() || isHome()) {
       if (btn) btn.remove();
       return;
@@ -119,4 +168,13 @@
   setTimeout(enforceInitialUndertakingHome, 900);
   window.addEventListener('pageshow', () => setTimeout(enforceInitialUndertakingHome, 40));
   window.addEventListener('focus', () => setTimeout(enforceInitialUndertakingHome, 40));
+
+  const homeObserver = new MutationObserver(() => {
+    if (document.querySelector('.wafd-role-home') || document.getElementById(ID)) {
+      render();
+    }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.body) homeObserver.observe(document.body, { childList: true, subtree: true });
+  }, { once: true });
 })();

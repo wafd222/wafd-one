@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC214
+# WAFD ONE 10.0.0 RC216
 
-**Current release: 10.0.0 RC214 — Undertaking Direct Save Flow, Officer Deactivation Enforcement & Mobile Back Button Fix**
+**Current release: 10.0.0 RC216 — Deterministic Mobile Back Control Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من التخطيط والتشغيل حتى الفوترة والتحصيل.
 

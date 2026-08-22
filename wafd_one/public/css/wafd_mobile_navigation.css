@@ -1,49 +1,14 @@
-/* RC193 — Mobile back control lives on the page overlay, never in navbar layout. */
-#wafd-global-mobile-back.wafd-global-mobile-back {
-  display: none;
-}
-
-@media (max-width: 767px) {
-  #wafd-global-mobile-back.wafd-global-mobile-back {
-    position: fixed !important;
-    top: 122px !important;
-    right: 14px !important;
-    left: auto !important;
-    z-index: 1095 !important;
-    display: inline-grid !important;
-    place-items: center !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 1px solid rgba(0, 0, 0, .10) !important;
-    border-radius: 11px !important;
-    background: #f5f0e4 !important;
-    color: #765b20 !important;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, .08) !important;
-    line-height: 1 !important;
-    font-size: 0 !important;
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+/* RC216 — iOS-safe mobile back control.
+   The arrow is a real child element drawn with borders; no glyph/SVG/icon font. */
+#wafd-global-mobile-back.wafd-global-mobile-back{display:none}
+@media (max-width:767px){
+  #wafd-global-mobile-back.wafd-global-mobile-back{
+    position:fixed!important;top:122px!important;right:14px!important;left:auto!important;
+    z-index:1095!important;display:flex!important;align-items:center!important;justify-content:center!important;
+    width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;
+    margin:0!important;padding:0!important;border:1px solid rgba(118,91,32,.30)!important;
+    border-radius:12px!important;background:#f5f0e4!important;box-shadow:0 3px 12px rgba(0,0,0,.08)!important;
+    appearance:none!important;-webkit-appearance:none!important;overflow:visible!important;
   }
-
-  #wafd-global-mobile-back.wafd-global-mobile-back span {
-    display: block !important;
-    color: #765b20 !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 30px !important;
-    font-weight: 700 !important;
-    line-height: 28px !important;
-    transform: translateY(-1px) !important;
-    pointer-events: none !important;
-  }
-
-  #wafd-global-mobile-back.wafd-global-mobile-back:active {
-    transform: scale(.96);
-    background: #f4f2ec !important;
-  }
+  #wafd-global-mobile-back.wafd-global-mobile-back:active{transform:scale(.96)!important;background:#eee5d2!important}
 }

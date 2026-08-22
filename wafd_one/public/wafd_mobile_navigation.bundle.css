@@ -1,21 +1,53 @@
-/* RC218: bundled/cache-busted iOS-safe navigation control. */
-#wafd-global-mobile-back { display:none !important; }
-body.wafd-at-role-home #wafd-global-mobile-back,
-body.wafd-at-role-home #wafd-mobile-back-v218 { display:none !important; }
-#wafd-mobile-back-v218 { display:none; }
+/* RC219 — route-authoritative iOS mobile back control. */
+#wafd-global-mobile-back,
+#wafd-mobile-back-v218 { display:none !important; }
+
+#wafd-mobile-back-v219 { display:none; }
+body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
+
 @media (max-width:767px) {
-  #wafd-mobile-back-v218.wafd-mobile-back-v218 {
-    position:fixed !important; top:122px !important; right:14px !important; left:auto !important;
-    z-index:1095 !important; display:flex !important; align-items:center !important; justify-content:center !important;
-    width:42px !important; height:42px !important; min-width:42px !important; min-height:42px !important;
-    margin:0 !important; padding:0 !important; border:1px solid rgba(118,91,32,.38) !important;
-    border-radius:12px !important; background:#f5f0e4 !important; box-shadow:0 3px 12px rgba(0,0,0,.10) !important;
-    -webkit-appearance:none !important; appearance:none !important;
+  #wafd-mobile-back-v219.wafd-mobile-back-v219 {
+    position:fixed !important;
+    top:122px !important;
+    right:14px !important;
+    left:auto !important;
+    z-index:1095 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:42px !important;
+    height:42px !important;
+    min-width:42px !important;
+    min-height:42px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid rgba(118,91,32,.42) !important;
+    border-radius:12px !important;
+    background:#f5f0e4 !important;
+    box-shadow:0 3px 12px rgba(0,0,0,.10) !important;
+    -webkit-appearance:none !important;
+    appearance:none !important;
+    opacity:1 !important;
+    visibility:visible !important;
   }
-  .wafd-mobile-back-v218-arrow {
-    display:block !important; width:13px !important; height:13px !important; box-sizing:border-box !important;
-    border-left:3px solid #6e531b !important; border-bottom:3px solid #6e531b !important;
-    border-top:0 !important; border-right:0 !important; transform:rotate(45deg) !important;
-    margin-left:5px !important; opacity:1 !important; visibility:visible !important;
+
+  body.wafd-at-role-home #wafd-mobile-back-v219.wafd-mobile-back-v219 {
+    display:none !important;
+  }
+
+  .wafd-mobile-back-v219-arrow {
+    display:block !important;
+    width:13px !important;
+    height:13px !important;
+    box-sizing:border-box !important;
+    border-left:3px solid #6e531b !important;
+    border-bottom:3px solid #6e531b !important;
+    border-top:0 !important;
+    border-right:0 !important;
+    transform:rotate(45deg) !important;
+    margin-left:5px !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:none !important;
   }
 }

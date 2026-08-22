@@ -472,7 +472,19 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
   after_save(frm) {
     if (frm.__wafd_was_new_before_save) {
       frm.__wafd_was_new_before_save = false;
+      // RC222: the requested mobile flow is Save -> undertaking preview, not
+      // Save -> form/list. Keep the new document route protected, then open
+      // the existing full preview surface automatically so the next actions
+      // are Issue, Save PDF or Share PDF without an extra navigation step.
       wafd_keep_created_undertaking_open(frm);
+      if (!frm.__wafd_auto_preview_opened) {
+        frm.__wafd_auto_preview_opened = true;
+        setTimeout(() => {
+          if (!document.querySelector(".wafd-und-preview-overlay")) {
+            wafd_open_undertaking_preview(frm);
+          }
+        }, 220);
+      }
     }
   },
   on_submit(frm) {

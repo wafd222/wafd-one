@@ -1,4 +1,6 @@
 frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
+  // RC217: the home page must never carry the global mobile back control.
+  document.getElementById("wafd-global-mobile-back")?.remove();
   $(wrapper).addClass("wafd-role-home-page");
   const roles = new Set(frappe.user_roles || []);
   const isExecutive = roles.has("System Manager") || roles.has("WAFD Operations Manager");
@@ -254,4 +256,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
   }
   renderRoleHome();
 
+};
+
+
+// RC217: Frappe can revisit an already-loaded Page without re-running on_page_load.
+frappe.pages["wafd-role-home"].on_page_show = function () {
+  document.getElementById("wafd-global-mobile-back")?.remove();
+  setTimeout(() => document.getElementById("wafd-global-mobile-back")?.remove(), 120);
 };

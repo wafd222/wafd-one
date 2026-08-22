@@ -13,10 +13,10 @@
   function isHome() {
     const p = location.pathname.replace(/\/$/, '');
     const r = route();
-    // RC216: DOM detection is the final authority because Frappe/Safari can
+    // RC217: DOM detection is the final authority because Frappe/Safari can
     // temporarily report /app or a stale route while the role-home page is
     // already mounted. Never show a back button on the actual home screen.
-    if (document.querySelector('.wafd-role-home')) return true;
+    if (document.querySelector('.wafd-role-home, .wafd-role-home-page')) return true;
     return p === HOME || p === '/app/wafd-role-home' || p === '/wafd-mobile' || r[0] === 'wafd-role-home';
   }
 
@@ -169,12 +169,29 @@
   window.addEventListener('pageshow', () => setTimeout(enforceInitialUndertakingHome, 40));
   window.addEventListener('focus', () => setTimeout(enforceInitialUndertakingHome, 40));
 
+  // RC217: app_include_js may execute after DOMContentLoaded in Desk.
+  // Initialise immediately when the DOM is already ready; otherwise wait once.
+  // This prevents a button created during Frappe route restoration from being
+  // stranded on the role-home page after its DOM is mounted.
+  let observerStarted = false;
   const homeObserver = new MutationObserver(() => {
-    if (document.querySelector('.wafd-role-home') || document.getElementById(ID)) {
-      render();
-    }
+    window.requestAnimationFrame(() => render());
   });
-  document.addEventListener('DOMContentLoaded', () => {
-    if (document.body) homeObserver.observe(document.body, { childList: true, subtree: true });
-  }, { once: true });
+
+  function startObserver() {
+    if (observerStarted || !document.body) return;
+    observerStarted = true;
+    homeObserver.observe(document.body, { childList: true, subtree: true });
+    render();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+  } else {
+    startObserver();
+  }
+
+  // Additional late checks cover Frappe page mounting after route resolution.
+  setTimeout(render, 500);
+  setTimeout(render, 1200);
 })();

@@ -1,6 +1,6 @@
 include README.md
 include license.txt
-include RELEASE_NOTES_10.0.0rc187.md
+include RELEASE_NOTES_*.md
 recursive-include wafd_one *.json *.py *.js *.css *.html *.svg *.png *.jpg *.jpeg *.txt
 recursive-exclude wafd_one __pycache__ *
 recursive-exclude wafd_one *.pyc

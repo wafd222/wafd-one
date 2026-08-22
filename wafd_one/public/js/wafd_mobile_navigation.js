@@ -1,197 +1,147 @@
 (function () {
-  const HOME = '/desk/wafd-role-home';
-  const ID = 'wafd-global-mobile-back';
+  "use strict";
+
+  const LEGACY_IDS = ["wafd-global-mobile-back", "wafd-mobile-back-v218"];
+  const ID = "wafd-mobile-back-v219";
+  const HOME_CLASS = "wafd-at-role-home";
+  const HOME_ROUTE = "wafd-role-home";
 
   function isMobile() {
-    return window.matchMedia('(max-width: 767px)').matches;
+    return window.matchMedia("(max-width: 767px)").matches;
   }
 
-  function route() {
-    try { return window.frappe?.get_route?.() || []; } catch (e) { return []; }
+  function currentRoute() {
+    try {
+      const r = window.frappe?.get_route?.();
+      return Array.isArray(r) ? r : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+
+  function currentRouteName() {
+    const r = currentRoute();
+    return r.length ? String(r[0] || "").trim() : "";
+  }
+
+  function pathIsHome() {
+    const p = String(window.location.pathname || "").replace(/\/$/, "");
+    return p === "/desk/wafd-role-home" || p === "/app/wafd-role-home" || p === "/wafd-mobile";
+  }
+
+  function elementIsActuallyVisible(el) {
+    if (!el) return false;
+    // Frappe Desk is an SPA and keeps previously visited pages mounted but hidden.
+    // Only use DOM visibility as a last-resort fallback before the router is ready.
+    if (el.closest(".hide, [hidden], [aria-hidden='true']")) return false;
+    const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    if (style && (style.display === "none" || style.visibility === "hidden")) return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects?.().length);
+  }
+
+  function visibleHomeFallback() {
+    return Array.from(document.querySelectorAll(".wafd-role-home-page, .wafd-role-home"))
+      .some(elementIsActuallyVisible);
   }
 
   function isHome() {
-    const p = location.pathname.replace(/\/$/, '');
-    const r = route();
-    // RC217: DOM detection is the final authority because Frappe/Safari can
-    // temporarily report /app or a stale route while the role-home page is
-    // already mounted. Never show a back button on the actual home screen.
-    if (document.querySelector('.wafd-role-home, .wafd-role-home-page')) return true;
-    return p === HOME || p === '/app/wafd-role-home' || p === '/wafd-mobile' || r[0] === 'wafd-role-home';
+    // Route is the source of truth inside Frappe Desk. Do NOT infer home merely
+    // because a hidden cached home page still exists in the SPA DOM.
+    const routeName = currentRouteName();
+    if (routeName) return routeName === HOME_ROUTE;
+    if (pathIsHome()) return true;
+    return visibleHomeFallback();
+  }
+
+  function removeLegacy() {
+    LEGACY_IDS.forEach((legacyId) => {
+      document.querySelectorAll("#" + legacyId).forEach((node) => node.remove());
+    });
   }
 
   function goBack() {
-    // Match native iOS/browser navigation when history is available.
     if (window.history.length > 1) {
       window.history.back();
       return;
     }
     if (window.frappe?.set_route) {
-      frappe.set_route('wafd-role-home');
+      frappe.set_route(HOME_ROUTE);
       return;
     }
-    window.location.assign(HOME);
+    window.location.assign("/desk/wafd-role-home");
   }
 
   function createButton() {
-    const btn = document.createElement('button');
+    const btn = document.createElement("button");
     btn.id = ID;
-    btn.type = 'button';
-    btn.className = 'wafd-global-mobile-back';
-    btn.setAttribute('aria-label', 'رجوع');
-    btn.setAttribute('title', 'رجوع');
+    btn.type = "button";
+    btn.className = "wafd-mobile-back-v219";
+    btn.setAttribute("aria-label", "رجوع");
+    btn.setAttribute("title", "رجوع");
 
-    // RC216: draw the arrow from CSS borders rather than a font glyph, SVG,
-    // pseudo-element, or icon font. This survives iOS Safari text/icon quirks.
-    const arrow = document.createElement('span');
-    arrow.setAttribute('aria-hidden', 'true');
-    arrow.style.cssText = [
-      'display:block!important',
-      'width:13px!important',
-      'height:13px!important',
-      'box-sizing:border-box!important',
-      'border-left:3px solid #765b20!important',
-      'border-bottom:3px solid #765b20!important',
-      'border-top:0!important',
-      'border-right:0!important',
-      'transform:rotate(45deg)!important',
-      'transform-origin:center!important',
-      'margin-left:5px!important',
-      'background:transparent!important',
-      'opacity:1!important',
-      'visibility:visible!important'
-    ].join(';');
+    // Pure CSS geometry avoids font/SVG rendering issues on iOS Safari.
+    const arrow = document.createElement("span");
+    arrow.className = "wafd-mobile-back-v219-arrow";
+    arrow.setAttribute("aria-hidden", "true");
     btn.appendChild(arrow);
-
-    btn.style.cssText = [
-      'position:fixed!important',
-      'top:122px!important',
-      'right:14px!important',
-      'left:auto!important',
-      'z-index:1095!important',
-      'display:flex!important',
-      'align-items:center!important',
-      'justify-content:center!important',
-      'width:42px!important',
-      'height:42px!important',
-      'min-width:42px!important',
-      'min-height:42px!important',
-      'padding:0!important',
-      'margin:0!important',
-      'border:1px solid rgba(118,91,32,.30)!important',
-      'border-radius:12px!important',
-      'background:#f5f0e4!important',
-      'box-shadow:0 3px 12px rgba(0,0,0,.08)!important',
-      'appearance:none!important',
-      '-webkit-appearance:none!important',
-      'overflow:visible!important'
-    ].join(';');
-    btn.addEventListener('click', goBack);
+    btn.addEventListener("click", goBack);
     return btn;
   }
 
+  function syncHomeState(home) {
+    document.body.classList.toggle(HOME_CLASS, !!home);
+  }
+
   function render() {
-    const all = Array.from(document.querySelectorAll('#' + ID));
-    let btn = all.shift() || null;
-    all.forEach((node) => node.remove());
-    if (!isMobile() || isHome()) {
+    if (!document.body) return;
+
+    removeLegacy();
+    const home = isHome();
+    syncHomeState(home);
+
+    let btn = document.getElementById(ID);
+    if (!isMobile() || home) {
       if (btn) btn.remove();
       return;
     }
 
-    if (!btn) btn = createButton();
-
-    // RC193: mount on the page layer, never inside Frappe's navbar/flex layout.
-    // position:fixed in CSS guarantees zero layout width/height consumption.
-    const host = document.body;
-    if (btn.parentElement !== host) host.appendChild(btn);
-  }
-
-  // RC207: keep an entry guard alive until Frappe has finished restoring its
-  // initial route. Safari/Frappe may restore the last open Form *after* our
-  // first redirect. We therefore redirect any initial non-home route back to
-  // role home and only release the guard after home has stayed stable briefly.
-  const entryGuard = {
-    active: true,
-    deadline: Date.now() + 10000,
-    homeSeenAt: 0,
-    redirecting: false,
-    timer: null,
-  };
-
-  function isRestrictedUndertakingOfficer() {
-    const roles = window.frappe?.user_roles || [];
-    return roles.includes('WAFD Undertaking Officer') &&
-      !roles.includes('System Manager') && !roles.includes('WAFD Operations Manager');
-  }
-
-  function releaseEntryGuardSoon() {
-    clearTimeout(entryGuard.timer);
-    entryGuard.timer = setTimeout(() => {
-      if (isHome()) entryGuard.active = false;
-    }, 900);
-  }
-
-  function enforceInitialUndertakingHome() {
-    if (!entryGuard.active || !isMobile()) return;
-    if (Date.now() > entryGuard.deadline) { entryGuard.active = false; return; }
-    const roles = window.frappe?.user_roles || [];
-    if (!roles.length) { setTimeout(enforceInitialUndertakingHome, 120); return; }
-    if (!isRestrictedUndertakingOfficer()) { entryGuard.active = false; return; }
-
-    if (isHome()) {
-      if (!entryGuard.homeSeenAt) entryGuard.homeSeenAt = Date.now();
-      releaseEntryGuardSoon();
-      return;
-    }
-
-    // If Frappe restores a last-open form after our first redirect, cancel the
-    // pending release and route home again. The redirect lock prevents loops.
-    entryGuard.homeSeenAt = 0;
-    clearTimeout(entryGuard.timer);
-    if (entryGuard.redirecting) return;
-    entryGuard.redirecting = true;
-    try {
-      if (window.frappe?.set_route) frappe.set_route('wafd-role-home');
-      else window.location.replace(HOME);
-    } finally {
-      setTimeout(() => { entryGuard.redirecting = false; enforceInitialUndertakingHome(); }, 180);
+    if (!btn) {
+      btn = createButton();
+      document.body.appendChild(btn);
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { setTimeout(render, 60); setTimeout(enforceInitialUndertakingHome, 100); });
-  window.addEventListener('popstate', () => setTimeout(render, 60));
-  window.addEventListener('resize', render);
-  if (window.frappe?.router?.on) frappe.router.on('change', () => { setTimeout(render, 80); setTimeout(enforceInitialUndertakingHome, 20); });
-  setTimeout(render, 250);
-  setTimeout(enforceInitialUndertakingHome, 320);
-  setTimeout(enforceInitialUndertakingHome, 900);
-  window.addEventListener('pageshow', () => setTimeout(enforceInitialUndertakingHome, 40));
-  window.addEventListener('focus', () => setTimeout(enforceInitialUndertakingHome, 40));
+  function scheduleRender() {
+    requestAnimationFrame(render);
+  }
 
-  // RC217: app_include_js may execute after DOMContentLoaded in Desk.
-  // Initialise immediately when the DOM is already ready; otherwise wait once.
-  // This prevents a button created during Frappe route restoration from being
-  // stranded on the role-home page after its DOM is mounted.
-  let observerStarted = false;
-  const homeObserver = new MutationObserver(() => {
-    window.requestAnimationFrame(() => render());
-  });
-
-  function startObserver() {
-    if (observerStarted || !document.body) return;
-    observerStarted = true;
-    homeObserver.observe(document.body, { childList: true, subtree: true });
+  function boot() {
+    if (!document.body) return;
     render();
+
+    // DOM changes can happen after Frappe route changes; rerender without using
+    // stale hidden page nodes to determine the active screen.
+    const observer = new MutationObserver(scheduleRender);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden", "aria-hidden"] });
+
+    window.addEventListener("popstate", () => setTimeout(render, 0));
+    window.addEventListener("pageshow", () => setTimeout(render, 0));
+    window.addEventListener("resize", render);
+
+    if (window.frappe?.router?.on) {
+      frappe.router.on("change", () => {
+        setTimeout(render, 0);
+        setTimeout(render, 80);
+        setTimeout(render, 220);
+      });
+    }
+
+    [50, 150, 350, 700, 1200, 2200].forEach((ms) => setTimeout(render, ms));
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
   } else {
-    startObserver();
+    boot();
   }
-
-  // Additional late checks cover Frappe page mounting after route resolution.
-  setTimeout(render, 500);
-  setTimeout(render, 1200);
 })();

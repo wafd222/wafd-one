@@ -398,23 +398,64 @@ function wafd_add_hotel_dialog(frm) {
   dialog.show();
 }
 
+// RC221: keep a newly-created undertaking on its own Form after the first Save.
+// Frappe Desk is an SPA and, on mobile, a late route change may return to the
+// List after the form's after_save callback.  Timers alone were race-prone.
+// Install one route listener for this DocType and activate a short-lived guard
+// only after the first successful save.  The guard blocks ONLY the unwanted
+// List/home fallback; normal navigation remains available immediately after
+// the guard expires.
+let wafd_undertaking_route_guard_installed = false;
+let wafd_undertaking_route_guard = null;
+
+function wafd_install_undertaking_route_guard() {
+  if (wafd_undertaking_route_guard_installed) return;
+  const router = frappe.router?.on ? frappe.router : (frappe.route?.on ? frappe.route : null);
+  if (!router) return;
+  wafd_undertaking_route_guard_installed = true;
+  router.on("change", () => {
+    const guard = wafd_undertaking_route_guard;
+    if (!guard || Date.now() > guard.expires) {
+      wafd_undertaking_route_guard = null;
+      return;
+    }
+    const r = frappe.get_route?.() || [];
+    const isTarget = r[0] === "Form" && r[1] === guard.doctype && r[2] === guard.name;
+    if (isTarget) return;
+    const isUndertakingList = r[0] === "List" && r[1] === guard.doctype;
+    const isRoleHome = r[0] === "wafd-role-home" || (r[0] === "Page" && r[1] === "wafd-role-home");
+    if (isUndertakingList || isRoleHome) {
+      requestAnimationFrame(() => frappe.set_route("Form", guard.doctype, guard.name));
+    }
+  });
+}
+
 function wafd_keep_created_undertaking_open(frm) {
   if (!frm?.doc?.name || frm.is_new()) return;
+  wafd_install_undertaking_route_guard();
   const target = ["Form", frm.doctype, frm.doc.name];
+  wafd_undertaking_route_guard = {
+    doctype: frm.doctype,
+    name: frm.doc.name,
+    // Long enough to cover Frappe's post-save mobile routing, short enough not
+    // to interfere with the user's next intentional action.
+    expires: Date.now() + 5000
+  };
   const ensure = () => {
     const r = frappe.get_route?.() || [];
     if (!(r[0] === "Form" && r[1] === frm.doctype && r[2] === frm.doc.name)) {
       frappe.set_route(...target);
     }
   };
-  // Frappe can perform a late list redirect after the save callback on mobile.
-  // Enforce the just-created Form twice after that redirect window.
-  setTimeout(ensure, 120);
-  setTimeout(ensure, 650);
+  // Immediate enforcement plus two fallbacks for slow iOS/Frappe paint cycles.
+  requestAnimationFrame(ensure);
+  setTimeout(ensure, 180);
+  setTimeout(ensure, 900);
 }
 
 frappe.ui.form.on("WAFD Hotel Undertaking", {
   setup(frm) {
+    wafd_install_undertaking_route_guard();
     frm.set_query("hotel", () => ({ query: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.hotel_link_query_for_undertaking" }));
     frm.set_query("saved_beneficiary", () => ({ filters: { disabled: 0 } }));
   },

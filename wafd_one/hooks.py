@@ -49,11 +49,11 @@ app_include_js = [
     "/assets/wafd_one/js/wafd_ios_silent_mode.js",
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
-    "/assets/wafd_one/js/wafd_mobile_navigation.js",
+    "wafd_mobile_navigation.bundle.js",
 ]
 
 app_include_css = [
-    "/assets/wafd_one/css/wafd_mobile_navigation.css",
+    "wafd_mobile_navigation.bundle.css",
     "/assets/wafd_one/css/wafd_hub.css",
     "/assets/wafd_one/css/wafd_one_dashboard.css",
     "/assets/wafd_one/css/wafd_one_enterprise.css",

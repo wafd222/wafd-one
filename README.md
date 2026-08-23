@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC222
+# WAFD ONE 10.0.0 RC223
 
-**Current release: 10.0.0 RC222 — Final Save-Flow Hardening and Repository QA**
+**Current release: 10.0.0 RC223 — Final Consolidated QA and Version Consistency**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 
@@ -23,7 +23,7 @@
 
 ## التثبيت والتحديث على Frappe Cloud
 
-استخدم المستودع مع Frappe Framework v16 ثم نفّذ التحديث/النشر المعتاد. عند وجود patches جديدة في أي إصدار مستقبلي يجب تشغيل `migrate`. RC222 لا يضيف schema أو patch جديدًا؛ ويقوّي فقط مسار حفظ التعهد والمراجعة النهائية.
+استخدم المستودع مع Frappe Framework v16 ثم نفّذ التحديث/النشر المعتاد. عند وجود patches جديدة في أي إصدار مستقبلي يجب تشغيل `migrate`. RC223 لا يضيف schema أو patch جديدًا؛ ويقوّي فقط مسار حفظ التعهد والمراجعة النهائية.
 
 ## ملاحظات سلامة الترقية
 
@@ -31,3 +31,9 @@
 - ملفات البيانات المرجعية وقوالب الاستيراد جزء من تجهيز بيانات التشغيل ولا تُحذف لمجرد تقليل الحجم.
 - RC219 هو خط الأساس المعتمد لإصلاح زر الرجوع على الجوال، وRC222 يحافظ على سلوك التنقل المعتمد.
 - RC222 يقوّي فقط مسار الحفظ الأول للتعهد بحيث يبقى المستخدم داخل التعهد الجديد، مع الحفاظ على PDF والتوقيع والختم والصلاحيات الحالية.
+
+
+## RC223 final consolidated QA
+- Preserves the validated RC222 undertaking direct-preview and manager-permission fixes.
+- Synchronizes both Python package version markers with pyproject metadata.
+- Revalidates patch paths, release structure, JavaScript/JSON syntax, assets, finance safeguards, and repository cleanliness.

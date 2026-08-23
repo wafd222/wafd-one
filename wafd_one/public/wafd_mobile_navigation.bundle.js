@@ -53,6 +53,11 @@
     return visibleHomeFallback();
   }
 
+  function hasOpenModal() {
+    return Array.from(document.querySelectorAll(".modal.show, .modal[style*='display: block'], .frappe-dialog"))
+      .some(elementIsActuallyVisible);
+  }
+
   function removeLegacy() {
     LEGACY_IDS.forEach((legacyId) => {
       document.querySelectorAll("#" + legacyId).forEach((node) => node.remove());
@@ -100,7 +105,7 @@
     syncHomeState(home);
 
     let btn = document.getElementById(ID);
-    if (!isMobile() || home) {
+    if (!isMobile() || home || hasOpenModal()) {
       if (btn) btn.remove();
       return;
     }

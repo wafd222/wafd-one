@@ -78,6 +78,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Undertaking Officer", title: "مسؤول التعهدات", subtitle: "إنشاء واعتماد وإرسال التعهدات",
       items: [
         { label: "إنشاء تعهد", desc: "تسجيل بيانات تعهد جديد بالكامل", icon: "✦", new_doctype: "WAFD Hotel Undertaking", primary: true },
+        { label: "إضافة فندق", desc: "إضافة فندق غير موجود بالقائمة", icon: "＋", action: "new_hotel" },
         { label: "تعهداتي", desc: "مراجعة واعتماد ومشاركة التعهدات التي أعددتها", icon: "▤", doctype: "WAFD Hotel Undertaking" }
       ]
     },
@@ -205,6 +206,38 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []
   };
 
+
+  function openNewHotelDialog() {
+    const dialog = new frappe.ui.Dialog({
+      title: __("إضافة فندق جديد / New Hotel"),
+      fields: [
+        {fieldname:"hotel_name", fieldtype:"Data", label:__("اسم الفندق بالعربي / Arabic Hotel Name"), reqd:1},
+        {fieldname:"hotel_name_en", fieldtype:"Data", label:__("اسم الفندق بالإنجليزي / English Hotel Name"), reqd:1},
+        {fieldname:"district", fieldtype:"Data", label:__("الحي / District")}
+      ],
+      primary_action_label: __("حفظ الفندق / Save Hotel"),
+      primary_action: async (values) => {
+        dialog.get_primary_btn().prop("disabled", true);
+        try {
+          const r = await frappe.call({
+            method:"wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.create_hotel_for_undertaking",
+            args: values,
+            freeze:true,
+            freeze_message: __("جارٍ حفظ الفندق...")
+          });
+          dialog.hide();
+          frappe.show_alert({
+            message: r.message?.created ? __("تمت إضافة الفندق بنجاح") : __("الفندق موجود بالفعل"),
+            indicator:"green"
+          }, 4);
+        } finally {
+          dialog.get_primary_btn().prop("disabled", false);
+        }
+      }
+    });
+    dialog.show();
+  }
+
   function canRead(item) {
     if (!item.doctype) return true;
     try { return !frappe.model.can_read || frappe.model.can_read(item.doctype); }
@@ -242,6 +275,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (item.page) { frappe.set_route(item.page); return; }
+      if (item.action === "new_hotel") { openNewHotelDialog(); return; }
       if (item.new_doctype) {
         // RC210: open the full unsaved form directly. Quick Entry saves in a
         // dialog then closes back to the previous route, which forced the

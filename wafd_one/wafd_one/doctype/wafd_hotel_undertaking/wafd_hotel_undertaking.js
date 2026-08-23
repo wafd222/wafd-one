@@ -433,6 +433,27 @@ function wafd_render_undertaking_actions(frm) {
 }
 
 
+
+function wafd_render_add_hotel_button(frm) {
+  const field = frm.fields_dict?.hotel;
+  if (!field?.$wrapper) return;
+
+  // Do not use Frappe's generic Link "Create a new WAFD Hotel" flow on mobile.
+  // It has repeatedly clipped mandatory bilingual fields. Selection remains
+  // normal; creation is handled by the explicit WAFD button below the field.
+  if (field.df) field.df.only_select = 1;
+
+  field.$wrapper.find(".wafd-add-hotel-under-field").remove();
+  const $button = $(`
+    <button type="button" class="btn btn-sm btn-default wafd-add-hotel-under-field"
+      style="margin-top:10px;width:100%;min-height:44px;font-weight:700;border:1px solid #c49a38;border-radius:12px;background:#fffaf0;color:#7a5a12;">
+      + ${__("إضافة فندق جديد / Add New Hotel")}
+    </button>
+  `);
+  $button.on("click", () => wafd_add_hotel_dialog(frm));
+  field.$wrapper.append($button);
+}
+
 function wafd_add_hotel_dialog(frm) {
   const dialog = new frappe.ui.Dialog({
     title: __("إضافة فندق جديد"),
@@ -522,6 +543,7 @@ function wafd_keep_created_undertaking_open(frm) {
 frappe.ui.form.on("WAFD Hotel Undertaking", {
   setup(frm) {
     wafd_install_undertaking_route_guard();
+    if (frm.fields_dict?.hotel?.df) frm.fields_dict.hotel.df.only_select = 1;
     frm.set_query("hotel", () => ({ query: "wafd_one.wafd_one.doctype.wafd_hotel.wafd_hotel.hotel_link_query_for_undertaking" }));
     frm.set_query("saved_beneficiary", () => ({ filters: { disabled: 0 } }));
   },
@@ -566,8 +588,8 @@ frappe.ui.form.on("WAFD Hotel Undertaking", {
     }
     wafd_apply_undertaking_lockdown(frm);
     wafd_render_undertaking_actions(frm);
+    wafd_render_add_hotel_button(frm);
     frm.add_custom_button(__("إدارة المستفيدين المحفوظين"), () => frappe.set_route("List", "WAFD Undertaking Beneficiary"), __("المستفيدون"));
-    frm.add_custom_button(__("إضافة فندق جديد"), () => wafd_add_hotel_dialog(frm));
     if (frm.is_new()) return;
     if (frm.doc.docstatus === 0) {
       frm.add_custom_button(__("تحديث البيانات المرتبطة"), () => frappe.call({

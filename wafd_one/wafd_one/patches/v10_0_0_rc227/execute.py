@@ -20,7 +20,7 @@ def _norm_ar(value):
 
 
 def _rows():
-    path = Path(frappe.get_app_path("wafd_one")) / "reference_data" / "madinah_hotels_consolidated_rc227.csv"
+    path = Path(frappe.get_app_path("wafd_one")) / "reference_data" / "madinah_hotels_consolidated_rc228.csv"
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
@@ -38,6 +38,31 @@ def execute():
     frappe.reload_doc("wafd_one", "doctype", "wafd_hotel", force=True, reset_permissions=True)
 
     catalogue = _rows()
+
+    # Defensive validation: reference-data values must always be valid DocType Select options.
+    valid_verification = {
+        "رسمي موثق / Official Verified",
+        "موثق من الموقع الرسمي للمنشأة / Official Property Source",
+        "تشغيلي داخلي / Internal Operational",
+        "يحتاج مراجعة / Needs Review",
+    }
+    valid_zone = {
+        "المنطقة المركزية / Central Zone",
+        "خارج المنطقة المركزية / Outside Central Zone",
+        "غير محدد / Unspecified",
+    }
+    valid_proximity = {
+        "داخل المنطقة المركزية / Central Area",
+        "قريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km",
+        "خارج النطاق / Outside Scope",
+    }
+    for item in catalogue:
+        if item.get("verification_status") not in valid_verification:
+            item["verification_status"] = "يحتاج مراجعة / Needs Review"
+        if item.get("zone_type") not in valid_zone:
+            item["zone_type"] = "غير محدد / Unspecified"
+        if item.get("proximity_band") and item.get("proximity_band") not in valid_proximity:
+            item["proximity_band"] = "خارج النطاق / Outside Scope"
     by_key = {_norm_ar(r["hotel_name_ar"]): r for r in catalogue if _norm_ar(r["hotel_name_ar"])}
 
     existing = frappe.get_all(

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC226
+# WAFD ONE 10.0.0 RC227
 
-**Current release: 10.0.0 RC226 — Mobile Hotel Quick Entry & Bilingual Identity Fix**
+**Current release: 10.0.0 RC227 — Deterministic Employee Hotel Creation & Consolidated Madinah Hotel Catalogue**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

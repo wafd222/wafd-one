@@ -346,3 +346,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc213.execute
 wafd_one.wafd_one.patches.v10_0_0_rc224.execute
 # RC225 bilingual hotel catalogue completion and Arabic/English search
 wafd_one.wafd_one.patches.v10_0_0_rc225.execute
+
+# RC227 deterministic hotel quick entry + consolidated Madinah catalogue
+wafd_one.wafd_one.patches.v10_0_0_rc227.execute

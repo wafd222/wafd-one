@@ -546,7 +546,7 @@ def ensure_madinah_hotels_400():
         if existing:
             doc = frappe.get_doc("WAFD Hotel", existing)
             changed = False
-            for fieldname in ("city", "district", "address", "source_authority", "source_url"):
+            for fieldname in ("hotel_name_ar", "hotel_name_en", "city", "district", "address", "source_authority", "source_url"):
                 value = (row.get(fieldname) or "").strip()
                 if value and not doc.get(fieldname):
                     doc.set(fieldname, value)
@@ -560,6 +560,8 @@ def ensure_madinah_hotels_400():
 
         doc = frappe.new_doc("WAFD Hotel")
         doc.hotel_name = hotel_name
+        doc.hotel_name_ar = (row.get("hotel_name_ar") or hotel_name).strip()
+        doc.hotel_name_en = (row.get("hotel_name_en") or "").strip()
         doc.status = "نشط / Active"
         doc.city = (row.get("city") or "المدينة المنورة").strip()
         doc.district = (row.get("district") or "").strip()
@@ -634,7 +636,7 @@ def ensure_madinah_central_and_nearby_hotels():
         # Assign free-text fields directly.  Controlled Select fields are
         # normalized against the live DocType metadata before saving so a
         # catalogue label can never abort the site migration.
-        for fieldname in ("hotel_name_en", "city", "district", "central_map_number", "central_sector", "source_map_edition", "source_authority", "source_url", "source_notes"):
+        for fieldname in ("hotel_name_ar", "hotel_name_en", "city", "district", "central_map_number", "central_sector", "source_map_edition", "source_authority", "source_url", "source_notes"):
             value = (row.get(fieldname) or "").strip()
             if value:
                 doc.set(fieldname, value)

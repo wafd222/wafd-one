@@ -1,362 +1,369 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:hotel_name",
- "creation": "2026-07-13 00:00:00.000000",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "hotel_name",
-  "hotel_name_en",
-  "city",
-  "district",
-  "address",
-  "latitude",
-  "longitude",
-  "contact_person",
-  "mobile",
-  "email",
-  "capacity",
-  "zone_type",
-  "central_map_number",
-  "central_sector",
-  "source_map_edition",
-  "distance_to_haram_km",
-  "proximity_band",
-  "classification",
-  "tourism_license_number",
-  "map_url",
-  "source_section",
-  "source_authority",
-  "source_url",
-  "verification_status",
-  "last_verified_on",
-  "source_notes",
-  "status",
-  "undertaking_section",
-  "requires_catering_undertaking",
-  "undertaking_notes",
-  "alternate_names",
-  "booking_listed",
-  "expedia_listed",
-  "agoda_listed",
-  "trivago_listed",
-  "listing_checked_on"
- ],
- "fields": [
-  {
-   "fieldname": "hotel_name",
-   "fieldtype": "Data",
-   "label": "اسم الفندق / Hotel Name",
-   "reqd": 1,
-   "in_list_view": 1,
-   "unique": 1
-  },
-  {
-   "fieldname": "hotel_name_en",
-   "fieldtype": "Data",
-   "label": "الاسم الإنجليزي / English Name",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "city",
-   "fieldtype": "Data",
-   "label": "المدينة / City",
-   "default": "المدينة المنورة"
-  },
-  {
-   "fieldname": "district",
-   "fieldtype": "Data",
-   "label": "الحي / District"
-  },
-  {
-   "fieldname": "address",
-   "fieldtype": "Small Text",
-   "label": "العنوان / Address"
-  },
-  {
-   "fieldname": "latitude",
-   "fieldtype": "Float",
-   "label": "خط العرض / Latitude"
-  },
-  {
-   "fieldname": "longitude",
-   "fieldtype": "Float",
-   "label": "خط الطول / Longitude"
-  },
-  {
-   "fieldname": "contact_person",
-   "fieldtype": "Data",
-   "label": "مسؤول الفندق / Contact Person"
-  },
-  {
-   "fieldname": "mobile",
-   "fieldtype": "Data",
-   "label": "الجوال / Mobile",
-   "options": "Phone"
-  },
-  {
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "البريد الإلكتروني / Email",
-   "options": "Email"
-  },
-  {
-   "fieldname": "capacity",
-   "fieldtype": "Int",
-   "label": "الطاقة الاستيعابية / Capacity",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "الحالة / Status",
-   "options": "نشط / Active\nغير نشط / Inactive",
-   "default": "نشط / Active",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "zone_type",
-   "fieldtype": "Select",
-   "label": "النطاق / Zone",
-   "options": "المنطقة المركزية / Central Zone\nخارج المنطقة المركزية / Outside Central Zone\nغير محدد / Unspecified",
-   "default": "غير محدد / Unspecified",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "central_map_number",
-   "fieldtype": "Data",
-   "label": "رقم الفندق في المخطط / Central Map No."
-  },
-  {
-   "fieldname": "central_sector",
-   "fieldtype": "Select",
-   "label": "قطاع المنطقة المركزية / Central Sector",
-   "options": "100\n200\n300\n400"
-  },
-  {
-   "fieldname": "source_map_edition",
-   "fieldtype": "Data",
-   "label": "إصدار المخطط المرجعي / Source Map Edition"
-  },
-  {
-   "fieldname": "distance_to_haram_km",
-   "fieldtype": "Float",
-   "label": "المسافة من المسجد النبوي (كم) / Distance to Haram (km)",
-   "precision": "3"
-  },
-  {
-   "fieldname": "proximity_band",
-   "fieldtype": "Select",
-   "label": "نطاق القرب / Proximity Band",
-   "options": "داخل المنطقة المركزية / Central Area\nقريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km\nخارج النطاق / Outside Scope"
-  },
-  {
-   "fieldname": "classification",
-   "fieldtype": "Select",
-   "label": "التصنيف / Classification",
-   "options": "5 نجوم / 5 Stars\n4 نجوم / 4 Stars\n3 نجوم / 3 Stars\nنجمتان / 2 Stars\nنجمة / 1 Star\nغير مصنف / Unclassified\nغير متحقق / Unverified"
-  },
-  {
-   "fieldname": "tourism_license_number",
-   "fieldtype": "Data",
-   "label": "رقم ترخيص السياحة / Tourism License No."
-  },
-  {
-   "fieldname": "map_url",
-   "fieldtype": "Data",
-   "label": "رابط الموقع / Map URL",
-   "options": "URL"
-  },
-  {
-   "fieldname": "source_section",
-   "fieldtype": "Section Break",
-   "label": "المصدر والتحقق / Source & Verification",
-   "collapsible": 1
-  },
-  {
-   "fieldname": "source_authority",
-   "fieldtype": "Data",
-   "label": "الجهة المصدر / Source Authority"
-  },
-  {
-   "fieldname": "source_url",
-   "fieldtype": "Data",
-   "label": "رابط المصدر / Source URL",
-   "options": "URL"
-  },
-  {
-   "fieldname": "verification_status",
-   "fieldtype": "Select",
-   "label": "حالة التحقق / Verification Status",
-   "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
-   "default": "يحتاج مراجعة / Needs Review",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "last_verified_on",
-   "fieldtype": "Date",
-   "label": "آخر تحقق / Last Verified On"
-  },
-  {
-   "fieldname": "source_notes",
-   "fieldtype": "Small Text",
-   "label": "ملاحظات المصدر / Source Notes"
-  },
-  {
-   "fieldname": "alternate_names",
-   "fieldtype": "Small Text",
-   "label": "أسماء بديلة / Alternate Names"
-  },
-  {
-   "fieldname": "booking_listed",
-   "fieldtype": "Check",
-   "label": "مدرج في Booking.com / Listed on Booking.com"
-  },
-  {
-   "fieldname": "expedia_listed",
-   "fieldtype": "Check",
-   "label": "مدرج في Expedia / Listed on Expedia"
-  },
-  {
-   "fieldname": "agoda_listed",
-   "fieldtype": "Check",
-   "label": "مدرج في Agoda / Listed on Agoda"
-  },
-  {
-   "fieldname": "trivago_listed",
-   "fieldtype": "Check",
-   "label": "مدرج في Trivago / Listed on Trivago"
-  },
-  {
-   "fieldname": "listing_checked_on",
-   "fieldtype": "Date",
-   "label": "تاريخ فحص منصات الحجز / Listing Checked On"
-  },
-  {
-   "fieldname": "undertaking_section",
-   "fieldtype": "Section Break",
-   "label": "تعهد الإعاشة / Catering Undertaking"
-  },
-  {
-   "fieldname": "requires_catering_undertaking",
-   "fieldtype": "Check",
-   "label": "الفندق يطلب تعهد إعاشة / Hotel Requires Undertaking",
-   "default": "0"
-  },
-  {
-   "fieldname": "undertaking_notes",
-   "fieldtype": "Small Text",
-   "label": "ملاحظات التعهد / Undertaking Notes",
-   "depends_on": "eval:doc.requires_catering_undertaking"
-  }
- ],
- "index_web_pages_for_search": 0,
- "istable": 0,
- "is_submittable": 0,
- "links": [
-  {
-   "group": "المستندات / Documents",
-   "link_doctype": "WAFD Hotel Undertaking",
-   "link_fieldname": "hotel"
-  }
- ],
- "modified": "2026-07-21 18:00:00.000000",
- "modified_by": "Administrator",
- "module": "WAFD ONE",
- "name": "WAFD Hotel",
- "owner": "Administrator",
- "permissions": [
-  {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1,
-   "select": 0,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
-   "import": 0
-  },
-  {
-   "role": "WAFD Operations Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1,
-   "select": 0,
-   "delete": 1,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
-   "import": 0
-  },
-  {
-   "role": "WAFD Project Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "email": 0,
-   "export": 0,
-   "print": 1,
-   "report": 1,
-   "share": 0,
-   "select": 0,
-   "delete": 0,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
-   "import": 0
-  },
-  {
-   "role": "WAFD Delivery Supervisor",
-   "read": 1,
-   "write": 0,
-   "create": 0,
-   "email": 0,
-   "export": 0,
-   "print": 1,
-   "report": 1,
-   "share": 0,
-   "select": 0,
-   "delete": 0,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
-   "import": 0
-  },
-  {
-   "role": "WAFD Undertaking Officer",
-   "read": 1,
-   "write": 0,
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "report": 0,
-   "share": 0,
-   "select": 1,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
-   "import": 0
-  }
- ],
- "sort_field": "creation",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1,
- "title_field": "hotel_name",
- "search_fields": "hotel_name, hotel_name_en, central_map_number, district"
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:hotel_name",
+  "creation": "2026-07-13 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "hotel_name",
+    "hotel_name_en",
+    "city",
+    "district",
+    "address",
+    "latitude",
+    "longitude",
+    "contact_person",
+    "mobile",
+    "email",
+    "capacity",
+    "zone_type",
+    "central_map_number",
+    "central_sector",
+    "source_map_edition",
+    "distance_to_haram_km",
+    "proximity_band",
+    "classification",
+    "tourism_license_number",
+    "map_url",
+    "source_section",
+    "source_authority",
+    "source_url",
+    "verification_status",
+    "last_verified_on",
+    "source_notes",
+    "status",
+    "undertaking_section",
+    "requires_catering_undertaking",
+    "undertaking_notes",
+    "alternate_names",
+    "booking_listed",
+    "expedia_listed",
+    "agoda_listed",
+    "trivago_listed",
+    "listing_checked_on"
+  ],
+  "fields": [
+    {
+      "fieldname": "hotel_name",
+      "fieldtype": "Data",
+      "label": "اسم الفندق / Hotel Name",
+      "reqd": 1,
+      "in_list_view": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "hotel_name_ar",
+      "fieldtype": "Data",
+      "label": "الاسم العربي / Arabic Name",
+      "in_list_view": 0,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "hotel_name_en",
+      "fieldtype": "Data",
+      "label": "الاسم الإنجليزي / English Name",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "city",
+      "fieldtype": "Data",
+      "label": "المدينة / City",
+      "default": "المدينة المنورة"
+    },
+    {
+      "fieldname": "district",
+      "fieldtype": "Data",
+      "label": "الحي / District"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "العنوان / Address"
+    },
+    {
+      "fieldname": "latitude",
+      "fieldtype": "Float",
+      "label": "خط العرض / Latitude"
+    },
+    {
+      "fieldname": "longitude",
+      "fieldtype": "Float",
+      "label": "خط الطول / Longitude"
+    },
+    {
+      "fieldname": "contact_person",
+      "fieldtype": "Data",
+      "label": "مسؤول الفندق / Contact Person"
+    },
+    {
+      "fieldname": "mobile",
+      "fieldtype": "Data",
+      "label": "الجوال / Mobile",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "label": "البريد الإلكتروني / Email",
+      "options": "Email"
+    },
+    {
+      "fieldname": "capacity",
+      "fieldtype": "Int",
+      "label": "الطاقة الاستيعابية / Capacity",
+      "non_negative": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "الحالة / Status",
+      "options": "نشط / Active\nغير نشط / Inactive",
+      "default": "نشط / Active",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "zone_type",
+      "fieldtype": "Select",
+      "label": "النطاق / Zone",
+      "options": "المنطقة المركزية / Central Zone\nخارج المنطقة المركزية / Outside Central Zone\nغير محدد / Unspecified",
+      "default": "غير محدد / Unspecified",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "central_map_number",
+      "fieldtype": "Data",
+      "label": "رقم الفندق في المخطط / Central Map No."
+    },
+    {
+      "fieldname": "central_sector",
+      "fieldtype": "Select",
+      "label": "قطاع المنطقة المركزية / Central Sector",
+      "options": "100\n200\n300\n400"
+    },
+    {
+      "fieldname": "source_map_edition",
+      "fieldtype": "Data",
+      "label": "إصدار المخطط المرجعي / Source Map Edition"
+    },
+    {
+      "fieldname": "distance_to_haram_km",
+      "fieldtype": "Float",
+      "label": "المسافة من المسجد النبوي (كم) / Distance to Haram (km)",
+      "precision": "3"
+    },
+    {
+      "fieldname": "proximity_band",
+      "fieldtype": "Select",
+      "label": "نطاق القرب / Proximity Band",
+      "options": "داخل المنطقة المركزية / Central Area\nقريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km\nخارج النطاق / Outside Scope"
+    },
+    {
+      "fieldname": "classification",
+      "fieldtype": "Select",
+      "label": "التصنيف / Classification",
+      "options": "5 نجوم / 5 Stars\n4 نجوم / 4 Stars\n3 نجوم / 3 Stars\nنجمتان / 2 Stars\nنجمة / 1 Star\nغير مصنف / Unclassified\nغير متحقق / Unverified"
+    },
+    {
+      "fieldname": "tourism_license_number",
+      "fieldtype": "Data",
+      "label": "رقم ترخيص السياحة / Tourism License No."
+    },
+    {
+      "fieldname": "map_url",
+      "fieldtype": "Data",
+      "label": "رابط الموقع / Map URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "source_section",
+      "fieldtype": "Section Break",
+      "label": "المصدر والتحقق / Source & Verification",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_authority",
+      "fieldtype": "Data",
+      "label": "الجهة المصدر / Source Authority"
+    },
+    {
+      "fieldname": "source_url",
+      "fieldtype": "Data",
+      "label": "رابط المصدر / Source URL",
+      "options": "URL"
+    },
+    {
+      "fieldname": "verification_status",
+      "fieldtype": "Select",
+      "label": "حالة التحقق / Verification Status",
+      "options": "رسمي موثق / Official Verified\nموثق من الموقع الرسمي للمنشأة / Official Property Source\nتشغيلي داخلي / Internal Operational\nيحتاج مراجعة / Needs Review",
+      "default": "يحتاج مراجعة / Needs Review",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_verified_on",
+      "fieldtype": "Date",
+      "label": "آخر تحقق / Last Verified On"
+    },
+    {
+      "fieldname": "source_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات المصدر / Source Notes"
+    },
+    {
+      "fieldname": "alternate_names",
+      "fieldtype": "Small Text",
+      "label": "أسماء بديلة / Alternate Names"
+    },
+    {
+      "fieldname": "booking_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Booking.com / Listed on Booking.com"
+    },
+    {
+      "fieldname": "expedia_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Expedia / Listed on Expedia"
+    },
+    {
+      "fieldname": "agoda_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Agoda / Listed on Agoda"
+    },
+    {
+      "fieldname": "trivago_listed",
+      "fieldtype": "Check",
+      "label": "مدرج في Trivago / Listed on Trivago"
+    },
+    {
+      "fieldname": "listing_checked_on",
+      "fieldtype": "Date",
+      "label": "تاريخ فحص منصات الحجز / Listing Checked On"
+    },
+    {
+      "fieldname": "undertaking_section",
+      "fieldtype": "Section Break",
+      "label": "تعهد الإعاشة / Catering Undertaking"
+    },
+    {
+      "fieldname": "requires_catering_undertaking",
+      "fieldtype": "Check",
+      "label": "الفندق يطلب تعهد إعاشة / Hotel Requires Undertaking",
+      "default": "0"
+    },
+    {
+      "fieldname": "undertaking_notes",
+      "fieldtype": "Small Text",
+      "label": "ملاحظات التعهد / Undertaking Notes",
+      "depends_on": "eval:doc.requires_catering_undertaking"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "links": [
+    {
+      "group": "المستندات / Documents",
+      "link_doctype": "WAFD Hotel Undertaking",
+      "link_fieldname": "hotel"
+    }
+  ],
+  "modified": "2026-07-21 18:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "WAFD ONE",
+  "name": "WAFD Hotel",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1,
+      "select": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "import": 0
+    },
+    {
+      "role": "WAFD Operations Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "report": 1,
+      "share": 1,
+      "select": 0,
+      "delete": 1,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "import": 0
+    },
+    {
+      "role": "WAFD Project Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "email": 0,
+      "export": 0,
+      "print": 1,
+      "report": 1,
+      "share": 0,
+      "select": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "import": 0
+    },
+    {
+      "role": "WAFD Delivery Supervisor",
+      "read": 1,
+      "write": 0,
+      "create": 0,
+      "email": 0,
+      "export": 0,
+      "print": 1,
+      "report": 1,
+      "share": 0,
+      "select": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "import": 0
+    },
+    {
+      "role": "WAFD Undertaking Officer",
+      "read": 1,
+      "write": 0,
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "report": 0,
+      "share": 0,
+      "select": 1,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "import": 0
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "title_field": "hotel_name",
+  "search_fields": "hotel_name, hotel_name_en, central_map_number, district"
 }

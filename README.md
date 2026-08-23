@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC223
+# WAFD ONE 10.0.0 RC225
 
-**Current release: 10.0.0 RC223 — Final Consolidated QA and Version Consistency**
+**Current release: 10.0.0 RC225 — Bilingual Hotel Catalogue & Undertaking Hotel Data Hardening**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 
@@ -23,7 +23,7 @@
 
 ## التثبيت والتحديث على Frappe Cloud
 
-استخدم المستودع مع Frappe Framework v16 ثم نفّذ التحديث/النشر المعتاد. عند وجود patches جديدة في أي إصدار مستقبلي يجب تشغيل `migrate`. RC223 لا يضيف schema أو patch جديدًا؛ ويقوّي فقط مسار حفظ التعهد والمراجعة النهائية.
+استخدم المستودع مع Frappe Framework v16 ثم نفّذ التحديث/النشر المعتاد. عند وجود patches جديدة في أي إصدار مستقبلي يجب تشغيل `migrate`. RC225 يضيف حقل الاسم العربي للفندق ويحدّث بيانات الفنادق الثنائية اللغة، لذلك يجب تشغيل migrate بعد النشر.
 
 ## ملاحظات سلامة الترقية
 

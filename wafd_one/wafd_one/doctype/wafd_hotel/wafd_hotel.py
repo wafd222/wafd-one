@@ -6,8 +6,16 @@ from frappe.utils import getdate, nowdate
 class WAFDHotel(Document):
     def validate(self):
         self.hotel_name = (self.hotel_name or "").strip()
+        self.hotel_name_ar = (self.hotel_name_ar or "").strip()
+        self.hotel_name_en = (self.hotel_name_en or "").strip()
         if not self.hotel_name:
             frappe.throw("اسم الفندق مطلوب / Hotel name is required")
+        # Keep the legacy title field as the primary link value, while storing
+        # explicit bilingual names for search, undertakings, and sharing.
+        if not self.hotel_name_ar and any("\u0600" <= ch <= "\u06ff" for ch in self.hotel_name):
+            self.hotel_name_ar = self.hotel_name
+        if not self.hotel_name_en and self.hotel_name and not any("\u0600" <= ch <= "\u06ff" for ch in self.hotel_name):
+            self.hotel_name_en = self.hotel_name
         if self.latitude is not None and not (-90 <= float(self.latitude) <= 90):
             frappe.throw("خط العرض يجب أن يكون بين -90 و90 / Latitude must be between -90 and 90")
         if self.longitude is not None and not (-180 <= float(self.longitude) <= 180):
@@ -27,12 +35,12 @@ def hotel_link_query(doctype, txt, searchfield, start, page_len, filters):
     txt = (txt or "").strip()
     like = f"%{txt}%"
     return frappe.db.sql(
-        """select name, hotel_name, coalesce(hotel_name_en, ''), coalesce(central_map_number, ''), coalesce(district, '')
+        """select name, coalesce(nullif(hotel_name_ar, ''), hotel_name), coalesce(hotel_name_en, ''), coalesce(central_map_number, ''), coalesce(district, '')
            from `tabWAFD Hotel`
            where status = 'نشط / Active'
              and (proximity_band in ('داخل المنطقة المركزية / Central Area', 'قريب من المنطقة المركزية حتى 2 كم / Near Central up to 2 km')
                   or zone_type = 'المنطقة المركزية / Central Zone')
-             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_en like %(like)s or central_map_number like %(like)s)
+             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_ar like %(like)s or hotel_name_en like %(like)s or central_map_number like %(like)s)
            order by case when central_map_number is null or central_map_number='' then 1 else 0 end, cast(central_map_number as unsigned), hotel_name
            limit %(start)s, %(page_len)s""",
         {"txt": txt, "like": like, "start": int(start), "page_len": int(page_len)},
@@ -46,10 +54,10 @@ def hotel_link_query_for_undertaking(doctype, txt, searchfield, start, page_len,
     txt = (txt or "").strip()
     like = f"%{txt}%"
     return frappe.db.sql(
-        """select name, hotel_name, coalesce(hotel_name_en, ''), coalesce(district, ''), coalesce(city, '')
+        """select name, coalesce(nullif(hotel_name_ar, ''), hotel_name), coalesce(hotel_name_en, ''), coalesce(district, ''), coalesce(city, '')
            from `tabWAFD Hotel`
            where status = 'نشط / Active'
-             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_en like %(like)s or district like %(like)s)
+             and (%(txt)s = '' or hotel_name like %(like)s or hotel_name_ar like %(like)s or hotel_name_en like %(like)s or district like %(like)s)
            order by hotel_name
            limit %(start)s, %(page_len)s""",
         {"txt": txt, "like": like, "start": int(start), "page_len": int(page_len)},
@@ -66,17 +74,25 @@ def create_hotel_for_undertaking(hotel_name, hotel_name_en=None, district=None):
     hotel_name = (hotel_name or "").strip()
     if not hotel_name:
         frappe.throw(frappe._("اسم الفندق مطلوب / Hotel name is required"))
+    hotel_name_en = (hotel_name_en or "").strip()
+    if not hotel_name_en:
+        frappe.throw(frappe._("اسم الفندق باللغة الإنجليزية مطلوب / English hotel name is required"))
     existing = frappe.db.get_value("WAFD Hotel", {"hotel_name": hotel_name}, "name")
     if existing:
         return {"name": existing, "created": False}
     doc = frappe.get_doc({
         "doctype": "WAFD Hotel",
         "hotel_name": hotel_name,
-        "hotel_name_en": (hotel_name_en or "").strip(),
+        "hotel_name_ar": hotel_name,
+        "hotel_name_en": hotel_name_en,
         "district": (district or "").strip(),
         "city": "المدينة المنورة",
         "status": "نشط / Active",
         "verification_status": "يحتاج مراجعة / Needs Review",
     })
-    doc.insert(ignore_permissions=False)
+    # This endpoint is deliberately role-gated above. Use server-side insertion
+    # so an Undertaking Officer can add a new hotel even if a stale site-level
+    # Custom DocPerm still blocks standard Desk creation. Existing hotel records
+    # remain protected because this method only creates a new minimal record.
+    doc.insert(ignore_permissions=True)
     return {"name": doc.name, "created": True}

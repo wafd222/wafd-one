@@ -342,3 +342,7 @@ wafd_one.wafd_one.patches.v10_0_0_rc209.execute
 
 # RC213 undertaking private-file least-privilege permission repair
 wafd_one.wafd_one.patches.v10_0_0_rc213.execute
+# RC224 undertaking share caption uses English hotel name and officers can add hotels
+wafd_one.wafd_one.patches.v10_0_0_rc224.execute
+# RC225 bilingual hotel catalogue completion and Arabic/English search
+wafd_one.wafd_one.patches.v10_0_0_rc225.execute

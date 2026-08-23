@@ -81,14 +81,29 @@ async function wafd_issue_pdf(name, frm) {
   });
 }
 
-async function wafd_share_generated_pdf(name) {
+async function wafd_get_undertaking_hotel_share_title(frm) {
+  const hotel = (frm?.doc?.hotel || "").trim();
+  if (!hotel) return "Hotel Undertaking";
+  try {
+    const r = await frappe.db.get_value("WAFD Hotel", hotel, ["hotel_name_en", "hotel_name"]);
+    const englishName = (r?.message?.hotel_name_en || "").trim();
+    if (englishName) return englishName;
+    const fallbackName = (r?.message?.hotel_name || hotel || "").trim();
+    return fallbackName || "Hotel Undertaking";
+  } catch (_e) {
+    return hotel || "Hotel Undertaking";
+  }
+}
+
+async function wafd_share_generated_pdf(name, frm) {
   wafd_clear_ios_media_session();
   try {
     const blob = await wafd_fetch_generated_pdf_blob(name);
     const filename = `${name || "undertaking"}.pdf`;
     const file = new File([blob], filename, {type: "application/pdf"});
     if (navigator.share && (!navigator.canShare || navigator.canShare({files: [file]}))) {
-      await navigator.share({title: __("تعهد وفد المدينة"), files: [file]});
+      const hotelTitle = await wafd_get_undertaking_hotel_share_title(frm);
+      await navigator.share({title: hotelTitle, files: [file]});
       wafd_clear_ios_media_session();
       return;
     }
@@ -346,7 +361,7 @@ function wafd_open_undertaking_preview(frm) {
   });
   shareBtn.addEventListener("click", async () => {
     if (!generated) return;
-    await wafd_share_generated_pdf(currentName);
+    await wafd_share_generated_pdf(currentName, frm);
     close();
     wafd_return_to_role_home(700);
   });
@@ -372,7 +387,7 @@ function wafd_add_hotel_dialog(frm) {
     title: __("إضافة فندق جديد"),
     fields: [
       {fieldname: "hotel_name", fieldtype: "Data", label: __("اسم الفندق / Hotel Name"), reqd: 1},
-      {fieldname: "hotel_name_en", fieldtype: "Data", label: __("الاسم الإنجليزي / English Name")},
+      {fieldname: "hotel_name_en", fieldtype: "Data", label: __("الاسم الإنجليزي / English Name"), reqd: 1},
       {fieldname: "district", fieldtype: "Data", label: __("الحي / District")}
     ],
     primary_action_label: __("حفظ الفندق"),

@@ -386,7 +386,7 @@ function wafd_add_hotel_dialog(frm) {
   const dialog = new frappe.ui.Dialog({
     title: __("إضافة فندق جديد"),
     fields: [
-      {fieldname: "hotel_name", fieldtype: "Data", label: __("اسم الفندق / Hotel Name"), reqd: 1},
+      {fieldname: "hotel_name", fieldtype: "Data", label: __("اسم الفندق بالعربي / Arabic Hotel Name"), reqd: 1},
       {fieldname: "hotel_name_en", fieldtype: "Data", label: __("الاسم الإنجليزي / English Name"), reqd: 1},
       {fieldname: "district", fieldtype: "Data", label: __("الحي / District")}
     ],

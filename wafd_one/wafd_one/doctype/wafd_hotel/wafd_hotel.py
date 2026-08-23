@@ -8,8 +8,17 @@ class WAFDHotel(Document):
         self.hotel_name = (self.hotel_name or "").strip()
         self.hotel_name_ar = (self.hotel_name_ar or "").strip()
         self.hotel_name_en = (self.hotel_name_en or "").strip()
+
+        # RC226: the visible hotel identity is explicitly bilingual.  Keep the
+        # legacy hotel_name as the stable primary/link value, but derive it so
+        # users never have to enter the same hotel name twice.
+        if not self.hotel_name_ar:
+            frappe.throw("اسم الفندق بالعربي مطلوب / Arabic hotel name is required")
+        if not self.hotel_name_en:
+            frappe.throw("اسم الفندق بالإنجليزي مطلوب / English hotel name is required")
         if not self.hotel_name:
-            frappe.throw("اسم الفندق مطلوب / Hotel name is required")
+            self.hotel_name = self.hotel_name_ar or self.hotel_name_en
+
         # Keep the legacy title field as the primary link value, while storing
         # explicit bilingual names for search, undertakings, and sharing.
         if not self.hotel_name_ar and any("\u0600" <= ch <= "\u06ff" for ch in self.hotel_name):

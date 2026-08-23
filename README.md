@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC225
+# WAFD ONE 10.0.0 RC226
 
-**Current release: 10.0.0 RC225 — Bilingual Hotel Catalogue & Undertaking Hotel Data Hardening**
+**Current release: 10.0.0 RC226 — Mobile Hotel Quick Entry & Bilingual Identity Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

@@ -74,7 +74,19 @@
     // inline display is therefore used as a deterministic fallback, but only
     // on standalone role home. Remove it immediately on every other route.
     document.querySelectorAll(
-      ".navbar, header.navbar, .desk-navbar, .layout-side-section, .standard-sidebar"
+      [
+        ".navbar",
+        "header.navbar",
+        ".desk-navbar",
+        ".page-head",
+        ".desk-header",
+        ".app-header",
+        ".mobile-header",
+        ".mobile-navbar",
+        "body > header",
+        ".layout-side-section",
+        ".standard-sidebar",
+      ].join(", ")
     ).forEach((node) => {
       if (hide) {
         if (!node.hasAttribute("data-wafd-prev-display")) {

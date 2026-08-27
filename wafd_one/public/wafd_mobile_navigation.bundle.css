@@ -64,6 +64,12 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
   body.wafd-pwa-home-shell .navbar,
   body.wafd-pwa-home-shell header.navbar,
   body.wafd-pwa-home-shell .desk-navbar,
+  body.wafd-pwa-home-shell .page-head,
+  body.wafd-pwa-home-shell .desk-header,
+  body.wafd-pwa-home-shell .app-header,
+  body.wafd-pwa-home-shell .mobile-header,
+  body.wafd-pwa-home-shell .mobile-navbar,
+  body.wafd-pwa-home-shell > header,
   body.wafd-pwa-home-shell .layout-side-section,
   body.wafd-pwa-home-shell .standard-sidebar {
     display:none !important;

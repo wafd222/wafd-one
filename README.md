@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC232
+# WAFD ONE 10.0.0 RC233
 
-**Current release: 10.0.0 RC232 — Installed iPhone PWA Home Chrome Fix**
+**Current release: 10.0.0 RC233 — Installed iPhone PWA Compact App Menu**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

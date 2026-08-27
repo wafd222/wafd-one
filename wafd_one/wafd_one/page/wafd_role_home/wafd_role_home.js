@@ -253,6 +253,18 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     const escapedRole = frappe.utils.escape_html(roleLabel);
     $root.html(`
       <div class="wafd-role-home">
+        <section class="wafd-pwa-appbar" aria-label="WAFD ONE">
+          <button type="button" class="wafd-pwa-menu-btn" aria-label="القائمة" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <strong>WAFD ONE</strong>
+          <div class="wafd-pwa-menu" hidden>
+            <button type="button" data-action="home">⌂ <span>${uiLang==="ar"?"الرئيسية":"Home"}</span></button>
+            <button type="button" data-action="language">文 <span>${uiLang==="ar"?"اللغة":"Language"}</span></button>
+            <div class="wafd-pwa-account"><small>${tr("المستخدم")}</small><b>${escapedUser}</b></div>
+            <button type="button" class="is-danger" data-action="logout">↪ <span>${uiLang==="ar"?"تسجيل الخروج":"Logout"}</span></button>
+          </div>
+        </section>
         <section class="wafd-mobile-hero">
           <div class="wafd-mobile-lang"><label>${tr("اللغة") || "Language"}</label><select id="wafd-role-lang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select></div>
           <div class="wafd-mobile-brand">
@@ -270,6 +282,48 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         </section>
         ${items.length ? "" : `<div class="wafd-mobile-empty">${uiLang==='ar'?'لا توجد أدوات متاحة لهذا الحساب. راجع الدور والصلاحيات مع مسؤول النظام.':'No tools are available for this account. Please review the assigned role and permissions.'}</div>`}
       </div>`);
+
+    const $pwaMenu = $root.find(".wafd-pwa-menu");
+    const $pwaMenuBtn = $root.find(".wafd-pwa-menu-btn");
+    const closePwaMenu = () => {
+      $pwaMenu.attr("hidden", true);
+      $pwaMenuBtn.attr("aria-expanded", "false");
+    };
+    $pwaMenuBtn.on("click", function (event) {
+      event.stopPropagation();
+      const willOpen = $pwaMenu.attr("hidden") !== undefined;
+      if (willOpen) {
+        $pwaMenu.removeAttr("hidden");
+        $pwaMenuBtn.attr("aria-expanded", "true");
+      } else {
+        closePwaMenu();
+      }
+    });
+    $pwaMenu.on("click", "[data-action]", function () {
+      const action = $(this).attr("data-action");
+      if (action === "home") {
+        closePwaMenu();
+        frappe.set_route("wafd-role-home");
+        return;
+      }
+      if (action === "language") {
+        closePwaMenu();
+        $root.find("#wafd-role-lang").trigger("focus");
+        try { $root.find("#wafd-role-lang")[0]?.showPicker?.(); } catch (_e) {}
+        return;
+      }
+      if (action === "logout") {
+        closePwaMenu();
+        if (frappe.app?.logout) {
+          frappe.app.logout();
+        } else {
+          window.location.assign("/?cmd=web_logout");
+        }
+      }
+    });
+    $(document).off("click.wafdPwaMenu").on("click.wafdPwaMenu", function (event) {
+      if (!$(event.target).closest(".wafd-pwa-appbar").length) closePwaMenu();
+    });
 
     $root.find("#wafd-role-lang").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});
     $root.find(".wafd-mobile-card").on("click", function () {

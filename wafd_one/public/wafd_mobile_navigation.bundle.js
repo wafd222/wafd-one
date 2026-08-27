@@ -53,6 +53,37 @@
     return visibleHomeFallback();
   }
 
+
+  function isStandalonePwa() {
+    return !!(
+      window.wafdIsStandalone ||
+      window.navigator.standalone === true ||
+      window.matchMedia?.("(display-mode: standalone)")?.matches
+    );
+  }
+
+  function syncPwaChrome(home) {
+    if (!document.body) return;
+    const hide = !!(home && isMobile() && isStandalonePwa());
+    document.body.classList.toggle("wafd-pwa-home-shell", hide);
+    // Frappe can mount its navbar after our stylesheet/route callback. Direct
+    // inline display is therefore used as a deterministic fallback, but only
+    // on standalone role home. Remove it immediately on every other route.
+    document.querySelectorAll(".navbar, header.navbar, .desk-navbar").forEach((node) => {
+      if (hide) {
+        if (!node.hasAttribute("data-wafd-prev-display")) {
+          node.setAttribute("data-wafd-prev-display", node.style.display || "");
+        }
+        node.style.setProperty("display", "none", "important");
+      } else if (node.hasAttribute("data-wafd-prev-display")) {
+        const previous = node.getAttribute("data-wafd-prev-display") || "";
+        node.style.removeProperty("display");
+        if (previous) node.style.display = previous;
+        node.removeAttribute("data-wafd-prev-display");
+      }
+    });
+  }
+
   function hasOpenModal() {
     return Array.from(document.querySelectorAll(".modal.show, .modal[style*='display: block'], .frappe-dialog"))
       .some(elementIsActuallyVisible);
@@ -103,6 +134,7 @@
     removeLegacy();
     const home = isHome();
     syncHomeState(home);
+    syncPwaChrome(home);
 
     let btn = document.getElementById(ID);
     if (!isMobile() || home || hasOpenModal()) {

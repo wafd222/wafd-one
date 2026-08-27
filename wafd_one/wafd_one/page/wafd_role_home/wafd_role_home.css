@@ -28,3 +28,42 @@
   .wafd-role-home-page .layout-main-section-wrapper::-webkit-scrollbar,
   .wafd-role-home-page .layout-main-section::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
 }
+
+/* RC234 iPhone viewport containment. The earlier full-bleed negative margin
+   widened the page beyond the visual viewport and exposed a vertical edge. */
+@media(max-width:900px){
+  body.wafd-at-role-home,
+  body.wafd-at-role-home .page-container,
+  body.wafd-at-role-home .wafd-role-home-page,
+  body.wafd-at-role-home .wafd-role-home-page .page-body,
+  body.wafd-at-role-home .wafd-role-home-page .layout-main-section-wrapper,
+  body.wafd-at-role-home .wafd-role-home-page .layout-main-section{
+    max-width:100vw!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+  }
+  .wafd-role-home{
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    padding:0 0 28px;
+  }
+  .wafd-mobile-hero{
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    border-radius:0 0 24px 24px;
+  }
+  .wafd-mobile-grid{
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    padding-inline:10px;
+  }
+  .wafd-mobile-card{min-width:0;max-width:100%;box-sizing:border-box}
+  body.wafd-pwa-home-shell .wafd-mobile-lang{display:none!important}
+}

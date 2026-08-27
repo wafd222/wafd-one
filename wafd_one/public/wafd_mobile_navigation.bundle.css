@@ -55,41 +55,47 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
 
 .wafd-pwa-appbar { display:none; }
 
-/* RC233 — installed WAFD ONE PWA shell.
+/* RC234 — installed WAFD ONE PWA shell.
    Hide Frappe chrome only on the role-home route, and replace it with a compact
-   WAFD app bar that keeps Home, language, account identity and Logout. */
+   WAFD app bar that keeps Home, language, account identity and Logout.
+   wafd-pwa-home-shell is set by the same route-aware controller that hides the
+   Frappe chrome, avoiding an iOS cold-launch race between separately loaded assets. */
 @media (max-width: 767px) {
-  body.wafd-pwa-standalone.wafd-at-role-home .navbar,
-  body.wafd-pwa-standalone.wafd-at-role-home header.navbar,
-  body.wafd-pwa-standalone.wafd-at-role-home .desk-navbar,
-  body.wafd-pwa-standalone.wafd-at-role-home .layout-side-section,
-  body.wafd-pwa-standalone.wafd-at-role-home .standard-sidebar {
+  body.wafd-pwa-home-shell .navbar,
+  body.wafd-pwa-home-shell header.navbar,
+  body.wafd-pwa-home-shell .desk-navbar,
+  body.wafd-pwa-home-shell .layout-side-section,
+  body.wafd-pwa-home-shell .standard-sidebar {
     display:none !important;
   }
 
   .wafd-pwa-appbar { display:none; }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-appbar {
-    position:relative;
+  body.wafd-pwa-home-shell .wafd-pwa-appbar {
+    position:sticky;
+    top:0;
     z-index:1100;
     display:flex;
     align-items:center;
     justify-content:space-between;
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
     min-height:56px;
-    padding:8px 14px;
+    padding:7px max(12px, env(safe-area-inset-left)) 7px max(12px, env(safe-area-inset-right));
     background:#fff;
     border-bottom:1px solid #ece7dc;
     direction:ltr;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-appbar > strong {
+  body.wafd-pwa-home-shell .wafd-pwa-appbar > strong {
     font-size:18px;
     font-weight:700;
     letter-spacing:.2px;
     color:#1b1c20;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu-btn {
+  body.wafd-pwa-home-shell .wafd-pwa-menu-btn {
     width:42px;
     height:42px;
     display:flex;
@@ -102,7 +108,7 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
     background:#f7f5ef;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu-btn span {
+  body.wafd-pwa-home-shell .wafd-pwa-menu-btn span {
     display:block;
     height:2px;
     width:100%;
@@ -110,10 +116,10 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
     background:#25262a;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu {
+  body.wafd-pwa-home-shell .wafd-pwa-menu {
     position:absolute;
     top:52px;
-    left:14px;
+    left:max(10px, env(safe-area-inset-left));
     width:min(300px,calc(100vw - 28px));
     padding:8px;
     border:1px solid #e6e0d3;
@@ -123,11 +129,11 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
     direction:rtl;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu[hidden] {
+  body.wafd-pwa-home-shell .wafd-pwa-menu[hidden] {
     display:none !important;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu button {
+  body.wafd-pwa-home-shell .wafd-pwa-menu button {
     width:100%;
     display:flex;
     gap:10px;
@@ -141,41 +147,61 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
     text-align:right;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu button:active {
+  body.wafd-pwa-home-shell .wafd-pwa-menu button:active {
     background:#f6f3eb;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-menu button.is-danger {
+  body.wafd-pwa-home-shell .wafd-pwa-menu button.is-danger {
     color:#9a2d2d;
     border-top:1px solid #eee8dc;
     border-radius:0 0 11px 11px;
     margin-top:4px;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-account {
+  body.wafd-pwa-home-shell .wafd-pwa-language-row,
+  body.wafd-pwa-home-shell .wafd-pwa-account {
     margin:5px 4px;
     padding:10px 12px;
     border-radius:11px;
     background:#f7f5ef;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-account small,
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-account b {
+  body.wafd-pwa-home-shell .wafd-pwa-language-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    color:#202126;
+    font-size:14px;
+  }
+
+  body.wafd-pwa-home-shell .wafd-pwa-language-row select {
+    max-width:160px;
+    min-height:36px;
+    padding:5px 8px;
+    border:1px solid #ded7c8;
+    border-radius:9px;
+    background:#fff;
+    color:#202126;
+    font-size:13px;
+  }
+
+  body.wafd-pwa-home-shell .wafd-pwa-account small,
+  body.wafd-pwa-home-shell .wafd-pwa-account b {
     display:block;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-account small {
+  body.wafd-pwa-home-shell .wafd-pwa-account small {
     color:#777;
     font-size:11px;
   }
 
-  body.wafd-pwa-standalone.wafd-at-role-home .wafd-pwa-account b {
+  body.wafd-pwa-home-shell .wafd-pwa-account b {
     margin-top:3px;
     color:#222;
     font-size:13px;
   }
 }
-

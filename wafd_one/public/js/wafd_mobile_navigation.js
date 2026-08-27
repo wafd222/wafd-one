@@ -4,6 +4,7 @@
   const LEGACY_IDS = ["wafd-global-mobile-back", "wafd-mobile-back-v218"];
   const ID = "wafd-mobile-back-v219";
   const HOME_CLASS = "wafd-at-role-home";
+  const PWA_SHELL_CLASS = "wafd-pwa-home-shell";
   const HOME_ROUTE = "wafd-role-home";
 
   function isMobile() {
@@ -65,11 +66,16 @@
   function syncPwaChrome(home) {
     if (!document.body) return;
     const hide = !!(home && isMobile() && isStandalonePwa());
-    document.body.classList.toggle("wafd-pwa-home-shell", hide);
+    // This runtime class is the single source of truth for the RC234 shell.
+    // Do not make the CSS depend on a second class populated by another asset:
+    // on iOS those assets can finish in a different order after a cold launch.
+    document.body.classList.toggle(PWA_SHELL_CLASS, hide);
     // Frappe can mount its navbar after our stylesheet/route callback. Direct
     // inline display is therefore used as a deterministic fallback, but only
     // on standalone role home. Remove it immediately on every other route.
-    document.querySelectorAll(".navbar, header.navbar, .desk-navbar").forEach((node) => {
+    document.querySelectorAll(
+      ".navbar, header.navbar, .desk-navbar, .layout-side-section, .standard-sidebar"
+    ).forEach((node) => {
       if (hide) {
         if (!node.hasAttribute("data-wafd-prev-display")) {
           node.setAttribute("data-wafd-prev-display", node.style.display || "");

@@ -258,9 +258,12 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
             <span></span><span></span><span></span>
           </button>
           <strong>WAFD ONE</strong>
-          <div class="wafd-pwa-menu" hidden>
+          <div class="wafd-pwa-menu" role="menu" hidden>
             <button type="button" data-action="home">⌂ <span>${uiLang==="ar"?"الرئيسية":"Home"}</span></button>
-            <button type="button" data-action="language">文 <span>${uiLang==="ar"?"اللغة":"Language"}</span></button>
+            <label class="wafd-pwa-language-row" for="wafd-pwa-language">
+              <span>文 ${tr("اللغة") || "Language"}</span>
+              <select id="wafd-pwa-language" aria-label="${tr("اللغة") || "Language"}">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select>
+            </label>
             <div class="wafd-pwa-account"><small>${tr("المستخدم")}</small><b>${escapedUser}</b></div>
             <button type="button" class="is-danger" data-action="logout">↪ <span>${uiLang==="ar"?"تسجيل الخروج":"Logout"}</span></button>
           </div>
@@ -306,12 +309,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         frappe.set_route("wafd-role-home");
         return;
       }
-      if (action === "language") {
-        closePwaMenu();
-        $root.find("#wafd-role-lang").trigger("focus");
-        try { $root.find("#wafd-role-lang")[0]?.showPicker?.(); } catch (_e) {}
-        return;
-      }
       if (action === "logout") {
         closePwaMenu();
         if (frappe.app?.logout) {
@@ -325,7 +322,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       if (!$(event.target).closest(".wafd-pwa-appbar").length) closePwaMenu();
     });
 
-    $root.find("#wafd-role-lang").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});
+    $root.find("#wafd-role-lang, #wafd-pwa-language").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (item.page) { frappe.set_route(item.page); return; }

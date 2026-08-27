@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC236
+# WAFD ONE 10.0.0 RC237
 
-**Current release: 10.0.0 RC236 — Unified Employee Account and Task Management**
+**Current release: 10.0.0 RC237 — Saudi Mobile Validation and Employee Navigation Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

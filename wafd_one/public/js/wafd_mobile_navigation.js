@@ -6,6 +6,8 @@
   const HOME_CLASS = "wafd-at-role-home";
   const PWA_SHELL_CLASS = "wafd-pwa-home-shell";
   const HOME_ROUTE = "wafd-role-home";
+  const EMPLOYEE_ROUTE = "wafd-employee-team";
+  const EMPLOYEE_CLASS = "wafd-at-employee-team";
 
   function isMobile() {
     return window.matchMedia("(max-width: 767px)").matches;
@@ -52,6 +54,13 @@
     if (routeName) return routeName === HOME_ROUTE;
     if (pathIsHome()) return true;
     return visibleHomeFallback();
+  }
+
+  function isEmployeeTeam() {
+    const routeName = currentRouteName();
+    if (routeName) return routeName === EMPLOYEE_ROUTE;
+    const path = String(window.location.pathname || "").replace(/\/$/, "");
+    return path === "/desk/wafd-employee-team" || path === "/app/wafd-employee-team";
   }
 
 
@@ -151,11 +160,13 @@
 
     removeLegacy();
     const home = isHome();
+    const employeeTeam = isEmployeeTeam();
     syncHomeState(home);
+    document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
     syncPwaChrome(home);
 
     let btn = document.getElementById(ID);
-    if (!isMobile() || home || hasOpenModal()) {
+    if (!isMobile() || home || employeeTeam || hasOpenModal()) {
       if (btn) btn.remove();
       return;
     }

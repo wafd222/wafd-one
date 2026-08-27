@@ -1,5 +1,7 @@
 """Manager-only WAFD employee account and operational-role administration."""
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import cint, validate_email_address
@@ -53,6 +55,29 @@ def _normalize_email(email):
     return email
 
 
+def _normalize_mobile(mobile, required=False):
+    """Accept Saudi local/international mobile formats and store E.164."""
+    value = str(mobile or "").strip().translate(
+        str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+    )
+    if not value:
+        if required:
+            frappe.throw(_("رقم الجوال مطلوب عند اختيار مهمة سائق."))
+        return ""
+
+    value = re.sub(r"[\s\-().]", "", value)
+    if value.startswith("00"):
+        value = f"+{value[2:]}"
+    elif re.fullmatch(r"05\d{8}", value):
+        value = f"+966{value[1:]}"
+    elif re.fullmatch(r"9665\d{8}", value):
+        value = f"+{value}"
+
+    if not re.fullmatch(r"\+[1-9]\d{7,14}", value):
+        frappe.throw(_("أدخل رقم جوال صحيحًا بصيغة 05xxxxxxxx أو +9665xxxxxxxx."))
+    return value
+
+
 def _validate_role(role):
     role = (role or "").strip()
     if role not in ROLE_LABELS:
@@ -97,9 +122,7 @@ def _set_driver_status(user, status):
 def _ensure_driver_profile(user, full_name, mobile):
     if not frappe.db.exists("DocType", "WAFD Driver"):
         return
-    mobile = (mobile or "").strip()
-    if not mobile:
-        frappe.throw(_("Mobile number is required for a driver account."))
+    mobile = _normalize_mobile(mobile, required=True)
 
     existing = frappe.db.get_value("WAFD Driver", {"system_user": user}, "name")
     if existing:
@@ -202,14 +225,12 @@ def create_employee(email, first_name, role, password, mobile=None):
     first_name = (first_name or "").strip()
     role = _validate_role(role)
     password = password or ""
-    mobile = (mobile or "").strip()
+    mobile = _normalize_mobile(mobile, required=role == DRIVER_ROLE)
 
     if not first_name:
         frappe.throw(_("Employee name is required."))
     if len(password) < 8:
         frappe.throw(_("Temporary password must contain at least 8 characters."))
-    if role == DRIVER_ROLE and not mobile:
-        frappe.throw(_("Mobile number is required for a driver account."))
     if frappe.db.exists("User", email):
         frappe.throw(_("A user already exists with this email address."))
 
@@ -278,9 +299,7 @@ def set_employee_role(user, role, mobile=None):
     if not current_roles:
         frappe.throw(_("This user is not a managed WAFD employee."))
 
-    mobile = (mobile or employee.mobile_no or "").strip()
-    if role == DRIVER_ROLE and not mobile:
-        frappe.throw(_("Mobile number is required for a driver account."))
+    mobile = _normalize_mobile(mobile or employee.mobile_no, required=role == DRIVER_ROLE)
 
     employee.role_profile_name = None
     employee.set("roles", [{"role": row.role} for row in employee.roles if row.role not in MANAGED_ROLES])

@@ -4,6 +4,7 @@
 
 #wafd-mobile-back-v219 { display:none; }
 body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
+body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
 
 @media (max-width:767px) {
   #wafd-mobile-back-v219.wafd-mobile-back-v219 {
@@ -32,6 +33,10 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
   }
 
   body.wafd-at-role-home #wafd-mobile-back-v219.wafd-mobile-back-v219 {
+    display:none !important;
+  }
+
+  body.wafd-at-employee-team #wafd-mobile-back-v219.wafd-mobile-back-v219 {
     display:none !important;
   }
 

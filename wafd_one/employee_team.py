@@ -65,17 +65,27 @@ def _normalize_mobile(mobile, required=False):
             frappe.throw(_("رقم الجوال مطلوب عند اختيار مهمة سائق."))
         return ""
 
-    value = re.sub(r"[\s\-().]", "", value)
-    if value.startswith("00"):
-        value = f"+{value[2:]}"
-    elif re.fullmatch(r"05\d{8}", value):
-        value = f"+966{value[1:]}"
-    elif re.fullmatch(r"9665\d{8}", value):
-        value = f"+{value}"
+    if any(character.isalpha() for character in value):
+        frappe.throw(_("أدخل رقم جوال سعودي صحيحًا من 10 أرقام يبدأ بـ 05."))
 
-    if not re.fullmatch(r"\+[1-9]\d{7,14}", value):
-        frappe.throw(_("أدخل رقم جوال صحيحًا بصيغة 05xxxxxxxx أو +9665xxxxxxxx."))
-    return value
+    # iOS can wrap copied phone numbers in invisible direction/isolation marks.
+    # Build the canonical value from digits so those marks cannot invalidate an
+    # otherwise correct number such as 0547726406.
+    digits = re.sub(r"\D", "", value)
+    if re.fullmatch(r"05\d{8}", digits):
+        normalized = f"+966{digits[1:]}"
+    elif re.fullmatch(r"9665\d{8}", digits):
+        normalized = f"+{digits}"
+    elif re.fullmatch(r"009665\d{8}", digits):
+        normalized = f"+{digits[2:]}"
+    elif ("+" in value or digits.startswith("00")) and 8 <= len(digits.lstrip("0")) <= 15:
+        normalized = f"+{digits[2:] if digits.startswith('00') else digits}"
+    else:
+        frappe.throw(_("أدخل رقم جوال سعودي صحيحًا من 10 أرقام يبدأ بـ 05."))
+
+    if not re.fullmatch(r"\+[1-9]\d{7,14}", normalized):
+        frappe.throw(_("أدخل رقم جوال سعودي صحيحًا من 10 أرقام يبدأ بـ 05."))
+    return normalized
 
 
 def _validate_role(role):

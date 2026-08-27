@@ -26,14 +26,15 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
   };
 
   const normalizeMobile = (value) => {
-    let mobile = String(value || "").trim()
+    const mobile = String(value || "").trim()
       .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit))
-      .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit))
-      .replace(/[\s\-().]/g, "");
-    if (mobile.startsWith("00")) mobile = `+${mobile.slice(2)}`;
-    else if (/^05\d{8}$/.test(mobile)) mobile = `+966${mobile.slice(1)}`;
-    else if (/^9665\d{8}$/.test(mobile)) mobile = `+${mobile}`;
-    return mobile;
+      .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit));
+    const digits = mobile.replace(/\D/g, "");
+    if (/^05\d{8}$/.test(digits)) return `+966${digits.slice(1)}`;
+    if (/^9665\d{8}$/.test(digits)) return `+${digits}`;
+    if (/^009665\d{8}$/.test(digits)) return `+${digits.slice(2)}`;
+    if (mobile.includes("+") || digits.startsWith("00")) return `+${digits.startsWith("00") ? digits.slice(2) : digits}`;
+    return digits;
   };
 
   const goBack = () => {

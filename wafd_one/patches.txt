@@ -355,3 +355,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc236.execute
 
 # RC237 Saudi mobile normalization and unified employee navigation
 wafd_one.wafd_one.patches.v10_0_0_rc237.execute
+
+# RC238 iPhone invisible-character-safe Saudi mobile normalization
+wafd_one.wafd_one.patches.v10_0_0_rc238.execute

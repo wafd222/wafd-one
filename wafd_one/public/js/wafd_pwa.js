@@ -17,12 +17,15 @@
   ensureMeta('apple-mobile-web-app-status-bar-style','black-translucent');
   ensureMeta('apple-mobile-web-app-title','WAFD ONE');
   ensureMeta('mobile-web-app-capable','yes');
+  ensureMeta('format-detection','telephone=no');
 
-  // Keep install UX native. Android/Chromium will expose Install when the browser deems the app installable.
-  // iOS uses Share > Add to Home Screen; the Apple meta/icon above make it open as a standalone app.
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    window.wafdPwaInstallPrompt = event;
-    window.dispatchEvent(new CustomEvent('wafd:pwa-install-ready'));
-  });
+  window.wafdIsStandalone = !!(
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  );
+
+  // Keep install UX fully native. Do not call preventDefault() on
+  // beforeinstallprompt unless WAFD ONE provides its own install button.
+  // Android/Chromium can therefore expose the browser's normal Install UI.
+  // iOS/iPadOS uses Share > Add to Home Screen / Open as Web App.
 })();

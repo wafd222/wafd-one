@@ -1,20 +1,39 @@
 {
-  "id": "/desk/wafd-role-home",
+  "id": "/wafd-mobile",
   "name": "WAFD ONE",
   "short_name": "WAFD ONE",
-  "description": "Wafd Al Madinah Catering operations and beneficiary portal",
+  "description": "WAFD ONE - Wafd Al Madinah Catering Operations",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/desk/wafd-role-home",
+  "start_url": "/wafd-mobile",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#18191d",
   "theme_color": "#18191d",
   "orientation": "any",
   "icons": [
-    {"src":"/assets/wafd_one/pwa/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
-    {"src":"/assets/wafd_one/pwa/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
-    {"src":"/assets/wafd_one/pwa/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
-  ]
+    {
+      "src": "/assets/wafd_one/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/wafd_one/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/wafd_one/pwa/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
 }

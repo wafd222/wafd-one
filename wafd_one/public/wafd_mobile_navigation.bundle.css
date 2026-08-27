@@ -51,3 +51,14 @@ body.wafd-at-role-home #wafd-mobile-back-v219 { display:none !important; }
     pointer-events:none !important;
   }
 }
+
+/* RC232 — installed PWA home: remove only Frappe's global Desk navbar.
+   Scope is deliberately narrow: standalone + mobile + WAFD role home only.
+   Normal browser/desktop Desk and all transactional/form pages are unchanged. */
+@media (max-width: 767px) {
+  body.wafd-pwa-standalone.wafd-at-role-home > .navbar,
+  body.wafd-pwa-standalone.wafd-at-role-home > header.navbar,
+  body.wafd-pwa-standalone.wafd-at-role-home .desk-navbar {
+    display: none !important;
+  }
+}

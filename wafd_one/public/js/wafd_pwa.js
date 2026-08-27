@@ -23,6 +23,14 @@
     window.matchMedia?.('(display-mode: standalone)').matches ||
     window.navigator.standalone === true
   );
+  // Expose standalone state to CSS. iOS installed web apps report
+  // navigator.standalone, while Chromium uses display-mode.
+  document.body?.classList.toggle('wafd-pwa-standalone', window.wafdIsStandalone);
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.toggle('wafd-pwa-standalone', window.wafdIsStandalone);
+    }, { once: true });
+  }
 
   // Keep install UX fully native. Do not call preventDefault() on
   // beforeinstallprompt unless WAFD ONE provides its own install button.

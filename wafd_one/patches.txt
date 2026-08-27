@@ -349,3 +349,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc225.execute
 
 # RC227 deterministic hotel quick entry + consolidated Madinah catalogue
 wafd_one.wafd_one.patches.v10_0_0_rc227.execute
+
+# RC236 unified employee account, task and access management
+wafd_one.wafd_one.patches.v10_0_0_rc236.execute

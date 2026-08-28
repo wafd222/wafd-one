@@ -7,9 +7,10 @@ frappe.ui.form.on("WAFD Loading Record", {
     addInlineBackAction(frm);
     const canOperate = frappe.user_roles.some((role) => WAFD_LOADING_ROLES.includes(role));
     if (canOperate) {
-      addLoadingPhotoAction(frm);
+      renderLoadingPhotoPanel(frm);
       addGuidedLoadingAction(frm);
     } else {
+      frm.fields_dict.loading_photo_action?.$wrapper?.empty().hide();
       frm.page.clear_primary_action();
     }
     frm.add_custom_button(uiText("معاينة المستند", "Preview Document"), () => openLoadingPdf(frm), uiText("المستندات", "Documents"));
@@ -62,9 +63,28 @@ function applyLoadingLanguage(frm) {
   frm.set_df_property("supervisor", "read_only", 1);
 }
 
-function addLoadingPhotoAction(frm) {
-  const label = frm.doc.loading_photo ? uiText("استبدال صورة التحميل", "Replace Loading Photo") : uiText("تصوير/رفع صورة التحميل", "Capture/Upload Loading Photo");
-  frm.add_custom_button(label, () => selectAndUploadLoadingPhoto(frm), uiText("التوثيق", "Evidence"));
+function renderLoadingPhotoPanel(frm) {
+  const field = frm.fields_dict.loading_photo_action;
+  if (!field?.$wrapper) return;
+  const wrapper = field.$wrapper;
+  const label = frm.doc.loading_photo ? uiText("استبدال صورة التحميل", "Replace Loading Photo") : uiText("تصوير أو رفع صورة التحميل", "Capture or Upload Loading Photo");
+  const help = frm.doc.loading_photo
+    ? uiText("تم توثيق الحمولة. يمكنك معاينة الصورة أو استبدالها قبل إنشاء الرحلة.", "Loading is documented. Preview or replace the photo before trip creation.")
+    : uiText("صوّر الحمولة الآن قبل اعتماد التحميل وإنشاء الرحلة.", "Capture the load before approval and trip creation.");
+  const photo = frm.doc.loading_photo ? frappe.utils.escape_html(frm.doc.loading_photo) : "";
+  const uploadedBy = frm.doc.loading_photo_uploaded_by ? frappe.utils.escape_html(frm.doc.loading_photo_uploaded_by) : "";
+  const uploadedOn = frm.doc.loading_photo_uploaded_on ? frappe.datetime.str_to_user(frm.doc.loading_photo_uploaded_on) : "";
+  wrapper.show().html(`
+    <div class="wafd-loading-photo-panel" style="margin:12px 0 18px;padding:16px;border:1px solid #dfd5bf;border-radius:18px;background:#fbf8f1;box-shadow:0 8px 24px rgba(41,34,22,.05)">
+      <button type="button" class="wafd-loading-photo-button" style="width:100%;min-height:58px;border:0;border-radius:14px;background:#1d1e22;color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px">
+        <span aria-hidden="true" style="font-size:24px;line-height:1">📷</span><span>${frappe.utils.escape_html(label)}</span>
+      </button>
+      <div style="margin-top:9px;color:#6f7075;font-size:13px;line-height:1.6">${frappe.utils.escape_html(help)}</div>
+      ${photo ? `<a href="${photo}" target="_blank" rel="noopener" style="display:block;margin-top:12px"><img src="${photo}" alt="${frappe.utils.escape_html(uiText("صورة التحميل", "Loading Photo"))}" style="display:block;width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:#fff;border:1px solid #e4ddcf"></a>` : ""}
+      ${(uploadedBy || uploadedOn) ? `<div style="margin-top:9px;color:#5d5e62;font-size:12px">${frappe.utils.escape_html(uiText("رفعها", "Uploaded by"))}: <b>${uploadedBy || "—"}</b>${uploadedOn ? ` · ${frappe.utils.escape_html(uploadedOn)}` : ""}</div>` : ""}
+    </div>
+  `);
+  wrapper.find(".wafd-loading-photo-button").on("click", () => selectAndUploadLoadingPhoto(frm));
 }
 
 function selectAndUploadLoadingPhoto(frm) {

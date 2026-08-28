@@ -54,9 +54,12 @@ class WAFDDeliveryTrip(Document):
         the current data model has no route-duration master; we do not invent a
         travel duration.
         """
-        if not self.planned_departure:
-            self.planned_departure = loading.loading_date or loading.dispatch_time
+        loading_time = loading.loading_date or loading.dispatch_time
         if self.planned_arrival:
+            if not self.planned_departure:
+                # A late loading record must not make the planned pair invalid.
+                # Preserve the original arrival target for delay measurement.
+                self.planned_departure = min(get_datetime(loading_time), get_datetime(self.planned_arrival)) if loading_time else self.planned_arrival
             return
         plan = frappe.db.get_value(
             "WAFD Meal Plan", self.meal_plan,
@@ -75,7 +78,13 @@ class WAFDDeliveryTrip(Document):
         )
         lead_minutes = cint(lead_minutes) if lead_minutes not in (None, "") else 45
         service_dt = get_datetime(f"{plan.service_date} {plan.service_time}")
-        self.planned_arrival = add_to_date(service_dt, minutes=-lead_minutes, as_datetime=True)
+        target_arrival = add_to_date(service_dt, minutes=-lead_minutes, as_datetime=True)
+        self.planned_arrival = target_arrival
+        if not self.planned_departure:
+            # Loading can happen after the scheduled arrival during delayed or
+            # test operations. Keep the target arrival so delay remains
+            # auditable, while preventing an impossible planned time pair.
+            self.planned_departure = min(get_datetime(loading_time), get_datetime(target_arrival)) if loading_time else target_arrival
 
     def _calculate_trip_metrics(self):
         self.delay_minutes = 0

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC239
+# WAFD ONE 10.0.0 RC241
 
-**Current release: 10.0.0 RC239 — Secure Driver Delivery Workflow**
+**Current release: 10.0.0 RC241 — Late Trip Timing Validation Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

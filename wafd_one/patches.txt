@@ -361,3 +361,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc238.execute
 
 # RC239 secure mobile loading evidence and assigned-driver delivery workflow
 wafd_one.wafd_one.patches.v10_0_0_rc239.execute
+
+# RC240 visible in-form loading photo action for managers and delivery supervisors
+wafd_one.wafd_one.patches.v10_0_0_rc240.execute
+
+# RC241 allow delayed loading while preserving the scheduled arrival target
+wafd_one.wafd_one.patches.v10_0_0_rc241.execute

@@ -16,6 +16,7 @@ from wafd_one.employee_team import _normalize_mobile
 
 DRIVER_ROLE = "WAFD Driver"
 LOADING_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"}
+DELIVERY_OPERATOR_ROLES = LOADING_ROLES
 ALLOWED_LANGUAGES = {"ar", "en", "id", "ur", "hi", "bn", "fr", "ha", "sw", "uz"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 IMAGE_MIMES = {
@@ -43,23 +44,39 @@ def _assert_loading_operator():
         frappe.throw(_("غير مصرح لك برفع صورة التحميل."), frappe.PermissionError)
 
 
-def _driver_name(required=True):
+def _driver_names(required=True):
     user = frappe.session.user
     if DRIVER_ROLE not in _roles(user):
         frappe.throw(_("هذه الصفحة مخصصة للسائقين."), frappe.PermissionError)
-    driver = frappe.db.get_value("WAFD Driver", {"system_user": user}, "name")
-    if required and not driver:
+    drivers = frappe.get_all(
+        "WAFD Driver",
+        filters={"system_user": user},
+        pluck="name",
+        order_by="creation asc",
+    )
+    if required and not drivers:
         frappe.throw(_("حساب السائق غير مرتبط بسجل سائق. راجع مدير النظام."))
-    return driver
+    return list(dict.fromkeys(drivers))
+
+
+def _driver_name(required=True):
+    drivers = _driver_names(required=required)
+    return drivers[0] if drivers else None
+
+
+def _authorized_trip(trip_name, write=False):
+    trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
+    if not (_roles() & DELIVERY_OPERATOR_ROLES):
+        drivers = _driver_names()
+        if trip.driver not in drivers:
+            frappe.throw(_("الرحلة غير مسندة إلى حساب السائق الحالي."), frappe.PermissionError)
+    trip.check_permission("write" if write else "read")
+    return trip
 
 
 def _assigned_trip(trip_name, write=False):
-    driver = _driver_name()
-    trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
-    if trip.driver != driver:
-        frappe.throw(_("الرحلة غير مسندة إلى حساب السائق الحالي."), frappe.PermissionError)
-    trip.check_permission("write" if write else "read")
-    return trip
+    """Backward-compatible alias for the secured delivery authorization."""
+    return _authorized_trip(trip_name, write=write)
 
 
 def _decode_image(data_url):
@@ -152,10 +169,14 @@ def _hotel_names(hotel_names):
 
 @frappe.whitelist()
 def list_my_trips():
-    driver = _driver_name()
+    is_manager = bool(_roles() & DELIVERY_OPERATOR_ROLES)
+    drivers = [] if is_manager else _driver_names()
+    filters = {"status": ["!=", "ملغية / Cancelled"]}
+    if not is_manager:
+        filters["driver"] = ["in", drivers]
     trips = frappe.get_all(
         "WAFD Delivery Trip",
-        filters={"driver": driver, "status": ["!=", "ملغية / Cancelled"]},
+        filters=filters,
         fields=[
             "name", "trip_date", "vehicle", "hotel", "quantity", "planned_departure",
             "actual_departure", "planned_arrival", "actual_arrival", "status",
@@ -204,12 +225,12 @@ def list_my_trips():
                 "proof": proof,
             }
         )
-    return {"driver": driver, "trips": result}
+    return {"driver": drivers[0] if drivers else None, "drivers": drivers, "is_manager": is_manager, "trips": result}
 
 
 @frappe.whitelist()
 def set_my_trip_status(trip_name, action):
-    trip = _assigned_trip(trip_name, write=True)
+    trip = _authorized_trip(trip_name, write=True)
     transitions = {
         "start": ({"مخططة / Planned", "تم التحميل / Loaded"}, "في الطريق / In Transit"),
         "arrive": ({"في الطريق / In Transit", "متأخرة / Delayed"}, "وصلت / Arrived"),
@@ -232,6 +253,29 @@ def set_my_trip_status(trip_name, action):
 
 
 @frappe.whitelist()
+def upload_delivery_photo(trip_name, image_data):
+    """Secure upload for the standard manager proof form and mobile page."""
+    trip = _authorized_trip(trip_name, write=True)
+    if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
+        frappe.throw(_("ابدأ الرحلة أو سجل الوصول قبل تصوير التسليم."))
+    if frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}):
+        frappe.throw(_("تم حفظ إثبات التسليم بالفعل ولا يمكن استبدال صورته من هنا."))
+    file_url = _save_private_image(
+        image_data,
+        "delivery",
+        "WAFD Delivery Trip",
+        trip.name,
+        "delivery_photo",
+    )
+    uploaded_on = now_datetime()
+    return {
+        "file_url": file_url,
+        "uploaded_by": frappe.session.user,
+        "uploaded_on": uploaded_on,
+    }
+
+
+@frappe.whitelist()
 def submit_delivery_proof(
     trip_name,
     receiver_name,
@@ -245,7 +289,7 @@ def submit_delivery_proof(
     notes_language="ar",
     operational_note_code=None,
 ):
-    trip = _assigned_trip(trip_name, write=True)
+    trip = _authorized_trip(trip_name, write=True)
     if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
         frappe.throw(_("ابدأ الرحلة وسجل الوصول قبل إثبات التسليم."))
     existing = frappe.db.get_value("WAFD Delivery Proof", {"delivery_trip": trip.name}, "name")

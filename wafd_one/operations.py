@@ -115,6 +115,11 @@ def create_delivery_trip(loading_name):
         frappe.throw("صورة التحميل مطلوبة قبل إنشاء الرحلة / Loading photo is required before creating the trip")
     if not loading.supervisor:
         frappe.throw("يجب تسجيل مشرف التحميل قبل إنشاء الرحلة / Loading supervisor must be recorded")
+    driver_user = frappe.db.get_value("WAFD Driver", loading.driver, "system_user")
+    if not driver_user:
+        frappe.throw("السائق المختار غير مرتبط بحساب دخول. اربطه من إدارة الموظفين قبل إنشاء الرحلة / Selected driver is not linked to a user account")
+    if not frappe.db.get_value("User", driver_user, "enabled"):
+        frappe.throw("حساب السائق موقوف. فعّله من إدارة الموظفين قبل إنشاء الرحلة / Driver account is disabled")
     plan = frappe.get_doc("WAFD Meal Plan", loading.meal_plan)
     return _get_or_create(
         "WAFD Delivery Trip",

@@ -7,6 +7,15 @@
  "standard": "Yes",
  "roles": [
   {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Delivery Supervisor"
+  },
+  {
    "role": "WAFD Driver"
   }
  ],

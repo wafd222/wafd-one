@@ -97,6 +97,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التشغيل", desc: "المشاريع والخطط والإنتاج", icon: "⚙", page: "wafd-operations-hub" },
         { label: "المخزون والمشتريات", desc: "المواد والحركات والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
+        { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
@@ -110,6 +111,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التشغيل", desc: "المشاريع والخطط والإنتاج", icon: "⚙", page: "wafd-operations-hub" },
         { label: "المخزون والمشتريات", desc: "المواد والحركات والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
+        { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
@@ -164,7 +166,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "التحميل والرحلات والتسليم",
       items: [
-        { label: "رحلات التوصيل", desc: "إدارة ومتابعة الرحلات", icon: "➜", doctype: "WAFD Delivery Trip", primary: true },
+        { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips", primary: true },
+        { label: "رحلات التوصيل", desc: "إدارة ومتابعة الرحلات", icon: "➜", doctype: "WAFD Delivery Trip" },
         { label: "سجلات التحميل", desc: "التحميل قبل خروج الرحلة", icon: "▣", doctype: "WAFD Loading Record" },
         { label: "سندات التسليم", desc: "التسليم للجهة المستفيدة", icon: "▤", doctype: "WAFD Delivery Note" },
         { label: "سندات الاستلام", desc: "توثيق الاستلام النهائي", icon: "✓", doctype: "WAFD Receiving Note" },

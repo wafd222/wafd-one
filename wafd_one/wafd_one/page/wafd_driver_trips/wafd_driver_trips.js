@@ -1,6 +1,8 @@
 frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   const roles = new Set(frappe.user_roles || []);
-  if (!roles.has("WAFD Driver")) {
+  const managerRoles = ["System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"];
+  const isManager = managerRoles.some((role) => roles.has(role));
+  if (!roles.has("WAFD Driver") && !isManager) {
     wrapper.innerHTML = "";
     requestAnimationFrame(() => frappe.set_route("wafd-role-home"));
     return;
@@ -10,11 +12,14 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   const rtl = ["ar", "ur"].includes(lang);
   const T = {
     my_trips:{ar:"رحلاتي",en:"My Trips",id:"Perjalanan Saya",ur:"میری ٹرپس",hi:"मेरी यात्राएँ",bn:"আমার ট্রিপ",fr:"Mes trajets",ha:"Tafiyoyina",sw:"Safari Zangu",uz:"Safarlarim"},
+    field_delivery:{ar:"التسليم الميداني",en:"Field Delivery",id:"Pengiriman Lapangan",ur:"فیلڈ ڈیلیوری",hi:"मैदानी डिलीवरी",bn:"মাঠ ডেলিভারি",fr:"Livraison terrain",ha:"Isarwa a fili",sw:"Uwasilishaji wa eneo",uz:"Joydagi yetkazish"},
     back:{ar:"رجوع",en:"Back",id:"Kembali",ur:"واپس",hi:"वापस",bn:"ফিরুন",fr:"Retour",ha:"Baya",sw:"Rudi",uz:"Orqaga"},
     refresh:{ar:"تحديث",en:"Refresh",id:"Muat ulang",ur:"تازہ کریں",hi:"रीफ़्रेश",bn:"রিফ্রেশ",fr:"Actualiser",ha:"Sabunta",sw:"Onyesha upya",uz:"Yangilash"},
     no_trips:{ar:"لا توجد رحلات مسندة إليك حاليًا.",en:"No trips are currently assigned to you.",id:"Saat ini tidak ada perjalanan yang ditugaskan.",ur:"اس وقت آپ کو کوئی ٹرپ تفویض نہیں کیا گیا۔",hi:"अभी आपको कोई यात्रा नहीं सौंपी गई है।",bn:"বর্তমানে আপনাকে কোনো ট্রিপ দেওয়া হয়নি।",fr:"Aucun trajet ne vous est attribué actuellement.",ha:"Babu tafiya da aka ba ka yanzu.",sw:"Hakuna safari uliyopewa kwa sasa.",uz:"Hozir sizga safar biriktirilmagan."},
+    no_trips_manager:{ar:"لا توجد رحلات توصيل حالية.",en:"There are no current delivery trips."},
     hotel:{ar:"الوجهة",en:"Destination",id:"Tujuan",ur:"منزل",hi:"गंतव्य",bn:"গন্তব্য",fr:"Destination",ha:"Wurin zuwa",sw:"Mahali",uz:"Manzil"},
     vehicle:{ar:"المركبة",en:"Vehicle",id:"Kendaraan",ur:"گاڑی",hi:"वाहन",bn:"যানবাহন",fr:"Véhicule",ha:"Mota",sw:"Gari",uz:"Transport"},
+    driver:{ar:"السائق",en:"Driver",id:"Pengemudi",ur:"ڈرائیور",hi:"चालक",bn:"চালক",fr:"Chauffeur",ha:"Direba",sw:"Dereva",uz:"Haydovchi"},
     quantity:{ar:"الكمية",en:"Quantity",id:"Jumlah",ur:"مقدار",hi:"मात्रा",bn:"পরিমাণ",fr:"Quantité",ha:"Adadi",sw:"Kiasi",uz:"Miqdor"},
     status:{ar:"الحالة",en:"Status",id:"Status",ur:"حالت",hi:"स्थिति",bn:"অবস্থা",fr:"Statut",ha:"Matsayi",sw:"Hali",uz:"Holat"},
     arrival:{ar:"الوصول المخطط",en:"Planned arrival",id:"Tiba terencana",ur:"متوقع آمد",hi:"नियोजित आगमन",bn:"পরিকল্পিত আগমন",fr:"Arrivée prévue",ha:"Lokacin isowa",sw:"Muda wa kuwasili",uz:"Rejalashtirilgan yetib kelish"},
@@ -47,7 +52,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   };
   const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
   const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
-  const page = frappe.ui.make_app_page({parent: wrapper, title: tr("my_trips"), single_column: true});
+  const page = frappe.ui.make_app_page({parent: wrapper, title: tr(isManager ? "field_delivery" : "my_trips"), single_column: true});
   const $root = $(page.body).attr("dir", rtl ? "rtl" : "ltr");
   let trips = [];
   let selectedTrip = null;
@@ -98,7 +103,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   }
   function renderTrips() {
     if (!trips.length) {
-      $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr("no_trips"))}</div>`);
+      $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr(isManager ? "no_trips_manager" : "no_trips"))}</div>`);
       return;
     }
     $root.find("#wafd-driver-list").html(`<div class="wafd-trip-list">${trips.map((trip) => {
@@ -109,7 +114,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       if (["في الطريق / In Transit", "متأخرة / Delayed"].includes(trip.status)) actions += `<button type="button" class="secondary" data-action="arrive" data-trip="${esc(trip.name)}">${esc(tr("mark_arrived"))}</button>`;
       if (trip.status === "وصلت / Arrived" && !proof) actions += `<button type="button" data-action="proof" data-trip="${esc(trip.name)}">${esc(tr("proof"))}</button>`;
       if (proof) actions += `<div class="wafd-proof-done">${esc(tr("delivered"))}: ${esc(proof.receiver_name || "")}</div>`;
-      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(trip.status))}</span></div><div class="wafd-trip-grid"><div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div><div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div><div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div><div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number || "—")}</b></div></div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
+      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(trip.status))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div><div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div><div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div><div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number || "—")}</b></div></div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
     }).join("")}</div>`);
   }
   async function loadTrips() {
@@ -182,5 +187,12 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
   $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
   $root.on("click", "#wafd-proof-submit", submitProof);
+  wrapper.wafdRefreshTrips = loadTrips;
   loadTrips();
+};
+
+frappe.pages["wafd-driver-trips"].on_page_show = function (wrapper) {
+  // Frappe caches Page instances. Refresh every time the user returns so a
+  // trip created by the manager appears without requiring a manual reload.
+  if (typeof wrapper.wafdRefreshTrips === "function") wrapper.wafdRefreshTrips();
 };

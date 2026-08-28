@@ -370,3 +370,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc241.execute
 
 # RC242 record actual departure only when the assigned driver starts the trip
 wafd_one.wafd_one.patches.v10_0_0_rc242.execute
+
+# RC243 unified manager/driver field delivery, secure proof photo and live trip refresh
+wafd_one.wafd_one.patches.v10_0_0_rc243.execute

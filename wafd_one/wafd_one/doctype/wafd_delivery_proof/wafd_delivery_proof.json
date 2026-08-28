@@ -13,6 +13,7 @@
   "receiver_name",
   "receiver_mobile",
   "receiver_signature",
+  "delivery_photo_action",
   "delivery_photo",
   "delivery_photo_uploaded_by",
   "delivery_photo_uploaded_on",
@@ -76,9 +77,15 @@
    "label": "توقيع المستلم / Signature"
   },
   {
+   "fieldname": "delivery_photo_action",
+   "fieldtype": "HTML",
+   "label": "توثيق التسليم / Delivery Evidence"
+  },
+  {
    "fieldname": "delivery_photo",
    "fieldtype": "Attach Image",
-   "label": "صورة التسليم / Delivery Photo"
+   "label": "صورة التسليم / Delivery Photo",
+   "read_only": 1
   },
   {
    "fieldname": "delivery_photo_uploaded_by",

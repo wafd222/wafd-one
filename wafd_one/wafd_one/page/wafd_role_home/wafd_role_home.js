@@ -174,7 +174,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",
       items: [
-        { label: "رحلاتي", desc: "المركبة والوجهة وحالة الرحلة", icon: "➜", doctype: "WAFD Delivery Trip", primary: true }
+        { label: "رحلاتي", desc: "المركبة والوجهة وحالة الرحلة", icon: "➜", page: "wafd-driver-trips", primary: true }
       ]
     },
     {

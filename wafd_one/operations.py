@@ -111,6 +111,10 @@ def create_delivery_trip(loading_name):
         frappe.throw("يجب اعتماد التحميل قبل إنشاء رحلة التوصيل / Loading must be completed first")
     if not loading.vehicle or not loading.driver:
         frappe.throw("حدد المركبة والسائق / Select vehicle and driver")
+    if not loading.loading_photo:
+        frappe.throw("صورة التحميل مطلوبة قبل إنشاء الرحلة / Loading photo is required before creating the trip")
+    if not loading.supervisor:
+        frappe.throw("يجب تسجيل مشرف التحميل قبل إنشاء الرحلة / Loading supervisor must be recorded")
     plan = frappe.get_doc("WAFD Meal Plan", loading.meal_plan)
     return _get_or_create(
         "WAFD Delivery Trip",

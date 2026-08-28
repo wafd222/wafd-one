@@ -19,6 +19,7 @@ import frappe
 
 OFFICER_ROLE = "WAFD Undertaking Officer"
 PRIVILEGED_ROLES = {"System Manager", "WAFD Operations Manager"}
+DELIVERY_MANAGEMENT_ROLES = PRIVILEGED_ROLES | {"WAFD Delivery Supervisor", "WAFD Project Manager"}
 UNDERTAKING_DOCTYPE = "WAFD Hotel Undertaking"
 
 
@@ -97,6 +98,30 @@ def _is_management_approval_attachment(doc) -> bool:
     return False
 
 
+def _delivery_attachment_is_readable(doc, user: str) -> bool:
+    """Allow only the manager or assigned driver to read delivery evidence."""
+    attached_doctype = getattr(doc, "attached_to_doctype", None)
+    attached_name = getattr(doc, "attached_to_name", None)
+    if attached_doctype not in {"WAFD Loading Record", "WAFD Delivery Trip", "WAFD Delivery Proof"}:
+        return False
+    if not attached_name:
+        return False
+    if _roles(user) & DELIVERY_MANAGEMENT_ROLES:
+        return True
+
+    from wafd_one.driver_security import get_driver_for_user
+
+    driver = get_driver_for_user(user)
+    if not driver:
+        return False
+    if attached_doctype == "WAFD Delivery Trip":
+        return bool(frappe.db.exists("WAFD Delivery Trip", {"name": attached_name, "driver": driver}))
+    if attached_doctype == "WAFD Loading Record":
+        return bool(frappe.db.exists("WAFD Delivery Trip", {"loading_record": attached_name, "driver": driver}))
+    trip_name = frappe.db.get_value("WAFD Delivery Proof", attached_name, "delivery_trip")
+    return bool(trip_name and frappe.db.exists("WAFD Delivery Trip", {"name": trip_name, "driver": driver}))
+
+
 def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):
     """Allow a restricted officer to read only undertaking-required files."""
     user = user or frappe.session.user
@@ -105,6 +130,8 @@ def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwar
     # Never widen write/create/delete/share permissions on File.
     if permission_type not in {"read", "select"}:
         return None
+    if _delivery_attachment_is_readable(doc, user):
+        return True
     if not _is_restricted_officer(user):
         return None
 

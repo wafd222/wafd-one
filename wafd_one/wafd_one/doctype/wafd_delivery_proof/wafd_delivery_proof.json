@@ -14,10 +14,16 @@
   "receiver_mobile",
   "receiver_signature",
   "delivery_photo",
+  "delivery_photo_uploaded_by",
+  "delivery_photo_uploaded_on",
   "latitude",
   "longitude",
   "status",
   "notes",
+  "operational_note_code",
+  "notes_language",
+  "notes_original",
+  "notes_translation_ar",
   "project",
   "meal_plan",
   "hotel",
@@ -75,6 +81,19 @@
    "label": "صورة التسليم / Delivery Photo"
   },
   {
+   "fieldname": "delivery_photo_uploaded_by",
+   "fieldtype": "Link",
+   "label": "رفع صورة التسليم بواسطة / Delivery Photo By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_photo_uploaded_on",
+   "fieldtype": "Datetime",
+   "label": "وقت رفع صورة التسليم / Delivery Photo Time",
+   "read_only": 1
+  },
+  {
    "fieldname": "latitude",
    "fieldtype": "Float",
    "label": "خط العرض / Latitude"
@@ -96,6 +115,30 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "operational_note_code",
+   "fieldtype": "Data",
+   "label": "رمز الملاحظة التشغيلية / Operational Note Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_language",
+   "fieldtype": "Data",
+   "label": "لغة الملاحظة الأصلية / Original Note Language",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_original",
+   "fieldtype": "Small Text",
+   "label": "الملاحظة بالنص الأصلي / Original Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_translation_ar",
+   "fieldtype": "Small Text",
+   "label": "الملاحظة بالعربية / Arabic Note",
+   "read_only": 1
   },
   {
    "fieldname": "project",

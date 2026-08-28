@@ -8,6 +8,9 @@
   const HOME_ROUTE = "wafd-role-home";
   const EMPLOYEE_ROUTE = "wafd-employee-team";
   const EMPLOYEE_CLASS = "wafd-at-employee-team";
+  const DRIVER_ROUTE = "wafd-driver-trips";
+  const DRIVER_CLASS = "wafd-at-driver-trips";
+  const LOADING_CLASS = "wafd-at-loading-record";
 
   function isMobile() {
     return window.matchMedia("(max-width: 767px)").matches;
@@ -61,6 +64,18 @@
     if (routeName) return routeName === EMPLOYEE_ROUTE;
     const path = String(window.location.pathname || "").replace(/\/$/, "");
     return path === "/desk/wafd-employee-team" || path === "/app/wafd-employee-team";
+  }
+
+  function isDriverTrips() {
+    const routeName = currentRouteName();
+    if (routeName) return routeName === DRIVER_ROUTE;
+    const path = String(window.location.pathname || "").replace(/\/$/, "");
+    return path === "/desk/wafd-driver-trips" || path === "/app/wafd-driver-trips";
+  }
+
+  function isLoadingRecordForm() {
+    const route = currentRoute();
+    return route[0] === "Form" && route[1] === "WAFD Loading Record";
   }
 
 
@@ -161,12 +176,16 @@
     removeLegacy();
     const home = isHome();
     const employeeTeam = isEmployeeTeam();
+    const driverTrips = isDriverTrips();
+    const loadingRecord = isLoadingRecordForm();
     syncHomeState(home);
     document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
+    document.body.classList.toggle(DRIVER_CLASS, driverTrips);
+    document.body.classList.toggle(LOADING_CLASS, loadingRecord);
     syncPwaChrome(home);
 
     let btn = document.getElementById(ID);
-    if (!isMobile() || home || employeeTeam || hasOpenModal()) {
+    if (!isMobile() || home || employeeTeam || driverTrips || loadingRecord || hasOpenModal()) {
       if (btn) btn.remove();
       return;
     }

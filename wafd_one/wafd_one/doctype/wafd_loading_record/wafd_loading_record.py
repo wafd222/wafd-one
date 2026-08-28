@@ -60,13 +60,16 @@ class WAFDLoadingRecord(Document):
             if driver_status in ("إجازة / Leave", "غير نشط / Inactive"):
                 frappe.throw("السائق غير متاح / Driver is not available")
 
+        if self.status in ("تم التحميل / Loaded", "خرجت / Dispatched") and not self.loading_photo:
+            frappe.throw("صورة التحميل مطلوبة قبل اعتماد التحميل / Loading photo is required before approval")
+
         if self.status == "خرجت / Dispatched":
             if not self.vehicle or not self.driver:
                 frappe.throw("المركبة والسائق مطلوبان قبل الخروج / Vehicle and driver are required before dispatch")
             self.dispatch_time = self.dispatch_time or now_datetime()
-            if not self.loading_photo:
-                frappe.throw("صورة التحميل مطلوبة قبل الخروج / Loading photo is required before dispatch")
-        elif self.vehicle and self.driver:
+        elif self.status == "تم التحميل / Loaded" and (not self.vehicle or not self.driver):
+            frappe.throw("المركبة والسائق مطلوبان لاعتماد التحميل / Vehicle and driver are required for loading approval")
+        elif self.vehicle and self.driver and self.loading_photo:
             self.status = "تم التحميل / Loaded"
 
     def on_trash(self):

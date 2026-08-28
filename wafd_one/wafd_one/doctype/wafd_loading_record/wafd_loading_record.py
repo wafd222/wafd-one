@@ -67,10 +67,14 @@ class WAFDLoadingRecord(Document):
             if not self.vehicle or not self.driver:
                 frappe.throw("المركبة والسائق مطلوبان قبل الخروج / Vehicle and driver are required before dispatch")
             self.dispatch_time = self.dispatch_time or now_datetime()
-        elif self.status == "تم التحميل / Loaded" and (not self.vehicle or not self.driver):
-            frappe.throw("المركبة والسائق مطلوبان لاعتماد التحميل / Vehicle and driver are required for loading approval")
-        elif self.vehicle and self.driver and self.loading_photo:
-            self.status = "تم التحميل / Loaded"
+        else:
+            # Departure is recorded only when the assigned driver starts the
+            # trip. Clear any premature value left by RC239-RC241 retries.
+            self.dispatch_time = None
+            if self.status == "تم التحميل / Loaded" and (not self.vehicle or not self.driver):
+                frappe.throw("المركبة والسائق مطلوبان لاعتماد التحميل / Vehicle and driver are required for loading approval")
+            if self.vehicle and self.driver and self.loading_photo:
+                self.status = "تم التحميل / Loaded"
 
     def on_trash(self):
         if frappe.db.exists("WAFD Delivery Trip", {"loading_record": self.name, "status": ["!=", "ملغية / Cancelled"]}):

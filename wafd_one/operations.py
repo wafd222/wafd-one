@@ -128,7 +128,6 @@ def create_delivery_trip(loading_name):
             "driver": loading.driver,
             "hotel": loading.hotel or plan.hotel,
             "quantity": loading.quantity,
-            "actual_departure": loading.dispatch_time,
             "status": "تم التحميل / Loaded",
         },
     )

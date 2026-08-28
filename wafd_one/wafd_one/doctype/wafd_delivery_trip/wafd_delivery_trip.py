@@ -26,6 +26,12 @@ class WAFDDeliveryTrip(Document):
         self._validate_food_safety_release()
         self._fill_planned_times(loading)
 
+        # Loaded/planned trips have not departed yet. This also repairs any
+        # premature or future actual departure saved by older release retries.
+        if self.status in ("مخططة / Planned", "تم التحميل / Loaded"):
+            self.actual_departure = None
+            self.actual_arrival = None
+
         # Populate actual timestamps before validating and calculating metrics.
         # RC156 calculated transit duration too early, leaving a valid trip at 0.
         if self.status == "في الطريق / In Transit":

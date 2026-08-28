@@ -367,3 +367,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc240.execute
 
 # RC241 allow delayed loading while preserving the scheduled arrival target
 wafd_one.wafd_one.patches.v10_0_0_rc241.execute
+
+# RC242 record actual departure only when the assigned driver starts the trip
+wafd_one.wafd_one.patches.v10_0_0_rc242.execute

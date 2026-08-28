@@ -157,7 +157,9 @@ function addGuidedLoadingAction(frm) {
         frappe.msgprint(uiText("صوّر الحمولة أو ارفع صورتها قبل الاعتماد.", "Capture or upload the loading photo before approval."));
         return;
       }
-      if (frm.doc.status !== "خرجت / Dispatched") await frm.set_value("status", "خرجت / Dispatched");
+      // Manager approval creates a loaded trip only. Actual departure belongs
+      // to the driver's explicit Start Trip action, not to loading approval.
+      if (frm.doc.status !== "تم التحميل / Loaded") await frm.set_value("status", "تم التحميل / Loaded");
       if (frm.is_dirty()) await frm.save();
       const response = await frappe.call({
         method: "wafd_one.operations.create_delivery_trip",

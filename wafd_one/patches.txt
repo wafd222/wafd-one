@@ -373,3 +373,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc242.execute
 
 # RC243 unified manager/driver field delivery, secure proof photo and live trip refresh
 wafd_one.wafd_one.patches.v10_0_0_rc243.execute
+
+# RC244 safely links legacy duplicate driver records to the current mobile login
+wafd_one.wafd_one.patches.v10_0_0_rc244.execute

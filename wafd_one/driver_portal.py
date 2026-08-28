@@ -11,6 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
+from wafd_one.driver_security import get_drivers_for_user
 from wafd_one.employee_team import _normalize_mobile
 
 
@@ -48,12 +49,7 @@ def _driver_names(required=True):
     user = frappe.session.user
     if DRIVER_ROLE not in _roles(user):
         frappe.throw(_("هذه الصفحة مخصصة للسائقين."), frappe.PermissionError)
-    drivers = frappe.get_all(
-        "WAFD Driver",
-        filters={"system_user": user},
-        pluck="name",
-        order_by="creation asc",
-    )
+    drivers = get_drivers_for_user(user)
     if required and not drivers:
         frappe.throw(_("حساب السائق غير مرتبط بسجل سائق. راجع مدير النظام."))
     return list(dict.fromkeys(drivers))

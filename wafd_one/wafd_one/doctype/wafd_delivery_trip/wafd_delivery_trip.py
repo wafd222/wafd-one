@@ -2,6 +2,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, nowdate
 
+from wafd_one.driver_security import resolve_linked_driver
+
 ACTIVE = ("مخططة / Planned", "تم التحميل / Loaded", "في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed")
 
 
@@ -16,6 +18,19 @@ class WAFDDeliveryTrip(Document):
         self.project, self.meal_plan, self.vehicle, self.driver, self.hotel = loading.project, loading.meal_plan, loading.vehicle, loading.driver, loading.hotel
         self.quantity = cint(loading.quantity)
         self.trip_date = self.trip_date or nowdate()
+
+        canonical_driver, driver_user = resolve_linked_driver(self.driver)
+        if not canonical_driver or not driver_user:
+            frappe.throw(
+                "السائق المختار غير مرتبط بشكل فريد بحساب سائق مفعل. راجع إدارة الموظفين / "
+                "The selected driver is not uniquely linked to an enabled Driver user"
+            )
+        if canonical_driver != self.driver:
+            frappe.db.set_value(
+                "WAFD Loading Record", loading.name, "driver", canonical_driver, update_modified=False
+            )
+            self.driver = canonical_driver
+        self.assigned_driver_user = driver_user
 
         duplicate = frappe.db.exists("WAFD Delivery Trip", {"loading_record": self.loading_record, "name": ["!=", self.name or ""], "status": ["!=", "ملغية / Cancelled"]})
         if duplicate:

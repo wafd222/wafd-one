@@ -138,6 +138,7 @@ def create_delivery_trip(loading_name):
             "trip_date": plan.service_date,
             "vehicle": loading.vehicle,
             "driver": loading.driver,
+            "assigned_driver_user": driver_user,
             "hotel": loading.hotel or plan.hotel,
             "quantity": loading.quantity,
             "status": "تم التحميل / Loaded",

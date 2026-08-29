@@ -376,3 +376,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc243.execute
 
 # RC244 safely links legacy duplicate driver records to the current mobile login
 wafd_one.wafd_one.patches.v10_0_0_rc244.execute
+
+# RC245 explicit trip-to-user assignment and full employee role access audit
+wafd_one.wafd_one.patches.v10_0_0_rc245.execute

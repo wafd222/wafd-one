@@ -11,7 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from wafd_one.driver_security import get_drivers_for_user
+from wafd_one.driver_security import get_drivers_for_user, repair_trip_assignments, trip_is_assigned_to_user
 from wafd_one.employee_team import _normalize_mobile
 
 
@@ -63,8 +63,10 @@ def _driver_name(required=True):
 def _authorized_trip(trip_name, write=False):
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
     if not (_roles() & DELIVERY_OPERATOR_ROLES):
-        drivers = _driver_names()
-        if trip.driver not in drivers:
+        _driver_names()
+        if not trip_is_assigned_to_user(
+            trip.driver, getattr(trip, "assigned_driver_user", None), frappe.session.user
+        ):
             frappe.throw(_("الرحلة غير مسندة إلى حساب السائق الحالي."), frappe.PermissionError)
     trip.check_permission("write" if write else "read")
     return trip
@@ -168,15 +170,22 @@ def list_my_trips():
     is_manager = bool(_roles() & DELIVERY_OPERATOR_ROLES)
     drivers = [] if is_manager else _driver_names()
     filters = {"status": ["!=", "ملغية / Cancelled"]}
+    or_filters = None
     if not is_manager:
-        filters["driver"] = ["in", drivers]
+        repair_trip_assignments(frappe.session.user)
+        or_filters = {
+            "assigned_driver_user": frappe.session.user,
+            "driver": ["in", drivers],
+        }
     trips = frappe.get_all(
         "WAFD Delivery Trip",
         filters=filters,
+        or_filters=or_filters,
         fields=[
             "name", "trip_date", "vehicle", "hotel", "quantity", "planned_departure",
             "actual_departure", "planned_arrival", "actual_arrival", "status",
-            "delay_minutes", "delay_reason", "notes", "loading_record",
+            "delay_minutes", "delay_reason", "notes", "loading_record", "driver",
+            "assigned_driver_user",
         ],
         order_by="trip_date desc, creation desc",
         limit_page_length=100,

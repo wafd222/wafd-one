@@ -1,10 +1,10 @@
-"""Row-level access controls for WAFD drivers.
+"""Stable row-level access controls for WAFD delivery users.
 
-Drivers can only list/open trips and delivery proofs assigned to the WAFD Driver
-record linked to their current System User. Older, unlinked duplicate driver
-records are also recognised when they carry the same normalized mobile number.
-Management roles retain their normal role-based access.
+The durable assignment is ``WAFD Delivery Trip.assigned_driver_user``. Driver
+profile matching remains only as a migration and compatibility bridge for
+legacy trips created before that field existed.
 """
+
 import re
 
 import frappe
@@ -71,41 +71,81 @@ def _driver_rows():
     )
 
 
+def _enabled_driver_user(user):
+    return bool(
+        user
+        and frappe.db.get_value("User", user, "enabled")
+        and DRIVER_ROLE in _roles(user)
+    )
+
+
+def _unique(values):
+    values = list(dict.fromkeys(value for value in values if value))
+    return values[0] if len(values) == 1 else None
+
+
+def _user_for_driver(driver_name, rows):
+    selected = next((row for row in rows if row.name == driver_name), None)
+    if not selected:
+        return None
+    if selected.system_user and _enabled_driver_user(selected.system_user):
+        return selected.system_user
+
+    linked = [row for row in rows if row.system_user and _enabled_driver_user(row.system_user)]
+    selected_identity = (_base_driver_name(selected), _mobile_key(selected.mobile))
+    if all(selected_identity):
+        strict = _unique(
+            row.system_user
+            for row in linked
+            if (_base_driver_name(row), _mobile_key(row.mobile)) == selected_identity
+        )
+        if strict:
+            return strict
+
+    # Older manually-created profiles can carry a stale mobile. An exact and
+    # unique driver name remains deterministic and does not widen access.
+    selected_name = _base_driver_name(selected)
+    by_linked_name = _unique(
+        row.system_user for row in linked if selected_name and _base_driver_name(row) == selected_name
+    )
+    if by_linked_name:
+        return by_linked_name
+
+    # Final compatibility bridge for a driver that predates linked profiles.
+    # It is accepted only when one enabled Driver user has the exact full name.
+    matching_users = []
+    for user_row in frappe.get_all(
+        "User",
+        filters={"enabled": 1, "user_type": "System User"},
+        fields=["name", "full_name"],
+    ):
+        if selected_name and _name_key(user_row.full_name) == selected_name and _enabled_driver_user(user_row.name):
+            matching_users.append(user_row.name)
+    return _unique(matching_users)
+
+
+def get_user_for_driver(driver_name):
+    """Resolve one driver profile to exactly one enabled Driver user."""
+    if not driver_name:
+        return None
+    return _user_for_driver(driver_name, _driver_rows())
+
+
 def get_drivers_for_user(user=None):
-    """Return canonical and safe legacy driver records for one login.
-
-    A legacy alias must be unlinked and share the exact normalized mobile number
-    with a record explicitly linked to the current user. A record linked to any
-    other user is never included, even if its name or mobile matches.
-    """
+    """Return every canonical/legacy driver profile owned by one login."""
     user = _user(user)
-    if not user or user in ("Guest", "Administrator"):
+    if not user or user in ("Guest", "Administrator") or not _enabled_driver_user(user):
         return []
-
     rows = _driver_rows()
-    linked = [row for row in rows if row.system_user == user]
-    if not linked:
-        return []
-
-    identities = {
-        (_base_driver_name(row), _mobile_key(row.mobile))
-        for row in linked
-        if _base_driver_name(row) and _mobile_key(row.mobile)
-    }
-    identities_claimed_by_others = {
-        (_base_driver_name(row), _mobile_key(row.mobile))
-        for row in rows
-        if row.system_user
-        and row.system_user != user
-        and _base_driver_name(row)
-        and _mobile_key(row.mobile)
-    }
-    identities -= identities_claimed_by_others
-    drivers = [row.name for row in linked]
+    drivers = [row.name for row in rows if row.system_user == user]
     for row in rows:
-        if row.system_user or row.name in drivers:
+        if row.name in drivers:
             continue
-        if (_base_driver_name(row), _mobile_key(row.mobile)) in identities:
+        # Never reassign a profile owned by another enabled Driver account.
+        # A profile linked only to a disabled/obsolete account can be migrated.
+        if row.system_user and _enabled_driver_user(row.system_user):
+            continue
+        if _user_for_driver(row.name, rows) == user:
             drivers.append(row.name)
     return list(dict.fromkeys(drivers))
 
@@ -116,26 +156,47 @@ def get_driver_for_user(user=None):
 
 
 def resolve_linked_driver(driver_name):
-    """Resolve an unlinked legacy driver to its unique enabled login record."""
+    """Return the canonical driver profile and its enabled login."""
     if not driver_name:
         return None, None
     rows = _driver_rows()
     selected = next((row for row in rows if row.name == driver_name), None)
     if not selected:
         return None, None
-    if selected.system_user:
-        return selected.name, selected.system_user
-
-    identity = (_base_driver_name(selected), _mobile_key(selected.mobile))
-    if not all(identity):
+    user = _user_for_driver(driver_name, rows)
+    if not user:
         return None, None
-    candidates = []
-    for row in rows:
-        if not row.system_user or (_base_driver_name(row), _mobile_key(row.mobile)) != identity:
+    if selected.system_user == user:
+        return selected.name, user
+    canonical = next((row.name for row in rows if row.system_user == user), None)
+    return (canonical, user) if canonical else (None, None)
+
+
+def repair_trip_assignments(user=None):
+    """Backfill the explicit login assignment on legacy delivery trips."""
+    if not frappe.db.has_column("WAFD Delivery Trip", "assigned_driver_user"):
+        return 0
+    repaired = 0
+    for trip in frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={"assigned_driver_user": ["is", "not set"]},
+        fields=["name", "driver"],
+    ):
+        driver_user = get_user_for_driver(trip.driver)
+        if not driver_user or (user and driver_user != user):
             continue
-        if frappe.db.get_value("User", row.system_user, "enabled"):
-            candidates.append((row.name, row.system_user))
-    return candidates[0] if len(candidates) == 1 else (None, None)
+        frappe.db.set_value(
+            "WAFD Delivery Trip", trip.name, "assigned_driver_user", driver_user, update_modified=False
+        )
+        repaired += 1
+    return repaired
+
+
+def trip_is_assigned_to_user(driver, assigned_driver_user, user=None):
+    user = _user(user)
+    if assigned_driver_user == user:
+        return True
+    return bool(driver and driver in get_drivers_for_user(user))
 
 
 def _sql_in(values):
@@ -147,9 +208,10 @@ def delivery_trip_query(user=None):
     if not _is_scoped_driver(user):
         return ""
     drivers = get_drivers_for_user(user)
-    if not drivers:
-        return "1=0"
-    return f"`tabWAFD Delivery Trip`.`driver` in ({_sql_in(drivers)})"
+    clauses = [f"`tabWAFD Delivery Trip`.`assigned_driver_user` = {frappe.db.escape(user)}"]
+    if drivers:
+        clauses.append(f"`tabWAFD Delivery Trip`.`driver` in ({_sql_in(drivers)})")
+    return "(" + " or ".join(clauses) + ")"
 
 
 def delivery_trip_has_permission(doc, user=None, ptype=None, permission_type=None, **kwargs):
@@ -158,7 +220,7 @@ def delivery_trip_has_permission(doc, user=None, ptype=None, permission_type=Non
         return True
     if (ptype or permission_type) == "create":
         return False
-    return bool(doc.driver and doc.driver in get_drivers_for_user(user))
+    return trip_is_assigned_to_user(doc.driver, getattr(doc, "assigned_driver_user", None), user)
 
 
 def delivery_proof_query(user=None):
@@ -166,12 +228,14 @@ def delivery_proof_query(user=None):
     if not _is_scoped_driver(user):
         return ""
     drivers = get_drivers_for_user(user)
-    if not drivers:
-        return "1=0"
+    clauses = [f"dt.assigned_driver_user = {frappe.db.escape(user)}"]
+    if drivers:
+        clauses.append(f"dt.driver in ({_sql_in(drivers)})")
     return (
         "exists (select 1 from `tabWAFD Delivery Trip` dt "
-        "where dt.name = `tabWAFD Delivery Proof`.`delivery_trip` "
-        f"and dt.driver in ({_sql_in(drivers)}))"
+        "where dt.name = `tabWAFD Delivery Proof`.`delivery_trip` and ("
+        + " or ".join(clauses)
+        + "))"
     )
 
 
@@ -179,5 +243,9 @@ def delivery_proof_has_permission(doc, user=None, ptype=None, permission_type=No
     user = _user(user)
     if not _is_scoped_driver(user):
         return True
-    trip_driver = frappe.db.get_value("WAFD Delivery Trip", doc.delivery_trip, "driver") if doc.delivery_trip else None
-    return bool(trip_driver and trip_driver in get_drivers_for_user(user))
+    if not doc.delivery_trip:
+        return False
+    trip = frappe.db.get_value(
+        "WAFD Delivery Trip", doc.delivery_trip, ["driver", "assigned_driver_user"], as_dict=True
+    )
+    return bool(trip and trip_is_assigned_to_user(trip.driver, trip.assigned_driver_user, user))

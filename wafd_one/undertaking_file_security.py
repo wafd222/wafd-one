@@ -109,17 +109,24 @@ def _delivery_attachment_is_readable(doc, user: str) -> bool:
     if _roles(user) & DELIVERY_MANAGEMENT_ROLES:
         return True
 
-    from wafd_one.driver_security import get_drivers_for_user
+    from wafd_one.driver_security import trip_is_assigned_to_user
 
-    drivers = get_drivers_for_user(user)
-    if not drivers:
-        return False
     if attached_doctype == "WAFD Delivery Trip":
-        return bool(frappe.db.exists("WAFD Delivery Trip", {"name": attached_name, "driver": ["in", drivers]}))
-    if attached_doctype == "WAFD Loading Record":
-        return bool(frappe.db.exists("WAFD Delivery Trip", {"loading_record": attached_name, "driver": ["in", drivers]}))
-    trip_name = frappe.db.get_value("WAFD Delivery Proof", attached_name, "delivery_trip")
-    return bool(trip_name and frappe.db.exists("WAFD Delivery Trip", {"name": trip_name, "driver": ["in", drivers]}))
+        trip_name = attached_name
+    elif attached_doctype == "WAFD Loading Record":
+        trip_name = frappe.db.get_value(
+            "WAFD Delivery Trip", {"loading_record": attached_name}, "name"
+        )
+    else:
+        trip_name = frappe.db.get_value("WAFD Delivery Proof", attached_name, "delivery_trip")
+    if not trip_name:
+        return False
+    trip = frappe.db.get_value(
+        "WAFD Delivery Trip", trip_name, ["driver", "assigned_driver_user"], as_dict=True
+    )
+    return bool(
+        trip and trip_is_assigned_to_user(trip.driver, trip.assigned_driver_user, user)
+    )
 
 
 def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):

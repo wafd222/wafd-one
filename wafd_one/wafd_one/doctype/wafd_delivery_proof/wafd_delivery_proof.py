@@ -43,7 +43,16 @@ class WAFDDeliveryProof(Document):
             frappe.throw("خط الطول غير صحيح / Invalid longitude")
 
     def on_update(self):
-        frappe.db.set_value("WAFD Delivery Trip", self.delivery_trip, {"status": "تم التسليم / Delivered", "actual_arrival": self.delivery_time}, update_modified=False)
+        # The proof is the authoritative delivery event.  Update the trip's
+        # modified timestamp and publish Frappe's realtime document event so an
+        # already-open manager form reloads the Delivered state immediately.
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            self.delivery_trip,
+            {"status": "تم التسليم / Delivered", "actual_arrival": self.delivery_time},
+            update_modified=True,
+        )
+        frappe.get_doc("WAFD Delivery Trip", self.delivery_trip).notify_update()
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip, ["vehicle", "driver"], as_dict=True)
         if trip:
             from wafd_one.wafd_one.doctype.wafd_delivery_trip.wafd_delivery_trip import _sync_resource_statuses
@@ -52,7 +61,14 @@ class WAFDDeliveryProof(Document):
 
     def on_trash(self):
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip, ["vehicle", "driver"], as_dict=True)
-        frappe.db.set_value("WAFD Delivery Trip", self.delivery_trip, "status", "وصلت / Arrived", update_modified=False)
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            self.delivery_trip,
+            "status",
+            "وصلت / Arrived",
+            update_modified=True,
+        )
+        frappe.get_doc("WAFD Delivery Trip", self.delivery_trip).notify_update()
         self._sync_meal_plan(exclude_name=self.name)
         if trip:
             from wafd_one.wafd_one.doctype.wafd_delivery_trip.wafd_delivery_trip import _sync_resource_statuses

@@ -152,12 +152,16 @@ def create_delivery_proof(trip_name):
     """
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
     trip.check_permission("write")
-    if trip.status not in ("في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"):
-        frappe.throw("يجب بدء الرحلة أو تسجيل الوصول أولاً / Start the trip or mark arrival first")
 
+    # Check idempotency before the state gate.  A saved proof has already
+    # advanced the trip to Delivered, and managers must still be able to open
+    # that proof from the trip instead of receiving a stale-state error.
     existing = frappe.db.get_value("WAFD Delivery Proof", {"delivery_trip": trip.name}, "name")
     if existing:
         return {"name": existing, "created": False}
+
+    if trip.status not in ("في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"):
+        frappe.throw("يجب بدء الرحلة أو تسجيل الوصول أولاً / Start the trip or mark arrival first")
 
     return {
         "created": True,
@@ -191,6 +195,7 @@ def set_trip_status(trip_name, status):
         trip.actual_arrival = now_datetime()
     trip.status = status
     trip.save()
+    trip.notify_update()
     return {"name": trip.name, "status": trip.status}
 
 

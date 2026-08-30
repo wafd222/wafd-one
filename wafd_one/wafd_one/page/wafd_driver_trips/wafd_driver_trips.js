@@ -8,15 +8,19 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     return;
   }
 
-  const lang = localStorage.getItem("wafd_lang") || "ar";
-  const rtl = ["ar", "ur"].includes(lang);
+  const supportedLanguages = new Set(["ar", "en", "id", "ur", "hi", "bn", "fr", "ha", "sw", "uz"]);
+  const activeLanguage = () => {
+    const selected = localStorage.getItem("wafd_lang") || "ar";
+    return supportedLanguages.has(selected) ? selected : "ar";
+  };
+  let lang = activeLanguage();
   const T = {
     my_trips:{ar:"رحلاتي",en:"My Trips",id:"Perjalanan Saya",ur:"میری ٹرپس",hi:"मेरी यात्राएँ",bn:"আমার ট্রিপ",fr:"Mes trajets",ha:"Tafiyoyina",sw:"Safari Zangu",uz:"Safarlarim"},
     field_delivery:{ar:"التسليم الميداني",en:"Field Delivery",id:"Pengiriman Lapangan",ur:"فیلڈ ڈیلیوری",hi:"मैदानी डिलीवरी",bn:"মাঠ ডেলিভারি",fr:"Livraison terrain",ha:"Isarwa a fili",sw:"Uwasilishaji wa eneo",uz:"Joydagi yetkazish"},
     back:{ar:"رجوع",en:"Back",id:"Kembali",ur:"واپس",hi:"वापस",bn:"ফিরুন",fr:"Retour",ha:"Baya",sw:"Rudi",uz:"Orqaga"},
     refresh:{ar:"تحديث",en:"Refresh",id:"Muat ulang",ur:"تازہ کریں",hi:"रीफ़्रेश",bn:"রিফ্রেশ",fr:"Actualiser",ha:"Sabunta",sw:"Onyesha upya",uz:"Yangilash"},
     no_trips:{ar:"لا توجد رحلات مسندة إليك حاليًا.",en:"No trips are currently assigned to you.",id:"Saat ini tidak ada perjalanan yang ditugaskan.",ur:"اس وقت آپ کو کوئی ٹرپ تفویض نہیں کیا گیا۔",hi:"अभी आपको कोई यात्रा नहीं सौंपी गई है।",bn:"বর্তমানে আপনাকে কোনো ট্রিপ দেওয়া হয়নি।",fr:"Aucun trajet ne vous est attribué actuellement.",ha:"Babu tafiya da aka ba ka yanzu.",sw:"Hakuna safari uliyopewa kwa sasa.",uz:"Hozir sizga safar biriktirilmagan."},
-    no_trips_manager:{ar:"لا توجد رحلات توصيل حالية.",en:"There are no current delivery trips."},
+    no_trips_manager:{ar:"لا توجد رحلات توصيل حالية.",en:"There are no current delivery trips.",id:"Tidak ada perjalanan pengiriman saat ini.",ur:"اس وقت کوئی ڈیلیوری ٹرپ نہیں ہے۔",hi:"अभी कोई डिलीवरी यात्रा नहीं है।",bn:"বর্তমানে কোনো ডেলিভারি ট্রিপ নেই।",fr:"Aucun trajet de livraison en cours.",ha:"Babu tafiyar isarwa a yanzu.",sw:"Hakuna safari ya uwasilishaji kwa sasa.",uz:"Hozir yetkazib berish safari yo‘q."},
     no_approved_loading:{ar:"لا يوجد تحميل معتمد ومسند إلى حسابك. على المدير اعتماد التحميل واختيارك كسائق.",en:"No approved loading is assigned to your account. The manager must approve loading and select you as driver.",id:"Tidak ada pemuatan yang disetujui untuk akun Anda. Manajer harus menyetujui pemuatan dan memilih Anda sebagai pengemudi.",ur:"آپ کے اکاؤنٹ کو کوئی منظور شدہ لوڈنگ تفویض نہیں۔ مینیجر لوڈنگ منظور کرکے آپ کو ڈرائیور منتخب کرے۔",hi:"आपके खाते को कोई स्वीकृत लोडिंग नहीं सौंपी गई है। प्रबंधक लोडिंग स्वीकृत करके आपको चालक चुने।",bn:"আপনার অ্যাকাউন্টে অনুমোদিত কোনো লোডিং নেই। ম্যানেজারকে লোডিং অনুমোদন করে আপনাকে চালক নির্বাচন করতে হবে।",fr:"Aucun chargement approuvé n’est attribué à votre compte. Le responsable doit approuver le chargement et vous choisir comme chauffeur.",ha:"Babu lodin da aka amince da shi da aka ba asusunka. Manaja ya amince da lodi kuma ya zaɓe ka a matsayin direba.",sw:"Hakuna upakiaji ulioidhinishwa kwa akaunti yako. Meneja lazima aidhinishe upakiaji na akuchague kama dereva.",uz:"Hisobingizga tasdiqlangan yuklash biriktirilmagan. Menejer yuklashni tasdiqlab, sizni haydovchi sifatida tanlashi kerak."},
     trip_creation_blocked:{ar:"يوجد تحميل معتمد، لكن تعذر إنشاء رحلة التوصيل. ظهرت المشكلة الفعلية أدناه ليتحقق منها المدير.",en:"An approved loading exists, but its delivery trip could not be created. The actual validation issue is shown below for the manager.",id:"Pemuatan telah disetujui, tetapi perjalanan pengiriman tidak dapat dibuat. Masalah validasi ditampilkan di bawah.",ur:"منظور شدہ لوڈنگ موجود ہے، مگر ڈیلیوری ٹرپ نہیں بن سکا۔ اصل توثیقی مسئلہ نیچے ہے۔",hi:"स्वीकृत लोडिंग मौजूद है, लेकिन डिलीवरी यात्रा नहीं बन सकी। वास्तविक सत्यापन समस्या नीचे है।",bn:"অনুমোদিত লোডিং আছে, কিন্তু ডেলিভারি ট্রিপ তৈরি হয়নি। প্রকৃত যাচাই সমস্যা নিচে দেখানো হয়েছে।",fr:"Un chargement approuvé existe, mais le trajet n’a pas pu être créé. Le problème de validation est indiqué ci-dessous.",ha:"Akwai lodin da aka amince da shi, amma ba a iya ƙirƙirar tafiyar isarwa ba. An nuna matsalar a ƙasa.",sw:"Upakiaji ulioidhinishwa upo, lakini safari ya uwasilishaji haikuweza kuundwa. Tatizo halisi limeonyeshwa hapa chini.",uz:"Tasdiqlangan yuklash bor, ammo yetkazish safari yaratilmadi. Tekshiruv muammosi quyida ko‘rsatilgan."},
     assignment_incomplete:{ar:"تم العثور على تحميل معتمد، لكن ربط الرحلة بحساب السائق غير مكتمل. راجع ربط السائق في إدارة الموظفين.",en:"An approved loading was found, but the driver-account assignment is incomplete. Review the driver link in Employee Management.",id:"Pemuatan disetujui ditemukan, tetapi tautan akun pengemudi belum lengkap. Periksa di Manajemen Karyawan.",ur:"منظور شدہ لوڈنگ ملی، مگر ڈرائیور اکاؤنٹ ربط مکمل نہیں۔ ملازمین کے انتظام میں ربط دیکھیں۔",hi:"स्वीकृत लोडिंग मिली, लेकिन चालक-खाता लिंक अधूरा है। कर्मचारी प्रबंधन में लिंक जाँचें।",bn:"অনুমোদিত লোডিং পাওয়া গেছে, কিন্তু চালক-অ্যাকাউন্ট সংযোগ অসম্পূর্ণ। কর্মচারী ব্যবস্থাপনায় পরীক্ষা করুন।",fr:"Un chargement approuvé a été trouvé, mais le lien du compte chauffeur est incomplet. Vérifiez la gestion des employés.",ha:"An sami lodin da aka amince da shi, amma haɗin asusun direba bai cika ba. Duba Gudanar da Ma’aikata.",sw:"Upakiaji ulioidhinishwa umepatikana, lakini kiungo cha akaunti ya dereva hakijakamilika. Kagua Usimamizi wa Wafanyakazi.",uz:"Tasdiqlangan yuklash topildi, ammo haydovchi hisobi bog‘lanishi to‘liq emas. Xodimlar boshqaruvida tekshiring."},
@@ -56,13 +60,14 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
   const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
   const page = frappe.ui.make_app_page({parent: wrapper, title: tr(isManager ? "field_delivery" : "my_trips"), single_column: true});
-  const $root = $(page.body).attr("dir", rtl ? "rtl" : "ltr");
+  const $root = $(page.body);
   let trips = [];
   let emptyReason = null;
   let emptyDetail = "";
   let selectedTrip = null;
   let deliveryImageData = "";
   let signatureTouched = false;
+  const subscribedTrips = new Set();
 
   const statusKey = {
     "مخططة / Planned":"planned", "تم التحميل / Loaded":"loaded", "في الطريق / In Transit":"in_transit",
@@ -84,17 +89,22 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     receiver_refused:{ar:"رفض المستلم استلام الشحنة",en:"Receiver refused delivery",id:"Penerima menolak kiriman",ur:"وصول کنندہ نے ڈیلیوری مسترد کی",hi:"प्राप्तकर्ता ने डिलीवरी अस्वीकार की",bn:"গ্রহীতা ডেলিভারি প্রত্যাখ্যান করেছেন",fr:"Le destinataire a refusé",ha:"Mai karɓa ya ƙi karɓa",sw:"Mpokeaji amekataa kupokea",uz:"Qabul qiluvchi yetkazmani rad etdi"},
   };
 
-  $root.html(`
-    <style>
+  function renderShell() {
+    page.set_title(tr(isManager ? "field_delivery" : "my_trips"));
+    $root.attr("dir", ["ar", "ur"].includes(lang) ? "rtl" : "ltr").html(`
+      <style>
       .wafd-driver-shell{max-width:760px;margin:12px auto 44px;padding:0 12px;color:#1c1d21}.wafd-driver-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.wafd-driver-nav button{height:42px;border:1px solid #ded6c7;border-radius:12px;background:#f7f4ec;padding:0 14px;font-weight:750;color:#5f4819}.wafd-trip-list{display:grid;gap:13px}.wafd-trip-card{border:1px solid #e5dfd2;border-radius:20px;background:#fff;padding:17px;box-shadow:0 8px 24px rgba(20,21,25,.05)}.wafd-trip-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.wafd-trip-head h3{font-size:19px;margin:0;font-weight:850}.wafd-trip-status{border-radius:999px;background:#f1ead9;color:#765a20;padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap}.wafd-trip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.wafd-trip-info{background:#f8f7f3;border-radius:12px;padding:10px}.wafd-trip-info small,.wafd-trip-info b{display:block}.wafd-trip-info small{color:#7a7d82;font-size:11px}.wafd-trip-info b{margin-top:3px}.wafd-loading-evidence{display:flex;gap:10px;align-items:center;margin-top:10px}.wafd-loading-evidence img{width:86px;height:70px;border-radius:11px;object-fit:cover;border:1px solid #e0d9ca}.wafd-trip-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.wafd-trip-actions button,.wafd-proof-submit{border:0;border-radius:12px;background:#1d1e22;color:#fff;padding:11px 15px;font-weight:800}.wafd-trip-actions .secondary{background:#c9972d}.wafd-trip-actions a{border:1px solid #ded6c7;border-radius:12px;padding:10px 14px;color:#6f531a;text-decoration:none;font-weight:750}.wafd-driver-empty{text-align:center;padding:70px 18px;color:#74777d;background:#fff;border:1px solid #e8e2d7;border-radius:20px}.wafd-driver-modal{position:fixed;inset:0;z-index:1200;background:rgba(12,13,16,.56);display:flex;align-items:flex-end;justify-content:center}.wafd-driver-modal[hidden]{display:none}.wafd-proof-panel{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -18px 48px rgba(0,0,0,.18)}.wafd-proof-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.wafd-proof-head h2{font-size:21px;margin:0}.wafd-proof-head button{border:0;border-radius:10px;background:#f2efe8;padding:8px 12px}.wafd-proof-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wafd-proof-field.full{grid-column:1/-1}.wafd-proof-field label{display:block;font-weight:750;margin-bottom:6px}.wafd-proof-field input,.wafd-proof-field select,.wafd-proof-field textarea{width:100%;border:1px solid #ddd6c8;border-radius:12px;background:#faf9f6;padding:10px;min-height:44px}.wafd-proof-field textarea{min-height:86px}.wafd-photo-preview{display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:#f5f4f1;margin-top:9px}.wafd-signature{width:100%;height:160px;border:1px solid #d8d0c1;border-radius:12px;background:#fff;touch-action:none}.wafd-clear-signature{margin-top:7px;border:1px solid #ddd6c8;border-radius:9px;background:#fff;padding:8px 11px}.wafd-proof-submit{width:100%;margin-top:16px}.wafd-proof-done{margin-top:12px;padding:11px;border-radius:12px;background:#e8f4ea;color:#2d6938;font-weight:750}
       @media(max-width:600px){.wafd-trip-grid,.wafd-proof-form{grid-template-columns:1fr}.wafd-proof-field.full{grid-column:auto}.wafd-driver-shell{padding:0 9px}}
-    </style>
-    <div class="wafd-driver-shell">
-      <div class="wafd-driver-nav"><button type="button" id="wafd-driver-back">${esc(tr("back"))}</button><button type="button" id="wafd-driver-refresh">${esc(tr("refresh"))}</button></div>
-      <div id="wafd-driver-list"><div class="wafd-driver-empty">${esc(tr("refresh"))}...</div></div>
-    </div>
-    <div class="wafd-driver-modal" id="wafd-proof-modal" hidden><div class="wafd-proof-panel"><div class="wafd-proof-head"><h2>${esc(tr("proof"))}</h2><button type="button" id="wafd-proof-close">${esc(tr("close"))}</button></div><div id="wafd-proof-content"></div></div></div>
-  `);
+      </style>
+      <div class="wafd-driver-shell">
+        <div class="wafd-driver-nav"><button type="button" id="wafd-driver-back">${esc(tr("back"))}</button><button type="button" id="wafd-driver-refresh">${esc(tr("refresh"))}</button></div>
+        <div id="wafd-driver-list"><div class="wafd-driver-empty">${esc(tr("refresh"))}...</div></div>
+      </div>
+      <div class="wafd-driver-modal" id="wafd-proof-modal" hidden><div class="wafd-proof-panel"><div class="wafd-proof-head"><h2>${esc(tr("proof"))}</h2><button type="button" id="wafd-proof-close">${esc(tr("close"))}</button></div><div id="wafd-proof-content"></div></div></div>
+    `);
+  }
+
+  renderShell();
 
   function fmtDate(value) {
     return value ? frappe.datetime.str_to_user(value) : "—";
@@ -119,12 +129,13 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     $root.find("#wafd-driver-list").html(`<div class="wafd-trip-list">${trips.map((trip) => {
       const loading = trip.loading || {};
       const proof = trip.proof || null;
+      const displayStatus = proof ? "تم التسليم / Delivered" : trip.status;
       let actions = "";
       if (["مخططة / Planned", "تم التحميل / Loaded"].includes(trip.status)) actions += `<button type="button" data-action="start" data-trip="${esc(trip.name)}">${esc(tr("start"))}</button>`;
       if (["في الطريق / In Transit", "متأخرة / Delayed"].includes(trip.status)) actions += `<button type="button" class="secondary" data-action="arrive" data-trip="${esc(trip.name)}">${esc(tr("mark_arrived"))}</button>`;
       if (trip.status === "وصلت / Arrived" && !proof) actions += `<button type="button" data-action="proof" data-trip="${esc(trip.name)}">${esc(tr("proof"))}</button>`;
       if (proof) actions += `<div class="wafd-proof-done">${esc(tr("delivered"))}: ${esc(proof.receiver_name || "")}</div>`;
-      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(trip.status))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div><div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div><div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div><div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number || "—")}</b></div></div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
+      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(displayStatus))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div><div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div><div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div><div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number || "—")}</b></div></div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
     }).join("")}</div>`);
   }
   async function loadTrips() {
@@ -132,6 +143,13 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     trips = response.message?.trips || [];
     emptyReason = response.message?.empty_reason || null;
     emptyDetail = response.message?.reconciliation?.blocked?.[0]?.message || "";
+    if (isManager && typeof frappe.realtime?.doc_subscribe === "function") {
+      trips.forEach((trip) => {
+        if (subscribedTrips.has(trip.name)) return;
+        frappe.realtime.doc_subscribe("WAFD Delivery Trip", trip.name);
+        subscribedTrips.add(trip.name);
+      });
+    }
     renderTrips();
   }
   async function runStatus(tripName, action) {
@@ -199,12 +217,28 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
   $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
   $root.on("click", "#wafd-proof-submit", submitProof);
+  if (isManager && typeof frappe.realtime?.on === "function") {
+    frappe.realtime.on("doc_update", (event) => {
+      if (event?.doctype === "WAFD Delivery Trip" && subscribedTrips.has(event.name)) loadTrips();
+    });
+  }
   wrapper.wafdRefreshTrips = loadTrips;
+  wrapper.wafdApplyTripLanguage = function () {
+    const selected = activeLanguage();
+    if (selected === lang) return;
+    lang = selected;
+    selectedTrip = null;
+    deliveryImageData = "";
+    signatureTouched = false;
+    renderShell();
+    renderTrips();
+  };
   loadTrips();
 };
 
 frappe.pages["wafd-driver-trips"].on_page_show = function (wrapper) {
-  // Frappe caches Page instances. Refresh every time the user returns so a
-  // trip created by the manager appears without requiring a manual reload.
+  // Frappe caches Page instances. Re-read the language chosen on Role Home,
+  // then refresh the data every time the user returns to this page.
+  if (typeof wrapper.wafdApplyTripLanguage === "function") wrapper.wafdApplyTripLanguage();
   if (typeof wrapper.wafdRefreshTrips === "function") wrapper.wafdRefreshTrips();
 };

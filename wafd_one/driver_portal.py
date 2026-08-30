@@ -292,6 +292,7 @@ def set_my_trip_status(trip_name, action):
         trip.actual_arrival = trip.actual_arrival or now_datetime()
     trip.status = target
     trip.save()
+    trip.notify_update()
     return {"name": trip.name, "status": trip.status}
 
 
@@ -414,4 +415,9 @@ def submit_delivery_proof(
         }
     )
     proof.insert(ignore_permissions=True)
-    return {"name": proof.name, "created": True, "status": proof.status}
+    return {
+        "name": proof.name,
+        "created": True,
+        "status": proof.status,
+        "trip_status": "تم التسليم / Delivered",
+    }

@@ -385,3 +385,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc246.execute
 
 # RC247 reconcile approved loadings whose delivery-trip hand-off previously failed
 wafd_one.wafd_one.patches.v10_0_0_rc247.execute
+
+# RC248 reconcile proof-backed delivery status and live multilingual driver trips
+wafd_one.wafd_one.patches.v10_0_0_rc248.execute

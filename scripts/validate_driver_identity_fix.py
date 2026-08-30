@@ -61,6 +61,12 @@ TRIPS = {
     "TRIP-2": Row(
         name="TRIP-2", driver="سالم", assigned_driver_user=CURRENT_USER
     ),
+    "TRIP-3": Row(
+        name="TRIP-3", driver="عمر", assigned_driver_user=DISABLED_USER
+    ),
+    "TRIP-4": Row(
+        name="TRIP-4", driver="عمر آخر", assigned_driver_user=OTHER_USER
+    ),
 }
 
 
@@ -100,7 +106,7 @@ def get_all(doctype, filters=None, fields=None, order_by=None, **kwargs):
     if doctype == "User":
         return USERS
     if doctype == "WAFD Delivery Trip":
-        return [row for row in TRIPS.values() if not row.assigned_driver_user]
+        return list(TRIPS.values())
     return []
 
 
@@ -125,8 +131,14 @@ assert "عمر آخر" not in drivers
 resolved = module.resolve_linked_driver("عمر")
 assert resolved == ("عمر - wafd.almadinah7", CURRENT_USER), resolved
 
-assert module.repair_trip_assignments(CURRENT_USER) == 1
+assert module.get_user_for_driver(CURRENT_USER) == CURRENT_USER
+assert module.repair_trip_assignments(CURRENT_USER) == 2
 assert TRIPS["TRIP-1"].assigned_driver_user == CURRENT_USER
+assert TRIPS["TRIP-3"].assigned_driver_user == CURRENT_USER
+assert TRIPS["TRIP-4"].assigned_driver_user == OTHER_USER
+
+visible = module.trips_for_user(list(TRIPS.values()), CURRENT_USER)
+assert [row.name for row in visible] == ["TRIP-1", "TRIP-2", "TRIP-3"], visible
 
 trip_sql = module.delivery_trip_query(CURRENT_USER)
 assert "assigned_driver_user" in trip_sql and CURRENT_USER in trip_sql
@@ -135,4 +147,4 @@ assert module.delivery_trip_has_permission(TRIPS["TRIP-2"], CURRENT_USER)
 assert not module.delivery_trip_has_permission(Row(driver="سالم", assigned_driver_user=None), CURRENT_USER)
 assert module.delivery_proof_has_permission(Row(delivery_trip="TRIP-1"), CURRENT_USER)
 
-print("RC245 explicit driver assignment validation passed")
+print("RC246 deterministic driver assignment validation passed")

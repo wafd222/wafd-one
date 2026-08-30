@@ -128,6 +128,10 @@ def get_user_for_driver(driver_name):
     """Resolve one driver profile to exactly one enabled Driver user."""
     if not driver_name:
         return None
+    # Some early imports used the login itself as the driver identifier. Keep
+    # that deterministic legacy shape working without broadening access.
+    if _enabled_driver_user(driver_name):
+        return driver_name
     return _user_for_driver(driver_name, _driver_rows())
 
 
@@ -173,15 +177,22 @@ def resolve_linked_driver(driver_name):
 
 
 def repair_trip_assignments(user=None):
-    """Backfill the explicit login assignment on legacy delivery trips."""
+    """Backfill the explicit login assignment on legacy delivery trips.
+
+    RC245 handled only NULL assignments. A migrated site can also contain an
+    obsolete disabled login in the new column (for example after recreating an
+    employee account). Replace only missing/disabled assignments; an enabled
+    assignment to another driver is never overridden automatically.
+    """
     if not frappe.db.has_column("WAFD Delivery Trip", "assigned_driver_user"):
         return 0
     repaired = 0
     for trip in frappe.get_all(
         "WAFD Delivery Trip",
-        filters={"assigned_driver_user": ["is", "not set"]},
-        fields=["name", "driver"],
+        fields=["name", "driver", "assigned_driver_user"],
     ):
+        if trip.assigned_driver_user and _enabled_driver_user(trip.assigned_driver_user):
+            continue
         driver_user = get_user_for_driver(trip.driver)
         if not driver_user or (user and driver_user != user):
             continue
@@ -190,6 +201,28 @@ def repair_trip_assignments(user=None):
         )
         repaired += 1
     return repaired
+
+
+def trips_for_user(trips, user=None):
+    """Securely filter already-fetched trip rows for one driver login.
+
+    This intentionally avoids combining Frappe ``filters`` and ``or_filters``.
+    The caller may fetch with ``get_all`` only because every row is filtered
+    here before it is returned to the client.
+    """
+    user = _user(user)
+    drivers = set(get_drivers_for_user(user))
+    matched = []
+    for trip in trips:
+        assigned = getattr(trip, "assigned_driver_user", None)
+        driver = getattr(trip, "driver", None)
+        if assigned == user or (driver and driver in drivers):
+            matched.append(trip)
+            continue
+        # Resolve a legacy identifier directly as a final deterministic bridge.
+        if driver and get_user_for_driver(driver) == user:
+            matched.append(trip)
+    return matched
 
 
 def trip_is_assigned_to_user(driver, assigned_driver_user, user=None):

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC245
+# WAFD ONE 10.0.0 RC246
 
-**Current release: 10.0.0 RC245 — Explicit Trip Assignment & Employee Access Audit**
+**Current release: 10.0.0 RC246 — Deterministic Driver Trip Retrieval**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

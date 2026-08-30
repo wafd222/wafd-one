@@ -11,7 +11,12 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from wafd_one.driver_security import get_drivers_for_user, repair_trip_assignments, trip_is_assigned_to_user
+from wafd_one.driver_security import (
+    get_drivers_for_user,
+    repair_trip_assignments,
+    trip_is_assigned_to_user,
+    trips_for_user,
+)
 from wafd_one.employee_team import _normalize_mobile
 
 
@@ -170,17 +175,11 @@ def list_my_trips():
     is_manager = bool(_roles() & DELIVERY_OPERATOR_ROLES)
     drivers = [] if is_manager else _driver_names()
     filters = {"status": ["!=", "ملغية / Cancelled"]}
-    or_filters = None
     if not is_manager:
         repair_trip_assignments(frappe.session.user)
-        or_filters = {
-            "assigned_driver_user": frappe.session.user,
-            "driver": ["in", drivers],
-        }
     trips = frappe.get_all(
         "WAFD Delivery Trip",
         filters=filters,
-        or_filters=or_filters,
         fields=[
             "name", "trip_date", "vehicle", "hotel", "quantity", "planned_departure",
             "actual_departure", "planned_arrival", "actual_arrival", "status",
@@ -188,8 +187,13 @@ def list_my_trips():
             "assigned_driver_user",
         ],
         order_by="trip_date desc, creation desc",
-        limit_page_length=100,
+        # Managers see the operational window directly. Drivers are filtered
+        # immediately below before any response is built, so no other driver's
+        # row can leave the server.
+        limit_page_length=1000 if not is_manager else 100,
     )
+    if not is_manager:
+        trips = trips_for_user(trips, frappe.session.user)
     hotel_map = _hotel_names({row.hotel for row in trips if row.hotel})
     loading_names = [row.loading_record for row in trips if row.loading_record]
     loading_map = {

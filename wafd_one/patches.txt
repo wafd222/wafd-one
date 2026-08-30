@@ -382,3 +382,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc245.execute
 
 # RC246 deterministic server-side driver trip retrieval and stale assignment repair
 wafd_one.wafd_one.patches.v10_0_0_rc246.execute
+
+# RC247 reconcile approved loadings whose delivery-trip hand-off previously failed
+wafd_one.wafd_one.patches.v10_0_0_rc247.execute

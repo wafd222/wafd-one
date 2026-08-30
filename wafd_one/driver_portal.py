@@ -18,6 +18,7 @@ from wafd_one.driver_security import (
     trips_for_user,
 )
 from wafd_one.employee_team import _normalize_mobile
+from wafd_one.delivery_reconciliation import reconcile_missing_delivery_trips
 
 
 DRIVER_ROLE = "WAFD Driver"
@@ -177,6 +178,10 @@ def list_my_trips():
     filters = {"status": ["!=", "ملغية / Cancelled"]}
     if not is_manager:
         repair_trip_assignments(frappe.session.user)
+    reconciliation = reconcile_missing_delivery_trips(
+        user=None if is_manager else frappe.session.user,
+        all_drivers=is_manager,
+    )
     trips = frappe.get_all(
         "WAFD Delivery Trip",
         filters=filters,
@@ -234,7 +239,36 @@ def list_my_trips():
                 "proof": proof,
             }
         )
-    return {"driver": drivers[0] if drivers else None, "drivers": drivers, "is_manager": is_manager, "trips": result}
+    blocked = reconciliation["counts"].get("blocked", 0)
+    if result:
+        empty_reason = None
+    elif blocked:
+        empty_reason = "trip_creation_blocked"
+    elif reconciliation["results"]:
+        # Approved loading rows were found but no visible trip survived the
+        # secured retrieval.  Keep this distinct from a missing loading.
+        empty_reason = "assignment_incomplete"
+    else:
+        empty_reason = "no_approved_loading"
+    return {
+        "driver": drivers[0] if drivers else None,
+        "drivers": drivers,
+        "is_manager": is_manager,
+        "trips": result,
+        "empty_reason": empty_reason,
+        "reconciliation": {
+            "counts": reconciliation["counts"],
+            "blocked": [
+                {
+                    "loading": row.get("loading"),
+                    "reason": row.get("reason"),
+                    "message": row.get("message"),
+                }
+                for row in reconciliation["results"]
+                if row.get("state") == "blocked"
+            ],
+        },
+    }
 
 
 @frappe.whitelist()

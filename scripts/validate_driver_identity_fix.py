@@ -147,4 +147,4 @@ assert module.delivery_trip_has_permission(TRIPS["TRIP-2"], CURRENT_USER)
 assert not module.delivery_trip_has_permission(Row(driver="سالم", assigned_driver_user=None), CURRENT_USER)
 assert module.delivery_proof_has_permission(Row(delivery_trip="TRIP-1"), CURRENT_USER)
 
-print("RC246 deterministic driver assignment validation passed")
+print("RC247 deterministic driver assignment validation passed")

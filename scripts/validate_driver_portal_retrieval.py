@@ -1,4 +1,4 @@
-"""Static regression guard for the RC246 My Trips retrieval path."""
+"""Static regression guard for the RC247 My Trips retrieval path."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ call_names = {
     if isinstance(node.func, ast.Name)
 }
 assert "repair_trip_assignments" in call_names, "legacy assignment repair is missing"
+assert "reconcile_missing_delivery_trips" in call_names, "approved-loading reconciliation is missing"
 assert "trips_for_user" in call_names, "secure explicit server-side filtering is missing"
 
 for call in calls:
@@ -35,4 +36,4 @@ for call in calls:
             "list_my_trips must not restore the combined or_filters query"
         )
 
-print("RC246 My Trips retrieval validation passed")
+print("RC247 My Trips retrieval validation passed")

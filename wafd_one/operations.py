@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import cint, now_datetime, nowdate
 
+from wafd_one.delivery_reconciliation import reconcile_loading_row
 from wafd_one.driver_security import resolve_linked_driver
 
 
@@ -127,23 +128,19 @@ def create_delivery_trip(loading_name):
             "WAFD Loading Record", loading.name, "driver", resolved_driver, update_modified=False
         )
         loading.driver = resolved_driver
-    plan = frappe.get_doc("WAFD Meal Plan", loading.meal_plan)
-    return _get_or_create(
-        "WAFD Delivery Trip",
-        {"loading_record": loading.name},
-        {
-            "project": loading.project,
-            "meal_plan": loading.meal_plan,
-            "loading_record": loading.name,
-            "trip_date": plan.service_date,
-            "vehicle": loading.vehicle,
-            "driver": loading.driver,
-            "assigned_driver_user": driver_user,
-            "hotel": loading.hotel or plan.hotel,
-            "quantity": loading.quantity,
-            "status": "تم التحميل / Loaded",
-        },
-    )
+    # Use the same idempotent hand-off as the driver portal and migration.
+    # This repairs an existing split/legacy record instead of returning it
+    # unchanged, and creates the missing trip only after normal validations.
+    result = reconcile_loading_row(loading, expected_user=driver_user)
+    if result.get("state") == "blocked":
+        frappe.throw(result.get("message") or result.get("reason"))
+    if not result.get("trip"):
+        frappe.throw("تعذر إنشاء رحلة التوصيل / Delivery trip could not be created")
+    return {
+        "name": result["trip"],
+        "created": result.get("state") == "created",
+        "reconciled": result.get("state") == "repaired",
+    }
 
 
 @frappe.whitelist()

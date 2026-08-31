@@ -394,3 +394,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc249.execute
 
 # RC250 standalone catering quotation system with independent signature/stamp visibility
 wafd_one.wafd_one.patches.v10_0_0_rc250.execute
+
+# RC251 add the Frappe v16 child DocType Python controller required during model sync
+wafd_one.wafd_one.patches.v10_0_0_rc251.execute

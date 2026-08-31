@@ -1,0 +1,3 @@
+## WAFD ONE 10.0.0 RC251 — Quotation Migration Controller Fix
+
+RC251 fixes the Frappe v16 migration failure introduced while adding the standalone quotation system. It adds the required Python controller module for the `WAFD Quotation Item` child DocType, re-syncs quotation metadata in dependency order, and adds a packaging validation that prevents future releases from omitting the controller. The full quotation workflow from RC250 remains included: customer and service data, WAFD or customer-requested menus, pricing, 15% VAT, approval, A4 printing, and independent signature/stamp visibility controls. Existing contracts, projects, trips, invoices and undertakings remain unchanged.

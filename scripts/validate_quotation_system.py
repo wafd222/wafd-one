@@ -66,8 +66,13 @@ def main():
     assert '"doctype": "WAFD Quotation"' in hub
     assert 'new_doctype: "WAFD Quotation"' in home
     assert 'doctype: "WAFD Quotation"' in home
-    assert "v10_0_0_rc250.execute" in (ROOT / "wafd_one/patches.txt").read_text(encoding="utf-8")
-    print("RC250 quotation system validation passed")
+    child_controller = ROOT / "wafd_one/wafd_one/doctype/wafd_quotation_item/wafd_quotation_item.py"
+    assert child_controller.exists(), "Frappe v16 requires the child DocType Python module"
+    assert "class WAFDQuotationItem(Document)" in child_controller.read_text(encoding="utf-8")
+    patches = (ROOT / "wafd_one/patches.txt").read_text(encoding="utf-8")
+    assert "v10_0_0_rc250.execute" in patches
+    assert "v10_0_0_rc251.execute" in patches
+    print("RC251 quotation system and child-controller validation passed")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC250
+# WAFD ONE 10.0.0 RC251
 
-**Current release: 10.0.0 RC250 — Standalone Catering Quotation System**
+**Current release: 10.0.0 RC251 — Quotation Migration Controller Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

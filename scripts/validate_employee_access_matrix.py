@@ -30,6 +30,11 @@ REQUIRED_CAPABILITIES = {
     ("WAFD Auditor", "WAFD Payment"): {"read"},
     ("WAFD Undertaking Officer", "WAFD Hotel Undertaking"): {"read", "write", "create"},
     ("WAFD Undertaking Reviewer", "WAFD Hotel Undertaking"): {"read"},
+    ("WAFD Operations Manager", "WAFD Quotation"): {"read", "write", "create"},
+    ("WAFD Project Manager", "WAFD Quotation"): {"read", "write", "create"},
+    ("WAFD Approver", "WAFD Quotation"): {"read", "write"},
+    ("WAFD Finance User", "WAFD Quotation"): {"read"},
+    ("WAFD Auditor", "WAFD Quotation"): {"read"},
 }
 
 

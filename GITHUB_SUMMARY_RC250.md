@@ -1,0 +1,3 @@
+## WAFD ONE 10.0.0 RC250 — Standalone Catering Quotation System
+
+RC250 adds a production-ready, independent catering quotation document to WAFD ONE. Users can prepare customer quotations with supply dates, daily meal quantities, WAFD or customer-requested menus, pricing, discounts, 15% VAT, approval status and A4 PDF preview. The saved company signature and stamp appear by default and can be hidden independently—or both hidden—without deleting the stored assets. Role-based access is included for management, operations, project managers, approvers, finance and auditors, with entry points from the role home and Documents hub. Existing contracts, projects, trips, invoices and undertakings remain unchanged.

@@ -92,7 +92,7 @@ doc_events = {
         "WAFD Production Batch", "WAFD Purchase Order", "WAFD Stock Movement",
         "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
         "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
-        "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan", "WAFD Daily Meal Plan", "WAFD Kitchen",
+        "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan", "WAFD Daily Meal Plan", "WAFD Kitchen", "WAFD Quotation",
     )
 }
 

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC249
+# WAFD ONE 10.0.0 RC250
 
-**Current release: 10.0.0 RC249 — Direct Employee Home Routing**
+**Current release: 10.0.0 RC250 — Standalone Catering Quotation System**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

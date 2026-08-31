@@ -48,6 +48,7 @@ def main() -> None:
         "WAFD Invoice", "WAFD Invoice Item", "WAFD Payment",
         "WAFD Delivery Proof", "WAFD Catering Project",
         "WAFD Hotel Undertaking", "تعهد والتزام إعاشة — WAFD",
+        "WAFD Quotation", "WAFD Quotation Item", "عرض سعر خدمات الإعاشة — WAFD",
     }
     found = {doc.get("name") for _, doc in json_docs}
     missing = required - found

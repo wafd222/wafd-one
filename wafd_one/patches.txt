@@ -391,3 +391,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc248.execute
 
 # RC249 repair legacy launch links and enter the employee role home directly
 wafd_one.wafd_one.patches.v10_0_0_rc249.execute
+
+# RC250 standalone catering quotation system with independent signature/stamp visibility
+wafd_one.wafd_one.patches.v10_0_0_rc250.execute

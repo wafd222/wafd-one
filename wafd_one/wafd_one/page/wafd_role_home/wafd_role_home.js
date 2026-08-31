@@ -48,6 +48,10 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "المشاريع":{en:"Projects",id:"Proyek",ur:"منصوبے",hi:"परियोजनाएँ",bn:"প্রকল্প",fr:"Projets",ha:"Ayyuka",sw:"Miradi",uz:"Loyihalar"},
     "الخطط اليومية":{en:"Daily Plans",id:"Rencana Harian",ur:"روزانہ منصوبے",hi:"दैनिक योजनाएँ",bn:"দৈনিক পরিকল্পনা",fr:"Plans quotidiens",ha:"Tsare-tsaren Yau",sw:"Mipango ya Kila Siku",uz:"Kunlik rejalar"},
     "المستندات":{en:"Documents",id:"Dokumen",ur:"دستاویزات",hi:"दस्तावेज़",bn:"নথি",fr:"Documents",ha:"Takardu",sw:"Nyaraka",uz:"Hujjatlar"},
+    "عروض الأسعار":{en:"Quotations",id:"Penawaran",ur:"قیمت کی پیشکشیں",hi:"कोटेशन",bn:"মূল্য প্রস্তাব",fr:"Devis",ha:"Kalaman farashi",sw:"Nukuu",uz:"Tijorat takliflari"},
+    "إنشاء عرض سعر":{en:"Create Quotation",id:"Buat Penawaran",ur:"کوٹیشن بنائیں",hi:"कोटेशन बनाएँ",bn:"মূল্য প্রস্তাব তৈরি",fr:"Créer un devis",ha:"Ƙirƙiri kalaman farashi",sw:"Unda Nukuu",uz:"Taklif yaratish"},
+    "إعداد عرض جديد للعميل":{en:"Prepare a new customer quotation"},
+    "مراجعة واعتماد عروض الأسعار":{en:"Review and approve quotations"},
     "دفعات الإنتاج":{en:"Production Batches",id:"Batch Produksi",ur:"پروڈکشن بیچز",hi:"उत्पादन बैच",bn:"উৎপাদন ব্যাচ",fr:"Lots de production",ha:"Rukunin Samarwa",sw:"Makundi ya Uzalishaji",uz:"Ishlab chiqarish partiyalari"},
     "سجلات التغليف":{en:"Packaging Records",id:"Catatan Pengemasan",ur:"پیکنگ ریکارڈز",hi:"पैकेजिंग रिकॉर्ड",bn:"প্যাকেজিং রেকর্ড",fr:"Registres d’emballage",ha:"Bayanan Marufi",sw:"Rekodi za Ufungashaji",uz:"Qadoqlash yozuvlari"},
     "الوصفات":{en:"Recipes",id:"Resep",ur:"ترکیبیں",hi:"रेसिपी",bn:"রেসিপি",fr:"Recettes",ha:"Girke-girke",sw:"Mapishi",uz:"Retseptlar"},
@@ -101,6 +105,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
+        { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -114,6 +119,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
+        { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -125,6 +131,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التشغيل", desc: "الإنتاج والجودة والتغليف", icon: "⚙", page: "wafd-operations-hub" },
         { label: "التوصيل", desc: "الرحلات والتسليم والاستلام", icon: "➜", page: "wafd-delivery-hub" },
         { label: "المستندات", desc: "التعهدات والمستندات التشغيلية", icon: "▤", page: "wafd-documents-hub" },
+        { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },
@@ -186,6 +193,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "الفواتير", desc: "المستحقات وحالة الفواتير", icon: "ر.س", doctype: "WAFD Invoice", primary: true },
         { label: "التحصيل", desc: "الدفعات وربطها بالفواتير", icon: "✓", doctype: "WAFD Payment" },
         { label: "العقود", desc: "المرجع المالي للعقود", icon: "▤", doctype: "WAFD Contract" },
+        { label: "عروض الأسعار", desc: "مراجعة الأسعار والإجماليات", icon: "💼", doctype: "WAFD Quotation" },
         { label: "المشاريع", desc: "المشروع المرتبط بالفاتورة", icon: "◆", doctype: "WAFD Catering Project" }
       ]
     },
@@ -193,7 +201,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Approver", title: "المعتمد", subtitle: "المراجعة والاعتماد المالي",
       items: [
         { label: "المالية", desc: "الفواتير والتحصيل والمراجعة", icon: "ر.س", page: "wafd-finance-hub", primary: true },
-        { label: "طلبات الاعتماد", desc: "الطلبات التي تحتاج قرارًا", icon: "✓", doctype: "WAFD Approval Request" }
+        { label: "طلبات الاعتماد", desc: "الطلبات التي تحتاج قرارًا", icon: "✓", doctype: "WAFD Approval Request" },
+        { label: "عروض الأسعار", desc: "مراجعة واعتماد عروض الأسعار", icon: "💼", doctype: "WAFD Quotation" }
       ]
     },
     {
@@ -201,6 +210,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       items: [
         { label: "الفواتير", desc: "مراجعة الفواتير", icon: "ر.س", doctype: "WAFD Invoice", primary: true },
         { label: "التحصيل", desc: "مراجعة التحصيلات", icon: "✓", doctype: "WAFD Payment" },
+        { label: "عروض الأسعار", desc: "مراجعة سجل عروض الأسعار", icon: "💼", doctype: "WAFD Quotation" },
         { label: "المالية", desc: "مركز المراجعة المالية", icon: "▦", page: "wafd-finance-hub" }
       ]
     }

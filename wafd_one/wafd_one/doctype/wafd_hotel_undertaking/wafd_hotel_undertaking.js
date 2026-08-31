@@ -222,7 +222,7 @@ function wafd_install_preview_panel_style() {
 function wafd_return_to_role_home(delay = 450) {
   setTimeout(() => {
     try { frappe.set_route("wafd-role-home"); }
-    catch (_e) { window.location.assign("/desk/wafd-role-home"); }
+    catch (_e) { window.location.assign("/app/wafd-role-home"); }
   }, delay);
 }
 

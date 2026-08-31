@@ -388,3 +388,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc247.execute
 
 # RC248 reconcile proof-backed delivery status and live multilingual driver trips
 wafd_one.wafd_one.patches.v10_0_0_rc248.execute
+
+# RC249 repair legacy launch links and enter the employee role home directly
+wafd_one.wafd_one.patches.v10_0_0_rc249.execute

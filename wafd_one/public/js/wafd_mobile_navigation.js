@@ -146,7 +146,7 @@
       frappe.set_route(HOME_ROUTE);
       return;
     }
-    window.location.assign("/desk/wafd-role-home");
+    window.location.assign("/app/wafd-role-home");
   }
 
   function createButton() {

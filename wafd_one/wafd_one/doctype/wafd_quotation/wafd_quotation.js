@@ -71,9 +71,7 @@ async function share_quotation_pdf(frm) {
   const file = new File([blob], result.file_name || `${frm.doc.name}.pdf`, { type: "application/pdf" });
   if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
     await navigator.share({ title: frm.doc.customer_name || frm.doc.name, files: [file] });
-    if (frm.doc.status === "معتمد / Approved") {
-      await quotation_api(frm, "set_quotation_status", { status: "أرسل للعميل / Sent" });
-    }
+    await quotation_api(frm, "mark_quotation_sent");
     return;
   }
   const url = URL.createObjectURL(blob);
@@ -81,9 +79,7 @@ async function share_quotation_pdf(frm) {
   link.href = url; link.download = file.name; link.style.display = "none";
   document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
-  if (frm.doc.status === "معتمد / Approved") {
-    await quotation_api(frm, "set_quotation_status", { status: "أرسل للعميل / Sent" });
-  }
+  await quotation_api(frm, "mark_quotation_sent");
 }
 
 function install_quotation_preview_style() {
@@ -103,7 +99,7 @@ function install_quotation_preview_style() {
 }
 
 function open_sent_quotations() {
-  frappe.route_options = { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] };
+  frappe.route_options = { sent_on: ["is", "set"] };
   frappe.set_route("List", "WAFD Quotation");
 }
 

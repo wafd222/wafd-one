@@ -108,7 +108,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
-        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -123,7 +123,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
-        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -136,7 +136,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التوصيل", desc: "الرحلات والتسليم والاستلام", icon: "➜", page: "wafd-delivery-hub" },
         { label: "المستندات", desc: "التعهدات والمستندات التشغيلية", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
-        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
         { label: "إفطار صائم", desc: "المشاريع الموسمية", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },

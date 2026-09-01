@@ -1,4 +1,4 @@
-"""Static release checks for the standalone RC250 quotation system."""
+"""Static release checks for the standalone RC254 quotation system."""
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ def main():
     assert fields["items"]["options"] == "WAFD Quotation Item"
     assert fields["include_signature"]["default"] == "1"
     assert fields["include_stamp"]["default"] == "1"
+    assert fields["sent_on"]["fieldtype"] == "Datetime"
+    assert fields["sent_by"]["options"] == "User"
     assert fields["tax_rate"]["default"] == "15"
     for name in ("menu_source", "wafd_menu", "custom_menu_description", "daily_quantity", "service_days", "total_quantity", "unit_price", "amount"):
         assert name in child_fields
@@ -86,6 +88,7 @@ def main():
     assert "v10_0_0_rc251.execute" in patches
     assert "v10_0_0_rc252.execute" in patches
     assert "v10_0_0_rc253.execute" in patches
+    assert "v10_0_0_rc254.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -96,13 +99,18 @@ def main():
     assert "render_quotation_direct_actions(frm)" in client
     assert "open_sent_quotations" in client
     assert 'if (frm.is_dirty()) await frm.save();' in client
-    assert 'status: "أرسل للعميل / Sent"' in client
+    assert 'quotation_api(frm, "mark_quotation_sent")' in client
+    assert "def mark_quotation_sent" in controller
+    assert 'sent_on: ["is", "set"]' in client
     assert "page_number_only" in controller and "re.fullmatch" in controller
     hub = (ROOT / "wafd_one/wafd_one/page/wafd_documents_hub/wafd_documents_hub.js").read_text(encoding="utf-8")
-    assert "عروض الأسعار المرسلة" in hub and '"status": ["in"' in hub
+    assert "عروض الأسعار المرسلة" in hub and '"sent_on": ["is", "set"]' in hub
     role_home = (ROOT / "wafd_one/wafd_one/page/wafd_role_home/wafd_role_home.js").read_text(encoding="utf-8")
-    assert "العروض المرسلة" in role_home
-    print("RC253 quotation pagination, assets, direct preview and sent-list validation passed")
+    assert "العروض المرسلة" in role_home and 'sent_on: ["is", "set"]' in role_home
+    assert all(token in html for token in ("font-weight:500", "font-size:10px", "font-size:9.3px", "color:#101010"))
+    migration = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc254/execute.py").read_text(encoding="utf-8")
+    assert "generated_pdf" in migration and "sent_on" in migration and "sent_by" in migration
+    print("RC254 quotation typography and reliable sent-register validation passed")
 
 
 if __name__ == "__main__":

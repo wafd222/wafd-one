@@ -253,6 +253,19 @@ def set_quotation_status(name, status):
     return doc.as_dict()
 
 
+@frappe.whitelist()
+def mark_quotation_sent(name):
+    """Record a completed share and expose it in the sent-quotations register."""
+    doc = _get_writable(name)
+    if doc.status not in {"مقبول / Accepted", "مرفوض / Rejected", "ملغي / Cancelled", "منتهي / Expired"}:
+        doc.status = "أرسل للعميل / Sent"
+        doc.flags.quotation_status_change = True
+    doc.sent_on = now_datetime()
+    doc.sent_by = frappe.session.user
+    doc.save()
+    return doc.as_dict()
+
+
 def _quotation_template_source():
     path = Path(__file__).resolve().parents[2] / "print_format" / "wafd_quotation" / "wafd_quotation.html"
     return path.read_text(encoding="utf-8")

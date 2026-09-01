@@ -403,3 +403,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc252.execute
 
 # RC253 remove quotation PDF spacer pages and expose signature, stamp, preview and sent list
 wafd_one.wafd_one.patches.v10_0_0_rc253.execute
+
+# RC254 clearer quotation typography and reliable sent-quotation tracking
+wafd_one.wafd_one.patches.v10_0_0_rc254.execute

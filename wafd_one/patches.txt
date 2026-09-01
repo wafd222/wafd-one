@@ -397,3 +397,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc250.execute
 
 # RC251 add the Frappe v16 child DocType Python controller required during model sync
 wafd_one.wafd_one.patches.v10_0_0_rc251.execute
+
+# RC252 full-page mobile quotation preview, PDF actions and complete commercial terms
+wafd_one.wafd_one.patches.v10_0_0_rc252.execute

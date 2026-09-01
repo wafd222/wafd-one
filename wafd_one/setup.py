@@ -444,6 +444,7 @@ def before_migrate():
 def after_install():
     apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=True)
     ensure_hotel_undertaking_print_format()
+    ensure_quotation_print_format()
     ensure_madinah_hotels_400()
     frappe.clear_cache()
 
@@ -505,6 +506,27 @@ def ensure_hotel_undertaking_print_format():
             "Hotel Undertaking repair incomplete; unsafe format(s): "
             + ", ".join(remaining)
         )
+    frappe.clear_cache(doctype="Print Format")
+
+
+def ensure_quotation_print_format():
+    """Synchronize the standard quotation format from the preview/PDF source."""
+    root = Path(__file__).resolve().parent / "wafd_one" / "print_format" / "wafd_quotation"
+    data = json.loads((root / "wafd_quotation.json").read_text(encoding="utf-8"))
+    data["html"] = (root / "wafd_quotation.html").read_text(encoding="utf-8")
+    forbidden = ("frappe.get_doc", "frappe.get_single", "frappe.db.sql")
+    if any(token in data["html"] for token in forbidden):
+        raise RuntimeError("Unsafe server call found in quotation template source")
+    if frappe.db.exists("Print Format", data["name"]):
+        frappe.db.set_value("Print Format", data["name"], {
+            "html": data["html"], "doc_type": "WAFD Quotation",
+            "custom_format": 1, "print_format_type": "Jinja",
+            "disabled": 0, "raw_printing": 0,
+        }, update_modified=False)
+    else:
+        frappe.get_doc(data).insert(ignore_permissions=True)
+    if frappe.db.has_column("DocType", "default_print_format"):
+        frappe.db.set_value("DocType", "WAFD Quotation", "default_print_format", data["name"], update_modified=False)
     frappe.clear_cache(doctype="Print Format")
 
 
@@ -866,6 +888,11 @@ def after_migrate():
         ensure_rc168_mobile_role_navigation()
     except Exception:
         frappe.log_error(frappe.get_traceback(), "WAFD ONE RC168 mobile role navigation")
+
+    try:
+        ensure_quotation_print_format()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE quotation print format sync")
 
     if frappe.conf.get("wafd_one_full_post_migrate"):
         sync_all_doctypes()

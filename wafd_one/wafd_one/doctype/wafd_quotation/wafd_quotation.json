@@ -7,7 +7,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "naming_series","quotation_date","valid_until","status","customer_section","customer_company","customer_name","customer_column","contact_person","customer_phone","customer_email","service_section","supply_location","hotel","start_date","service_column","end_date","service_days","beneficiary_count","menu_attachment","items_section","items","commercial_section","delivery_included","distribution_included","commercial_column","additional_charges","discount_amount","totals_section","subtotal","tax_rate","tax_amount","totals_column","grand_total","currency","terms_section","payment_terms","quotation_terms","company_section","company_name","company_cr","company_phone","company_email","company_address","company_logo","approval_section","authorized_signatory","signatory_title","include_signature","include_stamp","approval_column","signature_image","company_stamp","prepared_by_user","prepared_by_name","approved_by_user","approved_by_name","approved_on"
+  "naming_series","quotation_date","valid_until","status","customer_section","customer_company","customer_name","customer_column","contact_person","customer_phone","customer_email","service_section","supply_location","hotel","start_date","service_column","end_date","service_days","beneficiary_count","menu_attachment","introduction_section","quotation_subject","introduction_text","items_section","items","commercial_section","delivery_included","distribution_included","commercial_column","additional_charges","discount_amount","totals_section","subtotal","tax_rate","tax_amount","totals_column","grand_total","currency","terms_section","quotation_terms","payment_terms","closing_text","company_section","company_name","company_cr","company_phone","company_email","company_address","company_logo","approval_section","authorized_signatory","signatory_title","include_signature","include_stamp","approval_column","signature_image","company_stamp","generated_pdf","generated_on","generated_by","prepared_by_user","prepared_by_name","approved_by_user","approved_by_name","approved_on"
  ],
  "fields": [
   {"fieldname":"naming_series","fieldtype":"Select","label":"السلسلة / Series","options":"WAFD-QUO-.YYYY.-.#####","default":"WAFD-QUO-.YYYY.-.#####","hidden":1,"reqd":1},
@@ -30,6 +30,9 @@
   {"fieldname":"service_days","fieldtype":"Int","label":"عدد أيام الخدمة / Service Days","read_only":1},
   {"fieldname":"beneficiary_count","fieldtype":"Int","label":"عدد الوجبات اليومي الافتراضي / Default Daily Meals","reqd":1,"non_negative":1},
   {"fieldname":"menu_attachment","fieldtype":"Attach","label":"مرفق المنيو (اختياري) / Menu Attachment"},
+  {"fieldname":"introduction_section","fieldtype":"Section Break","label":"مقدمة عرض السعر / Quotation Introduction"},
+  {"fieldname":"quotation_subject","fieldtype":"Data","label":"الموضوع / Subject","default":"عرض سعر لتقديم خدمات الإعاشة اليومية","reqd":1},
+  {"fieldname":"introduction_text","fieldtype":"Text","label":"نص المقدمة / Introduction Text","default":"يسر شركة وفد المدينة لخدمات الإعاشة أن تتقدم لكم بعرضها لتوفير وجبات الإعاشة اليومية وفقاً للكميات والمدة الموضحة في هذا العرض.\nيشمل العرض تجهيز الوجبات وتغليفها وتوصيلها وتوزيعها في الموقع المتفق عليه.\nيتم تطبيق المنيو المتفق عليه بصورة متكررة طوال مدة التعاقد."},
   {"fieldname":"items_section","fieldtype":"Section Break","label":"بنود عرض السعر / Quotation Items"},
   {"fieldname":"items","fieldtype":"Table","label":"الوجبات والخدمات / Meals & Services","options":"WAFD Quotation Item","reqd":1},
   {"fieldname":"commercial_section","fieldtype":"Section Break","label":"الخدمات والإضافات / Services & Adjustments"},
@@ -46,8 +49,9 @@
   {"fieldname":"grand_total","fieldtype":"Currency","label":"الإجمالي شامل الضريبة / Grand Total","read_only":1,"in_list_view":1},
   {"fieldname":"currency","fieldtype":"Select","label":"العملة / Currency","options":"SAR","default":"SAR","reqd":1},
   {"fieldname":"terms_section","fieldtype":"Section Break","label":"الشروط / Terms"},
-  {"fieldname":"payment_terms","fieldtype":"Small Text","label":"شروط الدفع / Payment Terms","default":"حسب الاتفاق المعتمد بين الطرفين. / As mutually agreed and approved."},
-  {"fieldname":"quotation_terms","fieldtype":"Text","label":"شروط عرض السعر / Quotation Terms","default":"الأسعار بالريال السعودي وتشمل ضريبة القيمة المضافة الموضحة. أي خدمات إضافية خارج النطاق تُسعّر بشكل مستقل. / Prices are in Saudi Riyals and include the VAT shown. Services outside this scope are quoted separately."},
+  {"fieldname":"quotation_terms","fieldtype":"Long Text","label":"شروط عرض السعر / Quotation Terms","default":"1. السعر مبني على العدد اليومي ومدة التعاقد الموضحين في عرض السعر.\n2. تشمل الأسعار تجهيز الوجبات والتغليف والتوصيل والتوزيع إلى موقع واحد وفي المواعيد اليومية المتفق عليها.\n3. تضاف ضريبة القيمة المضافة بنسبة 15% إلى جميع الفواتير.\n4. يتم اعتماد العدد النهائي للوجبات يومياً حسب الكمية المؤكدة من ممثل العميل.\n5. يجب إبلاغ شركة وفد المدينة بأي زيادة أو تخفيض في عدد الوجبات قبل موعد التقديم بما لا يقل عن 48 ساعة.\n6. يجوز استبدال أي صنف غير متوفر بصنف مماثل في القيمة والجودة بعد التنسيق مع ممثل العميل.\n7. لا يشمل السعر توفير صالات الطعام أو الأثاث أو أدوات التقديم الدائمة أو أعمال النظافة خارج نطاق توزيع الوجبات، ما لم يتم الاتفاق عليها كتابةً.\n8. أي توصيل إلى مواقع إضافية أو تغيير جوهري في مواعيد التوزيع تتم دراسته وتسعيره بشكل مستقل.\n9. الوجبات التي يتم تجهيزها بناءً على العدد المعتمد تُحتسب بالكامل عند الإلغاء المتأخر.\n10. مدة صلاحية عرض السعر 15 يوماً من تاريخ إصداره.\n11. يبدأ تنفيذ الخدمة بعد اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء وتحديد الموقع ومواعيد التسليم."},
+  {"fieldname":"payment_terms","fieldtype":"Long Text","label":"شروط الدفعات / Payment Terms","default":"1. دفعة مقدمة قدرها 50% من القيمة التقديرية للشهر الأول عند اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء.\n2. دفعة قدرها 50% بعد مرور 15 يوماً من بداية تقديم الخدمة.\n3. تطبق آلية الدفعات نفسها على كل شهر تعاقدي لاحق، ما لم يتم الاتفاق كتابياً على خلاف ذلك.\n4. يتم السداد عن طريق التحويل البنكي إلى الحساب الرسمي لشركة وفد المدينة لخدمات الإعاشة.\n5. يحق لمقدم الخدمة تعليق التوريد بعد إشعار العميل كتابياً في حال تأخر أي دفعة عن موعد استحقاقها."},
+  {"fieldname":"closing_text","fieldtype":"Text","label":"عبارة الختام / Closing Text","default":"نأمل أن يحوز عرضنا على رضاكم، ونتطلع إلى التعاون مع شركتكم الموقرة وتقديم خدمات إعاشة تتميز بالجودة والالتزام وسلامة الغذاء.\nوتفضلوا بقبول خالص التحية والتقدير."},
   {"fieldname":"company_section","fieldtype":"Section Break","label":"هوية الشركة / Company Identity","collapsible":1,"collapsed":1},
   {"fieldname":"company_name","fieldtype":"Data","label":"اسم الشركة / Company Name","default":"شركة وفد المدينة لخدمات الإعاشة","hidden":1},
   {"fieldname":"company_cr","fieldtype":"Data","label":"السجل التجاري / CR","default":"7051832694","hidden":1},
@@ -63,6 +67,9 @@
   {"fieldname":"approval_column","fieldtype":"Column Break"},
   {"fieldname":"signature_image","fieldtype":"Attach Image","label":"صورة التوقيع المحفوظة / Stored Signature","hidden":1},
   {"fieldname":"company_stamp","fieldtype":"Attach Image","label":"صورة الختم المحفوظة / Stored Stamp","hidden":1},
+  {"fieldname":"generated_pdf","fieldtype":"Attach","label":"ملف PDF الصادر / Generated PDF","read_only":1,"hidden":1},
+  {"fieldname":"generated_on","fieldtype":"Datetime","label":"تاريخ إصدار PDF / PDF Generated On","read_only":1,"hidden":1},
+  {"fieldname":"generated_by","fieldtype":"Link","label":"أصدره / Generated By","options":"User","read_only":1,"hidden":1},
   {"fieldname":"prepared_by_user","fieldtype":"Link","label":"أعده / Prepared By","options":"User","read_only":1,"hidden":1},
   {"fieldname":"prepared_by_name","fieldtype":"Data","label":"اسم المُعد / Prepared By Name","read_only":1},
   {"fieldname":"approved_by_user","fieldtype":"Link","label":"اعتمده / Approved By","options":"User","read_only":1,"hidden":1},

@@ -41,6 +41,115 @@ function add_asset_toggle(frm, fieldname, show_label, hide_label, icon) {
   }, __("التوقيع والختم / Signature & Stamp"));
 }
 
+function quotation_preview_url(name) {
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.preview_quotation_html?${new URLSearchParams({ name })}`;
+}
+
+function quotation_pdf_url(name, download = false) {
+  const query = new URLSearchParams({ name });
+  if (download) query.set("download", "1");
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.download_generated_pdf?${query}`;
+}
+
+async function generate_quotation_pdf(frm) {
+  if (frm.is_dirty()) await frm.save();
+  const response = await frappe.call({
+    method: "wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.generate_quotation_pdf",
+    args: { name: frm.doc.name }, freeze: true,
+    freeze_message: __("جارٍ تجهيز ملف PDF… / Preparing PDF…"),
+  });
+  await frm.reload_doc();
+  return response.message || null;
+}
+
+async function share_quotation_pdf(frm) {
+  const result = await generate_quotation_pdf(frm);
+  if (!result?.file_url) return;
+  const response = await fetch(quotation_pdf_url(frm.doc.name), { credentials: "same-origin", cache: "no-store" });
+  if (!response.ok) throw new Error("PDF fetch failed");
+  const blob = await response.blob();
+  const file = new File([blob], result.file_name || `${frm.doc.name}.pdf`, { type: "application/pdf" });
+  if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+    await navigator.share({ title: frm.doc.customer_name || frm.doc.name, files: [file] });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = file.name; link.style.display = "none";
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function install_quotation_preview_style() {
+  if (document.getElementById("wafd-quotation-preview-style")) return;
+  const style = document.createElement("style");
+  style.id = "wafd-quotation-preview-style";
+  style.textContent = `
+    .wafd-q-preview{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column;overscroll-behavior:none}
+    .wafd-q-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #ddd;background:#fff;direction:rtl}
+    .wafd-q-title{font-size:16px;font-weight:700}.wafd-q-close{width:38px;height:38px;border:1px solid #e1dccf;border-radius:11px;background:#fff;font-size:24px;line-height:1}
+    .wafd-q-tools{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;background:#f7f7f7;border-bottom:1px solid #ddd;direction:ltr}
+    .wafd-q-tools button{height:32px;min-width:38px;border:1px solid #d5d5d5;border-radius:9px;background:#fff}.wafd-q-fit{padding:0 11px;font-weight:700}.wafd-q-label{min-width:52px;text-align:center;font-size:12px;font-weight:700}
+    .wafd-q-frame{flex:1;min-height:0;width:100%;border:0;background:#eee}.wafd-q-actions{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ddd;background:#fff;direction:rtl}.wafd-q-actions .btn{flex:1;min-height:44px}
+  `;
+  document.head.appendChild(style);
+}
+
+function open_quotation_preview(frm) {
+  if (frm.is_new()) { frappe.msgprint(__("احفظ عرض السعر أولاً ثم افتح المعاينة.")); return; }
+  install_quotation_preview_style();
+  document.querySelector(".wafd-q-preview")?.remove();
+  const overlay = document.createElement("div");
+  overlay.className = "wafd-q-preview";
+  overlay.innerHTML = `
+    <div class="wafd-q-head"><div class="wafd-q-title">${__("معاينة عرض السعر")}</div><button class="wafd-q-close" aria-label="${__("رجوع")}">×</button></div>
+    <div class="wafd-q-tools"><button class="wafd-q-out">−</button><span class="wafd-q-label">100%</span><button class="wafd-q-in">+</button><button class="wafd-q-fit">${__("ملاءمة الشاشة")}</button></div>
+    <iframe class="wafd-q-frame" sandbox="allow-same-origin" title="${__("معاينة عرض السعر")}"></iframe>
+    <div class="wafd-q-actions"><button class="btn btn-primary wafd-q-print">${__("طباعة PDF")}</button><button class="btn btn-default wafd-q-share">${__("مشاركة PDF")}</button></div>`;
+  document.body.appendChild(overlay);
+  const frame = overlay.querySelector(".wafd-q-frame");
+  const label = overlay.querySelector(".wafd-q-label");
+  let stage, viewport, scale = 1, fit = 1;
+  const applyScale = (value) => {
+    if (!stage || !viewport) return;
+    scale = Math.max(fit * .8, Math.min(4, value));
+    stage.style.transform = `scale(${scale})`;
+    viewport.style.width = `${Math.ceil(stage.__w * scale)}px`;
+    viewport.style.height = `${Math.ceil(stage.__h * scale)}px`;
+    label.textContent = `${Math.round(scale / fit * 100)}%`;
+  };
+  frame.addEventListener("load", () => setTimeout(() => {
+    try {
+      const doc = frame.contentDocument;
+      doc.documentElement.style.overflow = "auto"; doc.body.style.margin = "0"; doc.body.style.padding = "0"; doc.body.style.background = "#eee";
+      const nodes = Array.from(doc.body.childNodes);
+      viewport = doc.createElement("div"); viewport.style.position = "relative"; viewport.style.margin = "10px auto 24px";
+      stage = doc.createElement("div"); stage.style.position = "absolute"; stage.style.left = "0"; stage.style.top = "0"; stage.style.transformOrigin = "top left";
+      nodes.forEach((node) => stage.appendChild(node)); viewport.appendChild(stage); doc.body.appendChild(viewport);
+      const rect = stage.getBoundingClientRect(); stage.__w = Math.max(stage.scrollWidth, rect.width, 794); stage.__h = Math.max(stage.scrollHeight, rect.height, 1123);
+      stage.style.width = `${stage.__w}px`; fit = Math.min(1, Math.max(280, frame.clientWidth - 20) / stage.__w); applyScale(fit);
+    } catch (_e) {}
+  }, 120));
+  frame.src = `${quotation_preview_url(frm.doc.name)}&t=${Date.now()}`;
+  overlay.querySelector(".wafd-q-out").onclick = () => applyScale(scale / 1.2);
+  overlay.querySelector(".wafd-q-in").onclick = () => applyScale(scale * 1.2);
+  overlay.querySelector(".wafd-q-fit").onclick = () => applyScale(fit);
+  overlay.querySelector(".wafd-q-close").onclick = () => overlay.remove();
+  overlay.querySelector(".wafd-q-print").onclick = async () => {
+    const target = window.open("", "_blank");
+    try {
+      const result = await generate_quotation_pdf(frm);
+      if (result && target) target.location = quotation_pdf_url(frm.doc.name);
+      else if (result) window.location.assign(quotation_pdf_url(frm.doc.name));
+      else target?.close();
+    }
+    catch (_e) { target?.close(); }
+  };
+  overlay.querySelector(".wafd-q-share").onclick = async () => {
+    try { await share_quotation_pdf(frm); } catch (error) { if (error?.name !== "AbortError") frappe.msgprint(__("تعذر تجهيز ملف PDF للمشاركة.")); }
+  };
+}
+
 frappe.ui.form.on("WAFD Quotation", {
   onload(frm) {
     if (frm.is_new() && !frm.doc.valid_until) {
@@ -58,7 +167,7 @@ frappe.ui.form.on("WAFD Quotation", {
     if (!frm.is_new()) {
       frm.add_custom_button(__("معاينة عرض السعر / Preview"), async () => {
         if (frm.is_dirty()) await frm.save();
-        frm.print_doc();
+        open_quotation_preview(frm);
       });
     }
     if (!frm.is_new() && frm.doc.status === "مسودة / Draft") {

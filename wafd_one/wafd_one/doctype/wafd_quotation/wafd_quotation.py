@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -30,10 +32,23 @@ class WAFDQuotation(Document):
         self._protect_status()
         self._fill_customer()
         self._fill_company_assets()
+        self._fill_default_texts()
         self._calculate(validate_rows=False)
         self._validate_dates()
         if self.status not in ALLOWED_STATUSES:
             frappe.throw(_("حالة عرض السعر غير صحيحة / Invalid quotation status"))
+
+    def _fill_default_texts(self):
+        defaults = {
+            "quotation_subject": "عرض سعر لتقديم خدمات الإعاشة اليومية",
+            "introduction_text": "يسر شركة وفد المدينة لخدمات الإعاشة أن تتقدم لكم بعرضها لتوفير وجبات الإعاشة اليومية وفقاً للكميات والمدة الموضحة في هذا العرض.\nيشمل العرض تجهيز الوجبات وتغليفها وتوصيلها وتوزيعها في الموقع المتفق عليه.\nيتم تطبيق المنيو المتفق عليه بصورة متكررة طوال مدة التعاقد.",
+            "quotation_terms": "1. السعر مبني على العدد اليومي ومدة التعاقد الموضحين في عرض السعر.\n2. تشمل الأسعار تجهيز الوجبات والتغليف والتوصيل والتوزيع إلى موقع واحد وفي المواعيد اليومية المتفق عليها.\n3. تضاف ضريبة القيمة المضافة بنسبة 15% إلى جميع الفواتير.\n4. يتم اعتماد العدد النهائي للوجبات يومياً حسب الكمية المؤكدة من ممثل العميل.\n5. يجب إبلاغ شركة وفد المدينة بأي زيادة أو تخفيض في عدد الوجبات قبل موعد التقديم بما لا يقل عن 48 ساعة.\n6. يجوز استبدال أي صنف غير متوفر بصنف مماثل في القيمة والجودة بعد التنسيق مع ممثل العميل.\n7. لا يشمل السعر توفير صالات الطعام أو الأثاث أو أدوات التقديم الدائمة أو أعمال النظافة خارج نطاق توزيع الوجبات، ما لم يتم الاتفاق عليها كتابةً.\n8. أي توصيل إلى مواقع إضافية أو تغيير جوهري في مواعيد التوزيع تتم دراسته وتسعيره بشكل مستقل.\n9. الوجبات التي يتم تجهيزها بناءً على العدد المعتمد تُحتسب بالكامل عند الإلغاء المتأخر.\n10. مدة صلاحية عرض السعر 15 يوماً من تاريخ إصداره.\n11. يبدأ تنفيذ الخدمة بعد اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء وتحديد الموقع ومواعيد التسليم.",
+            "payment_terms": "1. دفعة مقدمة قدرها 50% من القيمة التقديرية للشهر الأول عند اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء.\n2. دفعة قدرها 50% بعد مرور 15 يوماً من بداية تقديم الخدمة.\n3. تطبق آلية الدفعات نفسها على كل شهر تعاقدي لاحق، ما لم يتم الاتفاق كتابياً على خلاف ذلك.\n4. يتم السداد عن طريق التحويل البنكي إلى الحساب الرسمي لشركة وفد المدينة لخدمات الإعاشة.\n5. يحق لمقدم الخدمة تعليق التوريد بعد إشعار العميل كتابياً في حال تأخر أي دفعة عن موعد استحقاقها.",
+            "closing_text": "نأمل أن يحوز عرضنا على رضاكم، ونتطلع إلى التعاون مع شركتكم الموقرة وتقديم خدمات إعاشة تتميز بالجودة والالتزام وسلامة الغذاء.\nوتفضلوا بقبول خالص التحية والتقدير.",
+        }
+        for fieldname, value in defaults.items():
+            if not (self.get(fieldname) or "").strip():
+                self.set(fieldname, value)
 
     def _protect_status(self):
         if self.is_new() or self.flags.get("quotation_status_change"):
@@ -222,3 +237,85 @@ def set_quotation_status(name, status):
     doc.flags.quotation_status_change = True
     doc.save()
     return doc.as_dict()
+
+
+def _quotation_template_source():
+    path = Path(__file__).resolve().parents[2] / "print_format" / "wafd_quotation" / "wafd_quotation.html"
+    return path.read_text(encoding="utf-8")
+
+
+def _render_quotation_html(doc):
+    from wafd_one.document_studio import _embed_pdf_images
+
+    doc._fill_company_assets()
+    doc._fill_default_texts()
+    html = frappe.render_template(_quotation_template_source(), {"doc": doc})
+    return _embed_pdf_images(html)
+
+
+@frappe.whitelist()
+def preview_quotation_html(name):
+    doc = frappe.get_doc("WAFD Quotation", name)
+    doc.check_permission("read")
+    html = _render_quotation_html(doc)
+    frappe.local.response.filename = f"{doc.name}.html"
+    frappe.local.response.filecontent = html.encode("utf-8")
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "inline"
+    frappe.local.response.content_type = "text/html; charset=utf-8"
+
+
+@frappe.whitelist()
+def generate_quotation_pdf(name):
+    from frappe.utils.pdf import get_pdf
+    from wafd_one.document_studio import _remove_trailing_blank_pages
+
+    doc = frappe.get_doc("WAFD Quotation", name)
+    doc.check_permission("print")
+    html = _render_quotation_html(doc)
+    pdf = get_pdf(html, options={
+        "page-size": "A4", "margin-top": "0mm", "margin-right": "0mm",
+        "margin-bottom": "0mm", "margin-left": "0mm", "encoding": "UTF-8",
+        "disable-smart-shrinking": None, "print-media-type": None,
+    })
+    pdf = _remove_trailing_blank_pages(pdf)
+    filename = f"{doc.name}.pdf"
+    existing = frappe.db.get_value("File", {
+        "attached_to_doctype": doc.doctype, "attached_to_name": doc.name,
+        "file_name": filename,
+    }, "name")
+    if existing:
+        frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+    file_doc = frappe.get_doc({
+        "doctype": "File", "file_name": filename,
+        "attached_to_doctype": doc.doctype, "attached_to_name": doc.name,
+        "is_private": 1, "content": pdf,
+    }).insert(ignore_permissions=True)
+    frappe.db.set_value(doc.doctype, doc.name, {
+        "generated_pdf": file_doc.file_url,
+        "generated_on": now_datetime(), "generated_by": frappe.session.user,
+    }, update_modified=False)
+    return {"file_url": file_doc.file_url, "file_name": filename, "docname": doc.name}
+
+
+@frappe.whitelist()
+def download_generated_pdf(name, download=0):
+    doc = frappe.get_doc("WAFD Quotation", name)
+    doc.check_permission("read")
+    if not doc.generated_pdf:
+        frappe.throw(_("لم يتم إنشاء ملف PDF لعرض السعر / No PDF has been generated"))
+    file_name = frappe.db.get_value("File", {
+        "file_url": doc.generated_pdf, "attached_to_doctype": doc.doctype,
+        "attached_to_name": doc.name,
+    }, "name")
+    if not file_name:
+        frappe.throw(_("ملف PDF غير موجود / PDF file was not found"))
+    file_doc = frappe.get_doc("File", file_name)
+    content = file_doc.get_content()
+    if isinstance(content, str):
+        content = content.encode()
+    frappe.local.response.filename = file_doc.file_name or f"{doc.name}.pdf"
+    frappe.local.response.filecontent = content
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "attachment" if cint(download) else "inline"
+    frappe.local.response.content_type = "application/pdf"

@@ -48,14 +48,21 @@ def main():
 
     controller = (ROOT / "wafd_one/wafd_one/doctype/wafd_quotation/wafd_quotation.py").read_text(encoding="utf-8")
     client = (ROOT / "wafd_one/wafd_one/doctype/wafd_quotation/wafd_quotation.js").read_text(encoding="utf-8")
-    html = print_format["html"]
+    html = (ROOT / "wafd_one/wafd_one/print_format/wafd_quotation/wafd_quotation.html").read_text(encoding="utf-8")
     assert "tax_rate = 15" in controller and "tax_amount" in controller and "grand_total" in controller
     assert "APPROVAL_ROLES" in controller and "approve_quotation" in controller
     assert "self.signature_image = self.signature_image or signature" in controller
     assert "self.company_stamp = self.company_stamp or stamp" in controller
     assert 'add_asset_toggle(frm, "include_signature"' in client
     assert 'add_asset_toggle(frm, "include_stamp"' in client
-    assert "frm.print_doc()" in client
+    assert "open_quotation_preview(frm)" in client
+    assert "ملاءمة الشاشة" in client and "طباعة PDF" in client and "مشاركة PDF" in client
+    assert "preview_quotation_html" in controller
+    assert "generate_quotation_pdf" in controller
+    assert "download_generated_pdf" in controller
+    assert html.count('class="quote-page"') == 2
+    assert "doc.introduction_text" in html and "doc.quotation_terms" in html
+    assert "doc.payment_terms" in html and "doc.closing_text" in html
     assert "doc.include_signature and doc.signature_image" in html
     assert "doc.include_stamp and doc.company_stamp" in html
     assert "get_doc(" not in html and "get_single(" not in html
@@ -72,7 +79,15 @@ def main():
     patches = (ROOT / "wafd_one/patches.txt").read_text(encoding="utf-8")
     assert "v10_0_0_rc250.execute" in patches
     assert "v10_0_0_rc251.execute" in patches
-    print("RC251 quotation system and child-controller validation passed")
+    assert "v10_0_0_rc252.execute" in patches
+    assert "48 ساعة" in fields["quotation_terms"]["default"]
+    assert "50%" in fields["payment_terms"]["default"]
+    assert "التحويل البنكي" in fields["payment_terms"]["default"]
+    assert "سلامة الغذاء" in fields["closing_text"]["default"]
+    setup = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
+    assert "def ensure_quotation_print_format" in setup
+    assert "ensure_quotation_print_format()" in setup
+    print("RC252 quotation preview, PDF and commercial-terms validation passed")
 
 
 if __name__ == "__main__":

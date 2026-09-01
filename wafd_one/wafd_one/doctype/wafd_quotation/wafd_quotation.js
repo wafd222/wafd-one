@@ -71,6 +71,9 @@ async function share_quotation_pdf(frm) {
   const file = new File([blob], result.file_name || `${frm.doc.name}.pdf`, { type: "application/pdf" });
   if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
     await navigator.share({ title: frm.doc.customer_name || frm.doc.name, files: [file] });
+    if (frm.doc.status === "معتمد / Approved") {
+      await quotation_api(frm, "set_quotation_status", { status: "أرسل للعميل / Sent" });
+    }
     return;
   }
   const url = URL.createObjectURL(blob);
@@ -78,6 +81,9 @@ async function share_quotation_pdf(frm) {
   link.href = url; link.download = file.name; link.style.display = "none";
   document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
+  if (frm.doc.status === "معتمد / Approved") {
+    await quotation_api(frm, "set_quotation_status", { status: "أرسل للعميل / Sent" });
+  }
 }
 
 function install_quotation_preview_style() {
@@ -91,8 +97,32 @@ function install_quotation_preview_style() {
     .wafd-q-tools{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;background:#f7f7f7;border-bottom:1px solid #ddd;direction:ltr}
     .wafd-q-tools button{height:32px;min-width:38px;border:1px solid #d5d5d5;border-radius:9px;background:#fff}.wafd-q-fit{padding:0 11px;font-weight:700}.wafd-q-label{min-width:52px;text-align:center;font-size:12px;font-weight:700}
     .wafd-q-frame{flex:1;min-height:0;width:100%;border:0;background:#eee}.wafd-q-actions{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ddd;background:#fff;direction:rtl}.wafd-q-actions .btn{flex:1;min-height:44px}
+    .wafd-q-direct{display:flex;gap:9px;flex-wrap:wrap;padding:10px 0;direction:rtl}.wafd-q-direct .btn{min-height:44px;flex:1 1 180px;font-weight:700}
   `;
   document.head.appendChild(style);
+}
+
+function open_sent_quotations() {
+  frappe.route_options = { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] };
+  frappe.set_route("List", "WAFD Quotation");
+}
+
+function render_quotation_direct_actions(frm) {
+  const id = "wafd-quotation-direct-actions";
+  frm.$wrapper.find(`#${id}`).remove();
+  if (frm.is_new()) return;
+  install_quotation_preview_style();
+  const $bar = $(`<div id="${id}" class="wafd-q-direct" dir="rtl">
+    <button type="button" class="btn btn-primary wafd-q-direct-preview">${__("معاينة عرض السعر")}</button>
+    <button type="button" class="btn btn-default wafd-q-sent-list">${__("عروض الأسعار المرسلة")}</button>
+  </div>`);
+  $bar.find(".wafd-q-direct-preview").on("click", async () => {
+    if (frm.is_dirty()) await frm.save();
+    open_quotation_preview(frm);
+  });
+  $bar.find(".wafd-q-sent-list").on("click", open_sent_quotations);
+  const $anchor = frm.$wrapper.find(".form-layout").first();
+  if ($anchor.length) $anchor.before($bar); else frm.$wrapper.prepend($bar);
 }
 
 function open_quotation_preview(frm) {
@@ -162,6 +192,7 @@ frappe.ui.form.on("WAFD Quotation", {
   },
   refresh(frm) {
     calculate_quotation(frm);
+    render_quotation_direct_actions(frm);
     add_asset_toggle(frm, "include_signature", "إظهار التوقيع", "إخفاء التوقيع", "✍️");
     add_asset_toggle(frm, "include_stamp", "إظهار الختم", "إخفاء الختم", "◉");
     if (!frm.is_new()) {
@@ -187,6 +218,9 @@ frappe.ui.form.on("WAFD Quotation", {
         frm.add_custom_button(__(label), () => quotation_api(frm, "set_quotation_status", { status }), __("الحالة / Status"));
       });
     }
+  },
+  after_save(frm) {
+    render_quotation_direct_actions(frm);
   },
   customer_company(frm) {
     if (!frm.doc.customer_company) return;

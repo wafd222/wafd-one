@@ -60,7 +60,12 @@ def main():
     assert "preview_quotation_html" in controller
     assert "generate_quotation_pdf" in controller
     assert "download_generated_pdf" in controller
+    assert "_remove_quotation_blank_pages" in controller
+    assert "_undertaking_asset" in controller
     assert html.count('class="quote-page"') == 2
+    assert "height:295mm" in html
+    assert 'class="signature-image"' in html and "width:48mm" in html
+    assert 'class="stamp-image"' in html and "width:58mm" in html
     assert "doc.introduction_text" in html and "doc.quotation_terms" in html
     assert "doc.payment_terms" in html and "doc.closing_text" in html
     assert "doc.include_signature and doc.signature_image" in html
@@ -80,6 +85,7 @@ def main():
     assert "v10_0_0_rc250.execute" in patches
     assert "v10_0_0_rc251.execute" in patches
     assert "v10_0_0_rc252.execute" in patches
+    assert "v10_0_0_rc253.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -87,7 +93,16 @@ def main():
     setup = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
     assert "def ensure_quotation_print_format" in setup
     assert "ensure_quotation_print_format()" in setup
-    print("RC252 quotation preview, PDF and commercial-terms validation passed")
+    assert "render_quotation_direct_actions(frm)" in client
+    assert "open_sent_quotations" in client
+    assert 'if (frm.is_dirty()) await frm.save();' in client
+    assert 'status: "أرسل للعميل / Sent"' in client
+    assert "page_number_only" in controller and "re.fullmatch" in controller
+    hub = (ROOT / "wafd_one/wafd_one/page/wafd_documents_hub/wafd_documents_hub.js").read_text(encoding="utf-8")
+    assert "عروض الأسعار المرسلة" in hub and '"status": ["in"' in hub
+    role_home = (ROOT / "wafd_one/wafd_one/page/wafd_role_home/wafd_role_home.js").read_text(encoding="utf-8")
+    assert "العروض المرسلة" in role_home
+    print("RC253 quotation pagination, assets, direct preview and sent-list validation passed")
 
 
 if __name__ == "__main__":

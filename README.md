@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC252
+# WAFD ONE 10.0.0 RC253
 
-**Current release: 10.0.0 RC252 — Complete Quotation Preview and PDF Workflow**
+**Current release: 10.0.0 RC253 — Quotation PDF Pagination and Direct Actions Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

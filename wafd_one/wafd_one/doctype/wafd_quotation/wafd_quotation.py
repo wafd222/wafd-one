@@ -135,16 +135,30 @@ class WAFDQuotation(Document):
         if self.include_stamp is None:
             self.include_stamp = 1
         if not frappe.db.exists("DocType", "WAFD Print Settings"):
+            self.signature_image = self.signature_image or self._undertaking_asset("signature") or self._template_asset("signature")
+            self.company_stamp = self.company_stamp or self._undertaking_asset("stamp") or self._template_asset("stamp")
             return
         settings = frappe.get_single("WAFD Print Settings")
         self.authorized_signatory = self.authorized_signatory or settings.signatory_name or "نزار بن نذير بن ظفر"
         self.signatory_title = self.signatory_title or settings.signatory_title or "المدير العام"
         self.company_logo = settings.company_logo or self.company_logo
         # Never clear stored assets when the display checkbox is disabled.
-        signature = settings.default_signature or self._template_asset("signature") or self._find_asset("signature")
-        stamp = settings.default_stamp or self._template_asset("stamp") or self._find_asset("stamp")
+        signature = settings.default_signature or self._undertaking_asset("signature") or self._template_asset("signature") or self._find_asset("signature")
+        stamp = settings.default_stamp or self._undertaking_asset("stamp") or self._template_asset("stamp") or self._find_asset("stamp")
         self.signature_image = self.signature_image or signature
         self.company_stamp = self.company_stamp or stamp
+
+    def _undertaking_asset(self, kind):
+        """Reuse the approved undertaking assets when print settings are legacy/incomplete."""
+        if not frappe.db.exists("DocType", "WAFD Hotel Undertaking"):
+            return ""
+        fieldname = "signature_image" if kind == "signature" else "company_stamp"
+        if not frappe.get_meta("WAFD Hotel Undertaking").has_field(fieldname):
+            return ""
+        return frappe.db.get_value(
+            "WAFD Hotel Undertaking", {fieldname: ["!=", ""]},
+            fieldname, order_by="modified desc",
+        ) or ""
 
     def _template_asset(self, kind):
         if not frappe.db.exists("DocType", "WAFD Document Template"):
@@ -253,6 +267,34 @@ def _render_quotation_html(doc):
     return _embed_pdf_images(html)
 
 
+def _remove_quotation_blank_pages(pdf_bytes):
+    """Remove wkhtmltopdf spacer pages, including page-number-only pages."""
+    import re
+    from io import BytesIO
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(BytesIO(pdf_bytes))
+    kept = []
+    for page in reader.pages:
+        raw_text = " ".join((page.extract_text() or "").split())
+        page_number_only = bool(re.fullmatch(r"[0-9]+\s*/\s*[0-9]+", raw_text))
+        if page_number_only:
+            continue
+        text = raw_text.strip()
+        resources = page.get("/Resources") or {}
+        xobjects = resources.get("/XObject") if hasattr(resources, "get") else None
+        if text or xobjects:
+            kept.append(page)
+    if not kept or len(kept) == len(reader.pages):
+        return pdf_bytes
+    writer = PdfWriter()
+    for page in kept:
+        writer.add_page(page)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
 @frappe.whitelist()
 def preview_quotation_html(name):
     doc = frappe.get_doc("WAFD Quotation", name)
@@ -279,6 +321,7 @@ def generate_quotation_pdf(name):
         "disable-smart-shrinking": None, "print-media-type": None,
     })
     pdf = _remove_trailing_blank_pages(pdf)
+    pdf = _remove_quotation_blank_pages(pdf)
     filename = f"{doc.name}.pdf"
     existing = frappe.db.get_value("File", {
         "attached_to_doctype": doc.doctype, "attached_to_name": doc.name,

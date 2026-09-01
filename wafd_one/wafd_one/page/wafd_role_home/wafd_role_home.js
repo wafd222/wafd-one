@@ -51,6 +51,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "عروض الأسعار":{en:"Quotations",id:"Penawaran",ur:"قیمت کی پیشکشیں",hi:"कोटेशन",bn:"মূল্য প্রস্তাব",fr:"Devis",ha:"Kalaman farashi",sw:"Nukuu",uz:"Tijorat takliflari"},
     "إنشاء عرض سعر":{en:"Create Quotation",id:"Buat Penawaran",ur:"کوٹیشن بنائیں",hi:"कोटेशन बनाएँ",bn:"মূল্য প্রস্তাব তৈরি",fr:"Créer un devis",ha:"Ƙirƙiri kalaman farashi",sw:"Unda Nukuu",uz:"Taklif yaratish"},
     "إعداد عرض جديد للعميل":{en:"Prepare a new customer quotation"},
+    "العروض المرسلة":{en:"Sent Quotations",id:"Penawaran Terkirim",ur:"بھیجے گئے کوٹیشن",hi:"भेजे गए कोटेशन",bn:"প্রেরিত মূল্য প্রস্তাব",fr:"Devis envoyés",ha:"Kalaman farashi da aka aika",sw:"Nukuu Zilizotumwa",uz:"Yuborilgan takliflar"},
+    "متابعة عروض الأسعار المرسلة للعملاء":{en:"Track quotations sent to customers"},
     "مراجعة واعتماد عروض الأسعار":{en:"Review and approve quotations"},
     "دفعات الإنتاج":{en:"Production Batches",id:"Batch Produksi",ur:"پروڈکشن بیچز",hi:"उत्पादन बैच",bn:"উৎপাদন ব্যাচ",fr:"Lots de production",ha:"Rukunin Samarwa",sw:"Makundi ya Uzalishaji",uz:"Ishlab chiqarish partiyalari"},
     "سجلات التغليف":{en:"Packaging Records",id:"Catatan Pengemasan",ur:"پیکنگ ریکارڈز",hi:"पैकेजिंग रिकॉर्ड",bn:"প্যাকেজিং রেকর্ড",fr:"Registres d’emballage",ha:"Bayanan Marufi",sw:"Rekodi za Ufungashaji",uz:"Qadoqlash yozuvlari"},
@@ -106,6 +108,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -120,6 +123,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
       ]
     },
@@ -132,6 +136,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التوصيل", desc: "الرحلات والتسليم والاستلام", icon: "➜", page: "wafd-delivery-hub" },
         { label: "المستندات", desc: "التعهدات والمستندات التشغيلية", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { status: ["in", ["أرسل للعميل / Sent", "مقبول / Accepted", "مرفوض / Rejected"]] } },
         { label: "إفطار صائم", desc: "المشاريع الموسمية", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },

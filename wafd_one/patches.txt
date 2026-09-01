@@ -400,3 +400,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc251.execute
 
 # RC252 full-page mobile quotation preview, PDF actions and complete commercial terms
 wafd_one.wafd_one.patches.v10_0_0_rc252.execute
+
+# RC253 remove quotation PDF spacer pages and expose signature, stamp, preview and sent list
+wafd_one.wafd_one.patches.v10_0_0_rc253.execute

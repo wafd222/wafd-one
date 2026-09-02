@@ -51,22 +51,23 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       .wafd-employee-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.wafd-employee-field{min-width:0}.wafd-employee-field label{display:block;font-weight:750;font-size:13px;margin-bottom:6px}
       .wafd-employee-field input,.wafd-employee-field select{width:100%;height:45px;border:1px solid #ded8cb;border-radius:12px;background:#faf9f6;padding:8px 11px;color:#1d1e22;outline:none}
       .wafd-employee-field input:focus,.wafd-employee-field select:focus{border-color:#a98232;box-shadow:0 0 0 3px rgba(169,130,50,.12)}
+      .wafd-task-field{grid-column:1/-1}.wafd-task-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wafd-task-option{display:flex;align-items:center;gap:9px;min-height:44px;border:1px solid #ded8cb;border-radius:12px;background:#faf9f6;padding:9px 11px;font-size:13px;font-weight:700;cursor:pointer}.wafd-task-option:has(input:checked){border-color:#a98232;background:#f5efdf;box-shadow:0 0 0 2px rgba(169,130,50,.1)}.wafd-task-option input{width:18px!important;height:18px!important;margin:0;accent-color:#8b6b28}.wafd-task-help{display:block;color:#74777d;font-size:11px;margin:6px 0 0}
       .wafd-employee-actions{display:flex;gap:10px;align-items:center;margin-top:16px}.wafd-employee-primary{border:0;border-radius:12px;background:#1d1e22;color:#fff;padding:11px 18px;font-weight:800}
       .wafd-employee-toolbar{display:grid;grid-template-columns:1fr 240px;gap:10px;margin:14px 0}.wafd-employee-toolbar input,.wafd-employee-toolbar select{height:42px;border:1px solid #ded8cb;border-radius:11px;padding:8px 11px;background:#faf9f6}
       .wafd-employee-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(180px,.8fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-employee-row:last-child{border-bottom:0}
       .wafd-employee-identity b,.wafd-employee-identity small{display:block}.wafd-employee-identity small{color:#777b82;margin-top:3px}.wafd-employee-role{display:flex;flex-wrap:wrap;gap:6px}.wafd-role-badge,.wafd-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:750}.wafd-role-badge{background:#f4eddd;color:#765b23}.wafd-status-badge.is-on{background:#e8f4ea;color:#2e6a38}.wafd-status-badge.is-off{background:#f3e8e8;color:#8b3030}
       .wafd-row-actions{display:flex;gap:7px;justify-content:flex-end}.wafd-row-actions button{border:1px solid #ddd6c8;border-radius:10px;background:#fff;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap}.wafd-row-actions button.is-stop{color:#963434}.wafd-empty{padding:30px 10px;text-align:center;color:#7b7e83}.wafd-driver-note{display:none;margin-top:6px;color:#916d25;font-size:11px}
-      @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button{flex:1}.wafd-employee-role{justify-content:flex-start}}
+      @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-task-picker{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button{flex:1}.wafd-employee-role{justify-content:flex-start}}
     </style>
     <div class="wafd-employee-shell">
       <div class="wafd-employee-inline-nav"><button type="button" class="wafd-employee-inline-back" aria-label="${tr("رجوع", "Back")}" title="${tr("رجوع", "Back")}"><span class="wafd-employee-inline-back-arrow" aria-hidden="true"></span></button></div>
       <section class="wafd-employee-card">
         <h2>${tr("إضافة موظف", "Add employee")}</h2>
-        <p>${tr("أنشئ لكل موظف حساب دخول مستقل وحدد مهمته. يمكن إضافة أكثر من موظف للمهمة نفسها، وتظهر لكل موظف الأدوات التي تسمح بها مهمته فقط.", "Create an independent login for each employee and assign one operational task. Multiple employees can share the same task, and each sees only the tools allowed by that task.")}</p>
+        <p>${tr("أنشئ لكل موظف حساب دخول مستقل وحدد مهمة واحدة أو عدة مهمات. تظهر له جميع الأدوات المسموح بها للمهمات المسندة إليه.", "Create an independent login and assign one or more operational tasks. The employee sees all tools allowed by the assigned tasks.")}</p>
         <div class="wafd-employee-form">
           <div class="wafd-employee-field"><label>${tr("اسم الموظف", "Employee name")}</label><input id="wafd-employee-name" autocomplete="name"></div>
           <div class="wafd-employee-field"><label>${tr("البريد الإلكتروني", "Email")}</label><input id="wafd-employee-email" type="email" dir="ltr" autocomplete="email"></div>
-          <div class="wafd-employee-field"><label>${tr("المهمة", "Task")}</label><select id="wafd-employee-role"><option value="">${tr("اختر المهمة", "Select task")}</option></select></div>
+          <div class="wafd-employee-field wafd-task-field"><label>${tr("المهمات", "Tasks")}</label><div class="wafd-task-picker" id="wafd-employee-roles"></div><small class="wafd-task-help">${tr("يمكن اختيار أكثر من مهمة للموظف نفسه.", "You can select more than one task for the same employee.")}</small></div>
           <div class="wafd-employee-field"><label>${tr("رقم الجوال", "Mobile number")}</label><input id="wafd-employee-mobile" type="tel" dir="ltr" autocomplete="tel" placeholder="05xxxxxxxx / +9665xxxxxxxx"><small class="wafd-driver-note">${tr("رقم الجوال مطلوب للسائق، وتُقبل الصيغة المحلية أو الدولية.", "A driver mobile is required; local and international formats are accepted.")}</small></div>
           <div class="wafd-employee-field"><label>${tr("كلمة مرور مؤقتة", "Temporary password")}</label><input id="wafd-employee-password" type="password" dir="ltr" minlength="8" autocomplete="new-password"></div>
         </div>
@@ -85,8 +86,12 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
 
   function fillRoleSelectors() {
     const options = roleOptions.map((item) => `<option value="${esc(item.role)}">${esc(arabic ? item.label : item.label_en)}</option>`).join("");
-    $root.find("#wafd-employee-role").html(`<option value="">${tr("اختر المهمة", "Select task")}</option>${options}`);
+    $root.find("#wafd-employee-roles").html(roleOptions.map((item) => `<label class="wafd-task-option"><input type="checkbox" value="${esc(item.role)}"><span>${esc(arabic ? item.label : item.label_en)}</span></label>`).join(""));
     $root.find("#wafd-employee-filter").html(`<option value="">${tr("جميع المهمات", "All tasks")}</option>${options}`);
+  }
+
+  function selectedCreateRoles() {
+    return $root.find("#wafd-employee-roles input:checked").map((_, input) => input.value).get();
   }
 
   function filteredEmployees() {
@@ -110,7 +115,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         <div class="wafd-employee-identity"><b>${esc(employee.full_name || employee.name)}</b><small dir="ltr">${esc(employee.email || employee.name)}</small></div>
         <div class="wafd-employee-role">${roles}<span class="wafd-status-badge ${employee.enabled ? "is-on" : "is-off"}">${employee.enabled ? tr("مفعّل", "Active") : tr("موقوف", "Disabled")}</span></div>
         <div class="wafd-row-actions">
-          <button type="button" class="wafd-change-role" data-user="${esc(employee.name)}">${tr("تغيير المهمة", "Change task")}</button>
+          <button type="button" class="wafd-change-role" data-user="${esc(employee.name)}">${tr("تعديل المهمات", "Edit tasks")}</button>
           <button type="button" class="wafd-toggle-employee ${employee.enabled ? "is-stop" : ""}" data-user="${esc(employee.name)}" data-enabled="${employee.enabled ? 0 : 1}">${employee.enabled ? tr("إيقاف", "Disable") : tr("تفعيل", "Enable")}</button>
         </div>
       </div>`;
@@ -131,31 +136,30 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
   }
 
   function changeRole(employee) {
-    const labelToRole = {};
-    const labels = roleOptions.map((item) => {
-      const label = arabic ? item.label : item.label_en;
-      labelToRole[label] = item.role;
-      return label;
-    });
-    const currentRole = (employee.roles || []).length === 1 ? roleLabel(employee.roles[0]) : "";
+    const currentRoles = new Set(employee.roles || []);
+    const pickerHtml = `<div class="wafd-task-picker wafd-dialog-task-picker">${roleOptions.map((item) => `<label class="wafd-task-option"><input type="checkbox" value="${esc(item.role)}" ${currentRoles.has(item.role) ? "checked" : ""}><span>${esc(arabic ? item.label : item.label_en)}</span></label>`).join("")}</div>`;
     const dialog = new frappe.ui.Dialog({
-      title: tr("تغيير مهمة الموظف", "Change employee task"),
+      title: tr("تعديل مهمات الموظف", "Edit employee tasks"),
       fields: [
-        {fieldname: "role_label", fieldtype: "Select", label: tr("المهمة الجديدة", "New task"), options: labels, default: currentRole, reqd: 1},
+        {fieldname: "roles_html", fieldtype: "HTML", label: tr("المهمات", "Tasks"), options: pickerHtml},
         {fieldname: "mobile", fieldtype: "Data", label: tr("رقم الجوال", "Mobile number"), default: employee.mobile_no || ""},
       ],
-      primary_action_label: tr("حفظ المهمة", "Save task"),
+      primary_action_label: tr("حفظ المهمات", "Save tasks"),
       primary_action: (values) => {
-        const role = labelToRole[values.role_label];
+        const roles = $(dialog.fields_dict.roles_html.wrapper).find("input:checked").map((_, input) => input.value).get();
+        if (!roles.length) {
+          frappe.msgprint(tr("اختر مهمة واحدة على الأقل.", "Select at least one task."));
+          return;
+        }
         frappe.call({
-          method: "wafd_one.employee_team.set_employee_role",
-          args: {user: employee.name, role, mobile: normalizeMobile(values.mobile)},
+          method: "wafd_one.employee_team.set_employee_roles",
+          args: {user: employee.name, roles, mobile: normalizeMobile(values.mobile)},
           freeze: true,
-          freeze_message: tr("جاري تحديث المهمة...", "Updating task..."),
+          freeze_message: tr("جاري تحديث المهمات...", "Updating tasks..."),
           callback: (response) => {
             if (!response.exc) {
               dialog.hide();
-              frappe.show_alert({message: tr("تم تحديث مهمة الموظف", "Employee task updated"), indicator: "green"});
+              frappe.show_alert({message: tr("تم تحديث مهمات الموظف", "Employee tasks updated"), indicator: "green"});
               load();
             }
           },
@@ -165,8 +169,8 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     dialog.show();
   }
 
-  $root.on("change", "#wafd-employee-role", function () {
-    $root.find(".wafd-driver-note").toggle($(this).val() === "WAFD Driver");
+  $root.on("change", "#wafd-employee-roles input", function () {
+    $root.find(".wafd-driver-note").toggle(selectedCreateRoles().includes("WAFD Driver"));
   });
   $root.on("blur", "#wafd-employee-mobile", function () {
     $(this).val(normalizeMobile($(this).val()));
@@ -198,7 +202,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     const args = {
       first_name: $root.find("#wafd-employee-name").val(),
       email: $root.find("#wafd-employee-email").val(),
-      role: $root.find("#wafd-employee-role").val(),
+      roles: selectedCreateRoles(),
       mobile: normalizeMobile($root.find("#wafd-employee-mobile").val()),
       password: $root.find("#wafd-employee-password").val(),
     };
@@ -211,7 +215,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         if (!response.exc) {
           frappe.show_alert({message: tr("تم إنشاء حساب الموظف", "Employee account created"), indicator: "green"});
           $root.find("#wafd-employee-name, #wafd-employee-email, #wafd-employee-mobile, #wafd-employee-password").val("");
-          $root.find("#wafd-employee-role").val("").trigger("change");
+          $root.find("#wafd-employee-roles input").prop("checked", false).trigger("change");
           load();
         }
       },

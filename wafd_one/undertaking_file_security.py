@@ -21,6 +21,7 @@ OFFICER_ROLE = "WAFD Undertaking Officer"
 PRIVILEGED_ROLES = {"System Manager", "WAFD Operations Manager"}
 DELIVERY_MANAGEMENT_ROLES = PRIVILEGED_ROLES | {"WAFD Delivery Supervisor", "WAFD Project Manager"}
 UNDERTAKING_DOCTYPE = "WAFD Hotel Undertaking"
+QUOTATION_DOCTYPE = "WAFD Quotation"
 
 
 def _roles(user: str) -> set[str]:
@@ -139,11 +140,25 @@ def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwar
         return None
     if _delivery_attachment_is_readable(doc, user):
         return True
+
+    # Quotation creators receive File *create* permission separately. Reading
+    # remains scoped to a file attached to a quotation they may read, avoiding
+    # broad access to unrelated private files.
+    attached_doctype = getattr(doc, "attached_to_doctype", None)
+    attached_name = getattr(doc, "attached_to_name", None)
+    attached_field = (getattr(doc, "attached_to_field", None) or "").strip()
+    if (
+        attached_doctype == QUOTATION_DOCTYPE
+        and attached_name
+        and attached_field in {"menu_attachment", "generated_pdf"}
+        and frappe.has_permission(
+            QUOTATION_DOCTYPE, ptype="read", doc=attached_name, user=user
+        )
+    ):
+        return True
     if not _is_restricted_officer(user):
         return None
 
-    attached_doctype = getattr(doc, "attached_to_doctype", None)
-    attached_name = getattr(doc, "attached_to_name", None)
     file_url = (getattr(doc, "file_url", None) or "").strip()
 
     # Generated PDF (and any legacy undertaking attachment) is readable only

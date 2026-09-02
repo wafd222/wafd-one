@@ -30,6 +30,7 @@ REQUIRED_CAPABILITIES = {
     ("WAFD Auditor", "WAFD Payment"): {"read"},
     ("WAFD Undertaking Officer", "WAFD Hotel Undertaking"): {"read", "write", "create"},
     ("WAFD Undertaking Reviewer", "WAFD Hotel Undertaking"): {"read"},
+    ("WAFD Quotation Officer", "WAFD Quotation"): {"read", "write", "create"},
     ("WAFD Operations Manager", "WAFD Quotation"): {"read", "write", "create"},
     ("WAFD Project Manager", "WAFD Quotation"): {"read", "write", "create"},
     ("WAFD Approver", "WAFD Quotation"): {"read", "write"},
@@ -55,7 +56,7 @@ def role_targets():
     for index, match in enumerate(matches):
         role = match.group(1)
         end = matches[index + 1].start() if index + 1 < len(matches) else text.find(
-            "const preferredRole", match.start()
+            "const matchedProfiles", match.start()
         )
         block = text[match.start() : end]
         targets[role] = re.findall(r'\b(page|doctype):\s*"([^"]+)"', block)

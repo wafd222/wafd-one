@@ -24,6 +24,7 @@ ROLE_LABELS = {
     "WAFD Auditor": "المدقق",
     "WAFD Undertaking Officer": "مسؤول التعهدات",
     "WAFD Undertaking Reviewer": "مراجع التعهدات",
+    "WAFD Quotation Officer": "مسؤول عروض الأسعار",
 }
 ROLE_LABELS_EN = {
     "WAFD Project Manager": "Project Manager",
@@ -38,6 +39,7 @@ ROLE_LABELS_EN = {
     "WAFD Auditor": "Auditor",
     "WAFD Undertaking Officer": "Undertaking Officer",
     "WAFD Undertaking Reviewer": "Undertaking Reviewer",
+    "WAFD Quotation Officer": "Quotation Officer",
 }
 MANAGED_ROLES = tuple(ROLE_LABELS)
 DRIVER_ROLE = "WAFD Driver"
@@ -95,6 +97,28 @@ def _validate_role(role):
     if not frappe.db.exists("Role", role):
         frappe.throw(_("The selected WAFD role is not installed."))
     return role
+
+
+def _normalize_roles(roles=None, role=None):
+    """Return a validated, de-duplicated list of managed operational roles."""
+    if isinstance(roles, str):
+        try:
+            roles = frappe.parse_json(roles)
+        except Exception:
+            roles = [roles]
+    if not roles and role:
+        roles = [role]
+    if not isinstance(roles, (list, tuple)):
+        roles = []
+
+    normalized = []
+    for value in roles:
+        valid_role = _validate_role(value)
+        if valid_role not in normalized:
+            normalized.append(valid_role)
+    if not normalized:
+        frappe.throw(_("Select at least one WAFD employee task."))
+    return normalized
 
 
 def _user_roles(user):
@@ -229,13 +253,13 @@ def list_employees():
 
 
 @frappe.whitelist()
-def create_employee(email, first_name, role, password, mobile=None):
+def create_employee(email, first_name, role=None, password=None, mobile=None, roles=None):
     _assert_manager()
     email = _normalize_email(email)
     first_name = (first_name or "").strip()
-    role = _validate_role(role)
+    roles = _normalize_roles(roles, role)
     password = password or ""
-    mobile = _normalize_mobile(mobile, required=role == DRIVER_ROLE)
+    mobile = _normalize_mobile(mobile, required=DRIVER_ROLE in roles)
 
     if not first_name:
         frappe.throw(_("Employee name is required."))
@@ -253,7 +277,7 @@ def create_employee(email, first_name, role, password, mobile=None):
             "enabled": 1,
             "send_welcome_email": 0,
             "user_type": "System User",
-            "roles": [{"role": role}],
+            "roles": [{"role": assigned_role} for assigned_role in roles],
         }
     )
     user.flags.ignore_permissions = True
@@ -262,7 +286,7 @@ def create_employee(email, first_name, role, password, mobile=None):
     from frappe.utils.password import update_password
 
     update_password(email, password, logout_all_sessions=True)
-    if role == DRIVER_ROLE:
+    if DRIVER_ROLE in roles:
         _ensure_driver_profile(email, user.full_name or first_name, mobile)
     frappe.clear_cache(user=email)
     return {
@@ -270,8 +294,10 @@ def create_employee(email, first_name, role, password, mobile=None):
         "full_name": user.full_name,
         "email": user.email,
         "enabled": user.enabled,
-        "role": role,
-        "role_label": ROLE_LABELS[role],
+        "roles": roles,
+        "role_labels": [ROLE_LABELS[assigned_role] for assigned_role in roles],
+        "role": roles[0] if len(roles) == 1 else "",
+        "role_label": ROLE_LABELS[roles[0]] if len(roles) == 1 else "",
     }
 
 
@@ -301,27 +327,38 @@ def set_employee_enabled(user, enabled=1):
 
 @frappe.whitelist()
 def set_employee_role(user, role, mobile=None):
+    """Backward-compatible single-task endpoint used by older clients."""
+    return set_employee_roles(user=user, roles=[role], mobile=mobile)
+
+
+@frappe.whitelist()
+def set_employee_roles(user, roles=None, mobile=None):
     _assert_manager()
     _assert_manageable_user(user)
-    role = _validate_role(role)
+    roles = _normalize_roles(roles)
     employee = frappe.get_doc("User", user)
     current_roles = {row.role for row in _managed_role_rows(employee)}
     if not current_roles:
         frappe.throw(_("This user is not a managed WAFD employee."))
 
-    mobile = _normalize_mobile(mobile or employee.mobile_no, required=role == DRIVER_ROLE)
+    mobile = _normalize_mobile(mobile or employee.mobile_no, required=DRIVER_ROLE in roles)
 
     employee.role_profile_name = None
     employee.set("roles", [{"role": row.role} for row in employee.roles if row.role not in MANAGED_ROLES])
-    employee.append("roles", {"role": role})
+    for assigned_role in roles:
+        employee.append("roles", {"role": assigned_role})
     if mobile:
         employee.mobile_no = mobile
     employee.flags.ignore_permissions = True
     employee.save()
 
-    if DRIVER_ROLE in current_roles and role != DRIVER_ROLE:
+    if DRIVER_ROLE in current_roles and DRIVER_ROLE not in roles:
         _set_driver_status(user, "غير نشط / Inactive")
-    if role == DRIVER_ROLE:
+    if DRIVER_ROLE in roles:
         _ensure_driver_profile(user, employee.full_name or employee.first_name, mobile)
     frappe.clear_cache(user=user)
-    return {"user": user, "role": role, "role_label": ROLE_LABELS[role]}
+    return {
+        "user": user,
+        "roles": roles,
+        "role_labels": [ROLE_LABELS[assigned_role] for assigned_role in roles],
+    }

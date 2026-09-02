@@ -37,6 +37,12 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "المالية":{en:"Finance",id:"Keuangan",ur:"مالیات",hi:"वित्त",bn:"অর্থ",fr:"Finance",ha:"Kuɗi",sw:"Fedha",uz:"Moliya"},
     "المعتمد":{en:"Approver",id:"Penyetuju",ur:"منظور کنندہ",hi:"अनुमोदक",bn:"অনুমোদনকারী",fr:"Approbateur",ha:"Mai Amincewa",sw:"Muidhinishaji",uz:"Tasdiqlovchi"},
     "المدقق":{en:"Auditor",id:"Auditor",ur:"آڈیٹر",hi:"ऑडिटर",bn:"নিরীক্ষক",fr:"Auditeur",ha:"Mai Bincike",sw:"Mkaguzi",uz:"Auditor"},
+    "مسؤول عروض الأسعار":{en:"Quotation Officer"},
+    "إنشاء وإرسال ومتابعة عروض الأسعار":{en:"Create, send, and track quotations"},
+    "جميع عروض الأسعار":{en:"All Quotations"},
+    "مراجعة جميع العروض وحالاتها":{en:"Review all quotations and their status"},
+    "مهام متعددة":{en:"Multiple Tasks"},
+    "الأدوات المصرح بها حسب المهمات المسندة":{en:"Tools allowed by the assigned tasks"},
     "لوحة الإدارة الكاملة":{en:"Full Management Dashboard",id:"Dasbor Manajemen Lengkap",ur:"مکمل انتظامی ڈیش بورڈ",hi:"पूर्ण प्रबंधन डैशबोर्ड",bn:"সম্পূর্ণ ব্যবস্থাপনা ড্যাশবোর্ড",fr:"Tableau de bord complet",ha:"Cikakken Dashboard",sw:"Dashibodi Kamili",uz:"To‘liq boshqaruv paneli"},
     "التشغيل":{en:"Operations",id:"Operasional",ur:"آپریشنز",hi:"संचालन",bn:"অপারেশন",fr:"Opérations",ha:"Ayyuka",sw:"Uendeshaji",uz:"Operatsiyalar"},
     "المخزون والمشتريات":{en:"Inventory & Purchasing",id:"Stok & Pembelian",ur:"اسٹاک اور خریداری",hi:"स्टॉक और खरीद",bn:"স্টক ও ক্রয়",fr:"Stock & Achats",ha:"Kaya & Saye",sw:"Stoo & Ununuzi",uz:"Ombor & Xarid"},
@@ -94,6 +100,14 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Undertaking Reviewer", title: "مراجع التعهدات", subtitle: "مراجعة جميع التعهدات ومعرفة من أعدّها",
       items: [
         { label: "مراجعة التعهدات", desc: "جميع التعهدات واسم مُعدّ كل تعهد", icon: "▤", doctype: "WAFD Hotel Undertaking", primary: true }
+      ]
+    },
+    {
+      role: "WAFD Quotation Officer", title: "مسؤول عروض الأسعار", subtitle: "إنشاء وإرسال ومتابعة عروض الأسعار",
+      items: [
+        { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation", primary: true },
+        { label: "العروض المرسلة", desc: "متابعة عروض الأسعار المرسلة للعملاء", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
+        { label: "جميع عروض الأسعار", desc: "مراجعة جميع العروض وحالاتها", icon: "▤", doctype: "WAFD Quotation" }
       ]
     },
     {
@@ -221,10 +235,25 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     }
   ];
 
-  const preferredRole = (!isExecutive && roles.has("WAFD Undertaking Officer")) ? "WAFD Undertaking Officer" : ((!isExecutive && roles.has("WAFD Undertaking Reviewer")) ? "WAFD Undertaking Reviewer" : null);
-  const profile = (preferredRole ? profiles.find((candidate) => candidate.role === preferredRole) : profiles.find((candidate) => roles.has(candidate.role))) || {
-    role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []
-  };
+  const matchedProfiles = profiles.filter((candidate) => roles.has(candidate.role));
+  let profile;
+  if (isExecutive) {
+    profile = matchedProfiles.find((candidate) => candidate.role === "System Manager") || matchedProfiles.find((candidate) => candidate.role === "WAFD Operations Manager");
+  } else if (matchedProfiles.length > 1) {
+    const seen = new Set();
+    const mergedItems = [];
+    matchedProfiles.forEach((candidate) => (candidate.items || []).forEach((item) => {
+      const key = [item.page || "", item.doctype || "", item.new_doctype || "", item.action || "", item.label || ""].join("|");
+      if (!seen.has(key)) {
+        seen.add(key);
+        mergedItems.push(item);
+      }
+    }));
+    profile = {role: "Multiple Tasks", title: "مهام متعددة", subtitle: "الأدوات المصرح بها حسب المهمات المسندة", items: mergedItems};
+  } else {
+    profile = matchedProfiles[0];
+  }
+  profile = profile || {role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []};
 
 
   function openNewHotelDialog() {

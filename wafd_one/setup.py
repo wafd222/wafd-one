@@ -18,6 +18,7 @@ ROLES = (
     "WAFD Auditor",
     "WAFD Undertaking Officer",
     "WAFD Undertaking Reviewer",
+    "WAFD Quotation Officer",
 )
 
 def _resolve_doctype_root():
@@ -445,6 +446,7 @@ def after_install():
     apply_setup(force_rebuild=True, assign_manager_access=True, sync_doctypes=True)
     ensure_hotel_undertaking_print_format()
     ensure_quotation_print_format()
+    ensure_quotation_file_permissions()
     ensure_madinah_hotels_400()
     frappe.clear_cache()
 
@@ -528,6 +530,41 @@ def ensure_quotation_print_format():
     if frappe.db.has_column("DocType", "default_print_format"):
         frappe.db.set_value("DocType", "WAFD Quotation", "default_print_format", data["name"], update_modified=False)
     frappe.clear_cache(doctype="Print Format")
+
+
+def ensure_quotation_file_permissions():
+    """Allow quotation creators to upload menu files with least privilege.
+
+    Frappe's Attach control creates a ``File`` document. DocType permission on
+    WAFD Quotation alone is therefore insufficient for non-manager employees.
+    Seed Custom DocPerm from the standard matrix, then replace only the WAFD
+    quotation-authoring roles so unrelated File permissions remain intact.
+    """
+    if not frappe.db.exists("DocType", "File"):
+        return
+
+    from frappe.permissions import setup_custom_perms
+
+    roles = (
+        "WAFD Operations Manager",
+        "WAFD Project Manager",
+        "WAFD Quotation Officer",
+    )
+    setup_custom_perms("File")
+    frappe.db.delete("Custom DocPerm", {"parent": "File", "role": ["in", list(roles)]})
+    for role in roles:
+        if not frappe.db.exists("Role", role):
+            continue
+        frappe.get_doc({
+            "doctype": "Custom DocPerm",
+            "parent": "File",
+            "parenttype": "DocType",
+            "parentfield": "permissions",
+            "role": role,
+            "permlevel": 0,
+            "create": 1,
+        }).insert(ignore_permissions=True)
+    frappe.clear_cache(doctype="File")
 
 
 def ensure_madinah_hotels_400():
@@ -893,6 +930,11 @@ def after_migrate():
         ensure_quotation_print_format()
     except Exception:
         frappe.log_error(frappe.get_traceback(), "WAFD ONE quotation print format sync")
+
+    try:
+        ensure_quotation_file_permissions()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE quotation File permission sync")
 
     if frappe.conf.get("wafd_one_full_post_migrate"):
         sync_all_doctypes()

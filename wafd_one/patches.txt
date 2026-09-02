@@ -406,3 +406,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc253.execute
 
 # RC254 clearer quotation typography and reliable sent-quotation tracking
 wafd_one.wafd_one.patches.v10_0_0_rc254.execute
+
+# RC255 quotation menu uploads, external-menu wording and multi-task employees
+wafd_one.wafd_one.patches.v10_0_0_rc255.execute

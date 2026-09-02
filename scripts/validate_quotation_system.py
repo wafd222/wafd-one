@@ -1,4 +1,4 @@
-"""Static release checks for the standalone RC254 quotation system."""
+"""Static release checks for the standalone RC255 quotation system."""
 
 from __future__ import annotations
 
@@ -40,6 +40,7 @@ def main():
         "System Manager": ("read", "write", "create", "delete"),
         "WAFD Operations Manager": ("read", "write", "create"),
         "WAFD Project Manager": ("read", "write", "create"),
+        "WAFD Quotation Officer": ("read", "write", "create"),
         "WAFD Approver": ("read", "write"),
         "WAFD Finance User": ("read",),
         "WAFD Auditor": ("read",),
@@ -72,6 +73,7 @@ def main():
     assert "doc.payment_terms" in html and "doc.closing_text" in html
     assert "doc.include_signature and doc.signature_image" in html
     assert "doc.include_stamp and doc.company_stamp" in html
+    assert "'حسب المنيو المرسل' if doc.menu_attachment" in html
     assert "get_doc(" not in html and "get_single(" not in html
     assert html.count("<style>") == html.count("</style>")
 
@@ -89,6 +91,7 @@ def main():
     assert "v10_0_0_rc252.execute" in patches
     assert "v10_0_0_rc253.execute" in patches
     assert "v10_0_0_rc254.execute" in patches
+    assert "v10_0_0_rc255.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -110,7 +113,25 @@ def main():
     assert all(token in html for token in ("font-weight:500", "font-size:10px", "font-size:9.3px", "color:#101010"))
     migration = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc254/execute.py").read_text(encoding="utf-8")
     assert "generated_pdf" in migration and "sent_on" in migration and "sent_by" in migration
-    print("RC254 quotation typography and reliable sent-register validation passed")
+    rc255 = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc255/execute.py").read_text(encoding="utf-8")
+    assert "ensure_quotation_file_permissions" in rc255 and "ensure_roles" in rc255
+    employee_backend = (ROOT / "wafd_one/employee_team.py").read_text(encoding="utf-8")
+    employee_ui = (ROOT / "wafd_one/wafd_one/page/wafd_employee_team/wafd_employee_team.js").read_text(encoding="utf-8")
+    setup = (ROOT / "wafd_one/setup.py").read_text(encoding="utf-8")
+    assert '"WAFD Quotation Officer"' in employee_backend
+    assert "def set_employee_roles" in employee_backend and "def _normalize_roles" in employee_backend
+    assert 'method: "wafd_one.employee_team.set_employee_roles"' in employee_ui
+    assert 'id="wafd-employee-roles"' in employee_ui and "input:checked" in employee_ui
+    assert 'setup_custom_perms("File")' in setup
+    assert all(role in setup for role in ("WAFD Operations Manager", "WAFD Project Manager", "WAFD Quotation Officer"))
+    assert '"create": 1' in setup
+    file_security = (ROOT / "wafd_one/undertaking_file_security.py").read_text(encoding="utf-8")
+    assert 'QUOTATION_DOCTYPE = "WAFD Quotation"' in file_security
+    assert '{"menu_attachment", "generated_pdf"}' in file_security
+    assert "frappe.has_permission" in file_security
+    assert 'role: "WAFD Quotation Officer"' in role_home
+    assert "const matchedProfiles" in role_home and "mergedItems" in role_home
+    print("RC255 menu upload, quotation role and multi-task employee validation passed")
 
 
 if __name__ == "__main__":

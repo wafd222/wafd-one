@@ -20,6 +20,9 @@ website_route_rules = [
 # captured by website_route_rules (those rules resolve website controllers).
 website_redirects = [
     {"source": r"/desk/wafd-role-home/?", "target": "/app/wafd-role-home"},
+    {"source": r"/wafd-role-home/?", "target": "/app/wafd-role-home"},
+    {"source": r"/wafd-one/?", "target": "/app/wafd-role-home"},
+    {"source": r"/desk/?", "target": "/app/wafd-role-home"},
 ]
 
 portal_menu_items = [

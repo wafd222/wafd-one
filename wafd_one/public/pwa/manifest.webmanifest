@@ -5,7 +5,7 @@
   "description": "WAFD ONE - Wafd Al Madinah Catering Operations",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/wafd-mobile",
+  "start_url": "/app/wafd-role-home",
   "scope": "/",
   "display": "standalone",
   "display_override": [

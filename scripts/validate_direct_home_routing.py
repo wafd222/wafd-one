@@ -86,7 +86,7 @@ def main():
     manifest = json.loads(
         (ROOT / "wafd_one/public/pwa/manifest.webmanifest").read_text(encoding="utf-8")
     )
-    assert manifest["start_url"] == "/wafd-mobile"
+    assert manifest["start_url"] == CANONICAL_HOME
 
     fallbacks = (
         ROOT / "wafd_one/public/js/wafd_mobile_navigation.js",

@@ -415,3 +415,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc256.execute
 
 # RC257 correct the quotation item-table daily meal-count heading
 wafd_one.wafd_one.patches.v10_0_0_rc257.execute
+
+# RC258 bilingual quotations, visible preview back button and direct app launch
+wafd_one.wafd_one.patches.v10_0_0_rc258.execute

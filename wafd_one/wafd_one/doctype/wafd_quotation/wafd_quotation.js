@@ -41,8 +41,12 @@ function add_asset_toggle(frm, fieldname, show_label, hide_label, icon) {
   }, __("التوقيع والختم / Signature & Stamp"));
 }
 
-function quotation_preview_url(name) {
-  return `/api/method/wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.preview_quotation_html?${new URLSearchParams({ name })}`;
+function quotation_language_code(frm) {
+  return frm.doc.quotation_language === "English" ? "en" : "ar";
+}
+
+function quotation_preview_url(name, language) {
+  return `/api/method/wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.preview_quotation_html?${new URLSearchParams({ name, language })}`;
 }
 
 function quotation_pdf_url(name, download = false) {
@@ -55,7 +59,7 @@ async function generate_quotation_pdf(frm) {
   if (frm.is_dirty()) await frm.save();
   const response = await frappe.call({
     method: "wafd_one.wafd_one.doctype.wafd_quotation.wafd_quotation.generate_quotation_pdf",
-    args: { name: frm.doc.name }, freeze: true,
+    args: { name: frm.doc.name, language: quotation_language_code(frm) }, freeze: true,
     freeze_message: __("جارٍ تجهيز ملف PDF… / Preparing PDF…"),
   });
   await frm.reload_doc();
@@ -87,9 +91,9 @@ function install_quotation_preview_style() {
   const style = document.createElement("style");
   style.id = "wafd-quotation-preview-style";
   style.textContent = `
-    .wafd-q-preview{position:fixed;inset:0;z-index:1060;background:#fff;display:flex;flex-direction:column;overscroll-behavior:none}
-    .wafd-q-head{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #ddd;background:#fff;direction:rtl}
-    .wafd-q-title{font-size:16px;font-weight:700}.wafd-q-close{width:38px;height:38px;border:1px solid #e1dccf;border-radius:11px;background:#fff;font-size:24px;line-height:1}
+    .wafd-q-preview{position:fixed;inset:0;z-index:2147483000;background:#fff;display:flex;flex-direction:column;overscroll-behavior:none;padding-top:env(safe-area-inset-top)}
+    .wafd-q-head{height:58px;min-height:58px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #ddd;background:#fff;direction:rtl;position:relative;z-index:2}
+    .wafd-q-title{font-size:16px;font-weight:800}.wafd-q-close{min-width:78px;height:40px;padding:0 12px;border:1px solid #d8cba9;border-radius:11px;background:#fff;color:#755a19;font-size:14px;font-weight:800;line-height:1;display:flex!important;align-items:center;justify-content:center;gap:7px}.wafd-q-close span{font-size:22px;line-height:1}
     .wafd-q-tools{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;background:#f7f7f7;border-bottom:1px solid #ddd;direction:ltr}
     .wafd-q-tools button{height:32px;min-width:38px;border:1px solid #d5d5d5;border-radius:9px;background:#fff}.wafd-q-fit{padding:0 11px;font-weight:700}.wafd-q-label{min-width:52px;text-align:center;font-size:12px;font-weight:700}
     .wafd-q-frame{flex:1;min-height:0;width:100%;border:0;background:#eee}.wafd-q-actions{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ddd;background:#fff;direction:rtl}.wafd-q-actions .btn{flex:1;min-height:44px}
@@ -128,8 +132,8 @@ function open_quotation_preview(frm) {
   const overlay = document.createElement("div");
   overlay.className = "wafd-q-preview";
   overlay.innerHTML = `
-    <div class="wafd-q-head"><div class="wafd-q-title">${__("معاينة عرض السعر")}</div><button class="wafd-q-close" aria-label="${__("رجوع")}">×</button></div>
-    <div class="wafd-q-tools"><button class="wafd-q-out">−</button><span class="wafd-q-label">100%</span><button class="wafd-q-in">+</button><button class="wafd-q-fit">${__("ملاءمة الشاشة")}</button></div>
+    <div class="wafd-q-head"><div class="wafd-q-title">${__("معاينة عرض السعر")}</div><button class="wafd-q-close" aria-label="${__("رجوع")}"><span>←</span>${__("رجوع")}</button></div>
+    <div class="wafd-q-tools"><button class="wafd-q-out">−</button><span class="wafd-q-label">100%</span><button class="wafd-q-in">+</button><button class="wafd-q-fit">${__("ملاءمة الشاشة")}</button><button class="wafd-q-lang"></button></div>
     <iframe class="wafd-q-frame" sandbox="allow-same-origin" title="${__("معاينة عرض السعر")}"></iframe>
     <div class="wafd-q-actions"><button class="btn btn-primary wafd-q-print">${__("طباعة PDF")}</button><button class="btn btn-default wafd-q-share">${__("مشاركة PDF")}</button></div>`;
   document.body.appendChild(overlay);
@@ -156,10 +160,22 @@ function open_quotation_preview(frm) {
       stage.style.width = `${stage.__w}px`; fit = Math.min(1, Math.max(280, frame.clientWidth - 20) / stage.__w); applyScale(fit);
     } catch (_e) {}
   }, 120));
-  frame.src = `${quotation_preview_url(frm.doc.name)}&t=${Date.now()}`;
+  let language = quotation_language_code(frm);
+  const languageButton = overlay.querySelector(".wafd-q-lang");
+  const refreshLanguage = () => {
+    languageButton.textContent = language === "en" ? "العربية" : "English";
+    frame.src = `${quotation_preview_url(frm.doc.name, language)}&t=${Date.now()}`;
+  };
+  refreshLanguage();
   overlay.querySelector(".wafd-q-out").onclick = () => applyScale(scale / 1.2);
   overlay.querySelector(".wafd-q-in").onclick = () => applyScale(scale * 1.2);
   overlay.querySelector(".wafd-q-fit").onclick = () => applyScale(fit);
+  languageButton.onclick = async () => {
+    language = language === "en" ? "ar" : "en";
+    await frm.set_value("quotation_language", language === "en" ? "English" : "العربية / Arabic");
+    if (frm.is_dirty()) await frm.save();
+    refreshLanguage();
+  };
   overlay.querySelector(".wafd-q-close").onclick = () => overlay.remove();
   overlay.querySelector(".wafd-q-print").onclick = async () => {
     const target = window.open("", "_blank");

@@ -18,6 +18,8 @@ STATUS_TRANSITIONS = {
     "أرسل للعميل / Sent": {"مقبول / Accepted", "مرفوض / Rejected", "ملغي / Cancelled"},
     "مقبول / Accepted": {"ملغي / Cancelled"},
 }
+ARABIC_LANGUAGE = "العربية / Arabic"
+ENGLISH_LANGUAGE = "English"
 
 
 class WAFDQuotation(Document):
@@ -27,8 +29,12 @@ class WAFDQuotation(Document):
         self.status = "مسودة / Draft"
         self.quotation_date = self.quotation_date or today()
         self.valid_until = self.valid_until or add_days(self.quotation_date, 15)
+        self.quotation_language = self.quotation_language or ARABIC_LANGUAGE
 
     def validate(self):
+        self.quotation_language = self.quotation_language or ARABIC_LANGUAGE
+        if self.quotation_language not in {ARABIC_LANGUAGE, ENGLISH_LANGUAGE}:
+            frappe.throw(_("لغة عرض السعر غير صحيحة / Invalid quotation language"))
         self._protect_status()
         self._fill_customer()
         self._fill_company_assets()
@@ -45,6 +51,11 @@ class WAFDQuotation(Document):
             "quotation_terms": "1. السعر مبني على العدد اليومي ومدة التعاقد الموضحين في عرض السعر.\n2. تشمل الأسعار تجهيز الوجبات والتغليف والتوصيل والتوزيع إلى موقع واحد وفي المواعيد اليومية المتفق عليها.\n3. تضاف ضريبة القيمة المضافة بنسبة 15% إلى جميع الفواتير.\n4. يتم اعتماد العدد النهائي للوجبات يومياً حسب الكمية المؤكدة من ممثل العميل.\n5. يجب إبلاغ شركة وفد المدينة بأي زيادة أو تخفيض في عدد الوجبات قبل موعد التقديم بما لا يقل عن 48 ساعة.\n6. يجوز استبدال أي صنف غير متوفر بصنف مماثل في القيمة والجودة بعد التنسيق مع ممثل العميل.\n7. لا يشمل السعر توفير صالات الطعام أو الأثاث أو أدوات التقديم الدائمة أو أعمال النظافة خارج نطاق توزيع الوجبات، ما لم يتم الاتفاق عليها كتابةً.\n8. أي توصيل إلى مواقع إضافية أو تغيير جوهري في مواعيد التوزيع تتم دراسته وتسعيره بشكل مستقل.\n9. الوجبات التي يتم تجهيزها بناءً على العدد المعتمد تُحتسب بالكامل عند الإلغاء المتأخر.\n10. مدة صلاحية عرض السعر 15 يوماً من تاريخ إصداره.\n11. يبدأ تنفيذ الخدمة بعد اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء وتحديد الموقع ومواعيد التسليم.",
             "payment_terms": "1. دفعة مقدمة قدرها 50% من القيمة التقديرية للشهر الأول عند اعتماد العرض وتوقيع العقد أو إصدار أمر الشراء.\n2. دفعة قدرها 50% بعد مرور 15 يوماً من بداية تقديم الخدمة.\n3. تطبق آلية الدفعات نفسها على كل شهر تعاقدي لاحق، ما لم يتم الاتفاق كتابياً على خلاف ذلك.\n4. يتم السداد عن طريق التحويل البنكي إلى الحساب الرسمي لشركة وفد المدينة لخدمات الإعاشة.\n5. يحق لمقدم الخدمة تعليق التوريد بعد إشعار العميل كتابياً في حال تأخر أي دفعة عن موعد استحقاقها.",
             "closing_text": "نأمل أن يحوز عرضنا على رضاكم، ونتطلع إلى التعاون مع شركتكم الموقرة وتقديم خدمات إعاشة تتميز بالجودة والالتزام وسلامة الغذاء.\nوتفضلوا بقبول خالص التحية والتقدير.",
+            "quotation_subject_en": "Quotation for Daily Catering Services",
+            "introduction_text_en": "Wafd Al Madinah Catering Services is pleased to submit this quotation for the provision of daily catering meals in accordance with the quantities and service period stated herein.\nThis quotation includes meal preparation, packaging, delivery and distribution at the agreed location.\nThe agreed menu will be provided on a recurring weekly basis throughout the contract term.",
+            "quotation_terms_en": "1. The price is based on the daily meal count and service period stated in this quotation.\n2. Prices include meal preparation, packaging, delivery and distribution to one location at the agreed daily times.\n3. Value Added Tax (VAT) at 15% is added to all invoices.\n4. The final daily meal count will be based on the quantity confirmed by the customer's representative.\n5. Wafd Al Madinah must be notified of any increase or decrease in meal quantities at least 48 hours before service.\n6. Any unavailable item may be replaced with an item of comparable value and quality after coordination with the customer's representative.\n7. The price does not include dining halls, furniture, permanent serving equipment or cleaning work beyond meal distribution unless agreed in writing.\n8. Delivery to additional locations or a material change to distribution times will be reviewed and quoted separately.\n9. Meals prepared according to the confirmed quantity will be charged in full in the event of late cancellation.\n10. This quotation is valid for 15 days from its issue date.\n11. Service begins after quotation approval and contract signature or purchase-order issuance, and after confirming the location and delivery times.",
+            "payment_terms_en": "1. An advance payment of 50% of the estimated first-month value is due upon quotation approval and contract signature or purchase-order issuance.\n2. The remaining 50% is due 15 days after service begins.\n3. The same payment schedule applies to every subsequent contract month unless otherwise agreed in writing.\n4. Payment shall be made by bank transfer to the official account of Wafd Al Madinah Catering Services.\n5. The service provider may suspend supply after written notice to the customer if any payment is overdue.",
+            "closing_text_en": "We hope this quotation meets your approval and look forward to working with your respected company and providing catering services distinguished by quality, commitment and food safety.\nSincerely yours,",
         }
         for fieldname, value in defaults.items():
             if not (self.get(fieldname) or "").strip():
@@ -271,12 +282,20 @@ def _quotation_template_source():
     return path.read_text(encoding="utf-8")
 
 
-def _render_quotation_html(doc):
+def _normalize_quotation_language(language=None, doc=None):
+    value = str(language or (doc and doc.get("quotation_language")) or ARABIC_LANGUAGE).strip().lower()
+    return "en" if value in {"en", "english"} else "ar"
+
+
+def _render_quotation_html(doc, language=None):
     from wafd_one.document_studio import _embed_pdf_images
 
     doc._fill_company_assets()
     doc._fill_default_texts()
-    html = frappe.render_template(_quotation_template_source(), {"doc": doc})
+    html = frappe.render_template(
+        _quotation_template_source(),
+        {"doc": doc, "language": _normalize_quotation_language(language, doc)},
+    )
     return _embed_pdf_images(html)
 
 
@@ -309,10 +328,10 @@ def _remove_quotation_blank_pages(pdf_bytes):
 
 
 @frappe.whitelist()
-def preview_quotation_html(name):
+def preview_quotation_html(name, language=None):
     doc = frappe.get_doc("WAFD Quotation", name)
     doc.check_permission("read")
-    html = _render_quotation_html(doc)
+    html = _render_quotation_html(doc, language)
     frappe.local.response.filename = f"{doc.name}.html"
     frappe.local.response.filecontent = html.encode("utf-8")
     frappe.local.response.type = "download"
@@ -321,13 +340,14 @@ def preview_quotation_html(name):
 
 
 @frappe.whitelist()
-def generate_quotation_pdf(name):
+def generate_quotation_pdf(name, language=None):
     from frappe.utils.pdf import get_pdf
     from wafd_one.document_studio import _remove_trailing_blank_pages
 
     doc = frappe.get_doc("WAFD Quotation", name)
     doc.check_permission("print")
-    html = _render_quotation_html(doc)
+    language = _normalize_quotation_language(language, doc)
+    html = _render_quotation_html(doc, language)
     pdf = get_pdf(html, options={
         "page-size": "A4", "margin-top": "0mm", "margin-right": "0mm",
         "margin-bottom": "0mm", "margin-left": "0mm", "encoding": "UTF-8",
@@ -335,7 +355,7 @@ def generate_quotation_pdf(name):
     })
     pdf = _remove_trailing_blank_pages(pdf)
     pdf = _remove_quotation_blank_pages(pdf)
-    filename = f"{doc.name}.pdf"
+    filename = f"{doc.name}{'-EN' if language == 'en' else ''}.pdf"
     existing = frappe.db.get_value("File", {
         "attached_to_doctype": doc.doctype, "attached_to_name": doc.name,
         "file_name": filename,

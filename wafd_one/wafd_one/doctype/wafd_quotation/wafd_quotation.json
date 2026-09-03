@@ -7,13 +7,14 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "naming_series","quotation_date","valid_until","status","customer_section","customer_company","customer_name","customer_column","contact_person","customer_phone","customer_email","service_section","supply_location","hotel","start_date","service_column","end_date","service_days","beneficiary_count","menu_attachment","introduction_section","quotation_subject","introduction_text","items_section","items","commercial_section","delivery_included","distribution_included","commercial_column","additional_charges","discount_amount","totals_section","subtotal","tax_rate","tax_amount","totals_column","grand_total","currency","terms_section","quotation_terms","payment_terms","closing_text","company_section","company_name","company_cr","company_phone","company_email","company_address","company_logo","approval_section","authorized_signatory","signatory_title","include_signature","include_stamp","approval_column","signature_image","company_stamp","generated_pdf","generated_on","generated_by","sent_on","sent_by","prepared_by_user","prepared_by_name","approved_by_user","approved_by_name","approved_on"
+  "naming_series","quotation_date","valid_until","status","quotation_language","customer_section","customer_company","customer_name","customer_column","contact_person","customer_phone","customer_email","service_section","supply_location","hotel","start_date","service_column","end_date","service_days","beneficiary_count","menu_attachment","introduction_section","quotation_subject","introduction_text","english_content_section","quotation_subject_en","introduction_text_en","quotation_terms_en","payment_terms_en","closing_text_en","items_section","items","commercial_section","delivery_included","distribution_included","commercial_column","additional_charges","discount_amount","totals_section","subtotal","tax_rate","tax_amount","totals_column","grand_total","currency","terms_section","quotation_terms","payment_terms","closing_text","company_section","company_name","company_cr","company_phone","company_email","company_address","company_logo","approval_section","authorized_signatory","signatory_title","include_signature","include_stamp","approval_column","signature_image","company_stamp","generated_pdf","generated_on","generated_by","sent_on","sent_by","prepared_by_user","prepared_by_name","approved_by_user","approved_by_name","approved_on"
  ],
  "fields": [
   {"fieldname":"naming_series","fieldtype":"Select","label":"السلسلة / Series","options":"WAFD-QUO-.YYYY.-.#####","default":"WAFD-QUO-.YYYY.-.#####","hidden":1,"reqd":1},
   {"fieldname":"quotation_date","fieldtype":"Date","label":"تاريخ عرض السعر / Quotation Date","default":"Today","reqd":1,"in_list_view":1},
   {"fieldname":"valid_until","fieldtype":"Date","label":"صالح حتى / Valid Until","reqd":1,"in_list_view":1},
   {"fieldname":"status","fieldtype":"Select","label":"الحالة / Status","options":"مسودة / Draft\nبانتظار الاعتماد / Pending Approval\nمعتمد / Approved\nأرسل للعميل / Sent\nمقبول / Accepted\nمرفوض / Rejected\nمنتهي / Expired\nملغي / Cancelled","default":"مسودة / Draft","read_only":1,"in_list_view":1},
+  {"fieldname":"quotation_language","fieldtype":"Select","label":"لغة عرض السعر / Quotation Language","options":"العربية / Arabic\nEnglish","default":"العربية / Arabic","reqd":1},
   {"fieldname":"customer_section","fieldtype":"Section Break","label":"بيانات العميل / Customer"},
   {"fieldname":"customer_company","fieldtype":"Link","label":"مرجع العميل (اختياري) / Customer Reference (Optional)","options":"WAFD Mission"},
   {"fieldname":"customer_name","fieldtype":"Data","label":"اسم الشركة في العرض / Company Display Name","reqd":1},
@@ -33,6 +34,12 @@
   {"fieldname":"introduction_section","fieldtype":"Section Break","label":"مقدمة عرض السعر / Quotation Introduction"},
   {"fieldname":"quotation_subject","fieldtype":"Data","label":"الموضوع / Subject","default":"عرض سعر لتقديم خدمات الإعاشة اليومية","reqd":1},
   {"fieldname":"introduction_text","fieldtype":"Text","label":"نص المقدمة / Introduction Text","default":"يسر شركة وفد المدينة لخدمات الإعاشة أن تتقدم لكم بعرضها لتوفير وجبات الإعاشة اليومية وفقاً للكميات والمدة الموضحة في هذا العرض.\nيشمل العرض تجهيز الوجبات وتغليفها وتوصيلها وتوزيعها في الموقع المتفق عليه.\nيتم تطبيق المنيو المتفق عليه بصورة متكررة طوال مدة التعاقد."},
+  {"fieldname":"english_content_section","fieldtype":"Section Break","label":"النص الإنجليزي / English Content","depends_on":"eval:doc.quotation_language=='English'","collapsible":1},
+  {"fieldname":"quotation_subject_en","fieldtype":"Data","label":"الموضوع بالإنجليزية / English Subject","depends_on":"eval:doc.quotation_language=='English'"},
+  {"fieldname":"introduction_text_en","fieldtype":"Text","label":"المقدمة بالإنجليزية / English Introduction","depends_on":"eval:doc.quotation_language=='English'"},
+  {"fieldname":"quotation_terms_en","fieldtype":"Long Text","label":"شروط العرض بالإنجليزية / English Quotation Terms","depends_on":"eval:doc.quotation_language=='English'"},
+  {"fieldname":"payment_terms_en","fieldtype":"Long Text","label":"شروط الدفعات بالإنجليزية / English Payment Terms","depends_on":"eval:doc.quotation_language=='English'"},
+  {"fieldname":"closing_text_en","fieldtype":"Text","label":"الختام بالإنجليزية / English Closing","depends_on":"eval:doc.quotation_language=='English'"},
   {"fieldname":"items_section","fieldtype":"Section Break","label":"بنود عرض السعر / Quotation Items"},
   {"fieldname":"items","fieldtype":"Table","label":"الوجبات والخدمات / Meals & Services","options":"WAFD Quotation Item","reqd":1},
   {"fieldname":"commercial_section","fieldtype":"Section Break","label":"الخدمات والإضافات / Services & Adjustments"},

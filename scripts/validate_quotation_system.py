@@ -1,4 +1,4 @@
-"""Static release checks for the standalone RC257 quotation system."""
+"""Static release checks for the standalone RC258 quotation system."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def main():
     assert "doc.payment_terms" in html and "doc.closing_text" in html
     assert "doc.include_signature and doc.signature_image" in html
     assert "doc.include_stamp and doc.company_stamp" in html
-    assert "'حسب المنيو المرسل' if doc.menu_attachment" in html
+    assert "'حسب المنيو المرسل'" in html and "'As per attached menu'" in html
     assert "{% if doc.menu_attachment %}" in html
     assert 'class="menu-image" src="{{ doc.menu_attachment }}"' in html
     assert "3 / 3" in html and "المنيو المرفق" in html
@@ -99,6 +99,7 @@ def main():
     assert "v10_0_0_rc255.execute" in patches
     assert "v10_0_0_rc256.execute" in patches
     assert "v10_0_0_rc257.execute" in patches
+    assert "v10_0_0_rc258.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -146,11 +147,18 @@ def main():
     assert "wafd_role_home" in rc256
     assert "فقط العروض التي تمت مشاركتها وتسجيل إرسالها" in role_home
     assert "المسودات والمعتمدة والمرسلة وجميع الحالات" in role_home
-    assert "<th>عدد الوجبات</th>" in html
+    assert "'Meal Count' if is_en else 'عدد الوجبات'" in html
     assert "<th>يومي</th>" not in html
     rc257 = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc257/execute.py").read_text(encoding="utf-8")
     assert "ensure_quotation_print_format" in rc257
-    print("RC257 quotation meal-count heading validation passed")
+    rc258 = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc258/execute.py").read_text(encoding="utf-8")
+    assert 'reload_doc("wafd_one", "doctype", "wafd_quotation"' in rc258
+    assert "quotation_language" in fields
+    assert "quotation_subject_en" in fields
+    assert "language == 'en'" in html
+    assert "wafd-q-lang" in client
+    assert "z-index:2147483000" in client
+    print("RC258 bilingual quotation and preview-back validation passed")
 
 
 if __name__ == "__main__":

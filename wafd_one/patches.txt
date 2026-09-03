@@ -412,3 +412,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc255.execute
 
 # RC256 reliable menu image upload and a dedicated appended quotation page
 wafd_one.wafd_one.patches.v10_0_0_rc256.execute
+
+# RC257 correct the quotation item-table daily meal-count heading
+wafd_one.wafd_one.patches.v10_0_0_rc257.execute

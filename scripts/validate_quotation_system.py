@@ -1,4 +1,4 @@
-"""Static release checks for the standalone RC256 quotation system."""
+"""Static release checks for the standalone RC257 quotation system."""
 
 from __future__ import annotations
 
@@ -98,6 +98,7 @@ def main():
     assert "v10_0_0_rc254.execute" in patches
     assert "v10_0_0_rc255.execute" in patches
     assert "v10_0_0_rc256.execute" in patches
+    assert "v10_0_0_rc257.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -145,7 +146,11 @@ def main():
     assert "wafd_role_home" in rc256
     assert "فقط العروض التي تمت مشاركتها وتسجيل إرسالها" in role_home
     assert "المسودات والمعتمدة والمرسلة وجميع الحالات" in role_home
-    print("RC256 menu image upload and appended quotation-page validation passed")
+    assert "<th>عدد الوجبات</th>" in html
+    assert "<th>يومي</th>" not in html
+    rc257 = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc257/execute.py").read_text(encoding="utf-8")
+    assert "ensure_quotation_print_format" in rc257
+    print("RC257 quotation meal-count heading validation passed")
 
 
 if __name__ == "__main__":

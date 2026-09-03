@@ -1,4 +1,4 @@
-"""Static release checks for the standalone RC255 quotation system."""
+"""Static release checks for the standalone RC256 quotation system."""
 
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ def main():
     assert fields["include_stamp"]["default"] == "1"
     assert fields["sent_on"]["fieldtype"] == "Datetime"
     assert fields["sent_by"]["options"] == "User"
+    assert fields["menu_attachment"]["fieldtype"] == "Attach Image"
     assert fields["tax_rate"]["default"] == "15"
     for name in ("menu_source", "wafd_menu", "custom_menu_description", "daily_quantity", "service_days", "total_quantity", "unit_price", "amount"):
         assert name in child_fields
@@ -65,7 +66,7 @@ def main():
     assert "download_generated_pdf" in controller
     assert "_remove_quotation_blank_pages" in controller
     assert "_undertaking_asset" in controller
-    assert html.count('class="quote-page"') == 2
+    assert html.count('class="quote-page') == 3
     assert "height:295mm" in html
     assert 'class="signature-image"' in html and "width:48mm" in html
     assert 'class="stamp-image"' in html and "width:58mm" in html
@@ -74,6 +75,10 @@ def main():
     assert "doc.include_signature and doc.signature_image" in html
     assert "doc.include_stamp and doc.company_stamp" in html
     assert "'حسب المنيو المرسل' if doc.menu_attachment" in html
+    assert "{% if doc.menu_attachment %}" in html
+    assert 'class="menu-image" src="{{ doc.menu_attachment }}"' in html
+    assert "3 / 3" in html and "المنيو المرفق" in html
+    assert "'3' if doc.menu_attachment else '2'" in html
     assert "get_doc(" not in html and "get_single(" not in html
     assert html.count("<style>") == html.count("</style>")
 
@@ -92,6 +97,7 @@ def main():
     assert "v10_0_0_rc253.execute" in patches
     assert "v10_0_0_rc254.execute" in patches
     assert "v10_0_0_rc255.execute" in patches
+    assert "v10_0_0_rc256.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]
@@ -127,11 +133,19 @@ def main():
     assert '"create": 1' in setup
     file_security = (ROOT / "wafd_one/undertaking_file_security.py").read_text(encoding="utf-8")
     assert 'QUOTATION_DOCTYPE = "WAFD Quotation"' in file_security
+    assert "QUOTATION_FILE_CREATORS" in file_security
+    assert 'permission_type == "create"' in file_security
     assert '{"menu_attachment", "generated_pdf"}' in file_security
     assert "frappe.has_permission" in file_security
     assert 'role: "WAFD Quotation Officer"' in role_home
     assert "const matchedProfiles" in role_home and "mergedItems" in role_home
-    print("RC255 menu upload, quotation role and multi-task employee validation passed")
+    rc256 = (ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc256/execute.py").read_text(encoding="utf-8")
+    assert "ensure_quotation_file_permissions" in rc256
+    assert "ensure_quotation_print_format" in rc256
+    assert "wafd_role_home" in rc256
+    assert "فقط العروض التي تمت مشاركتها وتسجيل إرسالها" in role_home
+    assert "المسودات والمعتمدة والمرسلة وجميع الحالات" in role_home
+    print("RC256 menu image upload and appended quotation-page validation passed")
 
 
 if __name__ == "__main__":

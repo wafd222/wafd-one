@@ -29,7 +29,7 @@
   {"fieldname":"end_date","fieldtype":"Date","label":"تاريخ النهاية / End Date","reqd":1},
   {"fieldname":"service_days","fieldtype":"Int","label":"عدد أيام الخدمة / Service Days","read_only":1},
   {"fieldname":"beneficiary_count","fieldtype":"Int","label":"عدد الوجبات اليومي الافتراضي / Default Daily Meals","reqd":1,"non_negative":1},
-  {"fieldname":"menu_attachment","fieldtype":"Attach","label":"مرفق المنيو (اختياري) / Menu Attachment"},
+  {"fieldname":"menu_attachment","fieldtype":"Attach Image","label":"صورة المنيو المرفقة (اختياري) / Attached Menu Image"},
   {"fieldname":"introduction_section","fieldtype":"Section Break","label":"مقدمة عرض السعر / Quotation Introduction"},
   {"fieldname":"quotation_subject","fieldtype":"Data","label":"الموضوع / Subject","default":"عرض سعر لتقديم خدمات الإعاشة اليومية","reqd":1},
   {"fieldname":"introduction_text","fieldtype":"Text","label":"نص المقدمة / Introduction Text","default":"يسر شركة وفد المدينة لخدمات الإعاشة أن تتقدم لكم بعرضها لتوفير وجبات الإعاشة اليومية وفقاً للكميات والمدة الموضحة في هذا العرض.\nيشمل العرض تجهيز الوجبات وتغليفها وتوصيلها وتوزيعها في الموقع المتفق عليه.\nيتم تطبيق المنيو المتفق عليه بصورة متكررة طوال مدة التعاقد."},

@@ -22,6 +22,12 @@ PRIVILEGED_ROLES = {"System Manager", "WAFD Operations Manager"}
 DELIVERY_MANAGEMENT_ROLES = PRIVILEGED_ROLES | {"WAFD Delivery Supervisor", "WAFD Project Manager"}
 UNDERTAKING_DOCTYPE = "WAFD Hotel Undertaking"
 QUOTATION_DOCTYPE = "WAFD Quotation"
+QUOTATION_FILE_CREATORS = {
+    "System Manager",
+    "WAFD Operations Manager",
+    "WAFD Project Manager",
+    "WAFD Quotation Officer",
+}
 
 
 def _roles(user: str) -> set[str]:
@@ -135,7 +141,14 @@ def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwar
     user = user or frappe.session.user
     permission_type = permission_type or ptype or "read"
 
-    # Never widen write/create/delete/share permissions on File.
+    # Frappe checks File.create before the new File row is inserted. Returning
+    # True here makes the standard Attach/Attach Image control reliable even
+    # when an existing site's Custom DocPerm cache has not yet been rebuilt.
+    # Reading remains narrowly scoped below.
+    if permission_type == "create" and (_roles(user) & QUOTATION_FILE_CREATORS):
+        return True
+
+    # Never widen write/delete/share permissions on File.
     if permission_type not in {"read", "select"}:
         return None
     if _delivery_attachment_is_readable(doc, user):

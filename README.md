@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC258
+# WAFD ONE 10.0.0 RC259
 
-**Current release: 10.0.0 RC258 — Bilingual Quotations and Direct Driver Launch**
+**Current release: 10.0.0 RC259 — Existing Driver Shortcut Launch Repair**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

@@ -100,6 +100,7 @@ def main():
     assert "v10_0_0_rc256.execute" in patches
     assert "v10_0_0_rc257.execute" in patches
     assert "v10_0_0_rc258.execute" in patches
+    assert "v10_0_0_rc259.execute" in patches
     assert "48 ساعة" in fields["quotation_terms"]["default"]
     assert "50%" in fields["payment_terms"]["default"]
     assert "التحويل البنكي" in fields["payment_terms"]["default"]

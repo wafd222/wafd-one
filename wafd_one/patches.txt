@@ -418,3 +418,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc257.execute
 
 # RC258 bilingual quotations, visible preview back button and direct app launch
 wafd_one.wafd_one.patches.v10_0_0_rc258.execute
+
+# RC259 install the missing legacy PWA launch page used by existing driver shortcuts
+wafd_one.wafd_one.patches.v10_0_0_rc259.execute

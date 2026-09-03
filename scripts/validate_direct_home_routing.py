@@ -61,6 +61,10 @@ def main():
         "The canonical Desk Page route must not be captured by website_route_rules"
     )
     assert any(row.get("from_route") == "/wafd-mobile" for row in rules)
+    launch_template = ROOT / "wafd_one/www/wafd_mobile.html"
+    assert launch_template.exists(), "The /wafd-mobile controller requires a website template"
+    launch_html = launch_template.read_text(encoding="utf-8")
+    assert 'window.location.replace("/app/wafd-role-home")' in launch_html
 
     redirects = _assignment(hooks, "website_redirects")
     assert any(

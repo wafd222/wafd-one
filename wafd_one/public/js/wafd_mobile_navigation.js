@@ -127,7 +127,7 @@
   }
 
   function hasOpenModal() {
-    return Array.from(document.querySelectorAll(".modal.show, .modal[style*='display: block'], .frappe-dialog"))
+    return Array.from(document.querySelectorAll(".modal.show, .modal[style*='display: block'], .frappe-dialog, .wafd-und-preview-overlay"))
       .some(elementIsActuallyVisible);
   }
 

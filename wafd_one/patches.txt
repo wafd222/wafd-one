@@ -427,3 +427,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc260.execute
 
 # RC261 compact the actual live undertaking layout after historical terms adjustments
 wafd_one.wafd_one.patches.v10_0_0_rc261.execute
+
+# RC262 restore the approved undertaking layout and keep one preview back button
+wafd_one.wafd_one.patches.v10_0_0_rc262.execute

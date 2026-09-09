@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC260
+# WAFD ONE 10.0.0 RC261
 
-**Current release: 10.0.0 RC260 — Compact Undertaking Layout**
+**Current release: 10.0.0 RC261 — Live Undertaking Spacing Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

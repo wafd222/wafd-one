@@ -46,6 +46,10 @@ def main() -> None:
         "wafd_rc260_layout",
         ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc260/execute.py",
     )
+    live_migration = load_module(
+        "wafd_rc261_layout",
+        ROOT / "wafd_one/wafd_one/patches/v10_0_0_rc261/execute.py",
+    )
 
     current = source.undertaking_canvas()
     by_id = {block["id"]: block for block in current["blocks"]}
@@ -67,6 +71,24 @@ def main() -> None:
     untouched = copy.deepcopy(customized)
     assert migration._tighten_spacing(customized) is False
     assert customized == untouched
+
+    live = copy.deepcopy(current)
+    for block_id, position in live_migration.SOURCE_LAYOUT.items():
+        block = next(row for row in live["blocks"] if row.get("id") == block_id)
+        block.update(position)
+    live_before = copy.deepcopy(live)
+    assert live_migration._tighten_live_layout(live) is True
+    assert without_layout_coordinates(live) == without_layout_coordinates(live_before)
+    live_by_id = {block["id"]: block for block in live["blocks"]}
+    for block_id, expected in live_migration.TARGET_LAYOUT.items():
+        assert {key: live_by_id[block_id][key] for key in ("y", "h")} == expected
+    assert live_migration._tighten_live_layout(live) is False
+
+    live_customized = copy.deepcopy(live_before)
+    next(row for row in live_customized["blocks"] if row.get("id") == "terms")["y"] = 590
+    live_untouched = copy.deepcopy(live_customized)
+    assert live_migration._tighten_live_layout(live_customized) is False
+    assert live_customized == live_untouched
 
     print("Undertaking spacing validation passed: coordinates only, content preserved")
 

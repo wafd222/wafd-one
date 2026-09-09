@@ -421,3 +421,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc258.execute
 
 # RC259 install the missing legacy PWA launch page used by existing driver shortcuts
 wafd_one.wafd_one.patches.v10_0_0_rc259.execute
+
+# RC260 tighten undertaking spacing without changing template text or system behavior
+wafd_one.wafd_one.patches.v10_0_0_rc260.execute

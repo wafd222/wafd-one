@@ -98,11 +98,11 @@ def undertaking_canvas():
         [("الوجبات / Meals",'{{ doc.meal_types or "" }}'),("موقع التوريد / Supply Location",'{{ doc.supply_location or doc.hotel or "" }}')],
     ])
     return _header("تعهد والتزام إعاشة","CATERING SERVICES UNDERTAKING",[
-        _block("intro","field",54,168,685,180,intro), _block("details","field",48,360,697,265,details),
-        _block("terms","field",60,610,675,170,'<div style="direction:rtl;border:1px solid #ddd;padding:9px;font-size:9.4px;line-height:1.55;"><b>الشروط والملاحظات</b><ol style="margin:5px 18px 0 0;padding:0;"><li>تقديم الوجبات المتفق عليها وفق العدد ونوع الوجبة والفترة الموضحة في التعهد.</li><li>الالتزام بمواعيد تجهيز ونقل وتسليم الوجبات دون تأخير.</li><li>الالتزام باشتراطات سلامة الغذاء والنظافة والتعبئة والنقل والحفظ الحراري.</li><li>تسليم الوجبات في موقع التوريد المحدد وبالكميات المعتمدة.</li><li>تزويد الفندق بالمستندات النظامية المطلوبة عند الطلب.</li><li>للفندق التحقق من الكميات والحالة الظاهرية عند الاستلام وإثبات أي ملاحظة فوراً.</li><li>لا يُعتد بأي تعديل في العدد أو المواعيد إلا بعد اعتماده من الشركة.</li></ol>{% if doc.additional_terms or doc.service_notes %}<div style="margin-top:5px;"><b>بنود إضافية:</b> {{ doc.additional_terms or doc.service_notes }}</div>{% endif %}</div>'),
-        _block("signatory","field",70,790,285,82,'<div style="direction:rtl;text-align:center;font-size:10.5px;line-height:1.7;"><b>شركة وفد المدينة لخدمات الإعاشة</b><br>{{ doc.authorized_signatory or doc.company_representative or "الممثل المعتمد" }}<br>{{ doc.signatory_title or "" }}<br>التوقيع: ____________________</div>'),
-        _block("signature","signature",395,785,140,90,src='{{ doc.signature_image or "" }}',z=10),
-        _block("stamp","stamp",550,770,165,120,src='{{ doc.company_stamp or "" }}',z=10),
+        _block("intro","field",54,168,685,105,intro), _block("details","field",48,285,697,265,details),
+        _block("terms","field",60,535,675,170,'<div style="direction:rtl;border:1px solid #ddd;padding:9px;font-size:9.4px;line-height:1.55;"><b>الشروط والملاحظات</b><ol style="margin:5px 18px 0 0;padding:0;"><li>تقديم الوجبات المتفق عليها وفق العدد ونوع الوجبة والفترة الموضحة في التعهد.</li><li>الالتزام بمواعيد تجهيز ونقل وتسليم الوجبات دون تأخير.</li><li>الالتزام باشتراطات سلامة الغذاء والنظافة والتعبئة والنقل والحفظ الحراري.</li><li>تسليم الوجبات في موقع التوريد المحدد وبالكميات المعتمدة.</li><li>تزويد الفندق بالمستندات النظامية المطلوبة عند الطلب.</li><li>للفندق التحقق من الكميات والحالة الظاهرية عند الاستلام وإثبات أي ملاحظة فوراً.</li><li>لا يُعتد بأي تعديل في العدد أو المواعيد إلا بعد اعتماده من الشركة.</li></ol>{% if doc.additional_terms or doc.service_notes %}<div style="margin-top:5px;"><b>بنود إضافية:</b> {{ doc.additional_terms or doc.service_notes }}</div>{% endif %}</div>'),
+        _block("signatory","field",70,715,285,82,'<div style="direction:rtl;text-align:center;font-size:10.5px;line-height:1.7;"><b>شركة وفد المدينة لخدمات الإعاشة</b><br>{{ doc.authorized_signatory or doc.company_representative or "الممثل المعتمد" }}<br>{{ doc.signatory_title or "" }}<br>التوقيع: ____________________</div>'),
+        _block("signature","signature",395,710,140,90,src='{{ doc.signature_image or "" }}',z=10),
+        _block("stamp","stamp",550,695,165,120,src='{{ doc.company_stamp or "" }}',z=10),
     ])
 
 

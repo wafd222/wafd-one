@@ -430,3 +430,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc261.execute
 
 # RC262 restore the approved undertaking layout and keep one preview back button
 wafd_one.wafd_one.patches.v10_0_0_rc262.execute
+
+# RC263 remove only the requested undertaking closing phrase
+wafd_one.wafd_one.patches.v10_0_0_rc263.execute

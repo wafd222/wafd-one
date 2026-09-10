@@ -69,6 +69,14 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "حركات المخزون":{en:"Stock Movements",id:"Pergerakan Stok",ur:"اسٹاک موومنٹس",hi:"स्टॉक मूवमेंट",bn:"স্টক মুভমেন্ট",fr:"Mouvements de stock",ha:"Motsin Kaya",sw:"Mienendo ya Stoo",uz:"Ombor harakatlari"},
     "أرصدة المخزون":{en:"Stock Balances",id:"Saldo Stok",ur:"اسٹاک بیلنس",hi:"स्टॉक बैलेंस",bn:"স্টক ব্যালেন্স",fr:"Soldes de stock",ha:"Ma'aunin Kaya",sw:"Salio la Stoo",uz:"Ombor qoldiqlari"},
     "أوامر الشراء":{en:"Purchase Orders",id:"Pesanan Pembelian",ur:"خریداری آرڈرز",hi:"खरीद आदेश",bn:"ক্রয় আদেশ",fr:"Bons de commande",ha:"Odar Saye",sw:"Oda za Ununuzi",uz:"Xarid buyurtmalari"},
+    "إدارة المخزون":{en:"Manage Inventory"},
+    "شاشة سهلة للاستلام والصرف والتحويل والأرصدة":{en:"Simple receiving, issuing, transfer, and balance screen"},
+    "استلام مواد مشتراة":{en:"Receive Purchased Materials"},
+    "تسجيل المواد الواردة من أمر الشراء":{en:"Record materials received against a purchase order"},
+    "صرف مواد":{en:"Issue Materials"},
+    "تسجيل المواد الخارجة من المستودع":{en:"Record materials leaving the warehouse"},
+    "تحويل مواد":{en:"Transfer Materials"},
+    "نقل المواد بين المستودعات":{en:"Move materials between warehouses"},
     "مخزون أدوات النظافة":{en:"Cleaning Supplies Stock",id:"Stok Peralatan Kebersihan",ur:"صفائی سامان اسٹاک",hi:"सफाई सामग्री स्टॉक",bn:"পরিচ্ছন্নতা সামগ্রী স্টক",fr:"Stock de nettoyage",ha:"Kayan Tsafta",sw:"Stoo ya Vifaa vya Usafi",uz:"Tozalash vositalari ombori"},
     "المواد المصروفة لي":{en:"Materials Issued to Me",id:"Bahan Dikeluarkan untuk Saya",ur:"مجھے جاری کردہ مواد",hi:"मुझे जारी सामग्री",bn:"আমাকে ইস্যু করা সামগ্রী",fr:"Articles qui me sont attribués",ha:"Kayan da aka ba ni",sw:"Vifaa Nilivyopewa",uz:"Menga berilgan materiallar"},
     "رحلات التوصيل":{en:"Delivery Trips",id:"Perjalanan Pengiriman",ur:"ڈیلیوری ٹرپس",hi:"डिलीवरी यात्राएँ",bn:"ডেলিভারি ট্রিপ",fr:"Trajets de livraison",ha:"Tafiyar Isarwa",sw:"Safari za Usafirishaji",uz:"Yetkazib berish safarlari"},
@@ -176,11 +184,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Storekeeper", title: "أمين المستودع", subtitle: "المخزون والاستلام والصرف",
       items: [
-        { label: "حركات المخزون", desc: "استلام وصرف وتحويل المواد", icon: "↔", doctype: "WAFD Stock Movement", primary: true },
-        { label: "أرصدة المخزون", desc: "الكميات المتاحة بالمستودعات", icon: "▥", doctype: "WAFD Stock Balance" },
-        { label: "المخزون والمشتريات", desc: "كل أدوات المستودع والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
-        { label: "أوامر الشراء", desc: "متابعة المواد المشتراة", icon: "⌑", doctype: "WAFD Purchase Order" },
-        { label: "إفطار صائم", desc: "المخزون المرتبط بالمشاريع الموسمية", icon: "☾", page: "wafd-iftar-operations", special: true }
+        { label: "إدارة المخزون", desc: "شاشة سهلة للاستلام والصرف والتحويل والأرصدة", icon: "▣", page: "wafd-storekeeper-home", primary: true },
+        { label: "استلام مواد مشتراة", desc: "تسجيل المواد الواردة من أمر الشراء", icon: "＋", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "استلام / Receipt", reference_type: "WAFD Purchase Order" } },
+        { label: "صرف مواد", desc: "تسجيل المواد الخارجة من المستودع", icon: "−", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "صرف / Issue" } },
+        { label: "تحويل مواد", desc: "نقل المواد بين المستودعات", icon: "↔", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "تحويل / Transfer" } },
+        { label: "أوامر الشراء", desc: "متابعة المواد المشتراة", icon: "⌑", doctype: "WAFD Purchase Order" }
       ]
     },
     {
@@ -385,6 +393,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         // continuous workflow on the same record.
         frappe.model.with_doctype(item.new_doctype, () => {
           const doc = frappe.model.get_new_doc(item.new_doctype);
+          Object.assign(doc, item.defaults || {});
           frappe.set_route("Form", item.new_doctype, doc.name);
         });
         return;

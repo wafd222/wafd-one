@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC263
+# WAFD ONE 10.0.0 RC264
 
-**Current release: 10.0.0 RC263 — Undertaking Closing Phrase Removal**
+**Current release: 10.0.0 RC264 — Simplified Storekeeper Experience**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

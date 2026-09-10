@@ -433,3 +433,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc262.execute
 
 # RC263 remove only the requested undertaking closing phrase
 wafd_one.wafd_one.patches.v10_0_0_rc263.execute
+
+# RC264 simplify the storekeeper home, stock entry and balance review
+wafd_one.wafd_one.patches.v10_0_0_rc264.execute

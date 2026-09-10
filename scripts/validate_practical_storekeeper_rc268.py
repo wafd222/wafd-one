@@ -18,7 +18,7 @@ def main():
     for token in ("wafd-receipt-search", "wafd-handover-search", "wafd-recipient-role", "wafd-recipient-name"):
         assert token in page
     assert "row.full_name" in page
-    assert '(row) => row.full_name, "اختر اسم المستلم"' in page
+    assert '(row) => row.full_name, tr("اختر اسم المستلم", "Choose recipient name")' in page
     assert "openMovement" not in page
     assert "Add row" not in page
     for function in ("get_storekeeper_workflow_options", "receive_inventory_materials", "create_employee_handover"):

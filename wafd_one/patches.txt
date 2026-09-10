@@ -448,3 +448,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc267.execute
 
 # RC268 practical Storekeeper receipt, employee handover and inventory information
 wafd_one.wafd_one.patches.v10_0_0_rc268.execute
+
+# RC269 one account-level language selected only from Role Home
+wafd_one.wafd_one.patches.v10_0_0_rc269.execute

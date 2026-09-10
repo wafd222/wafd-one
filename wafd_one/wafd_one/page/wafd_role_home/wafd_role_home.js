@@ -41,8 +41,10 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "إنشاء وإرسال ومتابعة عروض الأسعار":{en:"Create, send, and track quotations"},
     "جميع عروض الأسعار":{en:"All Quotations"},
     "مراجعة جميع العروض وحالاتها":{en:"Review all quotations and their status"},
-    "مهام متعددة":{en:"Multiple Tasks"},
-    "الأدوات المصرح بها حسب المهمات المسندة":{en:"Tools allowed by the assigned tasks"},
+    "مهام متعددة":{en:"Multiple Tasks",id:"Beberapa Tugas",ur:"متعدد ذمہ داریاں",hi:"कई कार्य",bn:"একাধিক কাজ",fr:"Tâches multiples",ha:"Ayyuka da yawa",sw:"Majukumu mengi",uz:"Bir nechta vazifa"},
+    "الأدوات المصرح بها حسب المهمات المسندة":{en:"Tools allowed by the assigned tasks",id:"Alat sesuai tugas yang diberikan",ur:"تفویض کردہ کاموں کے مطابق ٹولز",hi:"सौंपे गए कार्यों के अनुसार उपकरण",bn:"নির্ধারিত কাজ অনুযায়ী সরঞ্জাম",fr:"Outils autorisés selon les tâches attribuées",ha:"Kayan aiki bisa ayyukan da aka ba ka",sw:"Zana kulingana na majukumu uliyopewa",uz:"Berilgan vazifalarga mos vositalar"},
+    "الرئيسية":{en:"Home",id:"Beranda",ur:"ہوم",hi:"होम",bn:"হোম",fr:"Accueil",ha:"Gida",sw:"Nyumbani",uz:"Bosh sahifa"},
+    "تسجيل الخروج":{en:"Logout",id:"Keluar",ur:"لاگ آؤٹ",hi:"लॉग आउट",bn:"লগ আউট",fr:"Déconnexion",ha:"Fita",sw:"Ondoka",uz:"Chiqish"},
     "لوحة الإدارة الكاملة":{en:"Full Management Dashboard",id:"Dasbor Manajemen Lengkap",ur:"مکمل انتظامی ڈیش بورڈ",hi:"पूर्ण प्रबंधन डैशबोर्ड",bn:"সম্পূর্ণ ব্যবস্থাপনা ড্যাশবোর্ড",fr:"Tableau de bord complet",ha:"Cikakken Dashboard",sw:"Dashibodi Kamili",uz:"To‘liq boshqaruv paneli"},
     "التشغيل":{en:"Operations",id:"Operasional",ur:"آپریشنز",hi:"संचालन",bn:"অপারেশন",fr:"Opérations",ha:"Ayyuka",sw:"Uendeshaji",uz:"Operatsiyalar"},
     "المخزون والمشتريات":{en:"Inventory & Purchasing",id:"Stok & Pembelian",ur:"اسٹاک اور خریداری",hi:"स्टॉक और खरीद",bn:"স্টক ও ক্রয়",fr:"Stock & Achats",ha:"Kaya & Saye",sw:"Stoo & Ununuzi",uz:"Ombor & Xarid"},
@@ -77,6 +79,17 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "تسجيل المواد الخارجة من المستودع":{en:"Record materials leaving the warehouse"},
     "تحويل مواد":{en:"Transfer Materials"},
     "نقل المواد بين المستودعات":{en:"Move materials between warehouses"},
+    "ثلاث مهام عملية للمخزون":{en:"Three practical inventory tasks",id:"Tiga tugas stok praktis",ur:"اسٹاک کے تین عملی کام",hi:"तीन व्यावहारिक स्टॉक कार्य",bn:"তিনটি ব্যবহারিক স্টক কাজ",fr:"Trois tâches pratiques de stock",ha:"Ayyukan kaya uku masu sauƙi",sw:"Kazi tatu rahisi za stoo",uz:"Uchta amaliy ombor vazifasi"},
+    "استلام وتوزيع المشتريات":{en:"Receive and Distribute Purchases",id:"Terima dan Distribusikan Pembelian",ur:"خریداری وصول اور تقسیم کریں",hi:"खरीद प्राप्त और वितरित करें",bn:"ক্রয় গ্রহণ ও বিতরণ",fr:"Réceptionner et distribuer les achats",ha:"Karɓa da Rarraba Sayayya",sw:"Pokea na Sambaza Manunuzi",uz:"Xaridlarni qabul qilish va tarqatish"},
+    "إدخال المواد في المستودعات والثلاجات بسهولة":{en:"Put materials into warehouses and cold rooms easily",id:"Masukkan bahan ke gudang dan ruang dingin dengan mudah",ur:"سامان آسانی سے گودام اور کولڈ روم میں درج کریں",hi:"सामग्री आसानी से गोदाम और कोल्ड रूम में दर्ज करें",bn:"সহজে গুদাম ও কোল্ড রুমে সামগ্রী যোগ করুন",fr:"Entrer facilement les articles dans les magasins et chambres froides",ha:"Saka kaya cikin rumbuna da ɗakunan sanyi cikin sauƙi",sw:"Ingiza vifaa kwa urahisi kwenye maghala na vyumba baridi",uz:"Materiallarni ombor va sovuq xonalarga oson kiriting"},
+    "تسليم مواد للموظفين":{en:"Hand Over Materials to Employees",id:"Serahkan Bahan kepada Karyawan",ur:"ملازمین کو سامان دیں",hi:"कर्मचारियों को सामग्री सौंपें",bn:"কর্মীদের সামগ্রী হস্তান্তর",fr:"Remettre des articles aux employés",ha:"Miƙa Kaya ga Ma'aikata",sw:"Kabidhi Vifaa kwa Wafanyakazi",uz:"Materiallarni xodimlarga topshirish"},
+    "اختيار الوظيفة والاسم والمستودع ثم المواد":{en:"Choose the job, employee name, warehouse, then materials",id:"Pilih jabatan, nama, gudang, lalu bahan",ur:"عہدہ، نام، گودام پھر سامان منتخب کریں",hi:"पद, नाम, गोदाम और फिर सामग्री चुनें",bn:"পদ, নাম, গুদাম, তারপর সামগ্রী নির্বাচন করুন",fr:"Choisir le poste, le nom, le magasin puis les articles",ha:"Zaɓi aiki, suna, rumbu sannan kaya",sw:"Chagua kazi, jina, ghala kisha vifaa",uz:"Lavozim, ism, ombor va materiallarni tanlang"},
+    "معلومات المخزون":{en:"Inventory Information",id:"Informasi Stok",ur:"اسٹاک کی معلومات",hi:"स्टॉक जानकारी",bn:"স্টক তথ্য",fr:"Informations de stock",ha:"Bayanan Kaya",sw:"Taarifa za Stoo",uz:"Ombor ma'lumotlari"},
+    "الأرصدة والنواقص وتنبيهات انتهاء الصلاحية":{en:"Balances, shortages, and expiry alerts",id:"Saldo, kekurangan, dan peringatan kedaluwarsa",ur:"بیلنس، کمی اور میعاد ختم ہونے کی اطلاعات",hi:"शेष, कमी और समाप्ति अलर्ट",bn:"ব্যালেন্স, ঘাটতি ও মেয়াদ সতর্কতা",fr:"Soldes, manques et alertes d'expiration",ha:"Ma'auni, ƙaranci da faɗakarwar ƙarewa",sw:"Salio, upungufu na tahadhari za muda",uz:"Qoldiq, kamomad va yaroqlilik ogohlantirishlari"},
+    "مواد النظافة المصروفة لك فقط":{en:"Only cleaning materials issued to you",id:"Hanya bahan kebersihan yang diberikan kepada Anda",ur:"صرف آپ کو جاری کردہ صفائی کا سامان",hi:"केवल आपको जारी सफाई सामग्री",bn:"শুধু আপনাকে দেওয়া পরিচ্ছন্নতার সামগ্রী",fr:"Uniquement les produits de nettoyage qui vous sont attribués",ha:"Kayan tsaftacewa da aka ba ka kawai",sw:"Vifaa vya usafi ulivyopewa pekee",uz:"Faqat sizga berilgan tozalash materiallari"},
+    "استلام وصرف مواد النظافة":{en:"Receive and Use Cleaning Materials",id:"Terima dan Gunakan Bahan Kebersihan",ur:"صفائی کا سامان وصول اور استعمال کریں",hi:"सफाई सामग्री प्राप्त और उपयोग करें",bn:"পরিচ্ছন্নতার সামগ্রী গ্রহণ ও ব্যবহার",fr:"Recevoir et utiliser les produits de nettoyage",ha:"Karɓa da Amfani da Kayan Tsafta",sw:"Pokea na Tumia Vifaa vya Usafi",uz:"Tozalash materiallarini qabul qilish va ishlatish"},
+    "تأكيد الاستلام وتسجيل المواد المستخدمة من شاشة واحدة":{en:"Confirm receipt and record used materials on one screen",id:"Konfirmasi penerimaan dan catat pemakaian dalam satu layar",ur:"ایک اسکرین پر وصولی اور استعمال درج کریں",hi:"एक स्क्रीन पर प्राप्ति और उपयोग दर्ज करें",bn:"এক স্ক্রিনে গ্রহণ নিশ্চিত ও ব্যবহার লিখুন",fr:"Confirmer la réception et enregistrer l'utilisation sur un seul écran",ha:"Tabbatar da karɓa da rubuta amfani a allo ɗaya",sw:"Thibitisha mapokezi na rekodi matumizi kwenye skrini moja",uz:"Qabul qilish va sarfni bitta ekranda qayd eting"},
+    "المركبة والوجهة وحالة الرحلة":{en:"Vehicle, destination, and trip status",id:"Kendaraan, tujuan, dan status perjalanan",ur:"گاڑی، منزل اور سفر کی حالت",hi:"वाहन, गंतव्य और यात्रा स्थिति",bn:"যানবাহন, গন্তব্য ও ট্রিপের অবস্থা",fr:"Véhicule, destination et état du trajet",ha:"Mota, wurin zuwa da matsayin tafiya",sw:"Gari, mahali na hali ya safari",uz:"Transport, manzil va safar holati"},
     "مخزون أدوات النظافة":{en:"Cleaning Supplies Stock",id:"Stok Peralatan Kebersihan",ur:"صفائی سامان اسٹاک",hi:"सफाई सामग्री स्टॉक",bn:"পরিচ্ছন্নতা সামগ্রী স্টক",fr:"Stock de nettoyage",ha:"Kayan Tsafta",sw:"Stoo ya Vifaa vya Usafi",uz:"Tozalash vositalari ombori"},
     "المواد المصروفة لي":{en:"Materials Issued to Me",id:"Bahan Dikeluarkan untuk Saya",ur:"مجھے جاری کردہ مواد",hi:"मुझे जारी सामग्री",bn:"আমাকে ইস্যু করা সামগ্রী",fr:"Articles qui me sont attribués",ha:"Kayan da aka ba ni",sw:"Vifaa Nilivyopewa",uz:"Menga berilgan materiallar"},
     "رحلات التوصيل":{en:"Delivery Trips",id:"Perjalanan Pengiriman",ur:"ڈیلیوری ٹرپس",hi:"डिलीवरी यात्राएँ",bn:"ডেলিভারি ট্রিপ",fr:"Trajets de livraison",ha:"Tafiyar Isarwa",sw:"Safari za Usafirishaji",uz:"Yetkazib berish safarlari"},
@@ -314,17 +327,16 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
           </button>
           <strong>WAFD ONE</strong>
           <div class="wafd-pwa-menu" role="menu" hidden>
-            <button type="button" data-action="home">⌂ <span>${uiLang==="ar"?"الرئيسية":"Home"}</span></button>
+            <button type="button" data-action="home">⌂ <span>${tr("الرئيسية")}</span></button>
             <label class="wafd-pwa-language-row" for="wafd-pwa-language">
               <span>文 ${tr("اللغة") || "Language"}</span>
               <select id="wafd-pwa-language" aria-label="${tr("اللغة") || "Language"}">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select>
             </label>
             <div class="wafd-pwa-account"><small>${tr("المستخدم")}</small><b>${escapedUser}</b></div>
-            <button type="button" class="is-danger" data-action="logout">↪ <span>${uiLang==="ar"?"تسجيل الخروج":"Logout"}</span></button>
+            <button type="button" class="is-danger" data-action="logout">↪ <span>${tr("تسجيل الخروج")}</span></button>
           </div>
         </section>
         <section class="wafd-mobile-hero">
-          <div class="wafd-mobile-lang"><label>${tr("اللغة") || "Language"}</label><select id="wafd-role-lang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select></div>
           <div class="wafd-mobile-brand">
             <div class="wafd-mobile-logo"><img src="/assets/wafd_one/images/wafd-almadinah-dashboard.png" alt="WAFD ONE"></div>
             <div><span>${uiLang==='ar'?'شركة وفد المدينة لخدمات الإعاشة':'Wafd Al Madinah Catering Services'}</span><h1>WAFD ONE</h1></div>
@@ -377,7 +389,14 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       if (!$(event.target).closest(".wafd-pwa-appbar").length) closePwaMenu();
     });
 
-    $root.find("#wafd-role-lang, #wafd-pwa-language").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});
+    $root.find("#wafd-pwa-language").on("change", async function(){
+      uiLang=this.value;
+      localStorage.setItem("wafd_lang",uiLang);
+      document.documentElement.lang=uiLang;
+      document.documentElement.dir=rtl()?"rtl":"ltr";
+      await frappe.call({method:"wafd_one.language.set_user_language",args:{language:uiLang},freeze:true,freeze_message:tr("اللغة")+"…"});
+      window.location.reload();
+    });
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (["storekeeper_receive", "storekeeper_handover", "storekeeper_inventory"].includes(item.action)) {

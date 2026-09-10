@@ -33,6 +33,33 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
           return;
         }
         let dialog;
+        const receiveMaterial = (warehouse, ingredient, suggestedCost) => {
+          const receipt = new frappe.ui.Dialog({
+            title: __("استلام وإضافة رصيد"),
+            fields: [
+              { fieldname: "ingredient", fieldtype: "Data", label: __("المادة"), default: ingredient, read_only: 1 },
+              { fieldname: "quantity", fieldtype: "Float", label: __("الكمية المستلمة"), reqd: 1 },
+              { fieldname: "unit_cost", fieldtype: "Currency", label: __("سعر الوحدة"), default: suggestedCost || 0, reqd: 1 },
+            ],
+            primary_action_label: __("إضافة للمخزون"),
+            primary_action(values) {
+              frappe.call({
+                method: "wafd_one.storekeeper_portal.receive_cleaning_material",
+                args: { target_warehouse: warehouse, ingredient, quantity: values.quantity, unit_cost: values.unit_cost },
+                freeze: true,
+                freeze_message: __("جارٍ إضافة الرصيد…"),
+                callback(result) {
+                  if (!result.message) return;
+                  receipt.hide();
+                  frappe.show_alert({ message: __("تمت إضافة المادة للمخزون وأصبحت جاهزة للإرسال"), indicator: "green" }, 5);
+                  loadItems(warehouse);
+                  loadBalances();
+                },
+              });
+            },
+          });
+          receipt.show();
+        };
         const loadItems = (warehouse) => {
           const $box = dialog.fields_dict.materials_html.$wrapper;
           $box.html('<div class="wafd-storekeeper-loading">جارٍ تحميل المواد المتاحة…</div>');
@@ -45,13 +72,27 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
                 $box.html('<div class="wafd-cleaning-no-stock">لا توجد مواد متاحة في هذا المستودع. يجب استلام المواد وإضافتها للمخزون أولاً.</div>');
                 return;
               }
-              $box.html(`<div class="wafd-cleaning-pick-head">اختر المواد ذات الرصيد المتاح ثم أدخل الكمية والسعر</div>${items.map((item) => `
-                <label class="wafd-cleaning-pick-row ${item.can_issue ? "" : "is-unavailable"}" data-ingredient="${escape(item.ingredient)}">
+              $box.html(`<div class="wafd-cleaning-pick-head">اختر المادة بالضغط على البطاقة، ثم أدخل الكمية والسعر</div>${items.map((item) => `
+                <div class="wafd-cleaning-pick-row ${item.can_issue ? "" : "is-unavailable"}" data-ingredient="${escape(item.ingredient)}">
                   <input type="checkbox" class="wafd-cleaning-check" ${item.can_issue ? "" : "disabled"}>
                   <span><b>${escape(item.ingredient)}</b><small>${escape(item.category || "")} · ${item.can_issue ? `المتاح: ${escape(item.available_quantity)} ${escape(item.uom || "")}` : "الرصيد صفر — استلم المادة أولاً"}</small></span>
-                  <input class="wafd-cleaning-qty" type="number" inputmode="decimal" min="0" max="${escape(item.available_quantity)}" step="any" placeholder="الكمية" ${item.can_issue ? "" : "disabled"}>
-                  <input class="wafd-cleaning-price" type="number" inputmode="decimal" min="0" step="any" value="${escape(item.unit_cost || 0)}" placeholder="السعر" ${item.can_issue ? "" : "disabled"}>
-                </label>`).join("")}`);
+                  ${item.can_issue ? `<input class="wafd-cleaning-qty" type="number" inputmode="decimal" min="0" max="${escape(item.available_quantity)}" step="any" placeholder="الكمية"><input class="wafd-cleaning-price" type="number" inputmode="decimal" min="0" step="any" value="${escape(item.unit_cost || 0)}" placeholder="السعر">` : `<button type="button" class="wafd-receive-item" data-cost="${escape(item.unit_cost || 0)}">＋ استلام وإضافة رصيد</button>`}
+                </div>`).join("")}`);
+              $box.off("click.wafdCleaningPicker")
+                .on("click.wafdCleaningPicker", ".wafd-receive-item", function (event) {
+                  event.preventDefault(); event.stopPropagation();
+                  const $row = $(this).closest(".wafd-cleaning-pick-row");
+                  receiveMaterial(warehouse, $row.data("ingredient"), Number($(this).data("cost") || 0));
+                })
+                .on("click.wafdCleaningPicker", ".wafd-cleaning-pick-row:not(.is-unavailable)", function (event) {
+                  if ($(event.target).is("input,button")) return;
+                  const $check = $(this).find(".wafd-cleaning-check");
+                  $check.prop("checked", !$check.prop("checked"));
+                  $(this).toggleClass("is-selected", $check.prop("checked"));
+                })
+                .on("change.wafdCleaningPicker", ".wafd-cleaning-check", function () {
+                  $(this).closest(".wafd-cleaning-pick-row").toggleClass("is-selected", this.checked);
+                });
             },
           });
         };
@@ -107,7 +148,8 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
       .wafd-handover-row small{display:block;color:#777}.wafd-handover-row .status{background:#f1e7ce;color:#73591f;border-radius:14px;padding:5px 9px;font-size:11px}
       .wafd-handover-row p{grid-column:1/-1;margin:0;color:#555}.wafd-handover-row .usage{color:#267048;background:#edf7f1;border-radius:8px;padding:7px}
       .wafd-cleaning-pick-head{font-weight:800;margin:8px 0}.wafd-cleaning-pick-row{display:grid;grid-template-columns:auto minmax(170px,1fr) 105px 105px;gap:8px;align-items:center;border:1px solid #e7dfcf;border-radius:12px;padding:10px;margin:8px 0}.wafd-cleaning-pick-row span small{display:block;color:#777}.wafd-cleaning-pick-row input[type=number]{width:100%;border:1px solid #d8d1c4;border-radius:9px;padding:8px}.wafd-cleaning-no-stock{background:#fff4df;color:#785916;border-radius:12px;padding:16px;text-align:center}@media(max-width:600px){.wafd-cleaning-pick-row{grid-template-columns:auto 1fr}.wafd-cleaning-pick-row input[type=number]{grid-column:auto/span 1}}
-      .wafd-cleaning-pick-row.is-unavailable{opacity:.58;background:#f5f5f5}
+      .wafd-cleaning-pick-row.is-selected{border:2px solid #b8872e;background:#fff9eb}.wafd-cleaning-pick-row.is-unavailable{background:#f5f5f5}.wafd-receive-item{grid-column:3/5;background:#fff;border:1px solid #b8872e;color:#76591d;border-radius:9px;padding:9px}
+      @media(max-width:600px){.wafd-receive-item{grid-column:1/-1}.wafd-cleaning-pick-row.is-unavailable span{grid-column:2}}
     </style>
       <div class="wafd-storekeeper-wrap">
         <section class="wafd-storekeeper-head">

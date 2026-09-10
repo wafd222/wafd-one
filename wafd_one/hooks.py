@@ -57,6 +57,7 @@ app_include_js = [
     "/assets/wafd_one/js/wafd_ios_silent_mode.js",
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
+    "/assets/wafd_one/js/wafd_mobile_choice_replace.js",
     "wafd_mobile_navigation.bundle.js",
 ]
 

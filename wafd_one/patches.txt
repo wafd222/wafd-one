@@ -442,3 +442,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc265.execute
 
 # RC266 stock-backed cleaning picker and custom-screen-only supervisor access
 wafd_one.wafd_one.patches.v10_0_0_rc266.execute
+
+# RC267 guided zero-stock receipt, pending refresh and mobile choice replacement
+wafd_one.wafd_one.patches.v10_0_0_rc267.execute

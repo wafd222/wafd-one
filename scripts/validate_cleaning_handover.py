@@ -46,12 +46,18 @@ def main():
     assert "wafd_one.cleaning_portal.get_cleaning_dashboard" in page_js
 
     storekeeper_server = (ROOT / "wafd_one/storekeeper_portal.py").read_text(encoding="utf-8")
-    for token in ("get_cleaning_handover_options", "create_cleaning_handover", "can_issue"):
+    for token in ("get_cleaning_handover_options", "create_cleaning_handover", "receive_cleaning_material", "can_issue"):
         assert token in storekeeper_server
     storekeeper_page = (ROOT / "wafd_one/wafd_one/page/wafd_storekeeper_home/wafd_storekeeper_home.js").read_text(encoding="utf-8")
     assert "openCleaningHandover" in storekeeper_page
     assert "wafd-cleaning-pick-row" in storekeeper_page
     assert "create_cleaning_handover" in storekeeper_page
+    assert "استلام وإضافة رصيد" in storekeeper_page
+
+    choice_helper = (ROOT / "wafd_one/public/js/wafd_mobile_choice_replace.js").read_text(encoding="utf-8")
+    assert "setSelectionRange" in choice_helper
+    hooks = (ROOT / "wafd_one/hooks.py").read_text(encoding="utf-8")
+    assert "wafd_mobile_choice_replace.js" in hooks
 
     role_home = (ROOT / "wafd_one/wafd_one/page/wafd_role_home/wafd_role_home.js").read_text(encoding="utf-8")
     assert "wafd-cleaning-home" in role_home
@@ -62,7 +68,7 @@ def main():
     storekeeper_start = role_home.index('role: "WAFD Storekeeper"')
     cleaning_start = role_home.index('role: "WAFD Cleaning Supervisor"', storekeeper_start)
     assert "إفطار صائم" not in role_home[storekeeper_start:cleaning_start]
-    print("RC266 validation passed: stock picker, restricted supervisor workflow, usage and languages")
+    print("RC267 validation passed: guided receipt, handover, pending refresh, choices and role scope")
 
 
 if __name__ == "__main__":

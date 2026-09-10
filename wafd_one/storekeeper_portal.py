@@ -116,6 +116,51 @@ def create_cleaning_handover(source_warehouse, issued_to_user, items):
 
 
 @frappe.whitelist()
+def receive_cleaning_material(target_warehouse, ingredient, quantity, unit_cost=0):
+    """Receive one cleaning item through a minimal audited Stock Movement."""
+    _check_access()
+    warehouse = frappe.db.get_value(
+        "WAFD Warehouse", target_warehouse, ["warehouse_type", "status"], as_dict=True
+    )
+    if not warehouse or warehouse.warehouse_type != "نظافة / Cleaning" or warehouse.status != "نشط / Active":
+        frappe.throw(_("المستودع المختار ليس مستودع نظافة نشطاً / Invalid cleaning warehouse"))
+    item = frappe.db.get_value(
+        "WAFD Ingredient", ingredient,
+        ["status", "category", "preferred_warehouse", "uom"], as_dict=True,
+    )
+    if not item or item.status != "نشط / Active":
+        frappe.throw(_("المادة غير نشطة أو غير موجودة / Item is missing or inactive"))
+    if item.preferred_warehouse != target_warehouse and item.category not in (
+        "منظفات / Cleaning", "تعقيم وسلامة / Hygiene & Safety"
+    ):
+        frappe.throw(_("المادة ليست من مواد مستودع النظافة / Item is not a cleaning-store item"))
+    quantity = flt(quantity)
+    unit_cost = flt(unit_cost)
+    if quantity <= 0:
+        frappe.throw(_("اكتب كمية استلام أكبر من صفر / Receipt quantity must be greater than zero"))
+    if unit_cost < 0:
+        frappe.throw(_("سعر الوحدة لا يمكن أن يكون سالباً / Unit price cannot be negative"))
+
+    doc = frappe.get_doc({
+        "doctype": "WAFD Stock Movement",
+        "movement_type": "استلام / Receipt",
+        "posting_date": now_datetime(),
+        "target_warehouse": target_warehouse,
+        "items": [{
+            "ingredient": ingredient,
+            "quantity": quantity,
+            "uom": item.uom,
+            "unit_cost": unit_cost,
+        }],
+        "notes": "استلام مبسط من شاشة إرسال مواد النظافة / Simplified cleaning-material receipt",
+    })
+    doc.insert()
+    from wafd_one.wafd_one.doctype.wafd_stock_movement.wafd_stock_movement import post_movement
+    post_movement(doc.name)
+    return {"name": doc.name, "ingredient": ingredient, "quantity": quantity}
+
+
+@frappe.whitelist()
 def get_storekeeper_snapshot(warehouse=None, search=None):
     """Return a compact, read-only balance snapshot for the simplified page."""
     _check_access()

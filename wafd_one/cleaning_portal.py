@@ -51,13 +51,15 @@ def get_cleaning_dashboard():
             "status": "مرحلة / Posted",
             "issued_to_user": frappe.session.user,
             "handover_status": ["in", ["بانتظار الاستلام / Pending Receipt", "تم الاستلام / Received"]],
-            "is_pre_go_live_test": 0,
         },
         pluck="name",
         order_by="posting_date desc",
         limit_page_length=200,
     )
-    movements = [frappe.get_doc("WAFD Stock Movement", name) for name in names]
+    movements = [
+        doc for doc in (frappe.get_doc("WAFD Stock Movement", name) for name in names)
+        if not doc.get("is_pre_go_live_test")
+    ]
     pending = [_movement_payload(doc) for doc in movements if doc.handover_status == "بانتظار الاستلام / Pending Receipt"]
 
     used_rows = frappe.db.sql(

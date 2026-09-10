@@ -145,5 +145,7 @@ def record_cleaning_usage(source_handover, ingredient, quantity, purpose, locati
         "notes": (notes or "").strip(),
         "items": [{"ingredient": ingredient, "quantity": flt(quantity)}],
     })
-    doc.insert()
+    # The supervisor has no general DocType create permission. Creation is only
+    # allowed through this validated, role-scoped workflow.
+    doc.insert(ignore_permissions=True)
     return {"name": doc.name}

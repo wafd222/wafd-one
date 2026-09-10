@@ -187,7 +187,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إدارة المخزون", desc: "شاشة سهلة للاستلام والصرف والتحويل والأرصدة", icon: "▣", page: "wafd-storekeeper-home", primary: true },
         { label: "استلام مواد مشتراة", desc: "تسجيل المواد الواردة من أمر الشراء", icon: "＋", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "استلام / Receipt", reference_type: "WAFD Purchase Order" } },
         { label: "صرف مواد", desc: "تسجيل المواد الخارجة من المستودع", icon: "−", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "صرف / Issue" } },
-        { label: "إرسال لمشرف النظافة", desc: "اختيار مواد النظافة وإرسالها لتأكيد الاستلام", icon: "➜", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "صرف / Issue", issue_purpose: "نظافة / Cleaning", material_category: "منظفات / Cleaning" } },
+        { label: "إرسال لمشرف النظافة", desc: "عرض مواد مستودع النظافة واختيار الكمية مباشرة", icon: "➜", action: "cleaning_handover" },
         { label: "تحويل مواد", desc: "نقل المواد بين المستودعات", icon: "↔", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "تحويل / Transfer" } },
         { label: "أوامر الشراء", desc: "متابعة المواد المشتراة", icon: "⌑", doctype: "WAFD Purchase Order" }
       ]
@@ -195,9 +195,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Cleaning Supervisor", title: "مشرف النظافة", subtitle: "مواد النظافة المصروفة لك فقط",
       items: [
-        { label: "استلام وصرف مواد النظافة", desc: "تأكيد الاستلام وتسجيل المواد المستخدمة", icon: "✓", page: "wafd-cleaning-home", primary: true },
-        { label: "سجل المواد المصروفة لي", desc: "عرض سندات التسليم المسندة لحسابك", icon: "▤", doctype: "WAFD Stock Movement" },
-        { label: "سجل الاستخدام", desc: "تفاصيل أين ولماذا صُرفت المواد", icon: "−", doctype: "WAFD Cleaning Material Usage" }
+        { label: "استلام وصرف مواد النظافة", desc: "تأكيد الاستلام وتسجيل المواد المستخدمة من شاشة واحدة", icon: "✓", page: "wafd-cleaning-home", primary: true }
       ]
     },
     {
@@ -387,6 +385,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (item.page) { frappe.set_route(item.page); return; }
       if (item.action === "new_hotel") { openNewHotelDialog(); return; }
+      if (item.action === "cleaning_handover") {
+        localStorage.setItem("wafd_open_cleaning_handover", "1");
+        frappe.set_route("wafd-storekeeper-home");
+        return;
+      }
       if (item.new_doctype) {
         // RC210: open the full unsaved form directly. Quick Entry saves in a
         // dialog then closes back to the previous route, which forced the

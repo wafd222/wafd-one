@@ -26,7 +26,7 @@ def main():
     usage_fields = {row["fieldname"] for row in usage["fields"]}
     assert {"supervisor", "source_handover", "purpose", "location", "items"} <= usage_fields
     permissions = {row["role"]: row for row in usage["permissions"]}
-    assert permissions["WAFD Cleaning Supervisor"]["create"] == 1
+    assert "WAFD Cleaning Supervisor" not in permissions
     assert permissions["WAFD Storekeeper"]["read"] == 1
 
     controller = (ROOT / "wafd_one/cleaning_portal.py").read_text(encoding="utf-8")
@@ -45,12 +45,24 @@ def main():
         assert f"{language}:" in page_js
     assert "wafd_one.cleaning_portal.get_cleaning_dashboard" in page_js
 
+    storekeeper_server = (ROOT / "wafd_one/storekeeper_portal.py").read_text(encoding="utf-8")
+    for token in ("get_cleaning_handover_options", "create_cleaning_handover", "can_issue"):
+        assert token in storekeeper_server
+    storekeeper_page = (ROOT / "wafd_one/wafd_one/page/wafd_storekeeper_home/wafd_storekeeper_home.js").read_text(encoding="utf-8")
+    assert "openCleaningHandover" in storekeeper_page
+    assert "wafd-cleaning-pick-row" in storekeeper_page
+    assert "create_cleaning_handover" in storekeeper_page
+
     role_home = (ROOT / "wafd_one/wafd_one/page/wafd_role_home/wafd_role_home.js").read_text(encoding="utf-8")
     assert "wafd-cleaning-home" in role_home
+    cleaning_block = role_home[role_home.index('role: "WAFD Cleaning Supervisor"'):]
+    cleaning_block = cleaning_block[:cleaning_block.index('role: "WAFD Delivery Supervisor"')]
+    assert "WAFD Stock Movement" not in cleaning_block
+    assert "WAFD Cleaning Material Usage" not in cleaning_block
     storekeeper_start = role_home.index('role: "WAFD Storekeeper"')
     cleaning_start = role_home.index('role: "WAFD Cleaning Supervisor"', storekeeper_start)
     assert "إفطار صائم" not in role_home[storekeeper_start:cleaning_start]
-    print("RC265 validation passed: category picker, pricing, handover, usage, languages and role scope")
+    print("RC266 validation passed: stock picker, restricted supervisor workflow, usage and languages")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC265
+# WAFD ONE 10.0.0 RC266
 
-**Current release: 10.0.0 RC265 — Cleaning Materials Handover & Easy Entry**
+**Current release: 10.0.0 RC266 — Stock-Backed Cleaning Handover Picker**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

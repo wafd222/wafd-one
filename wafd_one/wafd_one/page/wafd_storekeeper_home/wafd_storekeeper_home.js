@@ -18,6 +18,87 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
     });
   }
 
+  function openCleaningHandover() {
+    frappe.call({
+      method: "wafd_one.storekeeper_portal.get_cleaning_handover_options",
+      freeze: true,
+      callback(r) {
+        const base = r.message || {};
+        if (!(base.warehouses || []).length) {
+          frappe.msgprint(__("لا يوجد مستودع نظافة نشط. أضف أو فعّل مستودع النظافة أولاً."));
+          return;
+        }
+        if (!(base.supervisors || []).length) {
+          frappe.msgprint(__("لا يوجد مستخدم نشط بدور مشرف النظافة."));
+          return;
+        }
+        let dialog;
+        const loadItems = (warehouse) => {
+          const $box = dialog.fields_dict.materials_html.$wrapper;
+          $box.html('<div class="wafd-storekeeper-loading">جارٍ تحميل المواد المتاحة…</div>');
+          frappe.call({
+            method: "wafd_one.storekeeper_portal.get_cleaning_handover_options",
+            args: { warehouse },
+            callback(itemsResponse) {
+              const items = (itemsResponse.message || {}).items || [];
+              if (!items.length) {
+                $box.html('<div class="wafd-cleaning-no-stock">لا توجد مواد متاحة في هذا المستودع. يجب استلام المواد وإضافتها للمخزون أولاً.</div>');
+                return;
+              }
+              $box.html(`<div class="wafd-cleaning-pick-head">اختر المواد ذات الرصيد المتاح ثم أدخل الكمية والسعر</div>${items.map((item) => `
+                <label class="wafd-cleaning-pick-row ${item.can_issue ? "" : "is-unavailable"}" data-ingredient="${escape(item.ingredient)}">
+                  <input type="checkbox" class="wafd-cleaning-check" ${item.can_issue ? "" : "disabled"}>
+                  <span><b>${escape(item.ingredient)}</b><small>${escape(item.category || "")} · ${item.can_issue ? `المتاح: ${escape(item.available_quantity)} ${escape(item.uom || "")}` : "الرصيد صفر — استلم المادة أولاً"}</small></span>
+                  <input class="wafd-cleaning-qty" type="number" inputmode="decimal" min="0" max="${escape(item.available_quantity)}" step="any" placeholder="الكمية" ${item.can_issue ? "" : "disabled"}>
+                  <input class="wafd-cleaning-price" type="number" inputmode="decimal" min="0" step="any" value="${escape(item.unit_cost || 0)}" placeholder="السعر" ${item.can_issue ? "" : "disabled"}>
+                </label>`).join("")}`);
+            },
+          });
+        };
+        dialog = new frappe.ui.Dialog({
+          title: __("إرسال مواد لمشرف النظافة"),
+          fields: [
+            { fieldname: "source_warehouse", fieldtype: "Select", label: __("مستودع النظافة"), reqd: 1, options: (base.warehouses || []).map((row) => row.name), onchange() { loadItems(dialog.get_value("source_warehouse")); } },
+            { fieldname: "issued_to_user", fieldtype: "Select", label: __("مشرف النظافة المستلم"), reqd: 1, options: (base.supervisors || []).map((row) => row.name) },
+            { fieldname: "materials_html", fieldtype: "HTML" },
+          ],
+          size: "large",
+          primary_action_label: __("إرسال وتحديث الرصيد"),
+          primary_action(values) {
+            const selected = [];
+            dialog.fields_dict.materials_html.$wrapper.find(".wafd-cleaning-pick-row").each(function () {
+              const $row = $(this);
+              if (!$row.find(".wafd-cleaning-check").prop("checked")) return;
+              const quantity = Number($row.find(".wafd-cleaning-qty").val() || 0);
+              const unitCost = Number($row.find(".wafd-cleaning-price").val() || 0);
+              if (quantity > 0) selected.push({ ingredient: $row.data("ingredient"), quantity, unit_cost: unitCost });
+            });
+            if (!selected.length) {
+              frappe.msgprint(__("اختر مادة واحدة على الأقل واكتب الكمية."));
+              return;
+            }
+            frappe.call({
+              method: "wafd_one.storekeeper_portal.create_cleaning_handover",
+              args: { source_warehouse: values.source_warehouse, issued_to_user: values.issued_to_user, items: JSON.stringify(selected) },
+              freeze: true,
+              freeze_message: __("جارٍ إرسال المواد وتحديث الرصيد…"),
+              callback(result) {
+                if (!result.message) return;
+                dialog.hide();
+                frappe.show_alert({ message: __("تم إرسال المواد للمشرف بانتظار تأكيد الاستلام"), indicator: "green" }, 5);
+                loadBalances();
+              },
+            });
+          },
+        });
+        dialog.show();
+        dialog.set_value("source_warehouse", base.warehouses[0].name);
+        dialog.set_value("issued_to_user", base.supervisors[0].name);
+        loadItems(base.warehouses[0].name);
+      },
+    });
+  }
+
   function renderShell() {
     $root.html(`<style>
       .wafd-storekeeper-actions{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
@@ -25,6 +106,8 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
       .wafd-handover-row{display:grid;grid-template-columns:1.2fr auto;gap:8px;border:1px solid #e8e1d4;border-radius:14px;margin-top:10px;padding:12px}
       .wafd-handover-row small{display:block;color:#777}.wafd-handover-row .status{background:#f1e7ce;color:#73591f;border-radius:14px;padding:5px 9px;font-size:11px}
       .wafd-handover-row p{grid-column:1/-1;margin:0;color:#555}.wafd-handover-row .usage{color:#267048;background:#edf7f1;border-radius:8px;padding:7px}
+      .wafd-cleaning-pick-head{font-weight:800;margin:8px 0}.wafd-cleaning-pick-row{display:grid;grid-template-columns:auto minmax(170px,1fr) 105px 105px;gap:8px;align-items:center;border:1px solid #e7dfcf;border-radius:12px;padding:10px;margin:8px 0}.wafd-cleaning-pick-row span small{display:block;color:#777}.wafd-cleaning-pick-row input[type=number]{width:100%;border:1px solid #d8d1c4;border-radius:9px;padding:8px}.wafd-cleaning-no-stock{background:#fff4df;color:#785916;border-radius:12px;padding:16px;text-align:center}@media(max-width:600px){.wafd-cleaning-pick-row{grid-template-columns:auto 1fr}.wafd-cleaning-pick-row input[type=number]{grid-column:auto/span 1}}
+      .wafd-cleaning-pick-row.is-unavailable{opacity:.58;background:#f5f5f5}
     </style>
       <div class="wafd-storekeeper-wrap">
         <section class="wafd-storekeeper-head">
@@ -54,7 +137,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
 
     $root.on("click", "[data-action='receipt']", () => openMovement("استلام / Receipt", { reference_type: "WAFD Purchase Order" }));
     $root.on("click", "[data-action='issue']", () => openMovement("صرف / Issue"));
-    $root.on("click", "[data-action='cleaning']", () => openMovement("صرف / Issue", { issue_purpose: "نظافة / Cleaning", material_category: "منظفات / Cleaning" }));
+    $root.on("click", "[data-action='cleaning']", openCleaningHandover);
     $root.on("click", "[data-action='transfer']", () => openMovement("تحويل / Transfer"));
     $root.on("click", "[data-action='orders']", () => frappe.set_route("List", "WAFD Purchase Order"));
     $root.on("click", "[data-action='movements']", () => frappe.set_route("List", "WAFD Stock Movement"));
@@ -121,4 +204,16 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
 
   renderShell();
   loadBalances();
+  wrapper.wafd_open_cleaning_handover = openCleaningHandover;
+  if (localStorage.getItem("wafd_open_cleaning_handover") === "1") {
+    localStorage.removeItem("wafd_open_cleaning_handover");
+    openCleaningHandover();
+  }
+};
+
+frappe.pages["wafd-storekeeper-home"].on_page_show = function (wrapper) {
+  if (localStorage.getItem("wafd_open_cleaning_handover") === "1" && wrapper.wafd_open_cleaning_handover) {
+    localStorage.removeItem("wafd_open_cleaning_handover");
+    wrapper.wafd_open_cleaning_handover();
+  }
 };

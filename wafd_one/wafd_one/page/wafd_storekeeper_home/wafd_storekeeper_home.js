@@ -1,261 +1,256 @@
 frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
-  const page = frappe.ui.make_app_page({
-    parent: wrapper,
-    title: __("شاشة أمين المستودع"),
-    single_column: true,
-  });
+  const page = frappe.ui.make_app_page({parent: wrapper, title: __("شاشة أمين المستودع"), single_column: true});
   const $root = $(page.body).addClass("wafd-storekeeper-home").attr("dir", "rtl");
+  const esc = (value) => frappe.utils.escape_html(String(value == null ? "" : value));
+  let snapshotSerial = 0;
 
-  const escape = (value) => frappe.utils.escape_html(String(value == null ? "" : value));
-  let requestSerial = 0;
+  const api = (method, args = {}, options = {}) => frappe.call({
+    method: `wafd_one.storekeeper_portal.${method}`,
+    args,
+    freeze: Boolean(options.freeze),
+    freeze_message: options.message,
+  });
+  const warehouseLabel = (row) => `${row.warehouse_name || row.name} — ${row.warehouse_type || ""}`;
+  const optionsHtml = (rows, valueKey, labelFn, placeholder) =>
+    `<option value="">${esc(placeholder)}</option>${rows.map((row) => `<option value="${esc(row[valueKey])}">${esc(labelFn(row))}</option>`).join("")}`;
 
-  function openMovement(type, extra = {}) {
-    frappe.model.with_doctype("WAFD Stock Movement", () => {
-      const doc = frappe.model.get_new_doc("WAFD Stock Movement");
-      doc.movement_type = type;
-      Object.assign(doc, extra);
-      frappe.set_route("Form", "WAFD Stock Movement", doc.name);
+  function readSelected($box, selected, mode) {
+    $box.find(".wafd-material-card").each(function () {
+      const $row = $(this);
+      const ingredient = String($row.data("ingredient") || "");
+      if (!$row.find(".wafd-material-check").prop("checked")) {
+        selected.delete(ingredient);
+        return;
+      }
+      selected.set(ingredient, {
+        ingredient,
+        quantity: Number($row.find(".wafd-material-qty").val() || 0),
+        unit_cost: Number($row.find(".wafd-material-price").val() || 0),
+        expiry_date: mode === "receipt" ? ($row.find(".wafd-material-expiry").val() || null) : null,
+      });
     });
   }
 
-  function openCleaningHandover() {
-    frappe.call({
-      method: "wafd_one.storekeeper_portal.get_cleaning_handover_options",
-      freeze: true,
-      callback(r) {
-        const base = r.message || {};
-        if (!(base.warehouses || []).length) {
-          frappe.msgprint(__("لا يوجد مستودع نظافة نشط. أضف أو فعّل مستودع النظافة أولاً."));
-          return;
-        }
-        if (!(base.supervisors || []).length) {
-          frappe.msgprint(__("لا يوجد مستخدم نشط بدور مشرف النظافة."));
-          return;
-        }
-        let dialog;
-        const receiveMaterial = (warehouse, ingredient, suggestedCost) => {
-          const receipt = new frappe.ui.Dialog({
-            title: __("استلام وإضافة رصيد"),
-            fields: [
-              { fieldname: "ingredient", fieldtype: "Data", label: __("المادة"), default: ingredient, read_only: 1 },
-              { fieldname: "quantity", fieldtype: "Float", label: __("الكمية المستلمة"), reqd: 1 },
-              { fieldname: "unit_cost", fieldtype: "Currency", label: __("سعر الوحدة"), default: suggestedCost || 0, reqd: 1 },
-            ],
-            primary_action_label: __("إضافة للمخزون"),
-            primary_action(values) {
-              frappe.call({
-                method: "wafd_one.storekeeper_portal.receive_cleaning_material",
-                args: { target_warehouse: warehouse, ingredient, quantity: values.quantity, unit_cost: values.unit_cost },
-                freeze: true,
-                freeze_message: __("جارٍ إضافة الرصيد…"),
-                callback(result) {
-                  if (!result.message) return;
-                  receipt.hide();
-                  frappe.show_alert({ message: __("تمت إضافة المادة للمخزون وأصبحت جاهزة للإرسال"), indicator: "green" }, 5);
-                  loadItems(warehouse);
-                  loadBalances();
-                },
-              });
-            },
-          });
-          receipt.show();
-        };
-        const loadItems = (warehouse) => {
-          const $box = dialog.fields_dict.materials_html.$wrapper;
-          $box.html('<div class="wafd-storekeeper-loading">جارٍ تحميل المواد المتاحة…</div>');
-          frappe.call({
-            method: "wafd_one.storekeeper_portal.get_cleaning_handover_options",
-            args: { warehouse },
-            callback(itemsResponse) {
-              const items = (itemsResponse.message || {}).items || [];
-              if (!items.length) {
-                $box.html('<div class="wafd-cleaning-no-stock">لا توجد مواد متاحة في هذا المستودع. يجب استلام المواد وإضافتها للمخزون أولاً.</div>');
-                return;
-              }
-              $box.html(`<div class="wafd-cleaning-pick-head">اختر المادة بالضغط على البطاقة، ثم أدخل الكمية والسعر</div>${items.map((item) => `
-                <div class="wafd-cleaning-pick-row ${item.can_issue ? "" : "is-unavailable"}" data-ingredient="${escape(item.ingredient)}">
-                  <input type="checkbox" class="wafd-cleaning-check" ${item.can_issue ? "" : "disabled"}>
-                  <span><b>${escape(item.ingredient)}</b><small>${escape(item.category || "")} · ${item.can_issue ? `المتاح: ${escape(item.available_quantity)} ${escape(item.uom || "")}` : "الرصيد صفر — استلم المادة أولاً"}</small></span>
-                  ${item.can_issue ? `<input class="wafd-cleaning-qty" type="number" inputmode="decimal" min="0" max="${escape(item.available_quantity)}" step="any" placeholder="الكمية"><input class="wafd-cleaning-price" type="number" inputmode="decimal" min="0" step="any" value="${escape(item.unit_cost || 0)}" placeholder="السعر">` : `<button type="button" class="wafd-receive-item" data-cost="${escape(item.unit_cost || 0)}">＋ استلام وإضافة رصيد</button>`}
-                </div>`).join("")}`);
-              $box.off("click.wafdCleaningPicker")
-                .on("click.wafdCleaningPicker", ".wafd-receive-item", function (event) {
-                  event.preventDefault(); event.stopPropagation();
-                  const $row = $(this).closest(".wafd-cleaning-pick-row");
-                  receiveMaterial(warehouse, $row.data("ingredient"), Number($(this).data("cost") || 0));
-                })
-                .on("click.wafdCleaningPicker", ".wafd-cleaning-pick-row:not(.is-unavailable)", function (event) {
-                  if ($(event.target).is("input,button")) return;
-                  const $check = $(this).find(".wafd-cleaning-check");
-                  $check.prop("checked", !$check.prop("checked"));
-                  $(this).toggleClass("is-selected", $check.prop("checked"));
-                })
-                .on("change.wafdCleaningPicker", ".wafd-cleaning-check", function () {
-                  $(this).closest(".wafd-cleaning-pick-row").toggleClass("is-selected", this.checked);
-                });
-            },
-          });
-        };
-        dialog = new frappe.ui.Dialog({
-          title: __("إرسال مواد لمشرف النظافة"),
-          fields: [
-            { fieldname: "source_warehouse", fieldtype: "Select", label: __("مستودع النظافة"), reqd: 1, options: (base.warehouses || []).map((row) => row.name), onchange() { loadItems(dialog.get_value("source_warehouse")); } },
-            { fieldname: "issued_to_user", fieldtype: "Select", label: __("مشرف النظافة المستلم"), reqd: 1, options: (base.supervisors || []).map((row) => row.name) },
-            { fieldname: "materials_html", fieldtype: "HTML" },
-          ],
-          size: "large",
-          primary_action_label: __("إرسال وتحديث الرصيد"),
-          primary_action(values) {
-            const selected = [];
-            dialog.fields_dict.materials_html.$wrapper.find(".wafd-cleaning-pick-row").each(function () {
-              const $row = $(this);
-              if (!$row.find(".wafd-cleaning-check").prop("checked")) return;
-              const quantity = Number($row.find(".wafd-cleaning-qty").val() || 0);
-              const unitCost = Number($row.find(".wafd-cleaning-price").val() || 0);
-              if (quantity > 0) selected.push({ ingredient: $row.data("ingredient"), quantity, unit_cost: unitCost });
-            });
-            if (!selected.length) {
-              frappe.msgprint(__("اختر مادة واحدة على الأقل واكتب الكمية."));
-              return;
-            }
-            frappe.call({
-              method: "wafd_one.storekeeper_portal.create_cleaning_handover",
-              args: { source_warehouse: values.source_warehouse, issued_to_user: values.issued_to_user, items: JSON.stringify(selected) },
-              freeze: true,
-              freeze_message: __("جارٍ إرسال المواد وتحديث الرصيد…"),
-              callback(result) {
-                if (!result.message) return;
-                dialog.hide();
-                frappe.show_alert({ message: __("تم إرسال المواد للمشرف بانتظار تأكيد الاستلام"), indicator: "green" }, 5);
-                loadBalances();
-              },
-            });
-          },
-        });
-        dialog.show();
-        dialog.set_value("source_warehouse", base.warehouses[0].name);
-        dialog.set_value("issued_to_user", base.supervisors[0].name);
-        loadItems(base.warehouses[0].name);
+  function renderMaterialCards($box, rows, selected, mode) {
+    if (!rows.length) {
+      $box.html('<div class="wafd-storekeeper-empty">لا توجد مواد مطابقة. جرّب قسماً آخر أو كلمة بحث مختلفة.</div>');
+      return;
+    }
+    $box.html(rows.map((item) => {
+      const saved = selected.get(item.ingredient) || {};
+      const available = Number(item.available_quantity || 0);
+      return `<div class="wafd-material-card ${saved.ingredient ? "is-selected" : ""}" data-ingredient="${esc(item.ingredient)}">
+        <input class="wafd-material-check" type="checkbox" ${saved.ingredient ? "checked" : ""}>
+        <div class="wafd-material-name"><strong>${esc(item.ingredient)}</strong><small>${esc(item.category || "بدون قسم")} · ${esc(item.uom || "")}${mode === "handover" ? ` · المتاح ${esc(available)}` : ""}</small></div>
+        <label><span>الكمية</span><input class="wafd-material-qty" type="number" inputmode="decimal" min="0" ${mode === "handover" ? `max="${esc(available)}"` : ""} step="any" value="${esc(saved.quantity || "")}" placeholder="0"></label>
+        <label><span>سعر الوحدة</span><input class="wafd-material-price" type="number" inputmode="decimal" min="0" step="any" value="${esc(saved.unit_cost == null ? item.unit_cost || 0 : saved.unit_cost)}"></label>
+        ${mode === "receipt" ? `<label class="wafd-expiry-field"><span>تاريخ الانتهاء (اختياري)</span><input class="wafd-material-expiry" type="date" value="${esc(saved.expiry_date || "")}"></label>` : ""}
+      </div>`;
+    }).join(""));
+    $box.off("click.wafdPicker change.wafdPicker")
+      .on("click.wafdPicker", ".wafd-material-card", function (event) {
+        if ($(event.target).is("input,label,span")) return;
+        const $check = $(this).find(".wafd-material-check");
+        $check.prop("checked", !$check.prop("checked")).trigger("change");
+      })
+      .on("change.wafdPicker", ".wafd-material-check", function () {
+        $(this).closest(".wafd-material-card").toggleClass("is-selected", this.checked);
+      });
+  }
+
+  async function openReceipt() {
+    const base = (await api("get_storekeeper_workflow_options", {receipt: 1}, {freeze: true})).message || {};
+    if (!(base.warehouses || []).length) return frappe.msgprint(__("لا يوجد مستودع أو ثلاجة نشطة."));
+    const selected = new Map();
+    let searchTimer;
+    const dialog = new frappe.ui.Dialog({
+      title: __("استلام وتوزيع المشتريات"), size: "large",
+      fields: [{fieldname: "guided_receipt", fieldtype: "HTML"}],
+      primary_action_label: __("إضافة المواد للمخزون"),
+      primary_action: async () => {
+        const $panel = dialog.fields_dict.guided_receipt.$wrapper;
+        readSelected($panel.find("#wafd-receipt-items"), selected, "receipt");
+        const target = $panel.find("#wafd-receipt-warehouse").val();
+        const rows = [...selected.values()].filter((row) => row.quantity > 0);
+        if (!target) return frappe.msgprint(__("اختر المستودع أو الثلاجة التي ستوضع فيها المواد."));
+        if (!rows.length) return frappe.msgprint(__("اختر مادة واحدة على الأقل واكتب الكمية."));
+        const result = await api("receive_inventory_materials", {target_warehouse: target, items: JSON.stringify(rows)}, {freeze: true, message: __("جارٍ إضافة المواد وتحديث المخزون…")});
+        if (!result.message) return;
+        dialog.hide();
+        frappe.show_alert({message: __(`تمت إضافة ${result.message.items_count} مادة إلى ${result.message.warehouse}`), indicator: "green"}, 6);
+        loadSnapshot();
       },
     });
+    dialog.show();
+    const $panel = dialog.fields_dict.guided_receipt.$wrapper;
+    $panel.html(`<div class="wafd-guided-panel">
+      <div class="wafd-step"><b>1</b><div><strong>أين ستوضع المواد؟</strong><small>اختر المستودع أو الثلاجة مباشرة ويمكن تغييره دون مسح النص.</small></div></div>
+      <select id="wafd-receipt-warehouse">${optionsHtml(base.warehouses || [], "name", warehouseLabel, "اختر المستودع أو الثلاجة")}</select>
+      <div class="wafd-step"><b>2</b><div><strong>ابحث ثم اختر المواد</strong><small>اختر القسم أو اكتب اسم المادة، ثم اضغط البطاقة وأدخل الكمية والسعر.</small></div></div>
+      <div class="wafd-picker-filters"><select id="wafd-receipt-category">${optionsHtml((base.categories || []).map((category) => ({category})), "category", (row) => row.category, "كل الأقسام")}</select><input id="wafd-receipt-search" type="search" placeholder="ابحث باسم المادة أو رمزها"></div>
+      <div id="wafd-receipt-items" class="wafd-material-results"><div class="wafd-picker-help">اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.</div></div>
+      <button type="button" class="wafd-secondary-link" id="wafd-open-orders">عرض أوامر الشراء</button>
+    </div>`);
+    const load = async () => {
+      const category = $panel.find("#wafd-receipt-category").val();
+      const search = $panel.find("#wafd-receipt-search").val().trim();
+      const $box = $panel.find("#wafd-receipt-items");
+      readSelected($box, selected, "receipt");
+      if (!category && search.length < 2) return $box.html('<div class="wafd-picker-help">اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.</div>');
+      $box.html('<div class="wafd-storekeeper-loading">جارٍ البحث…</div>');
+      const response = await api("get_storekeeper_workflow_options", {warehouse: $panel.find("#wafd-receipt-warehouse").val() || null, category: category || null, search: search || null, receipt: 1});
+      renderMaterialCards($box, (response.message || {}).items || [], selected, "receipt");
+    };
+    $panel.on("change", "#wafd-receipt-category", load);
+    $panel.on("change", "#wafd-receipt-warehouse", () => { selected.clear(); load(); });
+    $panel.on("input", "#wafd-receipt-search", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
+    $panel.on("click", "#wafd-open-orders", () => frappe.set_route("List", "WAFD Purchase Order"));
+  }
+
+  async function openHandover() {
+    const base = (await api("get_storekeeper_workflow_options", {}, {freeze: true})).message || {};
+    if (!(base.warehouses || []).length) return frappe.msgprint(__("لا يوجد مستودع أو ثلاجة نشطة."));
+    if (!(base.recipients || []).length) return frappe.msgprint(__("لا يوجد موظفون نشطون في الوظائف المسموح التسليم لها."));
+    const selected = new Map();
+    const roles = [...new Map((base.recipients || []).map((row) => [row.role, row.role_label])).entries()].map(([role, label]) => ({role, label}));
+    let searchTimer;
+    const dialog = new frappe.ui.Dialog({
+      title: __("تسليم مواد للموظفين"), size: "large",
+      fields: [{fieldname: "guided_handover", fieldtype: "HTML"}],
+      primary_action_label: __("تسليم وتحديث الرصيد"),
+      primary_action: async () => {
+        const $panel = dialog.fields_dict.guided_handover.$wrapper;
+        readSelected($panel.find("#wafd-handover-items"), selected, "handover");
+        const role = $panel.find("#wafd-recipient-role").val();
+        const recipient = $panel.find("#wafd-recipient-name").val();
+        const source = $panel.find("#wafd-source-warehouse").val();
+        const rows = [...selected.values()].filter((row) => row.quantity > 0);
+        if (!role || !recipient) return frappe.msgprint(__("اختر وظيفة المستلم ثم اسمه."));
+        if (!source) return frappe.msgprint(__("اختر المستودع أو الثلاجة المصدر."));
+        if (!rows.length) return frappe.msgprint(__("اختر مادة واحدة على الأقل واكتب الكمية."));
+        const result = await api("create_employee_handover", {source_warehouse: source, issued_to_user: recipient, recipient_role: role, items: JSON.stringify(rows)}, {freeze: true, message: __("جارٍ تسليم المواد وتحديث الرصيد…")});
+        if (!result.message) return;
+        dialog.hide();
+        frappe.show_alert({message: __(`تم تسليم المواد إلى ${result.message.recipient}`), indicator: "green"}, 6);
+        loadSnapshot();
+      },
+    });
+    dialog.show();
+    const $panel = dialog.fields_dict.guided_handover.$wrapper;
+    $panel.html(`<div class="wafd-guided-panel">
+      <div class="wafd-step"><b>1</b><div><strong>من هو المستلم؟</strong><small>اختر الوظيفة أولاً ثم يظهر اسم الموظف، وليس البريد الإلكتروني.</small></div></div>
+      <div class="wafd-picker-filters"><select id="wafd-recipient-role">${optionsHtml(roles, "role", (row) => row.label, "اختر الوظيفة")}</select><select id="wafd-recipient-name"><option value="">اختر اسم المستلم</option></select></div>
+      <div class="wafd-step"><b>2</b><div><strong>من أين ستخرج المواد؟</strong><small>اختر المستودع أو الثلاجة المصدر.</small></div></div>
+      <select id="wafd-source-warehouse">${optionsHtml(base.warehouses || [], "name", warehouseLabel, "اختر المستودع أو الثلاجة")}</select>
+      <div class="wafd-step"><b>3</b><div><strong>اختر المواد</strong><small>اختر القسم أو ابحث، ولن تظهر إلا المواد ذات الرصيد المتاح.</small></div></div>
+      <div class="wafd-picker-filters"><select id="wafd-handover-category">${optionsHtml((base.categories || []).map((category) => ({category})), "category", (row) => row.category, "كل الأقسام")}</select><input id="wafd-handover-search" type="search" placeholder="ابحث باسم المادة أو رمزها"></div>
+      <div id="wafd-handover-items" class="wafd-material-results"><div class="wafd-picker-help">اختر المستودع ثم القسم، أو اكتب حرفين للبحث.</div></div>
+    </div>`);
+    const updateNames = () => {
+      const role = $panel.find("#wafd-recipient-role").val();
+      const people = (base.recipients || []).filter((row) => row.role === role);
+      $panel.find("#wafd-recipient-name").html(optionsHtml(people, "name", (row) => row.full_name, "اختر اسم المستلم"));
+    };
+    const load = async () => {
+      const warehouse = $panel.find("#wafd-source-warehouse").val();
+      const category = $panel.find("#wafd-handover-category").val();
+      const search = $panel.find("#wafd-handover-search").val().trim();
+      const $box = $panel.find("#wafd-handover-items");
+      readSelected($box, selected, "handover");
+      if (!warehouse || (!category && search.length < 2)) return $box.html('<div class="wafd-picker-help">اختر المستودع ثم القسم، أو اكتب حرفين للبحث.</div>');
+      $box.html('<div class="wafd-storekeeper-loading">جارٍ البحث في الرصيد المتاح…</div>');
+      const response = await api("get_storekeeper_workflow_options", {warehouse, category: category || null, search: search || null});
+      renderMaterialCards($box, (response.message || {}).items || [], selected, "handover");
+    };
+    $panel.on("change", "#wafd-recipient-role", updateNames);
+    $panel.on("change", "#wafd-handover-category", load);
+    $panel.on("change", "#wafd-source-warehouse", () => { selected.clear(); load(); });
+    $panel.on("input", "#wafd-handover-search", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
   }
 
   function renderShell() {
-    $root.html(`<style>
-      .wafd-storekeeper-actions{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-      .wafd-storekeeper-handovers{margin-top:14px}
-      .wafd-handover-row{display:grid;grid-template-columns:1.2fr auto;gap:8px;border:1px solid #e8e1d4;border-radius:14px;margin-top:10px;padding:12px}
-      .wafd-handover-row small{display:block;color:#777}.wafd-handover-row .status{background:#f1e7ce;color:#73591f;border-radius:14px;padding:5px 9px;font-size:11px}
-      .wafd-handover-row p{grid-column:1/-1;margin:0;color:#555}.wafd-handover-row .usage{color:#267048;background:#edf7f1;border-radius:8px;padding:7px}
-      .wafd-cleaning-pick-head{font-weight:800;margin:8px 0}.wafd-cleaning-pick-row{display:grid;grid-template-columns:auto minmax(170px,1fr) 105px 105px;gap:8px;align-items:center;border:1px solid #e7dfcf;border-radius:12px;padding:10px;margin:8px 0}.wafd-cleaning-pick-row span small{display:block;color:#777}.wafd-cleaning-pick-row input[type=number]{width:100%;border:1px solid #d8d1c4;border-radius:9px;padding:8px}.wafd-cleaning-no-stock{background:#fff4df;color:#785916;border-radius:12px;padding:16px;text-align:center}@media(max-width:600px){.wafd-cleaning-pick-row{grid-template-columns:auto 1fr}.wafd-cleaning-pick-row input[type=number]{grid-column:auto/span 1}}
-      .wafd-cleaning-pick-row.is-selected{border:2px solid #b8872e;background:#fff9eb}.wafd-cleaning-pick-row.is-unavailable{background:#f5f5f5}.wafd-receive-item{grid-column:3/5;background:#fff;border:1px solid #b8872e;color:#76591d;border-radius:9px;padding:9px}
-      @media(max-width:600px){.wafd-receive-item{grid-column:1/-1}.wafd-cleaning-pick-row.is-unavailable span{grid-column:2}}
-    </style>
-      <div class="wafd-storekeeper-wrap">
-        <section class="wafd-storekeeper-head">
-          <div><span>إدارة مبسطة للمستودع</span><h2>اختر العملية المطلوبة</h2></div>
-          <button type="button" data-action="movements">سجل الحركات</button>
-        </section>
-        <section class="wafd-storekeeper-actions">
-          <button class="is-primary" type="button" data-action="receipt"><b>＋</b><strong>استلام مواد مشتراة</strong><small>اختيار أمر الشراء والمستودع ثم تسجيل الكمية</small></button>
-          <button type="button" data-action="issue"><b>−</b><strong>صرف مواد</strong><small>صرف الأصناف من المستودع إلى المستلم</small></button>
-          <button type="button" data-action="cleaning"><b>➜</b><strong>إرسال لمشرف النظافة</strong><small>اختيار قسم النظافة ثم إرسال المواد لتأكيد الاستلام</small></button>
-          <button type="button" data-action="transfer"><b>↔</b><strong>تحويل مواد</strong><small>نقل الأصناف بين مستودعين</small></button>
-          <button type="button" data-action="orders"><b>⌑</b><strong>أوامر الشراء</strong><small>متابعة المواد المطلوب استلامها <i id="wafd-pending-orders"></i></small></button>
-        </section>
-        <section class="wafd-storekeeper-balances">
-          <div class="wafd-storekeeper-balance-head"><div><span>أرصدة المخزون</span><small>الكميات الفعلية والمتاحة في المستودعات</small></div><button type="button" data-action="refresh">تحديث</button></div>
-          <div class="wafd-storekeeper-filters">
-            <select id="wafd-balance-warehouse"><option value="">كل المستودعات</option></select>
-            <input id="wafd-balance-search" type="search" placeholder="ابحث باسم الصنف">
-          </div>
-          <div id="wafd-balance-results" class="wafd-storekeeper-results"><div class="wafd-storekeeper-loading">جارٍ تحميل الأرصدة…</div></div>
-        </section>
-        <section class="wafd-storekeeper-balances wafd-storekeeper-handovers">
-          <div class="wafd-storekeeper-balance-head"><div><span>تسليمات مشرفي النظافة</span><small>حالة الاستلام وأغراض الصرف المسجلة</small></div></div>
-          <div id="wafd-handover-results" class="wafd-storekeeper-results"><div class="wafd-storekeeper-loading">جارٍ تحميل التسليمات…</div></div>
-        </section>
-      </div>`);
-
-    $root.on("click", "[data-action='receipt']", () => openMovement("استلام / Receipt", { reference_type: "WAFD Purchase Order" }));
-    $root.on("click", "[data-action='issue']", () => openMovement("صرف / Issue"));
-    $root.on("click", "[data-action='cleaning']", openCleaningHandover);
-    $root.on("click", "[data-action='transfer']", () => openMovement("تحويل / Transfer"));
-    $root.on("click", "[data-action='orders']", () => frappe.set_route("List", "WAFD Purchase Order"));
+    $root.html(`<div class="wafd-storekeeper-wrap">
+      <section class="wafd-storekeeper-head"><div><span>إدارة عملية بدون نماذج معقدة</span><h2>ماذا تريد أن تعمل الآن؟</h2></div><button type="button" data-action="movements">سجل الحركات</button></section>
+      <section class="wafd-storekeeper-actions wafd-three-actions">
+        <button class="is-primary" type="button" data-action="receive"><b>＋</b><strong>استلام وتوزيع المشتريات</strong><small>اختر المستودع أو الثلاجة، ثم ابحث عن المواد وسجّل الكمية والسعر.</small></button>
+        <button type="button" data-action="handover"><b>➜</b><strong>تسليم مواد للموظفين</strong><small>مشرف النظافة أو مشرف الطبخ والشيف وغيرهم، بالاسم والوظيفة.</small></button>
+        <button type="button" data-action="inventory"><b>▣</b><strong>معلومات المخزون</strong><small>كل الأرصدة والمواد الناقصة والمنتهية أو القريبة من الانتهاء.</small></button>
+      </section>
+      <section id="wafd-inventory-panel" class="wafd-storekeeper-balances" hidden>
+        <div class="wafd-storekeeper-balance-head"><div><span>معلومات المخزون</span><small>بحث وفلاتر وتنبيهات عملية</small></div><button type="button" data-action="refresh">تحديث</button></div>
+        <div id="wafd-inventory-summary" class="wafd-inventory-summary"></div>
+        <div class="wafd-storekeeper-filters"><select id="wafd-balance-warehouse"><option value="">كل المستودعات والثلاجات</option></select><input id="wafd-balance-search" type="search" placeholder="ابحث باسم المادة أو المستودع"></div>
+        <div class="wafd-inventory-tabs"><button class="is-active" data-view="all">كل المواد</button><button data-view="low">الناقص والصفر</button><button data-view="expiry">قريب الانتهاء</button></div>
+        <div id="wafd-balance-results" class="wafd-storekeeper-results"><div class="wafd-storekeeper-loading">جارٍ تحميل معلومات المخزون…</div></div>
+      </section>
+    </div>`);
+    $root.on("click", "[data-action='receive']", openReceipt);
+    $root.on("click", "[data-action='handover']", openHandover);
+    $root.on("click", "[data-action='inventory']", showInventory);
     $root.on("click", "[data-action='movements']", () => frappe.set_route("List", "WAFD Stock Movement"));
-    $root.on("click", "[data-action='refresh']", loadBalances);
-    $root.on("change", "#wafd-balance-warehouse", loadBalances);
+    $root.on("click", "[data-action='refresh']", loadSnapshot);
+    $root.on("change", "#wafd-balance-warehouse", loadSnapshot);
     let timer;
-    $root.on("input", "#wafd-balance-search", () => {
-      clearTimeout(timer);
-      timer = setTimeout(loadBalances, 250);
+    $root.on("input", "#wafd-balance-search", () => { clearTimeout(timer); timer = setTimeout(loadSnapshot, 250); });
+    $root.on("click", ".wafd-inventory-tabs button", function () {
+      $root.find(".wafd-inventory-tabs button").removeClass("is-active");
+      $(this).addClass("is-active");
+      renderInventory($root.data("snapshot") || {});
     });
   }
 
-  function renderBalances(data) {
-    const warehouses = data.warehouses || [];
-    const selected = $root.find("#wafd-balance-warehouse").val() || "";
+  function showInventory() {
+    const panel = $root.find("#wafd-inventory-panel").prop("hidden", false)[0];
+    panel?.scrollIntoView({behavior: "smooth", block: "start"});
+    loadSnapshot();
+  }
+
+  function renderInventory(data) {
+    $root.data("snapshot", data);
+    const summary = data.summary || {};
+    $root.find("#wafd-inventory-summary").html([
+      [summary.materials || 0, "أرصدة مسجلة"], [summary.low || 0, "تحت الحد الأدنى"],
+      [summary.zero || 0, "رصيدها صفر"], [(summary.expiring || 0) + (summary.expired || 0), "تنبيه انتهاء"],
+    ].map(([value, label]) => `<div><b>${esc(value)}</b><small>${label}</small></div>`).join(""));
     const $select = $root.find("#wafd-balance-warehouse");
+    const current = $select.val() || "";
     if ($select.find("option").length <= 1) {
-      warehouses.forEach((row) => $select.append(`<option value="${escape(row.name)}">${escape(row.warehouse_name || row.name)}</option>`));
-      $select.val(selected);
+      (data.warehouses || []).forEach((row) => $select.append(`<option value="${esc(row.name)}">${esc(warehouseLabel(row))}</option>`));
+      $select.val(current);
     }
-    $root.find("#wafd-pending-orders").text(data.pending_purchase_orders ? `(${data.pending_purchase_orders})` : "");
-
-    const rows = data.balances || [];
-    if (!rows.length) {
-      $root.find("#wafd-balance-results").html('<div class="wafd-storekeeper-empty">لا توجد أرصدة مطابقة.</div>');
-    } else {
-      $root.find("#wafd-balance-results").html(`
-      <div class="wafd-storekeeper-table-head"><span>الصنف</span><span>المستودع</span><span>المتاح</span><span>المحجوز</span></div>
-      ${rows.map((row) => `
-        <div class="wafd-storekeeper-balance-row">
-          <span data-label="الصنف"><b>${escape(row.ingredient)}</b><small>${escape(row.uom || "")}</small></span>
-          <span data-label="المستودع">${escape(row.warehouse)}</span>
-          <span data-label="المتاح" class="is-available">${escape(row.available_quantity || 0)}</span>
-          <span data-label="المحجوز">${escape(row.reserved_quantity || 0)}</span>
-        </div>`).join("")}`);
+    const view = $root.find(".wafd-inventory-tabs button.is-active").data("view") || "all";
+    const balances = (data.balances || []).filter((row) => view !== "low" || row.is_low || row.is_zero);
+    const expiry = data.expiry_alerts || [];
+    if (view === "expiry") {
+      $root.find("#wafd-balance-results").html(!expiry.length ? '<div class="wafd-storekeeper-empty">لا توجد مواد منتهية أو قريبة من الانتهاء خلال 30 يوماً.</div>' : expiry.map((row) => `<div class="wafd-expiry-row ${Number(row.days_remaining) < 0 ? "is-expired" : ""}"><div><b>${esc(row.ingredient)}</b><small>${esc(row.warehouse)} · ${esc(row.quantity)} ${esc(row.uom || "")}</small></div><span>${Number(row.days_remaining) < 0 ? `منتهية منذ ${esc(Math.abs(row.days_remaining))} يوم` : `باقي ${esc(row.days_remaining)} يوم`}</span></div>`).join(""));
+      return;
     }
-
-    const handovers = data.cleaning_handovers || [];
-    $root.find("#wafd-handover-results").html(!handovers.length ? '<div class="wafd-storekeeper-empty">لا توجد تسليمات نظافة حتى الآن.</div>' : handovers.map((row) => `
-      <div class="wafd-handover-row">
-        <div><b>${escape(row.name)}</b><small>${escape(row.issued_to_user || "")} · ${escape(row.posting_date || "")}</small></div>
-        <span class="status">${escape(row.handover_status)}</span>
-        <p>${(row.items || []).map((i) => `${escape(i.ingredient)}: ${escape(i.quantity)} ${escape(i.uom || "")}`).join("، ")}</p>
-        <p class="usage">${(row.usage || []).length ? (row.usage || []).map((u) => `صرف: ${(u.items || []).map((i) => `${escape(i.ingredient)} ${escape(i.quantity)} ${escape(i.uom || "")}`).join("، ")} — ${escape(u.purpose)}${u.location ? ` — ${escape(u.location)}` : ""}`).join(" | ") : "لم يسجل المشرف صرفاً بعد"}</p>
-      </div>`).join(""));
+    $root.find("#wafd-balance-results").html(!balances.length ? '<div class="wafd-storekeeper-empty">لا توجد أرصدة مطابقة.</div>' : balances.map((row) => `<div class="wafd-storekeeper-balance-row ${row.is_zero ? "is-zero" : row.is_low ? "is-low" : ""}"><span data-label="الصنف"><b>${esc(row.ingredient)}</b><small>${esc(row.category || "")} · ${esc(row.uom || "")}</small></span><span data-label="المكان">${esc(row.warehouse)}</span><span data-label="المتاح" class="is-available">${esc(row.available_quantity || 0)}</span><span data-label="الحد الأدنى">${esc(row.minimum_stock || 0)}</span></div>`).join(""));
   }
 
-  function loadBalances() {
-    const serial = ++requestSerial;
+  async function loadSnapshot() {
+    const serial = ++snapshotSerial;
     $root.find("#wafd-balance-results").addClass("is-loading");
-    frappe.call({
-      method: "wafd_one.storekeeper_portal.get_storekeeper_snapshot",
-      args: {
-        warehouse: $root.find("#wafd-balance-warehouse").val() || null,
-        search: $root.find("#wafd-balance-search").val() || null,
-      },
-      callback(r) {
-        if (serial !== requestSerial) return;
-        $root.find("#wafd-balance-results").removeClass("is-loading");
-        renderBalances(r.message || {});
-      },
-    });
+    const response = await api("get_storekeeper_snapshot", {warehouse: $root.find("#wafd-balance-warehouse").val() || null, search: $root.find("#wafd-balance-search").val() || null});
+    if (serial !== snapshotSerial) return;
+    $root.find("#wafd-balance-results").removeClass("is-loading");
+    renderInventory(response.message || {});
+  }
+
+  function runRequestedAction() {
+    const action = localStorage.getItem("wafd_storekeeper_action");
+    if (!action) return;
+    localStorage.removeItem("wafd_storekeeper_action");
+    if (action === "receive") openReceipt();
+    if (action === "handover") openHandover();
+    if (action === "inventory") showInventory();
   }
 
   renderShell();
-  loadBalances();
-  wrapper.wafd_open_cleaning_handover = openCleaningHandover;
-  if (localStorage.getItem("wafd_open_cleaning_handover") === "1") {
-    localStorage.removeItem("wafd_open_cleaning_handover");
-    openCleaningHandover();
-  }
+  wrapper.wafd_run_storekeeper_action = runRequestedAction;
+  setTimeout(runRequestedAction, 0);
 };
 
 frappe.pages["wafd-storekeeper-home"].on_page_show = function (wrapper) {
-  if (localStorage.getItem("wafd_open_cleaning_handover") === "1" && wrapper.wafd_open_cleaning_handover) {
-    localStorage.removeItem("wafd_open_cleaning_handover");
-    wrapper.wafd_open_cleaning_handover();
-  }
+  wrapper.wafd_run_storekeeper_action?.();
 };

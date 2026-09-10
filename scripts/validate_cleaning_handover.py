@@ -49,10 +49,11 @@ def main():
     for token in ("get_cleaning_handover_options", "create_cleaning_handover", "receive_cleaning_material", "can_issue"):
         assert token in storekeeper_server
     storekeeper_page = (ROOT / "wafd_one/wafd_one/page/wafd_storekeeper_home/wafd_storekeeper_home.js").read_text(encoding="utf-8")
-    assert "openCleaningHandover" in storekeeper_page
-    assert "wafd-cleaning-pick-row" in storekeeper_page
-    assert "create_cleaning_handover" in storekeeper_page
-    assert "استلام وإضافة رصيد" in storekeeper_page
+    assert "openHandover" in storekeeper_page
+    assert "wafd-material-card" in storekeeper_page
+    assert "create_employee_handover" in storekeeper_page
+    assert "WAFD Cleaning Supervisor" in storekeeper_server
+    assert "Materials must go to a Cleaning Supervisor" not in storekeeper_server
 
     choice_helper = (ROOT / "wafd_one/public/js/wafd_mobile_choice_replace.js").read_text(encoding="utf-8")
     assert "setSelectionRange" in choice_helper
@@ -68,7 +69,7 @@ def main():
     storekeeper_start = role_home.index('role: "WAFD Storekeeper"')
     cleaning_start = role_home.index('role: "WAFD Cleaning Supervisor"', storekeeper_start)
     assert "إفطار صائم" not in role_home[storekeeper_start:cleaning_start]
-    print("RC267 validation passed: guided receipt, handover, pending refresh, choices and role scope")
+    print("Cleaning handover validation passed: guided handover, pending refresh, choices and role scope")
 
 
 if __name__ == "__main__":

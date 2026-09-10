@@ -12,10 +12,11 @@ def main():
     start = role_home.index('role: "WAFD Storekeeper"')
     end = role_home.index('role: "WAFD Cleaning Supervisor"', start)
     storekeeper = role_home[start:end]
-    assert "wafd-storekeeper-home" in storekeeper
-    assert "استلام مواد مشتراة" in storekeeper
-    assert "صرف مواد" in storekeeper
-    assert "تحويل مواد" in storekeeper
+    assert "storekeeper_receive" in storekeeper
+    assert "استلام وتوزيع المشتريات" in storekeeper
+    assert "تسليم مواد للموظفين" in storekeeper
+    assert "معلومات المخزون" in storekeeper
+    assert "new_doctype: \"WAFD Stock Movement\"" not in storekeeper
     assert "إفطار صائم" not in storekeeper
     assert "Object.assign(doc, item.defaults || {})" in role_home
 
@@ -26,6 +27,9 @@ def main():
     page_js = (page_root / "wafd_storekeeper_home.js").read_text(encoding="utf-8")
     assert "get_storekeeper_snapshot" in page_js
     assert "WAFD Purchase Order" in page_js
+    assert "get_storekeeper_workflow_options" in page_js
+    assert "receive_inventory_materials" in page_js
+    assert "create_employee_handover" in page_js
     assert "wafd-iftar-operations" not in page_js
 
     iftar_page = json.loads((ROOT / "wafd_one/wafd_one/page/wafd_iftar_operations/wafd_iftar_operations.json").read_text(encoding="utf-8"))
@@ -43,7 +47,7 @@ def main():
     server = (ROOT / "wafd_one/storekeeper_portal.py").read_text(encoding="utf-8")
     assert '"WAFD Storekeeper"' in server
     assert "ALLOWED_ROLES" in server
-    print("RC264 storekeeper validation passed: role scope, simplified actions, balances and form")
+    print("Storekeeper validation passed: three guided workflows, search, balances and role scope")
 
 
 if __name__ == "__main__":

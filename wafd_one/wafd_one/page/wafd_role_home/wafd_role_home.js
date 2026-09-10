@@ -182,14 +182,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       ]
     },
     {
-      role: "WAFD Storekeeper", title: "أمين المستودع", subtitle: "المخزون والاستلام والصرف",
+      role: "WAFD Storekeeper", title: "أمين المستودع", subtitle: "ثلاث مهام عملية للمخزون",
       items: [
-        { label: "إدارة المخزون", desc: "شاشة سهلة للاستلام والصرف والتحويل والأرصدة", icon: "▣", page: "wafd-storekeeper-home", primary: true },
-        { label: "استلام مواد مشتراة", desc: "تسجيل المواد الواردة من أمر الشراء", icon: "＋", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "استلام / Receipt", reference_type: "WAFD Purchase Order" } },
-        { label: "صرف مواد", desc: "تسجيل المواد الخارجة من المستودع", icon: "−", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "صرف / Issue" } },
-        { label: "إرسال لمشرف النظافة", desc: "عرض مواد مستودع النظافة واختيار الكمية مباشرة", icon: "➜", action: "cleaning_handover" },
-        { label: "تحويل مواد", desc: "نقل المواد بين المستودعات", icon: "↔", new_doctype: "WAFD Stock Movement", defaults: { movement_type: "تحويل / Transfer" } },
-        { label: "أوامر الشراء", desc: "متابعة المواد المشتراة", icon: "⌑", doctype: "WAFD Purchase Order" }
+        { label: "استلام وتوزيع المشتريات", desc: "إدخال المواد في المستودعات والثلاجات بسهولة", icon: "＋", action: "storekeeper_receive", page: "wafd-storekeeper-home", primary: true },
+        { label: "تسليم مواد للموظفين", desc: "اختيار الوظيفة والاسم والمستودع ثم المواد", icon: "➜", action: "storekeeper_handover", page: "wafd-storekeeper-home" },
+        { label: "معلومات المخزون", desc: "الأرصدة والنواقص وتنبيهات انتهاء الصلاحية", icon: "▣", action: "storekeeper_inventory", page: "wafd-storekeeper-home" }
       ]
     },
     {
@@ -383,13 +380,13 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     $root.find("#wafd-role-lang, #wafd-pwa-language").on("change", function(){uiLang=this.value;localStorage.setItem("wafd_lang",uiLang);renderRoleHome();});
     $root.find(".wafd-mobile-card").on("click", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
-      if (item.page) { frappe.set_route(item.page); return; }
-      if (item.action === "new_hotel") { openNewHotelDialog(); return; }
-      if (item.action === "cleaning_handover") {
-        localStorage.setItem("wafd_open_cleaning_handover", "1");
+      if (["storekeeper_receive", "storekeeper_handover", "storekeeper_inventory"].includes(item.action)) {
+        localStorage.setItem("wafd_storekeeper_action", item.action.replace("storekeeper_", ""));
         frappe.set_route("wafd-storekeeper-home");
         return;
       }
+      if (item.page) { frappe.set_route(item.page); return; }
+      if (item.action === "new_hotel") { openNewHotelDialog(); return; }
       if (item.new_doctype) {
         // RC210: open the full unsaved form directly. Quick Entry saves in a
         // dialog then closes back to the previous route, which forced the

@@ -53,8 +53,36 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
         fields=["name"],
         limit_page_length=500,
     )
+    handovers = frappe.get_all(
+        "WAFD Stock Movement",
+        filters={
+            "movement_type": "صرف / Issue",
+            "issue_purpose": "نظافة / Cleaning",
+            "handover_status": ["!=", "غير مرسل / Not Sent"],
+            "is_pre_go_live_test": 0,
+        },
+        fields=["name", "posting_date", "issued_to_user", "handover_status", "handover_sent_on", "handover_received_on", "handover_rejection_reason"],
+        order_by="posting_date desc",
+        limit_page_length=20,
+    )
+    for handover in handovers:
+        handover["items"] = frappe.get_all(
+            "WAFD Stock Movement Item", filters={"parent": handover.name},
+            fields=["ingredient", "quantity", "uom"], order_by="idx asc",
+        )
+        usage_names = frappe.get_all(
+            "WAFD Cleaning Material Usage", filters={"source_handover": handover.name},
+            fields=["name", "usage_date", "purpose", "location"], order_by="usage_date desc",
+        )
+        for usage in usage_names:
+            usage["items"] = frappe.get_all(
+                "WAFD Cleaning Material Usage Item", filters={"parent": usage.name},
+                fields=["ingredient", "quantity", "uom"], order_by="idx asc",
+            )
+        handover["usage"] = usage_names
     return {
         "warehouses": warehouses,
         "balances": balances,
         "pending_purchase_orders": len(pending_orders),
+        "cleaning_handovers": handovers,
     }

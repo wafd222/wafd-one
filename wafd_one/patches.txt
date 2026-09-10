@@ -436,3 +436,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc263.execute
 
 # RC264 simplify the storekeeper home, stock entry and balance review
 wafd_one.wafd_one.patches.v10_0_0_rc264.execute
+
+# RC265 category-first material entry and cleaning supervisor handover/usage
+wafd_one.wafd_one.patches.v10_0_0_rc265.execute

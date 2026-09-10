@@ -19,7 +19,13 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
   }
 
   function renderShell() {
-    $root.html(`
+    $root.html(`<style>
+      .wafd-storekeeper-actions{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+      .wafd-storekeeper-handovers{margin-top:14px}
+      .wafd-handover-row{display:grid;grid-template-columns:1.2fr auto;gap:8px;border:1px solid #e8e1d4;border-radius:14px;margin-top:10px;padding:12px}
+      .wafd-handover-row small{display:block;color:#777}.wafd-handover-row .status{background:#f1e7ce;color:#73591f;border-radius:14px;padding:5px 9px;font-size:11px}
+      .wafd-handover-row p{grid-column:1/-1;margin:0;color:#555}.wafd-handover-row .usage{color:#267048;background:#edf7f1;border-radius:8px;padding:7px}
+    </style>
       <div class="wafd-storekeeper-wrap">
         <section class="wafd-storekeeper-head">
           <div><span>إدارة مبسطة للمستودع</span><h2>اختر العملية المطلوبة</h2></div>
@@ -28,6 +34,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
         <section class="wafd-storekeeper-actions">
           <button class="is-primary" type="button" data-action="receipt"><b>＋</b><strong>استلام مواد مشتراة</strong><small>اختيار أمر الشراء والمستودع ثم تسجيل الكمية</small></button>
           <button type="button" data-action="issue"><b>−</b><strong>صرف مواد</strong><small>صرف الأصناف من المستودع إلى المستلم</small></button>
+          <button type="button" data-action="cleaning"><b>➜</b><strong>إرسال لمشرف النظافة</strong><small>اختيار قسم النظافة ثم إرسال المواد لتأكيد الاستلام</small></button>
           <button type="button" data-action="transfer"><b>↔</b><strong>تحويل مواد</strong><small>نقل الأصناف بين مستودعين</small></button>
           <button type="button" data-action="orders"><b>⌑</b><strong>أوامر الشراء</strong><small>متابعة المواد المطلوب استلامها <i id="wafd-pending-orders"></i></small></button>
         </section>
@@ -39,10 +46,15 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
           </div>
           <div id="wafd-balance-results" class="wafd-storekeeper-results"><div class="wafd-storekeeper-loading">جارٍ تحميل الأرصدة…</div></div>
         </section>
+        <section class="wafd-storekeeper-balances wafd-storekeeper-handovers">
+          <div class="wafd-storekeeper-balance-head"><div><span>تسليمات مشرفي النظافة</span><small>حالة الاستلام وأغراض الصرف المسجلة</small></div></div>
+          <div id="wafd-handover-results" class="wafd-storekeeper-results"><div class="wafd-storekeeper-loading">جارٍ تحميل التسليمات…</div></div>
+        </section>
       </div>`);
 
     $root.on("click", "[data-action='receipt']", () => openMovement("استلام / Receipt", { reference_type: "WAFD Purchase Order" }));
     $root.on("click", "[data-action='issue']", () => openMovement("صرف / Issue"));
+    $root.on("click", "[data-action='cleaning']", () => openMovement("صرف / Issue", { issue_purpose: "نظافة / Cleaning", material_category: "منظفات / Cleaning" }));
     $root.on("click", "[data-action='transfer']", () => openMovement("تحويل / Transfer"));
     $root.on("click", "[data-action='orders']", () => frappe.set_route("List", "WAFD Purchase Order"));
     $root.on("click", "[data-action='movements']", () => frappe.set_route("List", "WAFD Stock Movement"));
@@ -68,9 +80,8 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
     const rows = data.balances || [];
     if (!rows.length) {
       $root.find("#wafd-balance-results").html('<div class="wafd-storekeeper-empty">لا توجد أرصدة مطابقة.</div>');
-      return;
-    }
-    $root.find("#wafd-balance-results").html(`
+    } else {
+      $root.find("#wafd-balance-results").html(`
       <div class="wafd-storekeeper-table-head"><span>الصنف</span><span>المستودع</span><span>المتاح</span><span>المحجوز</span></div>
       ${rows.map((row) => `
         <div class="wafd-storekeeper-balance-row">
@@ -79,6 +90,16 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
           <span data-label="المتاح" class="is-available">${escape(row.available_quantity || 0)}</span>
           <span data-label="المحجوز">${escape(row.reserved_quantity || 0)}</span>
         </div>`).join("")}`);
+    }
+
+    const handovers = data.cleaning_handovers || [];
+    $root.find("#wafd-handover-results").html(!handovers.length ? '<div class="wafd-storekeeper-empty">لا توجد تسليمات نظافة حتى الآن.</div>' : handovers.map((row) => `
+      <div class="wafd-handover-row">
+        <div><b>${escape(row.name)}</b><small>${escape(row.issued_to_user || "")} · ${escape(row.posting_date || "")}</small></div>
+        <span class="status">${escape(row.handover_status)}</span>
+        <p>${(row.items || []).map((i) => `${escape(i.ingredient)}: ${escape(i.quantity)} ${escape(i.uom || "")}`).join("، ")}</p>
+        <p class="usage">${(row.usage || []).length ? (row.usage || []).map((u) => `صرف: ${(u.items || []).map((i) => `${escape(i.ingredient)} ${escape(i.quantity)} ${escape(i.uom || "")}`).join("، ")} — ${escape(u.purpose)}${u.location ? ` — ${escape(u.location)}` : ""}`).join(" | ") : "لم يسجل المشرف صرفاً بعد"}</p>
+      </div>`).join(""));
   }
 
   function loadBalances() {

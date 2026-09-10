@@ -46,6 +46,12 @@ def stock_movement_query(user=None):
             f"and `tabWAFD Stock Movement`.`issued_to_user`={frappe.db.escape(user)}")
 
 
+def cleaning_usage_query(user=None):
+    user = user or frappe.session.user
+    if not _restricted(user): return ""
+    return f"`tabWAFD Cleaning Material Usage`.`supervisor`={frappe.db.escape(user)}"
+
+
 def warehouse_has_permission(doc, user=None, ptype=None, permission_type=None, **kwargs):
     user = user or frappe.session.user
     if not _restricted(user): return True
@@ -68,3 +74,13 @@ def stock_movement_has_permission(doc, user=None, ptype=None, permission_type=No
     perm = ptype or permission_type
     if perm not in (None, "read", "select", "print", "report"): return False
     return bool(not doc.get("is_pre_go_live_test") and doc.movement_type == "صرف / Issue" and doc.issued_to_user == user and frappe.db.get_value("WAFD Warehouse", doc.source_warehouse, "warehouse_type") == CLEANING_TYPE)
+
+
+def cleaning_usage_has_permission(doc, user=None, ptype=None, permission_type=None, **kwargs):
+    user = user or frappe.session.user
+    if not _restricted(user): return True
+    perm = ptype or permission_type
+    if perm == "create":
+        return not doc.get("supervisor") or doc.supervisor == user
+    if perm not in (None, "read", "select", "print", "report"): return False
+    return doc.supervisor == user

@@ -93,6 +93,7 @@ doc_events = {
     for doctype in (
         "WAFD Contract", "WAFD Catering Project", "WAFD Meal Plan",
         "WAFD Production Batch", "WAFD Purchase Order", "WAFD Stock Movement",
+        "WAFD Cleaning Material Usage",
         "WAFD Delivery Trip", "WAFD Delivery Proof", "WAFD Quality Inspection",
         "WAFD CCP Check", "WAFD Invoice", "WAFD Payment", "WAFD Project Cost",
         "WAFD Project Revenue", "WAFD Approval Request", "WAFD Procurement Plan", "WAFD Daily Meal Plan", "WAFD Kitchen", "WAFD Quotation",
@@ -119,6 +120,7 @@ permission_query_conditions = {
     "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_query",
     "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_query",
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_query",
+    "WAFD Cleaning Material Usage": "wafd_one.cleaning_security.cleaning_usage_query",
     "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_query",
 }
 
@@ -128,6 +130,7 @@ has_permission = {
     "WAFD Warehouse": "wafd_one.cleaning_security.warehouse_has_permission",
     "WAFD Stock Balance": "wafd_one.cleaning_security.stock_balance_has_permission",
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_has_permission",
+    "WAFD Cleaning Material Usage": "wafd_one.cleaning_security.cleaning_usage_has_permission",
     "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_has_permission",
     # RC213: narrow read bridge for private undertaking PDF/signature/stamp files.
     "File": "wafd_one.undertaking_file_security.file_has_permission",

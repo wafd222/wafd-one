@@ -22,6 +22,7 @@ class WAFDStockMovement(Document):
         self._validate_issue_recipient()
         self._validate_reference()
         self._validate_master_data()
+        self._validate_material_category()
         if self.posting_date and get_datetime(self.posting_date) > now_datetime():
             frappe.throw("تاريخ الترحيل لا يمكن أن يكون مستقبلياً / Posting date cannot be in the future")
 
@@ -47,6 +48,19 @@ class WAFDStockMovement(Document):
                 frappe.throw(f"لا يمكن استلام صنف منتهي أو ينتهي في تاريخ الاستلام: {row.ingredient} / Expired item cannot be received")
             if row.receiving_temperature is not None and (flt(row.receiving_temperature) < -50 or flt(row.receiving_temperature) > 100):
                 frappe.throw(f"حرارة استلام غير منطقية للصنف {row.ingredient} / Invalid receiving temperature")
+
+    def _validate_material_category(self):
+        """Keep the category-first mobile picker honest without blocking PO receipts."""
+        category = (self.get("material_category") or "").strip()
+        if not category or category == "اختر القسم / Select Category":
+            return
+        for row in self.items or []:
+            item_category = frappe.db.get_value("WAFD Ingredient", row.ingredient, "category")
+            if item_category != category:
+                frappe.throw(
+                    f"الصنف {row.ingredient} ليس ضمن القسم المختار {category} / "
+                    "The item does not belong to the selected category"
+                )
 
 
     def _validate_issue_recipient(self):
@@ -350,7 +364,21 @@ def post_movement(movement_name):
             balance.average_cost = flt(row.unit_cost) or flt(balance.average_cost)
             balance.last_movement_date = doc.posting_date
             balance.save(ignore_permissions=True)
-    doc.db_set({"status": "مرحلة / Posted", "posted_by": frappe.session.user, "posted_on": now_datetime()}, update_modified=True)
+    values = {"status": "مرحلة / Posted", "posted_by": frappe.session.user, "posted_on": now_datetime()}
+    warehouse_type = (
+        frappe.db.get_value("WAFD Warehouse", doc.source_warehouse, "warehouse_type")
+        if doc.movement_type == "صرف / Issue" and doc.source_warehouse else None
+    )
+    if warehouse_type == "نظافة / Cleaning" and doc.issued_to_user:
+        values.update({
+            "handover_status": "بانتظار الاستلام / Pending Receipt",
+            "handover_sent_by": frappe.session.user,
+            "handover_sent_on": now_datetime(),
+            "handover_received_by": None,
+            "handover_received_on": None,
+            "handover_rejection_reason": None,
+        })
+    doc.db_set(values, update_modified=True)
     if doc.reference_type == "WAFD Purchase Order" and doc.reference_name:
         from wafd_one.wafd_one.doctype.wafd_purchase_order.wafd_purchase_order import sync_purchase_order_receipts
         sync_purchase_order_receipts(doc.reference_name)

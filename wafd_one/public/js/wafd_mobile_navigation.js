@@ -13,7 +13,9 @@
   const LOADING_CLASS = "wafd-at-loading-record";
 
   function isMobile() {
-    return window.matchMedia("(max-width: 767px)").matches;
+    const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+    const touchDevice = (navigator.maxTouchPoints || 0) > 0 && window.screen.width <= 1200;
+    return window.matchMedia("(max-width: 900px)").matches || mobileUa || touchDevice;
   }
 
   function currentRoute() {
@@ -89,14 +91,17 @@
 
   function syncPwaChrome(home) {
     if (!document.body) return;
-    const hide = !!(home && isMobile() && isStandalonePwa());
+    // The WAFD shell must be identical in an installed iPhone/Android PWA and
+    // in a normal Android browser tab.  Restricting this to standalone mode
+    // exposed Frappe's sidebar, extra workspaces and removed the language menu.
+    const hide = !!(home && isMobile());
     // This runtime class is the single source of truth for the RC234 shell.
     // Do not make the CSS depend on a second class populated by another asset:
     // on iOS those assets can finish in a different order after a cold launch.
     document.body.classList.toggle(PWA_SHELL_CLASS, hide);
     // Frappe can mount its navbar after our stylesheet/route callback. Direct
     // inline display is therefore used as a deterministic fallback, but only
-    // on standalone role home. Remove it immediately on every other route.
+    // on the mobile role home. Remove it immediately on every other route.
     document.querySelectorAll(
       [
         ".navbar",
@@ -110,6 +115,11 @@
         "body > header",
         ".layout-side-section",
         ".standard-sidebar",
+        ".desk-sidebar",
+        ".body-sidebar",
+        ".body-sidebar-container",
+        ".sidebar-overlay",
+        ".sidebar-backdrop",
       ].join(", ")
     ).forEach((node) => {
       if (hide) {

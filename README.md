@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC270
+# WAFD ONE 10.0.0 RC272
 
-**Current release: 10.0.0 RC270 — Translated Material Names**
+**Current release: 10.0.0 RC272 — Unified Android and iPhone Home**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

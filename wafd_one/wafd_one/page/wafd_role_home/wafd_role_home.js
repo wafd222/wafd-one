@@ -7,7 +7,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
   $(wrapper).addClass("wafd-role-home-page");
   const roles = new Set(frappe.user_roles || []);
   const isExecutive = roles.has("System Manager") || roles.has("WAFD Operations Manager");
-  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  const touchDevice = (navigator.maxTouchPoints || 0) > 0 && window.screen.width <= 1200;
+  const isMobile = window.matchMedia("(max-width: 900px)").matches || mobileUa || touchDevice;
 
   // Managers retain the approved executive command center on desktop.
   // On phones/tablets they get the compact role home first, with an explicit
@@ -93,6 +95,15 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "مخزون أدوات النظافة":{en:"Cleaning Supplies Stock",id:"Stok Peralatan Kebersihan",ur:"صفائی سامان اسٹاک",hi:"सफाई सामग्री स्टॉक",bn:"পরিচ্ছন্নতা সামগ্রী স্টক",fr:"Stock de nettoyage",ha:"Kayan Tsafta",sw:"Stoo ya Vifaa vya Usafi",uz:"Tozalash vositalari ombori"},
     "المواد المصروفة لي":{en:"Materials Issued to Me",id:"Bahan Dikeluarkan untuk Saya",ur:"مجھے جاری کردہ مواد",hi:"मुझे जारी सामग्री",bn:"আমাকে ইস্যু করা সামগ্রী",fr:"Articles qui me sont attribués",ha:"Kayan da aka ba ni",sw:"Vifaa Nilivyopewa",uz:"Menga berilgan materiallar"},
     "رحلات التوصيل":{en:"Delivery Trips",id:"Perjalanan Pengiriman",ur:"ڈیلیوری ٹرپس",hi:"डिलीवरी यात्राएँ",bn:"ডেলিভারি ট্রিপ",fr:"Trajets de livraison",ha:"Tafiyar Isarwa",sw:"Safari za Usafirishaji",uz:"Yetkazib berish safarlari"},
+    "خطة التوصيل والمواقع والسائقون":{en:"Delivery plans, destinations, and drivers"},
+    "إضافة رحلة وتعيين سائق":{en:"Add Delivery and Assign Driver"},
+    "اختر الفندق أو الموقع والوقت والسائق":{en:"Choose destination, time, and driver"},
+    "الرحلات الحالية":{en:"Current Deliveries"},
+    "متابعة استلام السائق والتوجه للموقع":{en:"Track driver acceptance and travel"},
+    "سجل التسليم":{en:"Delivery Records"},
+    "الوقت والموقع وصورة إثبات كل تسليم":{en:"Time, location, and photo for every delivery"},
+    "المواقع والفنادق":{en:"Locations and Hotels"},
+    "إضافة فندق أو مسجد أو موقع إفطار صائم":{en:"Add a hotel, mosque, or Iftar site"},
     "سجلات التحميل":{en:"Loading Records",id:"Catatan Pemuatan",ur:"لوڈنگ ریکارڈز",hi:"लोडिंग रिकॉर्ड",bn:"লোডিং রেকর্ড",fr:"Registres de chargement",ha:"Bayanan Lodi",sw:"Rekodi za Upakiaji",uz:"Yuklash yozuvlari"},
     "سندات التسليم":{en:"Delivery Notes",id:"Surat Pengiriman",ur:"ڈیلیوری نوٹس",hi:"डिलीवरी नोट",bn:"ডেলিভারি নোট",fr:"Bons de livraison",ha:"Takardar Isarwa",sw:"Hati za Uwasilishaji",uz:"Yetkazib berish hujjatlari"},
     "سندات الاستلام":{en:"Receiving Notes",id:"Bukti Penerimaan",ur:"وصولی نوٹس",hi:"प्राप्ति नोट",bn:"রিসিভিং নোট",fr:"Bons de réception",ha:"Takardar Karɓa",sw:"Hati za Kupokea",uz:"Qabul hujjatlari"},
@@ -209,14 +220,12 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       ]
     },
     {
-      role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "التحميل والرحلات والتسليم",
+      role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "خطة التوصيل والمواقع والسائقون",
       items: [
-        { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips", primary: true },
-        { label: "رحلات التوصيل", desc: "إدارة ومتابعة الرحلات", icon: "➜", doctype: "WAFD Delivery Trip" },
-        { label: "سجلات التحميل", desc: "التحميل قبل خروج الرحلة", icon: "▣", doctype: "WAFD Loading Record" },
-        { label: "سندات التسليم", desc: "التسليم للجهة المستفيدة", icon: "▤", doctype: "WAFD Delivery Note" },
-        { label: "سندات الاستلام", desc: "توثيق الاستلام النهائي", icon: "✓", doctype: "WAFD Receiving Note" },
-        { label: "إفطار صائم", desc: "التوصيل للمشاريع الموسمية", icon: "☾", page: "wafd-iftar-operations", special: true }
+        { label: "إضافة رحلة وتعيين سائق", desc: "اختر الفندق أو الموقع والوقت والسائق", icon: "＋", action: "delivery_new", page: "wafd-delivery-supervisor", primary: true },
+        { label: "الرحلات الحالية", desc: "متابعة استلام السائق والتوجه للموقع", icon: "➜", page: "wafd-delivery-supervisor" },
+        { label: "سجل التسليم", desc: "الوقت والموقع وصورة إثبات كل تسليم", icon: "▤", action: "delivery_delivered", page: "wafd-delivery-supervisor" },
+        { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" }
       ]
     },
     {
@@ -402,6 +411,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       if (["storekeeper_receive", "storekeeper_handover", "storekeeper_inventory"].includes(item.action)) {
         localStorage.setItem("wafd_storekeeper_action", item.action.replace("storekeeper_", ""));
         frappe.set_route("wafd-storekeeper-home");
+        return;
+      }
+      if (["delivery_new", "delivery_delivered", "delivery_locations"].includes(item.action)) {
+        localStorage.setItem("wafd_delivery_action", item.action.replace("delivery_", ""));
+        frappe.set_route("wafd-delivery-supervisor");
         return;
       }
       if (item.page) { frappe.set_route(item.page); return; }

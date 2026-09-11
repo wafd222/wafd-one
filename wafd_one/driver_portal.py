@@ -189,7 +189,9 @@ def list_my_trips():
             "name", "trip_date", "vehicle", "hotel", "quantity", "planned_departure",
             "actual_departure", "planned_arrival", "actual_arrival", "status",
             "delay_minutes", "delay_reason", "notes", "loading_record", "driver",
-            "assigned_driver_user",
+            "assigned_driver_user", "trip_source", "delivery_kind", "delivery_location",
+            "destination_name", "destination_name_en", "destination_map_url",
+            "destination_latitude", "destination_longitude", "meal_type",
         ],
         order_by="trip_date desc, creation desc",
         # Managers see the operational window directly. Drivers are filtered
@@ -221,6 +223,7 @@ def list_my_trips():
             "rejected_quantity", "delivery_photo", "status", "notes", "notes_original",
             "notes_language", "notes_translation_ar", "operational_note_code",
             "delivery_photo_uploaded_by", "delivery_photo_uploaded_on",
+            "latitude", "longitude",
         ],
     ) if trips else []
     proof_map = {row.delivery_trip: row for row in proof_rows}
@@ -234,7 +237,8 @@ def list_my_trips():
                 **trip,
                 "hotel_name_ar": hotel.get("hotel_name_ar") or trip.hotel,
                 "hotel_name_en": hotel.get("hotel_name_en") or trip.hotel,
-                "map_url": hotel.get("map_url"),
+                "map_url": trip.destination_map_url or hotel.get("map_url"),
+                "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
                 "loading": loading,
                 "proof": proof,
             }
@@ -284,9 +288,10 @@ def set_my_trip_status(trip_name, action):
     if trip.status not in allowed_from:
         frappe.throw(_("حالة الرحلة الحالية لا تسمح بهذا الإجراء."))
     if action == "start":
-        loading_photo = frappe.db.get_value("WAFD Loading Record", trip.loading_record, "loading_photo")
-        if not loading_photo:
-            frappe.throw(_("لا يمكن بدء الرحلة قبل توثيق صورة التحميل."))
+        if trip.loading_record:
+            loading_photo = frappe.db.get_value("WAFD Loading Record", trip.loading_record, "loading_photo")
+            if not loading_photo:
+                frappe.throw(_("لا يمكن بدء الرحلة قبل توثيق صورة التحميل."))
         trip.actual_departure = trip.actual_departure or now_datetime()
     if action == "arrive":
         trip.actual_arrival = trip.actual_arrival or now_datetime()
@@ -322,8 +327,8 @@ def upload_delivery_photo(trip_name, image_data):
 @frappe.whitelist()
 def submit_delivery_proof(
     trip_name,
-    receiver_name,
-    received_quantity,
+    receiver_name=None,
+    received_quantity=0,
     rejected_quantity=0,
     status="مقبول بالكامل / Fully Accepted",
     receiver_mobile=None,
@@ -332,6 +337,8 @@ def submit_delivery_proof(
     notes=None,
     notes_language="ar",
     operational_note_code=None,
+    latitude=None,
+    longitude=None,
 ):
     trip = _authorized_trip(trip_name, write=True)
     if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
@@ -346,12 +353,15 @@ def submit_delivery_proof(
     }
     if status not in valid_statuses:
         frappe.throw(_("نتيجة الاستلام غير صحيحة."))
+    simple_delivery = trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
     receiver_name = (receiver_name or "").strip()
+    if simple_delivery and not receiver_name:
+        receiver_name = trip.destination_name or "تسليم مصور / Photo Delivery"
     if not receiver_name:
         frappe.throw(_("اسم المستلم مطلوب."))
     received_quantity = cint(received_quantity)
     rejected_quantity = cint(rejected_quantity)
-    if min(received_quantity, rejected_quantity) < 0 or received_quantity + rejected_quantity != cint(trip.quantity):
+    if min(received_quantity, rejected_quantity) < 0 or (cint(trip.quantity) and received_quantity + rejected_quantity != cint(trip.quantity)):
         frappe.throw(_("يجب أن يساوي مجموع الكمية المستلمة والمرفوضة كمية الرحلة."))
     if status == "مقبول بالكامل / Fully Accepted" and rejected_quantity:
         frappe.throw(_("القبول الكامل لا يسمح بكمية مرفوضة."))
@@ -361,7 +371,9 @@ def submit_delivery_proof(
         frappe.throw(_("عند الرفض يجب أن تكون كامل كمية الرحلة مرفوضة."))
     if not image_data:
         frappe.throw(_("صورة التسليم مطلوبة."))
-    if status != "مرفوض / Rejected" and not signature_data:
+    if simple_delivery and (latitude in (None, "") or longitude in (None, "")):
+        frappe.throw(_("موقع التسليم مطلوب. اسمح بالوصول إلى الموقع من إعدادات الهاتف."))
+    if not simple_delivery and status != "مرفوض / Rejected" and not signature_data:
         frappe.throw(_("توقيع المستلم مطلوب."))
     if signature_data:
         _decode_image(signature_data)
@@ -406,6 +418,8 @@ def submit_delivery_proof(
             "delivery_photo": file_url,
             "delivery_photo_uploaded_by": frappe.session.user,
             "delivery_photo_uploaded_on": now_datetime(),
+            "latitude": latitude,
+            "longitude": longitude,
             "status": status,
             "notes": display_notes,
             "notes_original": notes_original,

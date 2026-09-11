@@ -454,3 +454,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc269.execute
 
 # RC270 translated material display names without changing stock identifiers
 wafd_one.wafd_one.patches.v10_0_0_rc270.execute
+
+# RC271 simple delivery planning, driver assignment and photo/GPS proof
+wafd_one.wafd_one.patches.v10_0_0_rc271.execute
+
+# RC272 identical Android/iPhone role home, language menu and task isolation
+wafd_one.wafd_one.patches.v10_0_0_rc272.execute

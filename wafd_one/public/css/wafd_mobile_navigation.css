@@ -60,12 +60,13 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
 
 .wafd-pwa-appbar { display:none; }
 
-/* RC234 — installed WAFD ONE PWA shell.
-   Hide Frappe chrome only on the role-home route, and replace it with a compact
+/* RC272 — unified WAFD ONE mobile shell for iPhone and Android.
+   Hide Frappe chrome only on the role-home route, including normal Android
+   browser tabs, and replace it with a compact
    WAFD app bar that keeps Home, language, account identity and Logout.
    wafd-pwa-home-shell is set by the same route-aware controller that hides the
    Frappe chrome, avoiding an iOS cold-launch race between separately loaded assets. */
-@media (max-width: 767px) {
+@media (max-width: 900px), (pointer: coarse) {
   body.wafd-pwa-home-shell .navbar,
   body.wafd-pwa-home-shell header.navbar,
   body.wafd-pwa-home-shell .desk-navbar,
@@ -76,7 +77,12 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
   body.wafd-pwa-home-shell .mobile-navbar,
   body.wafd-pwa-home-shell > header,
   body.wafd-pwa-home-shell .layout-side-section,
-  body.wafd-pwa-home-shell .standard-sidebar {
+  body.wafd-pwa-home-shell .standard-sidebar,
+  body.wafd-pwa-home-shell .desk-sidebar,
+  body.wafd-pwa-home-shell .body-sidebar,
+  body.wafd-pwa-home-shell .body-sidebar-container,
+  body.wafd-pwa-home-shell .sidebar-overlay,
+  body.wafd-pwa-home-shell .sidebar-backdrop {
     display:none !important;
   }
 

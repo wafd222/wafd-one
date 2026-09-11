@@ -6,7 +6,7 @@ from frappe.utils import cint, flt, get_datetime, now_datetime
 class WAFDDeliveryProof(Document):
     def validate(self):
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip,
-            ["project", "meal_plan", "hotel", "quantity", "status", "actual_departure"], as_dict=True)
+            ["project", "meal_plan", "hotel", "quantity", "status", "actual_departure", "trip_source", "destination_name"], as_dict=True)
         if not trip:
             frappe.throw("رحلة التوصيل غير موجودة / Delivery trip not found")
         if trip.status == "ملغية / Cancelled":
@@ -15,11 +15,12 @@ class WAFDDeliveryProof(Document):
         if duplicate:
             frappe.throw("يوجد إثبات تسليم لهذه الرحلة بالفعل / Delivery proof already exists for this trip")
         self.project, self.meal_plan, self.hotel = trip.project, trip.meal_plan, trip.hotel
+        simple_delivery = trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
         received, rejected = cint(self.received_quantity), cint(self.rejected_quantity)
         self.delivered_quantity = received
         if min(received, rejected) < 0:
             frappe.throw("الكميات لا يمكن أن تكون سالبة / Quantities cannot be negative")
-        if received + rejected != cint(trip.quantity):
+        if cint(trip.quantity) and received + rejected != cint(trip.quantity):
             frappe.throw("المستلم والمرفوض يجب أن يساويا كمية الرحلة / Received plus rejected must equal trip quantity")
         if self.status == "مقبول بالكامل / Fully Accepted" and rejected:
             frappe.throw("لا يمكن وجود كمية مرفوضة مع قبول كامل / Fully accepted delivery cannot include rejected quantity")
@@ -27,12 +28,16 @@ class WAFDDeliveryProof(Document):
             frappe.throw("القبول الجزئي يتطلب كمية مستلمة ومرفوضة / Partial acceptance requires received and rejected quantities")
         if self.status == "مرفوض / Rejected" and (received or rejected != cint(trip.quantity)):
             frappe.throw("عند الرفض يجب أن تكون كامل كمية الرحلة مرفوضة / Rejected delivery must reject the full trip quantity")
+        if simple_delivery and not (self.receiver_name or "").strip():
+            self.receiver_name = trip.destination_name or "تسليم مصور / Photo Delivery"
         if not (self.receiver_name or "").strip():
             frappe.throw("اسم المستلم مطلوب / Receiver name is required")
-        if self.status != "مرفوض / Rejected" and not self.receiver_signature:
+        if not simple_delivery and self.status != "مرفوض / Rejected" and not self.receiver_signature:
             frappe.throw("توقيع المستلم مطلوب / Receiver signature is required")
         if not self.delivery_photo:
             frappe.throw("صورة التسليم مطلوبة / Delivery photo is required")
+        if simple_delivery and (self.latitude in (None, "") or self.longitude in (None, "")):
+            frappe.throw("موقع التسليم مطلوب / Delivery location is required")
         if self.delivery_time and get_datetime(self.delivery_time) > now_datetime():
             frappe.throw("وقت التسليم لا يمكن أن يكون في المستقبل / Delivery time cannot be in the future")
         if trip.actual_departure and self.delivery_time and get_datetime(self.delivery_time) < get_datetime(trip.actual_departure):

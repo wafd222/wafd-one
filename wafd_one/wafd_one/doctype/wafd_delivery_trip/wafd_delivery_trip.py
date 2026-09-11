@@ -9,6 +9,57 @@ ACTIVE = ("مخططة / Planned", "تم التحميل / Loaded", "في الطر
 
 class WAFDDeliveryTrip(Document):
     def validate(self):
+        self.trip_source = self.trip_source or (
+            "سجل تحميل / Loading Record" if self.loading_record
+            else "خطة مشرف التوصيل / Delivery Supervisor Plan"
+        )
+        supervisor_plan = self.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
+        if supervisor_plan:
+            loading = None
+            self._validate_supervisor_plan()
+        else:
+            self._validate_loading_trip()
+            loading = frappe.db.get_value(
+                "WAFD Loading Record", self.loading_record,
+                ["name", "project", "meal_plan", "vehicle", "driver", "hotel", "quantity", "status", "dispatch_time", "loading_date"],
+                as_dict=True,
+            )
+
+        if loading:
+            duplicate = frappe.db.exists("WAFD Delivery Trip", {"loading_record": self.loading_record, "name": ["!=", self.name or ""], "status": ["!=", "ملغية / Cancelled"]})
+            if duplicate:
+                frappe.throw("يوجد بالفعل رحلة غير ملغاة لسجل التحميل / A non-cancelled trip already exists for this loading record")
+            if self.quantity <= 0:
+                frappe.throw("كمية الرحلة يجب أن تكون أكبر من صفر / Trip quantity must be greater than zero")
+            self._validate_resource(self.vehicle, self.driver)
+            self._validate_food_safety_release()
+            self._fill_planned_times(loading)
+        elif cint(self.quantity) < 0:
+            frappe.throw("عدد الوجبات لا يمكن أن يكون سالباً / Meal quantity cannot be negative")
+
+        # Loaded/planned trips have not departed yet. This also repairs any
+        # premature or future actual departure saved by older release retries.
+        if self.status in ("مخططة / Planned", "تم التحميل / Loaded"):
+            self.actual_departure = None
+            self.actual_arrival = None
+
+        # Populate actual timestamps before validating and calculating metrics.
+        if self.status == "في الطريق / In Transit":
+            self.actual_departure = self.actual_departure or (loading.dispatch_time if loading else None) or now_datetime()
+        if self.status in ("وصلت / Arrived", "تم التسليم / Delivered"):
+            self.actual_arrival = self.actual_arrival or now_datetime()
+            if not self.actual_departure:
+                self.actual_departure = (loading.dispatch_time or loading.loading_date) if loading else now_datetime()
+
+        self._validate_times()
+        self._calculate_trip_metrics()
+
+        if self.status == "متأخرة / Delayed" and not (self.delay_reason or "").strip():
+            frappe.throw("سبب التأخير مطلوب / Delay reason is required")
+        if self.status == "تم التسليم / Delivered" and not frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
+            frappe.throw("لا يمكن اعتماد الرحلة مسلمة دون إثبات تسليم / Delivery proof is required")
+
+    def _validate_loading_trip(self):
         loading = frappe.db.get_value("WAFD Loading Record", self.loading_record,
             ["project", "meal_plan", "vehicle", "driver", "hotel", "quantity", "status", "dispatch_time", "loading_date"], as_dict=True)
         if not loading:
@@ -32,39 +83,63 @@ class WAFDDeliveryTrip(Document):
             self.driver = canonical_driver
         self.assigned_driver_user = driver_user
 
-        duplicate = frappe.db.exists("WAFD Delivery Trip", {"loading_record": self.loading_record, "name": ["!=", self.name or ""], "status": ["!=", "ملغية / Cancelled"]})
-        if duplicate:
-            frappe.throw("يوجد بالفعل رحلة غير ملغاة لسجل التحميل / A non-cancelled trip already exists for this loading record")
-        if self.quantity <= 0:
-            frappe.throw("كمية الرحلة يجب أن تكون أكبر من صفر / Trip quantity must be greater than zero")
-        self._validate_resource(self.vehicle, self.driver)
-        self._validate_food_safety_release()
-        self._fill_planned_times(loading)
+    def _validate_supervisor_plan(self):
+        self.loading_record = None
+        self.project = self.project or None
+        self.meal_plan = self.meal_plan or None
+        self.trip_date = self.trip_date or nowdate()
+        self.quantity = max(cint(self.quantity), 0)
+        self.meal_type = self.meal_type or "غداء / Lunch"
 
-        # Loaded/planned trips have not departed yet. This also repairs any
-        # premature or future actual departure saved by older release retries.
-        if self.status in ("مخططة / Planned", "تم التحميل / Loaded"):
-            self.actual_departure = None
-            self.actual_arrival = None
+        if self.hotel:
+            hotel = frappe.db.get_value(
+                "WAFD Hotel", self.hotel,
+                ["hotel_name_ar", "hotel_name_en", "map_url", "latitude", "longitude", "status"],
+                as_dict=True,
+            )
+            if not hotel or hotel.status == "غير نشط / Inactive":
+                frappe.throw("اختر فندقاً نشطاً / Select an active hotel")
+            self.delivery_kind = "فندق / Hotel"
+            self.destination_name = hotel.hotel_name_ar or self.hotel
+            self.destination_name_en = hotel.hotel_name_en or self.destination_name
+            self.destination_map_url = self.destination_map_url or hotel.map_url
+            self.destination_latitude = self.destination_latitude or hotel.latitude
+            self.destination_longitude = self.destination_longitude or hotel.longitude
+        elif self.delivery_location:
+            location = frappe.db.get_value(
+                "WAFD Delivery Location", self.delivery_location,
+                ["location_name_ar", "location_name_en", "location_type", "map_url", "latitude", "longitude", "status"],
+                as_dict=True,
+            )
+            if not location or location.status == "غير نشط / Inactive":
+                frappe.throw("اختر موقع توصيل نشطاً / Select an active delivery location")
+            self.delivery_kind = self.delivery_kind or location.location_type
+            self.destination_name = location.location_name_ar or self.delivery_location
+            self.destination_name_en = location.location_name_en or self.destination_name
+            self.destination_map_url = self.destination_map_url or location.map_url
+            self.destination_latitude = self.destination_latitude or location.latitude
+            self.destination_longitude = self.destination_longitude or location.longitude
+        if not (self.destination_name or "").strip():
+            frappe.throw("اختر الفندق أو موقع التوصيل / Choose a hotel or delivery location")
+        if not self.planned_arrival:
+            frappe.throw("وقت التوصيل مطلوب / Delivery time is required")
+        if not self.driver:
+            frappe.throw("اختر السائق / Select a driver")
 
-        # Populate actual timestamps before validating and calculating metrics.
-        # RC156 calculated transit duration too early, leaving a valid trip at 0.
-        if self.status == "في الطريق / In Transit":
-            self.actual_departure = self.actual_departure or loading.dispatch_time or now_datetime()
-        if self.status in ("وصلت / Arrived", "تم التسليم / Delivered"):
-            self.actual_arrival = self.actual_arrival or now_datetime()
-            if not self.actual_departure:
-                self.actual_departure = loading.dispatch_time or loading.loading_date
-            if not self.actual_departure:
-                frappe.throw("سجل وقت المغادرة قبل الوصول / Record departure time before arrival")
-
-        self._validate_times()
-        self._calculate_trip_metrics()
-
-        if self.status == "متأخرة / Delayed" and not (self.delay_reason or "").strip():
-            frappe.throw("سبب التأخير مطلوب / Delay reason is required")
-        if self.status == "تم التسليم / Delivered" and not frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
-            frappe.throw("لا يمكن اعتماد الرحلة مسلمة دون إثبات تسليم / Delivery proof is required")
+        canonical_driver, driver_user = resolve_linked_driver(self.driver)
+        if not canonical_driver or not driver_user:
+            frappe.throw("السائق غير مرتبط بحساب سائق مفعل / Driver is not linked to an enabled account")
+        self.driver = canonical_driver
+        self.assigned_driver_user = driver_user
+        driver = frappe.db.get_value("WAFD Driver", self.driver, ["status", "license_expiry"], as_dict=True)
+        if not driver or driver.status in ("إجازة / Leave", "غير نشط / Inactive"):
+            frappe.throw("السائق غير متاح / Driver is unavailable")
+        if driver.license_expiry and getdate(driver.license_expiry) < getdate(nowdate()):
+            frappe.throw("رخصة السائق منتهية / Driver license has expired")
+        if self.vehicle:
+            vehicle = frappe.db.get_value("WAFD Vehicle", self.vehicle, ["status", "registration_expiry", "insurance_expiry"], as_dict=True)
+            if not vehicle or vehicle.status in ("صيانة / Maintenance", "غير نشطة / Inactive"):
+                frappe.throw("المركبة غير متاحة / Vehicle is unavailable")
 
 
     def _fill_planned_times(self, loading):
@@ -172,7 +247,7 @@ class WAFDDeliveryTrip(Document):
             frappe.throw("وقت الوصول الفعلي لا يمكن أن يكون مستقبلياً / Actual arrival cannot be in the future")
 
     def on_update(self):
-        if self.status in ("في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"):
+        if self.loading_record and self.status in ("في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"):
             frappe.db.set_value("WAFD Loading Record", self.loading_record, {"status": "خرجت / Dispatched", "dispatch_time": self.actual_departure or now_datetime()}, update_modified=False)
         _sync_resource_statuses(self.vehicle, self.driver)
 
@@ -180,7 +255,8 @@ class WAFDDeliveryTrip(Document):
         if frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
             frappe.throw("لا يمكن حذف رحلة لديها إثبات تسليم / Cannot delete a trip with delivery proof")
         vehicle, driver = self.vehicle, self.driver
-        frappe.db.set_value("WAFD Loading Record", self.loading_record, "status", "تم التحميل / Loaded", update_modified=False)
+        if self.loading_record:
+            frappe.db.set_value("WAFD Loading Record", self.loading_record, "status", "تم التحميل / Loaded", update_modified=False)
         _sync_resource_statuses(vehicle, driver, exclude_trip=self.name)
 
 

@@ -9,6 +9,15 @@
   "project",
   "meal_plan",
   "loading_record",
+  "trip_source",
+  "delivery_kind",
+  "delivery_location",
+  "destination_name",
+  "destination_name_en",
+  "destination_map_url",
+  "destination_latitude",
+  "destination_longitude",
+  "meal_type",
   "trip_date",
   "vehicle",
   "driver",
@@ -32,7 +41,7 @@
    "fieldtype": "Link",
    "label": "المشروع / Project",
    "options": "WAFD Catering Project",
-   "reqd": 1,
+   "reqd": 0,
    "in_list_view": 1
   },
   {
@@ -40,13 +49,66 @@
    "fieldtype": "Link",
    "label": "خطة الوجبة / Meal Plan",
    "options": "WAFD Meal Plan",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "loading_record",
    "fieldtype": "Link",
    "label": "سجل التحميل / Loading Record",
    "options": "WAFD Loading Record"
+  },
+  {
+   "fieldname": "trip_source",
+   "fieldtype": "Select",
+   "label": "مصدر الرحلة / Trip Source",
+   "options": "سجل تحميل / Loading Record\nخطة مشرف التوصيل / Delivery Supervisor Plan",
+   "default": "سجل تحميل / Loading Record",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_kind",
+   "fieldtype": "Select",
+   "label": "نوع الوجهة / Destination Type",
+   "options": "فندق / Hotel\nمسجد أو حرم / Mosque or Haram\nموقع إفطار صائم / Iftar Site\nجهة أو شركة / Entity or Company\nموقع آخر / Other Location"
+  },
+  {
+   "fieldname": "delivery_location",
+   "fieldtype": "Link",
+   "label": "موقع التوصيل / Delivery Location",
+   "options": "WAFD Delivery Location"
+  },
+  {
+   "fieldname": "destination_name",
+   "fieldtype": "Data",
+   "label": "اسم الوجهة بالعربي / Arabic Destination Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "destination_name_en",
+   "fieldtype": "Data",
+   "label": "اسم الوجهة بالإنجليزي / English Destination Name"
+  },
+  {
+   "fieldname": "destination_map_url",
+   "fieldtype": "Data",
+   "label": "رابط موقع الوجهة / Destination Map URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "destination_latitude",
+   "fieldtype": "Float",
+   "label": "خط عرض الوجهة / Destination Latitude"
+  },
+  {
+   "fieldname": "destination_longitude",
+   "fieldtype": "Float",
+   "label": "خط طول الوجهة / Destination Longitude"
+  },
+  {
+   "fieldname": "meal_type",
+   "fieldtype": "Select",
+   "label": "نوع الوجبة / Meal Type",
+   "options": "إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nإفطار صائم / Iftar Saim"
   },
   {
    "fieldname": "trip_date",
@@ -60,7 +122,7 @@
    "fieldtype": "Link",
    "label": "المركبة / Vehicle",
    "options": "WAFD Vehicle",
-   "reqd": 1,
+   "reqd": 0,
    "in_list_view": 1
   },
   {
@@ -86,14 +148,14 @@
    "fieldtype": "Link",
    "label": "الفندق / Hotel",
    "options": "WAFD Hotel",
-   "reqd": 1,
+   "reqd": 0,
    "in_list_view": 1
   },
   {
    "fieldname": "quantity",
    "fieldtype": "Int",
    "label": "الكمية / Quantity",
-   "reqd": 1,
+   "reqd": 0,
    "non_negative": 1
   },
   {

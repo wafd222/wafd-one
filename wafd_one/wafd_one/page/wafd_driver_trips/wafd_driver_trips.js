@@ -56,6 +56,16 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     saving:{ar:"جارٍ الحفظ...",en:"Saving...",id:"Menyimpan...",ur:"محفوظ ہو رہا ہے...",hi:"सहेजा जा रहा है...",bn:"সংরক্ষণ হচ্ছে...",fr:"Enregistrement...",ha:"Ana ajiyewa...",sw:"Inahifadhi...",uz:"Saqlanmoqda..."},
     open_map:{ar:"فتح الموقع",en:"Open location",id:"Buka lokasi",ur:"مقام کھولیں",hi:"स्थान खोलें",bn:"অবস্থান খুলুন",fr:"Ouvrir l’emplacement",ha:"Buɗe wuri",sw:"Fungua eneo",uz:"Joylashuvni ochish"},
     required:{ar:"أكمل اسم المستلم وصورة التسليم والتوقيع المطلوب.",en:"Complete the receiver name, delivery photo and required signature.",id:"Lengkapi nama penerima, foto pengiriman, dan tanda tangan.",ur:"وصول کنندہ کا نام، تصویر اور مطلوبہ دستخط مکمل کریں۔",hi:"प्राप्तकर्ता का नाम, डिलीवरी फ़ोटो और आवश्यक हस्ताक्षर पूरा करें।",bn:"গ্রহীতার নাম, ডেলিভারি ছবি ও প্রয়োজনীয় স্বাক্ষর দিন।",fr:"Complétez le nom, la photo et la signature requise.",ha:"Cika sunan mai karɓa, hoto da sa hannun da ake buƙata.",sw:"Jaza jina la mpokeaji, picha na sahihi inayohitajika.",uz:"Qabul qiluvchi nomi, rasm va kerakli imzoni kiriting."},
+    required_simple:{ar:"صورة التسليم والموقع مطلوبان. اسمح للموقع من إعدادات الهاتف.",en:"Delivery photo and location are required. Allow location access on the phone.",id:"Foto dan lokasi pengiriman wajib. Izinkan akses lokasi di ponsel.",ur:"ڈیلیوری تصویر اور مقام ضروری ہیں۔ فون میں مقام کی اجازت دیں۔",hi:"डिलीवरी फ़ोटो और स्थान आवश्यक हैं। फ़ोन में स्थान की अनुमति दें।",bn:"ডেলিভারি ছবি ও অবস্থান আবশ্যক। ফোনে অবস্থানের অনুমতি দিন।",fr:"La photo et la position sont obligatoires. Autorisez la localisation.",ha:"Ana buƙatar hoto da wurin isarwa. Ba da izinin wuri a waya.",sw:"Picha na eneo la uwasilishaji vinahitajika. Ruhusu eneo kwenye simu.",uz:"Yetkazish rasmi va joylashuv talab qilinadi. Telefonda ruxsat bering."},
+    meal:{ar:"الوجبة",en:"Meal",id:"Makanan",ur:"کھانا",hi:"भोजन",bn:"খাবার",fr:"Repas",ha:"Abinci",sw:"Chakula",uz:"Ovqat"},
+    breakfast:{ar:"إفطار",en:"Breakfast",id:"Sarapan",ur:"ناشتہ",hi:"नाश्ता",bn:"সকালের নাশতা",fr:"Petit-déjeuner",ha:"Karin kumallo",sw:"Kifungua kinywa",uz:"Nonushta"},
+    lunch:{ar:"غداء",en:"Lunch",id:"Makan siang",ur:"دوپہر کا کھانا",hi:"दोपहर का भोजन",bn:"দুপুরের খাবার",fr:"Déjeuner",ha:"Abincin rana",sw:"Chakula cha mchana",uz:"Tushlik"},
+    dinner:{ar:"عشاء",en:"Dinner",id:"Makan malam",ur:"رات کا کھانا",hi:"रात का भोजन",bn:"রাতের খাবার",fr:"Dîner",ha:"Abincin dare",sw:"Chakula cha jioni",uz:"Kechki ovqat"},
+    iftar_saim:{ar:"إفطار صائم",en:"Iftar meal",id:"Makanan berbuka",ur:"افطار کا کھانا",hi:"इफ़्तार भोजन",bn:"ইফতার খাবার",fr:"Repas d’iftar",ha:"Abincin buɗa baki",sw:"Chakula cha futari",uz:"Iftor taomi"},
+    optional:{ar:"غير محدد",en:"Not specified",id:"Tidak ditentukan",ur:"متعین نہیں",hi:"निर्दिष्ट नहीं",bn:"নির্দিষ্ট নয়",fr:"Non précisé",ha:"Ba a ƙayyade ba",sw:"Haijabainishwa",uz:"Ko‘rsatilmagan"},
+    actual_location:{ar:"يُحفظ موقعك تلقائياً مع صورة التسليم",en:"Your location is saved automatically with the delivery photo",id:"Lokasi Anda disimpan otomatis bersama foto",ur:"آپ کا مقام تصویر کے ساتھ خودکار محفوظ ہوگا",hi:"आपका स्थान फ़ोटो के साथ अपने आप सहेजा जाएगा",bn:"আপনার অবস্থান ছবির সাথে স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে",fr:"Votre position est enregistrée avec la photo",ha:"Za a ajiye wurinka tare da hoto",sw:"Eneo lako litahifadhiwa na picha",uz:"Joylashuvingiz rasm bilan saqlanadi"},
+    location_ready:{ar:"تم تحديد الموقع",en:"Location captured",id:"Lokasi diperoleh",ur:"مقام مل گیا",hi:"स्थान मिल गया",bn:"অবস্থান পাওয়া গেছে",fr:"Position obtenue",ha:"An gano wuri",sw:"Eneo limepatikana",uz:"Joylashuv olindi"},
+    location_unavailable:{ar:"تعذر تحديد الموقع؛ تأكد من السماح للموقع في الهاتف",en:"Location unavailable; allow location access on the phone",id:"Lokasi tidak tersedia; izinkan akses lokasi",ur:"مقام دستیاب نہیں؛ فون میں اجازت دیں",hi:"स्थान उपलब्ध नहीं; फ़ोन में अनुमति दें",bn:"অবস্থান পাওয়া যায়নি; ফোনে অনুমতি দিন",fr:"Position indisponible; autorisez la localisation",ha:"Ba a samu wuri ba; ba da izini",sw:"Eneo halipatikani; ruhusu ufikiaji",uz:"Joylashuv olinmadi; telefonda ruxsat bering"},
   };
   const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
   const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
@@ -67,6 +77,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   let selectedTrip = null;
   let deliveryImageData = "";
   let signatureTouched = false;
+  let deliveryLocation = {};
   const subscribedTrips = new Set();
 
   const statusKey = {
@@ -114,7 +125,11 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     return key ? (statusText[key]?.[lang] || statusText[key]?.en) : value;
   }
   function hotelName(trip) {
-    return lang === "ar" ? (trip.hotel_name_ar || trip.hotel) : (trip.hotel_name_en || trip.hotel_name_ar || trip.hotel);
+    return lang === "ar" ? (trip.destination_name || trip.hotel_name_ar || trip.hotel) : (trip.destination_name_en || trip.hotel_name_en || trip.destination_name || trip.hotel_name_ar || trip.hotel);
+  }
+  function mealName(value) {
+    const key = {"إفطار / Breakfast":"breakfast", "غداء / Lunch":"lunch", "عشاء / Dinner":"dinner", "إفطار صائم / Iftar Saim":"iftar_saim"}[value];
+    return key ? tr(key) : value;
   }
   function renderTrips() {
     if (!trips.length) {
@@ -135,7 +150,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       if (["في الطريق / In Transit", "متأخرة / Delayed"].includes(trip.status)) actions += `<button type="button" class="secondary" data-action="arrive" data-trip="${esc(trip.name)}">${esc(tr("mark_arrived"))}</button>`;
       if (trip.status === "وصلت / Arrived" && !proof) actions += `<button type="button" data-action="proof" data-trip="${esc(trip.name)}">${esc(tr("proof"))}</button>`;
       if (proof) actions += `<div class="wafd-proof-done">${esc(tr("delivered"))}: ${esc(proof.receiver_name || "")}</div>`;
-      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(displayStatus))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div><div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div><div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div><div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number || "—")}</b></div></div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
+      return `<article class="wafd-trip-card"><div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(displayStatus))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}${trip.vehicle ? `<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div>` : ""}${Number(trip.quantity)>0 ? `<div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div>` : ""}${trip.meal_type ? `<div class="wafd-trip-info"><small>${esc(tr("meal"))}</small><b>${esc(mealName(trip.meal_type))}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div>${loading.seal_number ? `<div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number)}</b></div>` : ""}</div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}${proof?.delivery_photo ? `<div class="wafd-loading-evidence"><a href="${esc(proof.delivery_photo)}" target="_blank"><img src="${esc(proof.delivery_photo)}" alt="${esc(tr("proof"))}"></a><div><b>${esc(tr("delivered"))}</b><small>${esc(fmtDate(proof.delivery_time))}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
     }).join("")}</div>`);
   }
   async function loadTrips() {
@@ -162,14 +177,23 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     if (!selectedTrip) return;
     deliveryImageData = "";
     signatureTouched = false;
+    deliveryLocation = {};
+    const simple = Boolean(selectedTrip.simple_delivery);
+    const hasQuantity = Number(selectedTrip.quantity || 0) > 0;
     const options = Object.entries(quickNotes).map(([code, values]) => `<option value="${esc(code)}">${esc(values[lang] || values.en)}</option>`).join("");
-    $root.find("#wafd-proof-content").html(`<div class="wafd-proof-form"><div class="wafd-proof-field"><label>${esc(tr("receiver"))}</label><input id="wafd-receiver-name" autocomplete="name"></div><div class="wafd-proof-field"><label>${esc(tr("mobile"))}</label><input id="wafd-receiver-mobile" type="tel" dir="ltr" autocomplete="tel"></div><div class="wafd-proof-field"><label>${esc(tr("received"))}</label><input id="wafd-received-qty" type="number" min="0" value="${esc(selectedTrip.quantity)}"></div><div class="wafd-proof-field"><label>${esc(tr("rejected"))}</label><input id="wafd-rejected-qty" type="number" min="0" value="0"></div><div class="wafd-proof-field full"><label>${esc(tr("acceptance"))}</label><select id="wafd-proof-status"><option value="مقبول بالكامل / Fully Accepted">${esc(tr("full"))}</option><option value="مقبول جزئياً / Partially Accepted">${esc(tr("partial"))}</option><option value="مرفوض / Rejected">${esc(tr("refused"))}</option></select></div><div class="wafd-proof-field full"><label>${esc(tr("quick_note"))}</label><select id="wafd-quick-note"><option value="">${esc(tr("choose"))}</option>${options}</select></div><div class="wafd-proof-field full"><label>${esc(tr("notes"))}</label><textarea id="wafd-proof-notes"></textarea></div><div class="wafd-proof-field full"><label>${esc(tr("photo"))}</label><input id="wafd-delivery-photo" type="file" accept="image/*" capture="environment"><img class="wafd-photo-preview" id="wafd-photo-preview"></div><div class="wafd-proof-field full" id="wafd-signature-field"><label>${esc(tr("signature"))}</label><canvas class="wafd-signature" id="wafd-signature"></canvas><button type="button" class="wafd-clear-signature" id="wafd-clear-signature">${esc(tr("clear"))}</button></div></div><button type="button" class="wafd-proof-submit" id="wafd-proof-submit">${esc(tr("submit"))}</button>`);
+    $root.find("#wafd-proof-content").html(`<div class="wafd-proof-form"><div class="wafd-proof-field"><label>${esc(tr("receiver"))}${simple?` (${esc(tr("optional"))})`:""}</label><input id="wafd-receiver-name" autocomplete="name"></div>${simple?"":`<div class="wafd-proof-field"><label>${esc(tr("mobile"))}</label><input id="wafd-receiver-mobile" type="tel" dir="ltr" autocomplete="tel"></div>`}${hasQuantity?`<div class="wafd-proof-field"><label>${esc(tr("received"))}</label><input id="wafd-received-qty" type="number" min="0" value="${esc(selectedTrip.quantity)}"></div><div class="wafd-proof-field"><label>${esc(tr("rejected"))}</label><input id="wafd-rejected-qty" type="number" min="0" value="0"></div><div class="wafd-proof-field full"><label>${esc(tr("acceptance"))}</label><select id="wafd-proof-status"><option value="مقبول بالكامل / Fully Accepted">${esc(tr("full"))}</option><option value="مقبول جزئياً / Partially Accepted">${esc(tr("partial"))}</option><option value="مرفوض / Rejected">${esc(tr("refused"))}</option></select></div>`:`<input id="wafd-proof-status" type="hidden" value="مقبول بالكامل / Fully Accepted"><input id="wafd-received-qty" type="hidden" value="0"><input id="wafd-rejected-qty" type="hidden" value="0">`}<div class="wafd-proof-field full"><label>${esc(tr("quick_note"))}</label><select id="wafd-quick-note"><option value="">${esc(tr("choose"))}</option>${options}</select></div><div class="wafd-proof-field full"><label>${esc(tr("notes"))}</label><textarea id="wafd-proof-notes"></textarea></div><div class="wafd-proof-field full"><label>${esc(tr("photo"))}</label><input id="wafd-delivery-photo" type="file" accept="image/*" capture="environment"><img class="wafd-photo-preview" id="wafd-photo-preview"><small id="wafd-location-state">${esc(tr("actual_location"))}</small></div>${simple?"":`<div class="wafd-proof-field full" id="wafd-signature-field"><label>${esc(tr("signature"))}</label><canvas class="wafd-signature" id="wafd-signature"></canvas><button type="button" class="wafd-clear-signature" id="wafd-clear-signature">${esc(tr("clear"))}</button></div>`}</div><button type="button" class="wafd-proof-submit" id="wafd-proof-submit">${esc(tr("submit"))}</button>`);
     $root.find("#wafd-proof-modal").removeAttr("hidden");
-    setupSignature();
+    captureLocation();
+    if (!simple) setupSignature();
   }
   function closeProof() {
     $root.find("#wafd-proof-modal").attr("hidden", true);
     selectedTrip = null;
+    deliveryLocation = {};
+  }
+  function captureLocation(){
+    if(!navigator.geolocation){$root.find("#wafd-location-state").text(tr("location_unavailable"));return;}
+    navigator.geolocation.getCurrentPosition(pos=>{deliveryLocation={latitude:pos.coords.latitude,longitude:pos.coords.longitude};$root.find("#wafd-location-state").text(tr("location_ready"));},()=>{$root.find("#wafd-location-state").text(tr("location_unavailable"));},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
   }
   function setupSignature() {
     const canvas = $root.find("#wafd-signature")[0];
@@ -195,16 +219,17 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   async function submitProof() {
     if (!selectedTrip) return;
     const proofStatus = $root.find("#wafd-proof-status").val();
+    const simple = Boolean(selectedTrip.simple_delivery);
     const canvas = $root.find("#wafd-signature")[0];
-    const signatureData = signatureTouched ? canvas.toDataURL("image/png") : "";
+    const signatureData = !simple && signatureTouched && canvas ? canvas.toDataURL("image/png") : "";
     const receiverName = String($root.find("#wafd-receiver-name").val() || "").trim();
-    if (!receiverName || !deliveryImageData || (proofStatus !== "مرفوض / Rejected" && !signatureData)) {
-      frappe.msgprint(tr("required"));
+    if (!deliveryImageData || (simple && (deliveryLocation.latitude == null || deliveryLocation.longitude == null)) || (!simple && (!receiverName || (proofStatus !== "مرفوض / Rejected" && !signatureData)))) {
+      frappe.msgprint(tr(simple ? "required_simple" : "required"));
       return;
     }
     const response = await frappe.call({
       method:"wafd_one.driver_portal.submit_delivery_proof",
-      args:{trip_name:selectedTrip.name,receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData},
+      args:{trip_name:selectedTrip.name,receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData,latitude:deliveryLocation.latitude,longitude:deliveryLocation.longitude},
       freeze:true,freeze_message:tr("saving"),
     });
     if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips();}
@@ -214,7 +239,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   $root.on("click", "#wafd-driver-refresh", loadTrips);
   $root.on("click", "[data-action]", async function(){const action=$(this).attr("data-action");const trip=$(this).attr("data-trip");if(action==="proof")openProof(trip);else await runStatus(trip,action);});
   $root.on("click", "#wafd-proof-close", closeProof);
-  $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
+  $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;captureLocation();deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
   $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
   $root.on("click", "#wafd-proof-submit", submitProof);
   if (isManager && typeof frappe.realtime?.on === "function") {

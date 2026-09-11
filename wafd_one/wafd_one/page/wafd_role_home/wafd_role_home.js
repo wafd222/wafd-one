@@ -36,6 +36,10 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "مشرف النظافة":{en:"Cleaning Supervisor",id:"Supervisor Kebersihan",ur:"صفائی سپروائزر",hi:"सफाई पर्यवेक्षक",bn:"পরিচ্ছন্নতা সুপারভাইজার",fr:"Superviseur nettoyage",ha:"Mai Kula da Tsafta",sw:"Msimamizi wa Usafi",uz:"Tozalash nazoratchisi"},
     "مشرف التوصيل":{en:"Delivery Supervisor",id:"Supervisor Pengiriman",ur:"ڈیلیوری سپروائزر",hi:"डिलीवरी पर्यवेक्षक",bn:"ডেলিভারি সুপারভাইজার",fr:"Superviseur livraison",ha:"Mai Kula da Isarwa",sw:"Msimamizi wa Usafirishaji",uz:"Yetkazib berish nazoratchisi"},
     "السائق":{en:"Driver",id:"Pengemudi",ur:"ڈرائیور",hi:"चालक",bn:"চালক",fr:"Chauffeur",ha:"Direba",sw:"Dereva",uz:"Haydovchi"},
+    "متابعة التسليم":{en:"Delivery Tracking",id:"Pelacakan Pengiriman",ur:"ڈیلیوری ٹریکنگ",hi:"डिलीवरी ट्रैकिंग",bn:"ডেলিভারি ট্র্যাকিং",fr:"Suivi des livraisons",ha:"Bibiyar Isarwa",sw:"Ufuatiliaji wa Usafirishaji",uz:"Yetkazib berishni kuzatish"},
+    "بيانات التسليم":{en:"Delivery Data",id:"Data Pengiriman",ur:"ڈیلیوری ڈیٹا",hi:"डिलीवरी डेटा",bn:"ডেলিভারি তথ্য",fr:"Données de livraison",ha:"Bayanan Isarwa",sw:"Taarifa za Usafirishaji",uz:"Yetkazib berish ma'lumotlari"},
+    "بيانات الرحلات المسندة لحسابك":{en:"Deliveries assigned to your account",id:"Pengiriman yang ditugaskan ke akun Anda",ur:"آپ کے اکاؤنٹ کو تفویض کردہ ڈیلیوری",hi:"आपके खाते को सौंपी गई डिलीवरी",bn:"আপনার অ্যাকাউন্টে নির্ধারিত ডেলিভারি",fr:"Livraisons attribuées à votre compte",ha:"Isarwar da aka ba asusunka",sw:"Usafirishaji uliopangiwa akaunti yako",uz:"Hisobingizga biriktirilgan yetkazmalar"},
+    "عرض الرحلات المسندة وصور التسليم للقراءة فقط":{en:"View assigned trips and delivery proof as read-only",id:"Lihat perjalanan dan bukti pengiriman hanya-baca",ur:"تفویض کردہ سفر اور ثبوت صرف پڑھنے کے لیے",hi:"सौंपी गई यात्राएँ और प्रमाण केवल पढ़ें",bn:"নির্ধারিত ট্রিপ ও প্রমাণ শুধু দেখুন",fr:"Consulter les trajets et preuves en lecture seule",ha:"Duba tafiye-tafiye da hujjar isarwa kawai",sw:"Tazama safari na uthibitisho bila kuhariri",uz:"Biriktirilgan safarlar va dalillarni faqat ko‘rish"},
     "المالية":{en:"Finance",id:"Keuangan",ur:"مالیات",hi:"वित्त",bn:"অর্থ",fr:"Finance",ha:"Kuɗi",sw:"Fedha",uz:"Moliya"},
     "المعتمد":{en:"Approver",id:"Penyetuju",ur:"منظور کنندہ",hi:"अनुमोदक",bn:"অনুমোদনকারী",fr:"Approbateur",ha:"Mai Amincewa",sw:"Muidhinishaji",uz:"Tasdiqlovchi"},
     "المدقق":{en:"Auditor",id:"Auditor",ur:"آڈیٹر",hi:"ऑडिटर",bn:"নিরীক্ষক",fr:"Auditeur",ha:"Mai Bincike",sw:"Mkaguzi",uz:"Auditor"},
@@ -232,6 +236,12 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",
       items: [
         { label: "رحلاتي", desc: "المركبة والوجهة وحالة الرحلة", icon: "➜", page: "wafd-driver-trips", primary: true }
+      ]
+    },
+    {
+      role: "WAFD Delivery Viewer", title: "متابعة التسليم", subtitle: "بيانات الرحلات المسندة لحسابك",
+      items: [
+        { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true }
       ]
     },
     {

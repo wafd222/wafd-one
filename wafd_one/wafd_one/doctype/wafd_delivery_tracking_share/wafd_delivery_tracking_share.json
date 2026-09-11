@@ -5,9 +5,10 @@
  "creation": "2026-09-11 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": ["delivery_trip", "viewer_name", "viewer_mobile", "expires_on", "enabled", "share_token", "created_by_user", "last_opened_on", "access_count"],
+ "field_order": ["delivery_trip", "viewer_user", "viewer_name", "viewer_mobile", "expires_on", "enabled", "share_token", "created_by_user", "last_opened_on", "access_count"],
  "fields": [
   {"fieldname":"delivery_trip","fieldtype":"Link","label":"رحلة التوصيل / Delivery Trip","options":"WAFD Delivery Trip","reqd":1,"in_list_view":1},
+  {"fieldname":"viewer_user","fieldtype":"Link","label":"حساب المستفيد / Beneficiary Account","options":"User","in_list_view":1},
   {"fieldname":"viewer_name","fieldtype":"Data","label":"اسم المستفيد من الرابط / Link Viewer","reqd":1,"in_list_view":1},
   {"fieldname":"viewer_mobile","fieldtype":"Data","label":"جوال المستفيد / Viewer Mobile","options":"Phone"},
   {"fieldname":"expires_on","fieldtype":"Datetime","label":"انتهاء الرابط / Link Expiry","reqd":1},

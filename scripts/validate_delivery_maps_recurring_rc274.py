@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import json
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +44,6 @@ for name in ("archived_from_board", "archived_on", "archived_by"):
     require(name in fields and fields[name].get("read_only") == 1, f"safe archive field missing: {name}")
 
 require("v10_0_0_rc274.execute" in read("wafd_one/patches.txt"), "RC274 patch missing")
-require('version = "10.0.0rc274"' in read("pyproject.toml"), "RC274 version mismatch")
+version_match = re.search(r'version = "10\.0\.0rc(\d+)"', read("pyproject.toml"))
+require(version_match and int(version_match.group(1)) >= 274, "RC274-or-later version mismatch")
 print("RC274 delivery map and recurring schedule validation passed")
-

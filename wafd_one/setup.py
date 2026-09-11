@@ -11,6 +11,7 @@ ROLES = (
     "WAFD Quality Inspector",
     "WAFD Delivery Supervisor",
     "WAFD Driver",
+    "WAFD Delivery Viewer",
     "WAFD Finance User",
     "WAFD Storekeeper",
     "WAFD Cleaning Supervisor",

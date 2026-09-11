@@ -466,3 +466,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc273.execute
 
 # RC274 driver Google Maps, safe delivery editing/removal and multi-day schedules
 wafd_one.wafd_one.patches.v10_0_0_rc274.execute
+
+# RC275 employee beneficiary accounts, assigned read-only delivery data and mobile date fix
+wafd_one.wafd_one.patches.v10_0_0_rc275.execute

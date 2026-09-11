@@ -10,11 +10,17 @@ from frappe.utils import add_days, cint, get_datetime, get_url, now_datetime
 
 
 ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"}
+VIEWER_ROLE = "WAFD Delivery Viewer"
 
 
 def _check_manager_access():
     if not (set(frappe.get_roles()) & ALLOWED_ROLES):
         frappe.throw(_("غير مصرح لك بمشاركة متابعة التوصيل / Delivery tracking share access required"), frappe.PermissionError)
+
+
+def _check_viewer_access():
+    if frappe.session.user == "Guest" or VIEWER_ROLE not in frappe.get_roles():
+        frappe.throw(_("غير مصرح لك بعرض بيانات التسليم / Delivery data access required"), frappe.PermissionError)
 
 
 def _clean_token(token):
@@ -88,17 +94,97 @@ def revoke_tracking_share(share_name):
     return {"name": share_name, "enabled": 0}
 
 
-@frappe.whitelist(allow_guest=True)
-def get_shared_tracking(token, record_access=1):
-    share = _active_share(token)
+@frappe.whitelist()
+def list_delivery_viewers():
+    """Return active employee accounts carrying the read-only delivery task."""
+    _check_manager_access()
+    users = frappe.get_all(
+        "Has Role",
+        filters={"role": VIEWER_ROLE, "parenttype": "User"},
+        pluck="parent",
+    )
+    if not users:
+        return []
+    rows = frappe.get_all(
+        "User",
+        filters={"name": ["in", sorted(set(users))], "enabled": 1, "user_type": "System User"},
+        fields=["name", "full_name", "email", "mobile_no"],
+        order_by="full_name asc",
+    )
+    return [{**row, "display_name": row.full_name or row.email or row.name} for row in rows]
+
+
+@frappe.whitelist()
+def assign_delivery_viewer(trip_name, viewer_user):
+    """Assign one delivery to an employee account without creating a public link."""
+    _check_manager_access()
+    trip_name = (trip_name or "").strip()
+    viewer_user = (viewer_user or "").strip().lower()
+    if not frappe.db.exists("WAFD Delivery Trip", trip_name):
+        frappe.throw(_("رحلة التوصيل غير موجودة / Delivery trip not found"))
+    user = frappe.db.get_value(
+        "User", viewer_user, ["name", "full_name", "email", "mobile_no", "enabled", "user_type"], as_dict=True
+    )
+    if not user or not user.enabled or user.user_type != "System User" or VIEWER_ROLE not in frappe.get_roles(user.name):
+        frappe.throw(_("اختر حساب مستفيد مفعلاً من إدارة الموظفين / Select an active beneficiary account from Employee Management"))
+
+    existing = frappe.db.get_value(
+        "WAFD Delivery Tracking Share",
+        {"delivery_trip": trip_name, "viewer_user": user.name},
+        "name",
+    )
+    values = {
+        "viewer_name": user.full_name or user.email or user.name,
+        "viewer_mobile": user.mobile_no or "",
+        "expires_on": add_days(now_datetime(), 3650),
+        "enabled": 1,
+    }
+    if existing:
+        frappe.db.set_value("WAFD Delivery Tracking Share", existing, values)
+        return {"name": existing, "viewer_user": user.name, "created": 0}
+
+    doc = frappe.get_doc({
+        "doctype": "WAFD Delivery Tracking Share",
+        "delivery_trip": trip_name,
+        "viewer_user": user.name,
+        **values,
+    }).insert(ignore_permissions=True)
+    return {"name": doc.name, "viewer_user": user.name, "created": 1}
+
+
+@frappe.whitelist()
+def get_trip_viewers(trip_name):
+    _check_manager_access()
+    return frappe.get_all(
+        "WAFD Delivery Tracking Share",
+        filters={"delivery_trip": (trip_name or "").strip(), "viewer_user": ["is", "set"], "enabled": 1},
+        fields=["name", "viewer_user", "viewer_name", "viewer_mobile"],
+        order_by="creation asc",
+        limit_page_length=100,
+    )
+
+
+@frappe.whitelist()
+def remove_delivery_viewer(share_name):
+    _check_manager_access()
+    row = frappe.db.get_value(
+        "WAFD Delivery Tracking Share", share_name, ["name", "viewer_user"], as_dict=True
+    )
+    if not row or not row.viewer_user:
+        frappe.throw(_("تعيين المستفيد غير موجود / Beneficiary assignment not found"))
+    frappe.db.set_value("WAFD Delivery Tracking Share", row.name, "enabled", 0)
+    return {"name": row.name, "enabled": 0}
+
+
+def _delivery_data(trip_name):
     trip = frappe.db.get_value(
         "WAFD Delivery Trip",
-        share.delivery_trip,
-        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "trip_date", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status"],
+        trip_name,
+        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "trip_date", "planned_arrival", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status"],
         as_dict=True,
     )
     if not trip:
-        frappe.throw(_("رابط المتابعة غير صالح أو منتهي / Tracking link is invalid or expired"), frappe.PermissionError)
+        return None
     driver = frappe.db.get_value("WAFD Driver", trip.driver, ["driver_name", "mobile"], as_dict=True) if trip.driver else None
     vehicle = frappe.db.get_value("WAFD Vehicle", trip.vehicle, ["plate_number"], as_dict=True) if trip.vehicle else None
     loading = frappe.db.get_value("WAFD Loading Record", trip.loading_record, ["loading_date", "quantity", "dispatch_time"], as_dict=True) if trip.loading_record else None
@@ -110,6 +196,56 @@ def get_shared_tracking(token, record_access=1):
         limit_page_length=1,
     )
     proof = proof_rows[0] if proof_rows else None
+    return {
+        "name": trip.name,
+        "destination_name": trip.destination_name or trip.destination_name_en or "—",
+        "destination_name_en": trip.destination_name_en,
+        "meal_type": trip.meal_type,
+        "quantity": (loading.quantity if loading else None) or trip.quantity,
+        "trip_date": trip.trip_date,
+        "planned_arrival": trip.planned_arrival,
+        "loading_time": loading.loading_date if loading else None,
+        "driver_name": driver.driver_name if driver else trip.driver,
+        "driver_mobile": driver.mobile if driver else None,
+        "plate_number": vehicle.plate_number if vehicle else trip.vehicle,
+        "driver_accepted_on": trip.driver_accepted_on or trip.actual_departure,
+        "departure_time": trip.actual_departure or (loading.dispatch_time if loading else None),
+        "arrival_time": trip.actual_arrival,
+        "delivery_time": proof.delivery_time if proof else None,
+        "receiver_name": proof.receiver_name if proof else None,
+        "has_delivery_photo": bool(proof and proof.delivery_photo),
+        "status": "تم التسليم / Delivered" if proof else trip.status,
+    }
+
+
+@frappe.whitelist()
+def get_my_delivery_tracking():
+    """Read-only delivery list restricted to the signed-in beneficiary account."""
+    _check_viewer_access()
+    assignments = frappe.get_all(
+        "WAFD Delivery Tracking Share",
+        filters={"viewer_user": frappe.session.user, "enabled": 1},
+        fields=["name", "delivery_trip"],
+        order_by="creation desc",
+        limit_page_length=500,
+    )
+    rows = []
+    for assignment in assignments:
+        trip = _delivery_data(assignment.delivery_trip)
+        if trip:
+            trip["assignment_name"] = assignment.name
+            rows.append(trip)
+    rows.sort(key=lambda row: str(row.get("planned_arrival") or row.get("trip_date") or ""), reverse=True)
+    viewer_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
+    return {"read_only": True, "viewer_name": viewer_name, "trips": rows}
+
+
+@frappe.whitelist(allow_guest=True)
+def get_shared_tracking(token, record_access=1):
+    share = _active_share(token)
+    trip = _delivery_data(share.delivery_trip)
+    if not trip:
+        frappe.throw(_("رابط المتابعة غير صالح أو منتهي / Tracking link is invalid or expired"), frappe.PermissionError)
     if cint(record_access):
         frappe.db.set_value(
             "WAFD Delivery Tracking Share",
@@ -124,37 +260,19 @@ def get_shared_tracking(token, record_access=1):
         "read_only": True,
         "viewer_name": share.viewer_name,
         "expires_on": share.expires_on,
-        "trip": {
-            "destination_name": trip.destination_name or trip.destination_name_en or "—",
-            "meal_type": trip.meal_type,
-            "quantity": (loading.quantity if loading else None) or trip.quantity,
-            "trip_date": trip.trip_date,
-            "loading_time": loading.loading_date if loading else None,
-            "driver_name": driver.driver_name if driver else trip.driver,
-            "driver_mobile": driver.mobile if driver else None,
-            "plate_number": vehicle.plate_number if vehicle else trip.vehicle,
-            "driver_accepted_on": trip.driver_accepted_on or trip.actual_departure,
-            "departure_time": trip.actual_departure or (loading.dispatch_time if loading else None),
-            "arrival_time": trip.actual_arrival,
-            "delivery_time": proof.delivery_time if proof else None,
-            "receiver_name": proof.receiver_name if proof else None,
-            "has_delivery_photo": bool(proof and proof.delivery_photo),
-            "status": "تم التسليم / Delivered" if proof else trip.status,
-        },
+        "trip": trip,
     }
 
 
-@frappe.whitelist(allow_guest=True)
-def get_shared_delivery_photo(token):
-    share = _active_share(token)
+def _send_delivery_photo(trip_name):
     proof = frappe.db.get_value(
-        "WAFD Delivery Proof", {"delivery_trip": share.delivery_trip}, ["delivery_photo"], as_dict=True
+        "WAFD Delivery Proof", {"delivery_trip": trip_name}, ["delivery_photo"], as_dict=True
     )
     if not proof or not proof.delivery_photo:
         frappe.throw(_("صورة التسليم غير متاحة / Delivery photo is unavailable"))
     file_name = frappe.db.get_value(
         "File",
-        {"file_url": proof.delivery_photo, "attached_to_doctype": "WAFD Delivery Trip", "attached_to_name": share.delivery_trip},
+        {"file_url": proof.delivery_photo, "attached_to_doctype": "WAFD Delivery Trip", "attached_to_name": trip_name},
         "name",
     )
     if not file_name:
@@ -164,3 +282,23 @@ def get_shared_delivery_photo(token):
     frappe.local.response.filecontent = file_doc.get_content()
     frappe.local.response.type = "download"
     frappe.local.response.display_content_as = "inline"
+
+
+@frappe.whitelist(allow_guest=True)
+def get_shared_delivery_photo(token):
+    share = _active_share(token)
+    _send_delivery_photo(share.delivery_trip)
+
+
+@frappe.whitelist()
+def get_my_delivery_photo(assignment_name):
+    _check_viewer_access()
+    assignment = frappe.db.get_value(
+        "WAFD Delivery Tracking Share",
+        {"name": assignment_name, "viewer_user": frappe.session.user, "enabled": 1},
+        ["delivery_trip"],
+        as_dict=True,
+    )
+    if not assignment:
+        frappe.throw(_("غير مصرح لك بعرض هذه الصورة / Delivery photo access denied"), frappe.PermissionError)
+    _send_delivery_photo(assignment.delivery_trip)

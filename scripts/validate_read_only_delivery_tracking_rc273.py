@@ -45,8 +45,10 @@ require("noindex" in page and "no-referrer" in page, "public-page privacy metada
 require(not re.search(r"<(input|textarea|select)\b", page, re.I), "read-only page contains an editable control")
 
 manager = read("wafd_one/wafd_one/page/wafd_delivery_supervisor/wafd_delivery_supervisor.js")
-for marker in ("data-share", "create_tracking_share", "get_tracking_shares", "revoke_tracking_share"):
-    require(marker in manager, f"manager share flow missing: {marker}")
+require("data-share" in manager, "manager tracking action missing")
+legacy_manager_flow = all(marker in manager for marker in ("create_tracking_share", "get_tracking_shares", "revoke_tracking_share"))
+account_manager_flow = all(marker in manager for marker in ("assign_delivery_viewer", "get_trip_viewers", "remove_delivery_viewer"))
+require(legacy_manager_flow or account_manager_flow, "manager tracking assignment flow missing")
 
 patches = read("wafd_one/patches.txt")
 require("v10_0_0_rc273.execute" in patches, "RC273 patch not registered")

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 import frappe
 from frappe import _
-from frappe.utils import cint, get_datetime, getdate, nowdate
+from frappe.utils import add_days, cint, get_datetime, getdate, now_datetime, nowdate
 
 
 ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"}
@@ -42,7 +44,7 @@ def _active_drivers():
 def _trip_rows():
     rows = frappe.get_all(
         "WAFD Delivery Trip",
-        filters={"status": ["!=", "ملغية / Cancelled"]},
+        filters={"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
         fields=[
             "name", "trip_date", "trip_source", "delivery_kind", "delivery_location",
             "destination_name", "destination_name_en", "destination_map_url", "hotel",
@@ -160,10 +162,70 @@ def create_delivery_tasks(delivery_date, tasks):
 
 
 @frappe.whitelist()
+def create_recurring_delivery_tasks(start_date, end_date, destination_type, destination, meals, driver, vehicle=None):
+    """Create several daily meal trips from one simple supervisor entry."""
+    _check_access()
+    try:
+        start, end = getdate(start_date), getdate(end_date)
+    except Exception:
+        frappe.throw(_("تاريخ البداية أو النهاية غير صحيح / Invalid start or end date"))
+    if start < getdate(nowdate()) or end < start:
+        frappe.throw(_("اختر مدة صحيحة تبدأ من اليوم أو بعده / Choose a valid date range starting today or later"))
+    days = (end - start).days + 1
+    if days > 90:
+        frappe.throw(_("الحد الأقصى للجدولة الواحدة 90 يوماً / A schedule is limited to 90 days"))
+    meal_rows = frappe.parse_json(meals) if isinstance(meals, str) else meals
+    if not isinstance(meal_rows, list) or not meal_rows or len(meal_rows) > 4:
+        frappe.throw(_("اختر وجبة واحدة على الأقل / Select at least one meal"))
+    clean_meals = []
+    for row in meal_rows:
+        meal_type = (row.get("meal_type") or "").strip()
+        if meal_type not in MEAL_TIMES:
+            frappe.throw(_("نوع الوجبة غير صحيح / Invalid meal type"))
+        delivery_time = (row.get("delivery_time") or MEAL_TIMES[meal_type]).strip()
+        try:
+            get_datetime(f"{start} {delivery_time}")
+        except Exception:
+            frappe.throw(_("وقت إحدى الوجبات غير صحيح / One of the meal times is invalid"))
+        clean_meals.append({"meal_type": meal_type, "delivery_time": delivery_time, "quantity": max(cint(row.get("quantity")), 0)})
+    destination_type, destination, driver = (destination_type or "").strip(), (destination or "").strip(), (driver or "").strip()
+    if destination_type not in {"hotel", "location"} or not destination or not driver:
+        frappe.throw(_("اختر الوجهة والسائق / Choose destination and driver"))
+    created, skipped = [], 0
+    service_date = start
+    while service_date <= end:
+        for meal in clean_meals:
+            planned_arrival = get_datetime(f"{service_date} {meal['delivery_time']}")
+            duplicate_filters = {
+                "planned_arrival": planned_arrival,
+                "driver": driver,
+                "meal_type": meal["meal_type"],
+                "status": ["!=", "ملغية / Cancelled"],
+                "hotel" if destination_type == "hotel" else "delivery_location": destination,
+            }
+            if frappe.db.exists("WAFD Delivery Trip", duplicate_filters):
+                skipped += 1
+                continue
+            result = create_delivery_tasks(service_date, [{
+                "destination_type": destination_type,
+                "destination": destination,
+                "meal_type": meal["meal_type"],
+                "delivery_time": meal["delivery_time"],
+                "driver": driver,
+                "vehicle": (vehicle or "").strip(),
+                "quantity": meal["quantity"],
+            }])
+            created.extend(result["created"])
+        service_date = getdate(add_days(service_date, 1))
+    return {"created": created, "count": len(created), "skipped_duplicates": skipped, "days": days}
+
+
+@frappe.whitelist()
 def add_delivery_destination(destination_type, name_ar, name_en=None, map_url=None, address=None):
     _check_access()
     name_ar = (name_ar or "").strip()
     name_en = (name_en or name_ar).strip()
+    map_url = _validate_map_url(map_url)
     if not name_ar:
         frappe.throw(_("اسم الموقع مطلوب / Location name is required"))
     if destination_type == "hotel":
@@ -196,6 +258,140 @@ def add_delivery_destination(destination_type, name_ar, name_en=None, map_url=No
         "status": "نشط / Active",
     }).insert(ignore_permissions=True)
     return {"name": doc.name, "type": "location", "created": True}
+
+
+def _validate_map_url(map_url):
+    map_url = (map_url or "").strip()
+    if not map_url:
+        return ""
+    parsed = urlparse(map_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        frappe.throw(_("رابط الموقع غير صحيح / Invalid map URL"))
+    return map_url
+
+
+@frappe.whitelist()
+def search_delivery_destinations(query=None, destination_type="all"):
+    """Return a compact, supervisor-only destination management list."""
+    _check_access()
+    query = (query or "").strip()
+    like = f"%{query}%"
+    rows = []
+    if destination_type in {"all", "hotel"}:
+        hotels = frappe.get_all(
+            "WAFD Hotel",
+            filters={} if not query else None,
+            or_filters={"hotel_name_ar": ["like", like], "hotel_name_en": ["like", like], "address": ["like", like]} if query else None,
+            fields=["name", "hotel_name_ar", "hotel_name_en", "address", "map_url", "status"],
+            order_by="modified desc",
+            limit_page_length=100,
+        )
+        for row in hotels:
+            row["destination_type"] = "hotel"
+            row["name_ar"] = row.pop("hotel_name_ar")
+            row["name_en"] = row.pop("hotel_name_en")
+            row["trip_count"] = frappe.db.count("WAFD Delivery Trip", {"hotel": row.name})
+            rows.append(row)
+    if destination_type in {"all", "location"}:
+        locations = frappe.get_all(
+            "WAFD Delivery Location",
+            filters={} if not query else None,
+            or_filters={"location_name_ar": ["like", like], "location_name_en": ["like", like], "address": ["like", like]} if query else None,
+            fields=["name", "location_name_ar", "location_name_en", "location_type", "address", "map_url", "status"],
+            order_by="modified desc",
+            limit_page_length=100,
+        )
+        for row in locations:
+            row["destination_type"] = "location"
+            row["name_ar"] = row.pop("location_name_ar")
+            row["name_en"] = row.pop("location_name_en")
+            row["trip_count"] = frappe.db.count("WAFD Delivery Trip", {"delivery_location": row.name})
+            rows.append(row)
+    return rows[:150]
+
+
+@frappe.whitelist()
+def update_delivery_destination(destination_type, name, name_ar, name_en=None, map_url=None, address=None):
+    _check_access()
+    name_ar = (name_ar or "").strip()
+    name_en = (name_en or name_ar).strip()
+    if not name_ar:
+        frappe.throw(_("اسم الفندق أو الموقع مطلوب / Destination name is required"))
+    map_url = _validate_map_url(map_url)
+    if destination_type == "hotel":
+        doc = frappe.get_doc("WAFD Hotel", name)
+        doc.hotel_name_ar, doc.hotel_name_en = name_ar, name_en
+        doc.address, doc.map_url, doc.status = (address or "").strip(), map_url, "نشط / Active"
+        doc.save(ignore_permissions=True)
+        linked = frappe.get_all("WAFD Delivery Trip", filters={"hotel": name, "status": "مخططة / Planned"}, pluck="name")
+    elif destination_type == "location":
+        doc = frappe.get_doc("WAFD Delivery Location", name)
+        doc.location_name_ar, doc.location_name_en = name_ar, name_en
+        doc.address, doc.map_url, doc.status = (address or "").strip(), map_url, "نشط / Active"
+        doc.save(ignore_permissions=True)
+        linked = frappe.get_all("WAFD Delivery Trip", filters={"delivery_location": name, "status": "مخططة / Planned"}, pluck="name")
+    else:
+        frappe.throw(_("نوع الوجهة غير صحيح / Invalid destination type"))
+    for trip_name in linked:
+        frappe.db.set_value("WAFD Delivery Trip", trip_name, {"destination_name": name_ar, "destination_name_en": name_en, "destination_map_url": map_url}, update_modified=False)
+    return {"name": doc.name, "updated": True}
+
+
+@frappe.whitelist()
+def remove_delivery_destination(destination_type, name):
+    """Remove a destination from choices while retaining linked history."""
+    _check_access()
+    doctype = "WAFD Hotel" if destination_type == "hotel" else "WAFD Delivery Location" if destination_type == "location" else None
+    if not doctype or not frappe.db.exists(doctype, name):
+        frappe.throw(_("الفندق أو الموقع غير موجود / Destination not found"))
+    frappe.db.set_value(doctype, name, "status", "غير نشط / Inactive")
+    return {"name": name, "removed_from_choices": True}
+
+
+@frappe.whitelist()
+def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver, vehicle=None, quantity=0):
+    _check_access()
+    trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
+    if trip.trip_source != "خطة مشرف التوصيل / Delivery Supervisor Plan" or trip.status != "مخططة / Planned":
+        frappe.throw(_("يمكن تعديل الرحلة قبل أن يستلمها السائق فقط / The trip can only be edited before driver acceptance"))
+    if meal_type not in MEAL_TIMES:
+        frappe.throw(_("اختر نوع الوجبة / Select a meal type"))
+    try:
+        trip.trip_date = getdate(delivery_date)
+        trip.planned_arrival = get_datetime(f"{trip.trip_date} {delivery_time}")
+    except Exception:
+        frappe.throw(_("التاريخ أو الوقت غير صحيح / Invalid date or time"))
+    if trip.trip_date < getdate(nowdate()):
+        frappe.throw(_("لا يمكن اختيار تاريخ سابق / A past date is not allowed"))
+    trip.hotel = destination if destination_type == "hotel" else None
+    trip.delivery_location = destination if destination_type == "location" else None
+    if not (trip.hotel or trip.delivery_location):
+        frappe.throw(_("اختر الفندق أو الموقع / Choose a hotel or location"))
+    trip.delivery_kind = None
+    trip.destination_name = trip.destination_name_en = trip.destination_map_url = None
+    trip.destination_latitude = trip.destination_longitude = None
+    trip.meal_type, trip.driver = meal_type, (driver or "").strip()
+    trip.vehicle, trip.quantity = (vehicle or "").strip() or None, max(cint(quantity), 0)
+    trip.save(ignore_permissions=True)
+    return {"name": trip.name, "updated": True}
+
+
+@frappe.whitelist()
+def archive_delivery_trip(trip_name):
+    """Cancel a mistaken plan or hide a completed test while preserving proof."""
+    _check_access()
+    trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
+    proof_exists = bool(frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}))
+    if trip.status == "مخططة / Planned" and not proof_exists:
+        trip.status = "ملغية / Cancelled"
+        trip.save(ignore_permissions=True)
+        return {"name": trip.name, "cancelled": True}
+    if proof_exists or trip.status == "تم التسليم / Delivered":
+        frappe.db.set_value("WAFD Delivery Trip", trip.name, {"archived_from_board": 1, "archived_on": now_datetime(), "archived_by": frappe.session.user})
+        for share_name in frappe.get_all("WAFD Delivery Tracking Share", filters={"delivery_trip": trip.name, "enabled": 1}, pluck="name"):
+            frappe.db.set_value("WAFD Delivery Tracking Share", share_name, "enabled", 0, update_modified=False)
+        return {"name": trip.name, "archived": True}
+    frappe.throw(_("لا يمكن حذف رحلة بدأها السائق قبل إكمالها / An active driver trip cannot be removed before completion"))
 
 
 @frappe.whitelist()

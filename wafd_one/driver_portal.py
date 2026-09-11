@@ -6,6 +6,7 @@ import base64
 import binascii
 import re
 import uuid
+from urllib.parse import quote_plus
 
 import frappe
 from frappe import _
@@ -175,7 +176,7 @@ def _hotel_names(hotel_names):
 def list_my_trips():
     is_manager = bool(_roles() & DELIVERY_OPERATOR_ROLES)
     drivers = [] if is_manager else _driver_names()
-    filters = {"status": ["!=", "ملغية / Cancelled"]}
+    filters = {"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0}
     if not is_manager:
         repair_trip_assignments(frappe.session.user)
     reconciliation = reconcile_missing_delivery_trips(
@@ -232,12 +233,17 @@ def list_my_trips():
         hotel = hotel_map.get(trip.hotel) or {}
         loading = loading_map.get(trip.loading_record) or {}
         proof = proof_map.get(trip.name)
+        destination_label = trip.destination_name or hotel.get("hotel_name_ar") or trip.hotel or ""
+        fallback_map_url = (
+            f"https://www.google.com/maps/search/?api=1&query={quote_plus(destination_label)}"
+            if destination_label else None
+        )
         result.append(
             {
                 **trip,
                 "hotel_name_ar": hotel.get("hotel_name_ar") or trip.hotel,
                 "hotel_name_en": hotel.get("hotel_name_en") or trip.hotel,
-                "map_url": trip.destination_map_url or hotel.get("map_url"),
+                "map_url": trip.destination_map_url or hotel.get("map_url") or fallback_map_url,
                 "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
                 "loading": loading,
                 "proof": proof,
@@ -292,7 +298,9 @@ def set_my_trip_status(trip_name, action):
             loading_photo = frappe.db.get_value("WAFD Loading Record", trip.loading_record, "loading_photo")
             if not loading_photo:
                 frappe.throw(_("لا يمكن بدء الرحلة قبل توثيق صورة التحميل."))
-        trip.actual_departure = trip.actual_departure or now_datetime()
+        accepted_on = trip.driver_accepted_on or now_datetime()
+        trip.driver_accepted_on = accepted_on
+        trip.actual_departure = trip.actual_departure or accepted_on
     if action == "arrive":
         trip.actual_arrival = trip.actual_arrival or now_datetime()
     trip.status = target

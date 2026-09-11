@@ -25,6 +25,7 @@
   "hotel",
   "quantity",
   "planned_departure",
+  "driver_accepted_on",
   "actual_departure",
   "planned_arrival",
   "actual_arrival",
@@ -32,6 +33,9 @@
   "delay_minutes",
   "transit_duration_minutes",
   "status",
+  "archived_from_board",
+  "archived_on",
+  "archived_by",
   "delay_reason",
   "notes"
  ],
@@ -164,6 +168,12 @@
    "label": "المغادرة المخططة / Planned Departure"
   },
   {
+   "fieldname": "driver_accepted_on",
+   "fieldtype": "Datetime",
+   "label": "وقت استلام السائق للمهمة / Driver Task Accepted On",
+   "read_only": 1
+  },
+  {
    "fieldname": "actual_departure",
    "fieldtype": "Datetime",
    "label": "المغادرة الفعلية / Actual Departure"
@@ -204,6 +214,29 @@
    "options": "مخططة / Planned\nتم التحميل / Loaded\nفي الطريق / In Transit\nوصلت / Arrived\nتم التسليم / Delivered\nمتأخرة / Delayed\nملغية / Cancelled",
    "default": "مخططة / Planned",
    "in_list_view": 1
+  },
+  {
+   "fieldname": "archived_from_board",
+   "fieldtype": "Check",
+   "label": "مخفي من شاشة التوصيل / Hidden from Delivery Board",
+   "default": "0",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "وقت الإخفاء / Archived On",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "أخفاه / Archived By",
+   "options": "User",
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "delay_reason",

@@ -460,3 +460,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc271.execute
 
 # RC272 identical Android/iPhone role home, language menu and task isolation
 wafd_one.wafd_one.patches.v10_0_0_rc272.execute
+
+# RC273 secure read-only delivery tracking links for selected beneficiaries
+wafd_one.wafd_one.patches.v10_0_0_rc273.execute
+
+# RC274 driver Google Maps, safe delivery editing/removal and multi-day schedules
+wafd_one.wafd_one.patches.v10_0_0_rc274.execute

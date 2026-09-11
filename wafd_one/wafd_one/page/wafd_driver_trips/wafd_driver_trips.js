@@ -116,6 +116,15 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   }
 
   renderShell();
+  const placeMapByDestination = () => {
+    $root.find(".wafd-trip-card").each(function(){
+      const $card=$(this),$map=$card.find(".wafd-trip-actions a").first();
+      if(!$map.length||$map.hasClass("wafd-map-by-name"))return;
+      $map.addClass("wafd-map-by-name").css({display:"inline-flex",alignItems:"center",marginTop:"7px",width:"max-content",padding:"7px 10px",borderRadius:"10px",fontSize:"12px"});
+      $card.find(".wafd-trip-head h3").first().after($map);
+    });
+  };
+  new MutationObserver(placeMapByDestination).observe($root[0],{childList:true,subtree:true});
 
   function fmtDate(value) {
     return value ? frappe.datetime.str_to_user(value) : "—";

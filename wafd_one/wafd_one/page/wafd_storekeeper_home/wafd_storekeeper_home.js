@@ -47,7 +47,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
       const available = Number(item.available_quantity || 0);
       return `<div class="wafd-material-card ${saved.ingredient ? "is-selected" : ""}" data-ingredient="${esc(item.ingredient)}">
         <input class="wafd-material-check" type="checkbox" ${saved.ingredient ? "checked" : ""}>
-        <div class="wafd-material-name"><strong>${esc(item.ingredient)}</strong><small>${esc(localData(item.category) || tr("بدون قسم", "Uncategorized"))} · ${esc(localData(item.uom))}${mode === "handover" ? ` · ${esc(tr("المتاح", "Available"))} ${esc(available)}` : ""}</small></div>
+        <div class="wafd-material-name"><strong>${esc(item.ingredient_label || item.ingredient)}</strong><small>${esc(localData(item.category) || tr("بدون قسم", "Uncategorized"))} · ${esc(localData(item.uom))}${mode === "handover" ? ` · ${esc(tr("المتاح", "Available"))} ${esc(available)}` : ""}</small></div>
         <label><span>${esc(tr("الكمية", "Quantity"))}</span><input class="wafd-material-qty" type="number" inputmode="decimal" min="0" ${mode === "handover" ? `max="${esc(available)}"` : ""} step="any" value="${esc(saved.quantity || "")}" placeholder="0"></label>
         <label><span>${esc(tr("سعر الوحدة", "Unit price"))}</span><input class="wafd-material-price" type="number" inputmode="decimal" min="0" step="any" value="${esc(saved.unit_cost == null ? item.unit_cost || 0 : saved.unit_cost)}"></label>
         ${mode === "receipt" ? `<label class="wafd-expiry-field"><span>${esc(tr("تاريخ الانتهاء (اختياري)", "Expiry date (optional)"))}</span><input class="wafd-material-expiry" type="date" value="${esc(saved.expiry_date || "")}"></label>` : ""}
@@ -65,7 +65,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
   }
 
   async function openReceipt() {
-    const base = (await api("get_storekeeper_workflow_options", {receipt: 1}, {freeze: true})).message || {};
+    const base = (await api("get_storekeeper_workflow_options", {receipt: 1, language: lang}, {freeze: true})).message || {};
     if (!(base.warehouses || []).length) return frappe.msgprint(tr("لا يوجد مستودع أو ثلاجة نشطة.", "No active warehouse or cold room exists."));
     const selected = new Map();
     let searchTimer;
@@ -104,7 +104,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
       readSelected($box, selected, "receipt");
       if (!category && search.length < 2) return $box.html(`<div class="wafd-picker-help">${esc(tr("اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.", "Choose a category or type at least two characters."))}</div>`);
       $box.html(`<div class="wafd-storekeeper-loading">${esc(tr("جارٍ البحث…", "Searching…"))}</div>`);
-      const response = await api("get_storekeeper_workflow_options", {warehouse: $panel.find("#wafd-receipt-warehouse").val() || null, category: category || null, search: search || null, receipt: 1});
+      const response = await api("get_storekeeper_workflow_options", {warehouse: $panel.find("#wafd-receipt-warehouse").val() || null, category: category || null, search: search || null, receipt: 1, language: lang});
       renderMaterialCards($box, (response.message || {}).items || [], selected, "receipt");
     };
     $panel.on("change", "#wafd-receipt-category", load);
@@ -114,7 +114,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
   }
 
   async function openHandover() {
-    const base = (await api("get_storekeeper_workflow_options", {}, {freeze: true})).message || {};
+    const base = (await api("get_storekeeper_workflow_options", {language: lang}, {freeze: true})).message || {};
     if (!(base.warehouses || []).length) return frappe.msgprint(tr("لا يوجد مستودع أو ثلاجة نشطة.", "No active warehouse or cold room exists."));
     if (!(base.recipients || []).length) return frappe.msgprint(tr("لا يوجد موظفون نشطون في الوظائف المسموح التسليم لها.", "No active employees are available for material handover."));
     const selected = new Map();
@@ -172,7 +172,7 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
       readSelected($box, selected, "handover");
       if (!warehouse || (!category && search.length < 2)) return $box.html(`<div class="wafd-picker-help">${esc(tr("اختر المستودع ثم القسم، أو اكتب حرفين للبحث.", "Choose a warehouse and category, or type two characters."))}</div>`);
       $box.html(`<div class="wafd-storekeeper-loading">${esc(tr("جارٍ البحث في الرصيد المتاح…", "Searching available stock…"))}</div>`);
-      const response = await api("get_storekeeper_workflow_options", {warehouse, category: category || null, search: search || null});
+      const response = await api("get_storekeeper_workflow_options", {warehouse, category: category || null, search: search || null, language: lang});
       renderMaterialCards($box, (response.message || {}).items || [], selected, "handover");
     };
     $panel.on("change", "#wafd-recipient-role", updateNames);
@@ -237,16 +237,16 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
     const balances = (data.balances || []).filter((row) => view !== "low" || row.is_low || row.is_zero);
     const expiry = data.expiry_alerts || [];
     if (view === "expiry") {
-      $root.find("#wafd-balance-results").html(!expiry.length ? `<div class="wafd-storekeeper-empty">${esc(tr("لا توجد مواد منتهية أو قريبة من الانتهاء خلال 30 يوماً.", "No expired or expiring materials within 30 days."))}</div>` : expiry.map((row) => `<div class="wafd-expiry-row ${Number(row.days_remaining) < 0 ? "is-expired" : ""}"><div><b>${esc(row.ingredient)}</b><small>${esc(row.warehouse)} · ${esc(row.quantity)} ${esc(localData(row.uom))}</small></div><span>${Number(row.days_remaining) < 0 ? tr(`منتهية منذ ${Math.abs(row.days_remaining)} يوم`, `Expired ${Math.abs(row.days_remaining)} days ago`) : tr(`باقي ${row.days_remaining} يوم`, `${row.days_remaining} days remaining`)}</span></div>`).join(""));
+      $root.find("#wafd-balance-results").html(!expiry.length ? `<div class="wafd-storekeeper-empty">${esc(tr("لا توجد مواد منتهية أو قريبة من الانتهاء خلال 30 يوماً.", "No expired or expiring materials within 30 days."))}</div>` : expiry.map((row) => `<div class="wafd-expiry-row ${Number(row.days_remaining) < 0 ? "is-expired" : ""}"><div><b>${esc(row.ingredient_label || row.ingredient)}</b><small>${esc(row.warehouse)} · ${esc(row.quantity)} ${esc(localData(row.uom))}</small></div><span>${Number(row.days_remaining) < 0 ? tr(`منتهية منذ ${Math.abs(row.days_remaining)} يوم`, `Expired ${Math.abs(row.days_remaining)} days ago`) : tr(`باقي ${row.days_remaining} يوم`, `${row.days_remaining} days remaining`)}</span></div>`).join(""));
       return;
     }
-    $root.find("#wafd-balance-results").html(!balances.length ? `<div class="wafd-storekeeper-empty">${esc(tr("لا توجد أرصدة مطابقة.", "No matching balances."))}</div>` : balances.map((row) => `<div class="wafd-storekeeper-balance-row ${row.is_zero ? "is-zero" : row.is_low ? "is-low" : ""}"><span data-label="${esc(tr("الصنف", "Material"))}"><b>${esc(row.ingredient)}</b><small>${esc(localData(row.category))} · ${esc(localData(row.uom))}</small></span><span data-label="${esc(tr("المكان", "Location"))}">${esc(row.warehouse)}</span><span data-label="${esc(tr("المتاح", "Available"))}" class="is-available">${esc(row.available_quantity || 0)}</span><span data-label="${esc(tr("الحد الأدنى", "Minimum"))}">${esc(row.minimum_stock || 0)}</span></div>`).join(""));
+    $root.find("#wafd-balance-results").html(!balances.length ? `<div class="wafd-storekeeper-empty">${esc(tr("لا توجد أرصدة مطابقة.", "No matching balances."))}</div>` : balances.map((row) => `<div class="wafd-storekeeper-balance-row ${row.is_zero ? "is-zero" : row.is_low ? "is-low" : ""}"><span data-label="${esc(tr("الصنف", "Material"))}"><b>${esc(row.ingredient_label || row.ingredient)}</b><small>${esc(localData(row.category))} · ${esc(localData(row.uom))}</small></span><span data-label="${esc(tr("المكان", "Location"))}">${esc(row.warehouse)}</span><span data-label="${esc(tr("المتاح", "Available"))}" class="is-available">${esc(row.available_quantity || 0)}</span><span data-label="${esc(tr("الحد الأدنى", "Minimum"))}">${esc(row.minimum_stock || 0)}</span></div>`).join(""));
   }
 
   async function loadSnapshot() {
     const serial = ++snapshotSerial;
     $root.find("#wafd-balance-results").addClass("is-loading");
-    const response = await api("get_storekeeper_snapshot", {warehouse: $root.find("#wafd-balance-warehouse").val() || null, search: $root.find("#wafd-balance-search").val() || null});
+    const response = await api("get_storekeeper_snapshot", {warehouse: $root.find("#wafd-balance-warehouse").val() || null, search: $root.find("#wafd-balance-search").val() || null, language: lang});
     if (serial !== snapshotSerial) return;
     $root.find("#wafd-balance-results").removeClass("is-loading");
     renderInventory(response.message || {});

@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime
 
+from wafd_one.ingredient_i18n import add_ingredient_labels
+
 ROLE = "WAFD Cleaning Supervisor"
 ELEVATED = {"System Manager", "WAFD Operations Manager", "WAFD Storekeeper"}
 
@@ -27,22 +29,24 @@ def _movement_for_current_user(name, pending=False):
     return movement
 
 
-def _movement_payload(movement):
+def _movement_payload(movement, language=None):
+    items = [
+        {"ingredient": row.ingredient, "quantity": flt(row.quantity), "uom": row.uom}
+        for row in movement.items or []
+    ]
+    add_ingredient_labels(items, language)
     return {
         "name": movement.name,
         "posting_date": movement.posting_date,
         "source_warehouse": movement.source_warehouse,
         "status": movement.handover_status,
         "sent_on": movement.handover_sent_on,
-        "items": [
-            {"ingredient": row.ingredient, "quantity": flt(row.quantity), "uom": row.uom}
-            for row in movement.items or []
-        ],
+        "items": items,
     }
 
 
 @frappe.whitelist()
-def get_cleaning_dashboard():
+def get_cleaning_dashboard(language=None):
     _check_supervisor()
     names = frappe.get_all(
         "WAFD Stock Movement",
@@ -60,7 +64,7 @@ def get_cleaning_dashboard():
         doc for doc in (frappe.get_doc("WAFD Stock Movement", name) for name in names)
         if not doc.get("is_pre_go_live_test")
     ]
-    pending = [_movement_payload(doc) for doc in movements if doc.handover_status == "بانتظار الاستلام / Pending Receipt"]
+    pending = [_movement_payload(doc, language) for doc in movements if doc.handover_status == "بانتظار الاستلام / Pending Receipt"]
 
     used_rows = frappe.db.sql(
         """select u.source_handover, i.ingredient, sum(i.quantity) as quantity
@@ -86,6 +90,7 @@ def get_cleaning_dashboard():
                     "remaining_quantity": remaining,
                     "uom": row.uom,
                 })
+    add_ingredient_labels(custody, language)
 
     recent = frappe.get_all(
         "WAFD Cleaning Material Usage",
@@ -101,6 +106,7 @@ def get_cleaning_dashboard():
             fields=["ingredient", "quantity", "uom"],
             order_by="idx asc",
         )
+        add_ingredient_labels(entry["items"], language)
     return {"pending": pending, "custody": custody, "recent_usage": recent}
 
 

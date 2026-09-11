@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime
 
+from wafd_one.ingredient_i18n import add_ingredient_labels, language_field
+
 
 ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Storekeeper"}
 
@@ -66,7 +68,7 @@ def _post(doc):
 
 
 @frappe.whitelist()
-def get_storekeeper_workflow_options(warehouse=None, search=None, category=None, receipt=0):
+def get_storekeeper_workflow_options(warehouse=None, search=None, category=None, receipt=0, language=None):
     """Return small searchable lists for the three practical Storekeeper flows."""
     _check_access()
     warehouses = _active_warehouses()
@@ -82,8 +84,10 @@ def get_storekeeper_workflow_options(warehouse=None, search=None, category=None,
     cleaned_search = (search or "").strip()
     if cleaned_search:
         like = f"%{cleaned_search}%"
-        conditions.append("(i.ingredient_name like %s or i.item_code like %s or i.category like %s)")
-        values.extend([like, like, like])
+        translated_field = language_field(language)
+        translated_search = f" or coalesce(i.`{translated_field}`,'') like %s" if translated_field else ""
+        conditions.append(f"(i.ingredient_name like %s{translated_search} or i.item_code like %s or i.category like %s)")
+        values.extend(([like] if translated_field else []) + [like, like, like])
 
     if warehouse and not int(receipt or 0):
         conditions.append("b.warehouse=%s and coalesce(b.available_quantity,0)>0")
@@ -109,6 +113,7 @@ def get_storekeeper_workflow_options(warehouse=None, search=None, category=None,
     )
     for row in items:
         row["unit_cost"] = flt(row.average_cost) or flt(row.latest_market_cost) or flt(row.standard_cost)
+    add_ingredient_labels(items, language)
     categories = frappe.db.sql(
         """select distinct category from `tabWAFD Ingredient`
             where status='نشط / Active' and coalesce(category,'')!=''
@@ -208,7 +213,7 @@ def create_employee_handover(source_warehouse, issued_to_user, recipient_role, i
 
 
 @frappe.whitelist()
-def get_cleaning_handover_options(warehouse=None):
+def get_cleaning_handover_options(warehouse=None, language=None):
     """Return only active cleaning warehouses, supervisors and available stock."""
     _check_access()
     warehouses = frappe.get_all(
@@ -249,6 +254,7 @@ def get_cleaning_handover_options(warehouse=None):
         for row in items:
             row["unit_cost"] = flt(row.average_cost) or flt(row.latest_market_cost) or flt(row.standard_cost)
             row["can_issue"] = 1 if flt(row.available_quantity) > 0 else 0
+        add_ingredient_labels(items, language)
     return {"warehouses": warehouses, "supervisors": supervisors, "items": items}
 
 
@@ -355,7 +361,7 @@ def receive_cleaning_material(target_warehouse, ingredient, quantity, unit_cost=
 
 
 @frappe.whitelist()
-def get_storekeeper_snapshot(warehouse=None, search=None):
+def get_storekeeper_snapshot(warehouse=None, search=None, language=None):
     """Return balances, shortages and expiry alerts for the information screen."""
     _check_access()
     warehouses = _active_warehouses()
@@ -371,8 +377,10 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
     cleaned_search = (search or "").strip()
     if cleaned_search:
         like = f"%{cleaned_search}%"
-        conditions.append("(b.ingredient like %s or b.warehouse like %s or i.category like %s)")
-        values.extend([like, like, like])
+        translated_field = language_field(language)
+        translated_search = f" or coalesce(i.`{translated_field}`,'') like %s" if translated_field else ""
+        conditions.append(f"(b.ingredient like %s{translated_search} or b.warehouse like %s or i.category like %s)")
+        values.extend(([like] if translated_field else []) + [like, like, like])
     balances = frappe.db.sql(
         f"""select b.name, b.warehouse, b.ingredient, b.uom, b.actual_quantity,
                     b.reserved_quantity, b.available_quantity, b.average_cost,
@@ -389,6 +397,7 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
         minimum = flt(row.minimum_stock)
         row["is_zero"] = 1 if available <= 0 else 0
         row["is_low"] = 1 if minimum > 0 and available <= minimum else 0
+    add_ingredient_labels(balances, language)
 
     expiry_conditions = [
         "sm.status='مرحلة / Posted'", "sm.movement_type='استلام / Receipt'",
@@ -416,6 +425,7 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
               limit 200""",
         tuple(expiry_values), as_dict=True,
     )
+    add_ingredient_labels(expiry_alerts, language)
 
     pending_orders = frappe.get_list(
         "WAFD Purchase Order",
@@ -441,6 +451,7 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
             "WAFD Stock Movement Item", filters={"parent": handover.name},
             fields=["ingredient", "quantity", "uom"], order_by="idx asc",
         )
+        add_ingredient_labels(handover["items"], language)
         usage_names = frappe.get_all(
             "WAFD Cleaning Material Usage", filters={"source_handover": handover.name},
             fields=["name", "usage_date", "purpose", "location"], order_by="usage_date desc",
@@ -450,6 +461,7 @@ def get_storekeeper_snapshot(warehouse=None, search=None):
                 "WAFD Cleaning Material Usage Item", filters={"parent": usage.name},
                 fields=["ingredient", "quantity", "uom"], order_by="idx asc",
             )
+            add_ingredient_labels(usage["items"], language)
         handover["usage"] = usage_names
     return {
         "warehouses": warehouses,

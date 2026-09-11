@@ -451,3 +451,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc268.execute
 
 # RC269 one account-level language selected only from Role Home
 wafd_one.wafd_one.patches.v10_0_0_rc269.execute
+
+# RC270 translated material display names without changing stock identifiers
+wafd_one.wafd_one.patches.v10_0_0_rc270.execute

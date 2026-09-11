@@ -7,6 +7,16 @@
  "engine": "InnoDB",
  "field_order": [
   "ingredient_name",
+  "translation_section",
+  "ingredient_name_en",
+  "ingredient_name_bn",
+  "ingredient_name_ur",
+  "ingredient_name_hi",
+  "ingredient_name_id",
+  "ingredient_name_fr",
+  "ingredient_name_ha",
+  "ingredient_name_sw",
+  "ingredient_name_uz",
   "item_code",
   "category",
   "uom",
@@ -38,6 +48,57 @@
    "reqd": 1,
    "unique": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "translation_section",
+   "fieldtype": "Section Break",
+   "label": "أسماء العرض المترجمة / Translated Display Names",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "ingredient_name_en",
+   "fieldtype": "Data",
+   "label": "English Name"
+  },
+  {
+   "fieldname": "ingredient_name_bn",
+   "fieldtype": "Data",
+   "label": "বাংলা নাম / Bengali Name"
+  },
+  {
+   "fieldname": "ingredient_name_ur",
+   "fieldtype": "Data",
+   "label": "اردو نام / Urdu Name"
+  },
+  {
+   "fieldname": "ingredient_name_hi",
+   "fieldtype": "Data",
+   "label": "हिंदी नाम / Hindi Name"
+  },
+  {
+   "fieldname": "ingredient_name_id",
+   "fieldtype": "Data",
+   "label": "Nama Indonesia / Indonesian Name"
+  },
+  {
+   "fieldname": "ingredient_name_fr",
+   "fieldtype": "Data",
+   "label": "Nom français / French Name"
+  },
+  {
+   "fieldname": "ingredient_name_ha",
+   "fieldtype": "Data",
+   "label": "Sunan Hausa / Hausa Name"
+  },
+  {
+   "fieldname": "ingredient_name_sw",
+   "fieldtype": "Data",
+   "label": "Jina la Kiswahili / Swahili Name"
+  },
+  {
+   "fieldname": "ingredient_name_uz",
+   "fieldtype": "Data",
+   "label": "O‘zbekcha nom / Uzbek Name"
   },
   {
    "fieldname": "item_code",

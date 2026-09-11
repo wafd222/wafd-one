@@ -10,6 +10,8 @@
   const EMPLOYEE_CLASS = "wafd-at-employee-team";
   const DRIVER_ROUTE = "wafd-driver-trips";
   const DRIVER_CLASS = "wafd-at-driver-trips";
+  const VIEWER_ROUTE = "wafd-delivery-viewer";
+  const VIEWER_CLASS = "wafd-at-delivery-viewer";
   const LOADING_CLASS = "wafd-at-loading-record";
 
   function isMobile() {
@@ -73,6 +75,13 @@
     if (routeName) return routeName === DRIVER_ROUTE;
     const path = String(window.location.pathname || "").replace(/\/$/, "");
     return path === "/desk/wafd-driver-trips" || path === "/app/wafd-driver-trips";
+  }
+
+  function isDeliveryViewer() {
+    const routeName = currentRouteName();
+    if (routeName) return routeName === VIEWER_ROUTE;
+    const path = String(window.location.pathname || "").replace(/\/$/, "");
+    return path === "/desk/wafd-delivery-viewer" || path === "/app/wafd-delivery-viewer";
   }
 
   function isLoadingRecordForm() {
@@ -187,15 +196,17 @@
     const home = isHome();
     const employeeTeam = isEmployeeTeam();
     const driverTrips = isDriverTrips();
+    const deliveryViewer = isDeliveryViewer();
     const loadingRecord = isLoadingRecordForm();
     syncHomeState(home);
     document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
     document.body.classList.toggle(DRIVER_CLASS, driverTrips);
+    document.body.classList.toggle(VIEWER_CLASS, deliveryViewer);
     document.body.classList.toggle(LOADING_CLASS, loadingRecord);
-    syncPwaChrome(home);
+    syncPwaChrome(home || deliveryViewer);
 
     let btn = document.getElementById(ID);
-    if (!isMobile() || home || employeeTeam || driverTrips || loadingRecord || hasOpenModal()) {
+    if (!isMobile() || home || employeeTeam || driverTrips || deliveryViewer || loadingRecord || hasOpenModal()) {
       if (btn) btn.remove();
       return;
     }

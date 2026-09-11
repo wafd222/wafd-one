@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC276
+# WAFD ONE 10.0.0 RC277
 
-**Current release: 10.0.0 RC276 — Iftar Contract and Delivery Bridge**
+**Current release: 10.0.0 RC277 — Isolated Read-only Delivery Screen**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

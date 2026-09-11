@@ -472,3 +472,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc275.execute
 
 # RC276 bridge Iftar contracts and standalone driver deliveries without changing the established Iftar workflow
 wafd_one.wafd_one.patches.v10_0_0_rc276.execute
+
+# RC277 isolate the read-only beneficiary screen and keep only language/logout in its mobile menu
+wafd_one.wafd_one.patches.v10_0_0_rc277.execute

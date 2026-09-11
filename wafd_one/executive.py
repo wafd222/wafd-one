@@ -108,6 +108,54 @@ def _hotel_performance(limit: int = 8):
     )
 
 
+def _iftar_delivery_snapshot(from_date, to_date, limit: int = 8):
+    """Read-only bridge between delivery evidence and the existing Iftar module."""
+    empty = {
+        "active_projects": 0,
+        "contract_trips": 0,
+        "standalone_trips": 0,
+        "contract_meals": 0,
+        "standalone_meals": 0,
+        "verified_meals": 0,
+        "recent": [],
+    }
+    if not _has_doctype("WAFD Delivery Trip"):
+        return empty
+
+    if _has_doctype("WAFD Iftar Project"):
+        empty["active_projects"] = _safe_count(
+            "WAFD Iftar Project", {"status": ["not in", ["ملغي / Cancelled", "مكتمل / Completed"]]}
+        )
+
+    rows = frappe.db.sql(
+        """
+        select trip.name, trip.trip_date, trip.destination_name, trip.hotel,
+               trip.driver, trip.quantity, trip.status, trip.contract,
+               trip.iftar_project, trip.iftar_daily_operation, trip.iftar_link_type,
+               coalesce(proof.received_quantity, 0) verified_quantity,
+               proof.delivery_photo, proof.delivery_time
+        from `tabWAFD Delivery Trip` trip
+        left join `tabWAFD Delivery Proof` proof on proof.delivery_trip = trip.name
+        where trip.trip_date between %s and %s
+          and trip.meal_type = 'إفطار صائم / Iftar Saim'
+          and trip.status != 'ملغية / Cancelled'
+        order by trip.trip_date desc, trip.modified desc
+        """,
+        (getdate(from_date), getdate(to_date)),
+        as_dict=True,
+    )
+    for row in rows:
+        linked = bool(row.contract)
+        key = "contract" if linked else "standalone"
+        empty[f"{key}_trips"] += 1
+        empty[f"{key}_meals"] += cint(row.quantity)
+        empty["verified_meals"] += cint(row.verified_quantity)
+        row["link_label"] = "بعقد" if linked else "بدون عقد"
+        row["destination"] = row.destination_name or row.hotel or "—"
+    empty["recent"] = rows[:cint(limit)]
+    return empty
+
+
 @frappe.whitelist()
 def get_executive_dashboard_data(from_date=None, to_date=None):
     """Return the existing dashboard plus executive risks and performance rankings."""
@@ -152,6 +200,9 @@ def get_executive_dashboard_data(from_date=None, to_date=None):
             "food_safety": get_food_safety_dashboard(service_date=to_date or nowdate()),
             "inventory_snapshot": _inventory_snapshot(),
             "today_operations": _today_operations(),
+            "iftar_snapshot": _iftar_delivery_snapshot(
+                from_date or add_days(nowdate(), -29), to_date or nowdate()
+            ),
         }
     )
     return data

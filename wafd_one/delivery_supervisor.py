@@ -49,7 +49,8 @@ def _trip_rows():
             "name", "trip_date", "trip_source", "delivery_kind", "delivery_location",
             "destination_name", "destination_name_en", "destination_map_url", "hotel",
             "meal_type", "quantity", "planned_arrival", "actual_departure", "actual_arrival",
-            "driver", "vehicle", "status", "delay_minutes", "creation",
+            "driver", "vehicle", "status", "delay_minutes", "creation", "project", "contract",
+            "iftar_project", "iftar_daily_operation", "iftar_link_type",
         ],
         order_by="trip_date desc, planned_arrival desc, creation desc",
         limit_page_length=300,
@@ -68,6 +69,67 @@ def _trip_rows():
     for row in rows:
         row["proof"] = proof_map.get(row.name)
         row["display_status"] = "تم التسليم / Delivered" if row.proof else row.status
+    return rows
+
+
+def _is_iftar_contract(row):
+    return any(
+        value in ("رمضان / Ramadan", "إفطار صائم / Iftar Saem", "إفطار صائم / Iftar Saim")
+        for value in (row.get("project_type"), row.get("contract_type"), row.get("first_meal"), row.get("last_meal"))
+    )
+
+
+def _iftar_contract_options():
+    """Return active Iftar/Ramadan contracts without changing the Iftar module."""
+    rows = frappe.get_all(
+        "WAFD Contract",
+        filters={"status": ["not in", ["منتهي / Expired", "ملغي / Cancelled"]]},
+        fields=[
+            "name", "contract_title", "contract_number", "project", "project_type", "contract_type",
+            "first_meal", "last_meal", "start_date", "end_date", "beneficiary_count",
+            "delivery_location", "hotel", "default_driver", "default_vehicle", "mission",
+        ],
+        order_by="start_date desc, modified desc",
+        limit_page_length=500,
+    )
+    rows = [row for row in rows if _is_iftar_contract(row)]
+    if not rows:
+        return []
+
+    hotel_names = list({row.hotel for row in rows if row.hotel})
+    hotel_map = {
+        row.name: row
+        for row in frappe.get_all(
+            "WAFD Hotel",
+            filters={"name": ["in", hotel_names]},
+            fields=["name", "hotel_name_ar", "hotel_name_en", "map_url"],
+        )
+    } if hotel_names else {}
+    linked_projects = {}
+    for project_row in frappe.get_all(
+        "WAFD Iftar Project",
+        filters={"contract": ["in", [row.name for row in rows]]},
+        fields=["name", "contract", "distribution_site", "daily_meals", "start_date", "end_date"],
+        order_by="modified desc",
+    ):
+        # The most recently updated Iftar project is the operational link when
+        # historical projects happen to reference the same contract.
+        linked_projects.setdefault(project_row.contract, project_row)
+    for row in rows:
+        hotel = hotel_map.get(row.hotel)
+        iftar_project = linked_projects.get(row.name)
+        row["iftar_project"] = iftar_project.name if iftar_project else None
+        row["daily_meals"] = cint(iftar_project.daily_meals if iftar_project else row.beneficiary_count)
+        row["destination_type"] = "hotel" if hotel else "location"
+        row["destination"] = row.hotel or None
+        row["destination_name"] = (
+            (hotel.hotel_name_ar if hotel else None)
+            or (iftar_project.distribution_site if iftar_project else None)
+            or row.delivery_location
+            or ""
+        )
+        row["destination_name_en"] = (hotel.hotel_name_en if hotel else None) or row.destination_name
+        row["destination_map_url"] = (hotel.map_url if hotel else None) or ""
     return rows
 
 
@@ -104,10 +166,139 @@ def get_delivery_board():
             order_by="plate_number asc",
             limit_page_length=200,
         ),
+        "iftar_contracts": _iftar_contract_options(),
         "current": current,
         "delivered": delivered,
         "summary": {"current": len(current), "delivered": len(delivered)},
     }
+
+
+def _ensure_delivery_location(name):
+    name = (name or "").strip()
+    if not name:
+        frappe.throw(_("موقع التسليم غير موجود في العقد / Contract delivery location is missing"))
+    existing = frappe.db.get_value("WAFD Delivery Location", {"location_name_ar": name}, "name")
+    if not existing:
+        existing = frappe.db.get_value("WAFD Delivery Location", {"location_name_en": name}, "name")
+    if existing:
+        return existing
+    return frappe.get_doc({
+        "doctype": "WAFD Delivery Location",
+        "location_name_ar": name,
+        "location_name_en": name,
+        "location_type": "موقع إفطار صائم / Iftar Site",
+        "status": "نشط / Active",
+    }).insert(ignore_permissions=True).name
+
+
+def _iftar_operation(iftar_project, delivery_date):
+    if not iftar_project:
+        return None
+    project = frappe.db.get_value(
+        "WAFD Iftar Project", iftar_project,
+        ["name", "start_date", "end_date", "contract", "catering_project"], as_dict=True,
+    )
+    if not project:
+        frappe.throw(_("مشروع إفطار صائم غير موجود / Iftar project not found"))
+    if (project.start_date and delivery_date < getdate(project.start_date)) or (
+        project.end_date and delivery_date > getdate(project.end_date)
+    ):
+        frappe.throw(_("تاريخ الرحلة خارج مدة مشروع إفطار صائم / Delivery date is outside the Iftar project period"))
+    operation = frappe.db.get_value(
+        "WAFD Iftar Daily Operation",
+        {"project": project.name, "operation_date": delivery_date, "docstatus": ["<", 2]},
+        "name",
+    )
+    if not operation:
+        from wafd_one.wafd_one.iftar_pro import generate_daily_operations
+        generate_daily_operations(project.name, ignore_permissions=True)
+        operation = frappe.db.get_value(
+            "WAFD Iftar Daily Operation",
+            {"project": project.name, "operation_date": delivery_date, "docstatus": ["<", 2]},
+            "name",
+        )
+    return frappe._dict(project=project, operation=operation)
+
+
+@frappe.whitelist()
+def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", vehicle=None,
+                               contract=None, destination_type=None, destination=None,
+                               quantity=0, notes=None):
+    """Create either a contract-linked or explicitly standalone Iftar delivery."""
+    _check_access()
+    try:
+        delivery_date = getdate(delivery_date)
+        planned_arrival = get_datetime(f"{delivery_date.isoformat()} {(delivery_time or '12:00').strip()}")
+    except Exception:
+        frappe.throw(_("تاريخ أو وقت التوصيل غير صحيح / Invalid delivery date or time"))
+    if delivery_date < getdate(nowdate()):
+        frappe.throw(_("لا يمكن جدولة توصيل بتاريخ سابق / Delivery cannot be scheduled in the past"))
+    driver = (driver or "").strip()
+    if not driver:
+        frappe.throw(_("اختر السائق / Choose a driver"))
+
+    values = {
+        "doctype": "WAFD Delivery Trip",
+        "trip_source": "خطة مشرف التوصيل / Delivery Supervisor Plan",
+        "trip_date": delivery_date,
+        "meal_type": "إفطار صائم / Iftar Saim",
+        "planned_arrival": planned_arrival,
+        "driver": driver,
+        "vehicle": (vehicle or "").strip() or None,
+        "status": "مخططة / Planned",
+        "notes": (notes or "").strip(),
+    }
+
+    if contract:
+        contract_row = frappe.db.get_value(
+            "WAFD Contract", contract,
+            ["name", "status", "project", "project_type", "contract_type", "first_meal", "last_meal",
+             "start_date", "end_date", "beneficiary_count", "delivery_location", "hotel"], as_dict=True,
+        )
+        if not contract_row or contract_row.status in ("منتهي / Expired", "ملغي / Cancelled") or not _is_iftar_contract(contract_row):
+            frappe.throw(_("اختر عقد إفطار صائم صالحاً / Select a valid Iftar contract"))
+        if (contract_row.start_date and delivery_date < getdate(contract_row.start_date)) or (
+            contract_row.end_date and delivery_date > getdate(contract_row.end_date)
+        ):
+            frappe.throw(_("تاريخ الرحلة خارج مدة العقد / Delivery date is outside the contract period"))
+        iftar_project = frappe.db.get_value("WAFD Iftar Project", {"contract": contract_row.name}, "name", order_by="modified desc")
+        operation = _iftar_operation(iftar_project, delivery_date) if iftar_project else None
+        values.update({
+            "contract": contract_row.name,
+            "project": contract_row.project or (operation.project.catering_project if operation else None),
+            "iftar_project": iftar_project,
+            "iftar_daily_operation": operation.operation if operation else None,
+            "iftar_link_type": "مرتبط بعقد / Contract Linked",
+            "quantity": cint(quantity) or cint(
+                frappe.db.get_value("WAFD Iftar Project", iftar_project, "daily_meals") if iftar_project else 0
+            ) or cint(contract_row.beneficiary_count),
+        })
+        if contract_row.hotel:
+            values["hotel"] = contract_row.hotel
+            values["delivery_kind"] = "فندق / Hotel"
+        else:
+            site = (operation and frappe.db.get_value("WAFD Iftar Project", iftar_project, "distribution_site")) or contract_row.delivery_location
+            values["delivery_location"] = _ensure_delivery_location(site)
+            values["delivery_kind"] = "موقع إفطار صائم / Iftar Site"
+    else:
+        destination_type = (destination_type or "").strip()
+        destination = (destination or "").strip()
+        if destination_type == "hotel" and destination:
+            values["hotel"] = destination
+            values["delivery_kind"] = "فندق / Hotel"
+        elif destination_type == "location" and destination:
+            values["delivery_location"] = destination
+            values["delivery_kind"] = "موقع إفطار صائم / Iftar Site"
+        else:
+            frappe.throw(_("اختر موقع التوصيل / Choose a delivery destination"))
+        values["quantity"] = max(cint(quantity), 0)
+        values["iftar_link_type"] = "بدون عقد / No Contract"
+
+    if cint(values.get("quantity")) <= 0:
+        frappe.throw(_("عدد وجبات إفطار صائم يجب أن يكون أكبر من صفر / Iftar meal count must be greater than zero"))
+
+    doc = frappe.get_doc(values).insert(ignore_permissions=True)
+    return {"name": doc.name, "count": 1, "iftar_link_type": doc.iftar_link_type}
 
 
 @frappe.whitelist()
@@ -149,6 +340,8 @@ def create_delivery_tasks(delivery_date, tasks):
             "status": "مخططة / Planned",
             "notes": (row.get("notes") or "").strip(),
         }
+        if values.get("meal_type") == "إفطار صائم / Iftar Saim":
+            values["iftar_link_type"] = "بدون عقد / No Contract"
         if kind == "hotel":
             values["hotel"] = (row.get("destination") or "").strip()
             values["delivery_kind"] = "فندق / Hotel"

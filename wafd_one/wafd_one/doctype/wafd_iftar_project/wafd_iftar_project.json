@@ -8,6 +8,8 @@
   "create_tab",
   "identity_section",
   "naming_series",
+  "contract",
+  "catering_project",
   "project_title",
   "contracting_entity_type",
   "contracting_entity",
@@ -94,6 +96,21 @@
    "reqd": 1,
    "read_only": 1,
    "hidden": 1
+  },
+  {
+   "fieldname": "contract",
+   "fieldtype": "Link",
+   "label": "عقد إفطار صائم / Iftar Contract",
+   "options": "WAFD Contract",
+   "in_list_view": 1,
+   "description": "اختياري: يربط تشغيل إفطار صائم بالعقد دون تغيير مسار التشغيل الحالي / Optional contract bridge"
+  },
+  {
+   "fieldname": "catering_project",
+   "fieldtype": "Link",
+   "label": "المشروع التشغيلي العام / Catering Project",
+   "options": "WAFD Catering Project",
+   "read_only": 1
   },
   {
    "fieldname": "project_title",

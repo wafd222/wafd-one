@@ -7,7 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "project",
+  "contract",
   "meal_plan",
+  "iftar_project",
+  "iftar_daily_operation",
+  "iftar_link_type",
   "loading_record",
   "trip_source",
   "delivery_kind",
@@ -49,11 +53,40 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "contract",
+   "fieldtype": "Link",
+   "label": "العقد / Contract",
+   "options": "WAFD Contract",
+   "read_only": 1
+  },
+  {
    "fieldname": "meal_plan",
    "fieldtype": "Link",
    "label": "خطة الوجبة / Meal Plan",
    "options": "WAFD Meal Plan",
    "reqd": 0
+  },
+  {
+   "fieldname": "iftar_project",
+   "fieldtype": "Link",
+   "label": "مشروع إفطار صائم / Iftar Project",
+   "options": "WAFD Iftar Project",
+   "read_only": 1
+  },
+  {
+   "fieldname": "iftar_daily_operation",
+   "fieldtype": "Link",
+   "label": "تشغيل إفطار صائم اليومي / Iftar Daily Operation",
+   "options": "WAFD Iftar Daily Operation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "iftar_link_type",
+   "fieldtype": "Select",
+   "label": "تصنيف إفطار صائم / Iftar Classification",
+   "options": "غير إفطار صائم / Not Iftar\nمرتبط بعقد / Contract Linked\nبدون عقد / No Contract",
+   "default": "غير إفطار صائم / Not Iftar",
+   "read_only": 1
   },
   {
    "fieldname": "loading_record",

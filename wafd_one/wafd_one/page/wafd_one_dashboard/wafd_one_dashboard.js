@@ -72,6 +72,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
           <div class="wafd-detail-panel">
             <section class="wafd-manager-overview wafd-ops-overview">
               <article class="wafd-card wafd-overview-card"><div class="wafd-card-head"><div><h3>ملخص اليوم</h3><small>التخطيط والإنتاج والتوصيل</small></div></div><div class="wafd-today-ops"></div></article>
+              <article class="wafd-card wafd-overview-card"><div class="wafd-card-head"><div><h3>تشغيل إفطار صائم</h3><small>عمليات مرتبطة بعقد وعمليات مستقلة</small></div><button data-route="wafd-iftar-operations">فتح البيانات</button></div><div class="wafd-today-ops wafd-iftar-summary"></div></article>
             </section>
             <section class="wafd-dashboard-grid">
               <article class="wafd-card wafd-project-card"><div class="wafd-card-head"><div><h3>المشاريع الحالية</h3><small>التقدم والمرحلة التالية</small></div><button data-list="WAFD Catering Project">عرض الكل</button></div><div class="wafd-projects"></div></article>
@@ -226,6 +227,14 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
     $root.find(".wafd-today-ops").html([
       ["خطط اليوم", todayOps.planned || 0], ["دفعات الإنتاج", todayOps.production || 0],
       ["رحلات اليوم", todayOps.trips || 0], ["تم التسليم", todayOps.delivered || 0]
+    ].map(x => `<div><strong>${escape(x[1])}</strong><span>${x[0]}</span></div>`).join(""));
+
+    const iftar = data.iftar_snapshot || {};
+    $root.find(".wafd-iftar-summary").html([
+      ["مشاريع نشطة", iftar.active_projects || 0],
+      ["رحلات بعقد", iftar.contract_trips || 0],
+      ["رحلات بدون عقد", iftar.standalone_trips || 0],
+      ["وجبات موثقة", iftar.verified_meals || 0]
     ].map(x => `<div><strong>${escape(x[1])}</strong><span>${x[0]}</span></div>`).join(""));
 
     $root.find(".wafd-finance-summary").html(`

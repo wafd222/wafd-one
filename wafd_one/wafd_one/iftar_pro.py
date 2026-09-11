@@ -91,6 +91,36 @@ def get_wizard_defaults():
 
 
 @frappe.whitelist()
+def get_iftar_contract_context(contract_name):
+    """Prefill only shared fields; the established Iftar wizard remains authoritative."""
+    contract = frappe.get_doc("WAFD Contract", contract_name)
+    contract.check_permission("read")
+    if contract.status in ("منتهي / Expired", "ملغي / Cancelled"):
+        frappe.throw(_("العقد غير نشط / Contract is not active"))
+    is_iftar = any(
+        value in ("رمضان / Ramadan", "إفطار صائم / Iftar Saem", "إفطار صائم / Iftar Saim")
+        for value in (contract.project_type, contract.contract_type, contract.first_meal, contract.last_meal)
+    )
+    if not is_iftar:
+        frappe.throw(_("العقد المحدد ليس عقد إفطار صائم أو رمضان / Selected contract is not an Iftar or Ramadan contract"))
+    destination = (contract.delivery_location or "").strip()
+    if contract.hotel:
+        destination = frappe.db.get_value("WAFD Hotel", contract.hotel, "hotel_name_ar") or contract.hotel
+    contracting_entity = contract.mission or contract.contract_title
+    if contract.mission:
+        contracting_entity = frappe.db.get_value("WAFD Mission", contract.mission, "mission_name") or contract.mission
+    return {
+        "contract": contract.name,
+        "catering_project": contract.project,
+        "contracting_entity": contracting_entity,
+        "distribution_site": destination,
+        "start_date": contract.start_date,
+        "end_date": contract.end_date,
+        "daily_meals": cint(contract.beneficiary_count),
+    }
+
+
+@frappe.whitelist()
 def search_iftar_projects(project=None, table_owner=None, date=None, limit=100):
     """Search report-center projects without silently forcing the latest project."""
     filters = {"docstatus": ["<", 2]}
@@ -190,11 +220,17 @@ def create_project(data):
     if missing:
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
+        "contract",
         "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
         "haram_zone"
     ]
+    catering_project = None
+    if data.get("contract"):
+        context = get_iftar_contract_context(data.get("contract"))
+        catering_project = context.get("catering_project")
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
+        "catering_project": catering_project,
         **{key: value for key, value in data.items() if key in allowed},
     })
     doc.insert()
@@ -437,6 +473,62 @@ def get_project_operations(project_name):
 def get_dashboard(date=None):
     operation_date = getdate(date or nowdate())
 
+    def fetch_iftar_deliveries(target_date):
+        trips = frappe.get_all(
+            "WAFD Delivery Trip",
+            filters={
+                "trip_date": target_date,
+                "meal_type": "إفطار صائم / Iftar Saim",
+                "status": ["!=", "ملغية / Cancelled"],
+            },
+            fields=[
+                "name", "contract", "project", "iftar_project", "iftar_daily_operation",
+                "iftar_link_type", "destination_name", "destination_name_en", "destination_map_url",
+                "delivery_kind", "quantity", "driver", "vehicle", "planned_arrival",
+                "actual_departure", "actual_arrival", "status", "creation",
+            ],
+            order_by="planned_arrival asc, creation asc",
+            limit_page_length=1000,
+        )
+        if not trips:
+            return []
+        proofs = frappe.get_all(
+            "WAFD Delivery Proof",
+            filters={"delivery_trip": ["in", [row.name for row in trips]]},
+            fields=[
+                "delivery_trip", "delivery_time", "delivery_photo", "receiver_name",
+                "received_quantity", "rejected_quantity", "status", "latitude", "longitude",
+            ],
+            limit_page_length=1000,
+        )
+        proof_map = {row.delivery_trip: row for row in proofs}
+        contract_names = list({row.contract for row in trips if row.contract})
+        contract_map = {
+            row.name: row for row in frappe.get_all(
+                "WAFD Contract", filters={"name": ["in", contract_names]},
+                fields=["name", "contract_title", "contract_number"],
+            )
+        } if contract_names else {}
+        project_names = list({row.iftar_project for row in trips if row.iftar_project})
+        project_map = {
+            row.name: row for row in frappe.get_all(
+                "WAFD Iftar Project", filters={"name": ["in", project_names]},
+                fields=["name", "project_title", "distribution_site"],
+            )
+        } if project_names else {}
+        for row in trips:
+            proof = proof_map.get(row.name)
+            contract = contract_map.get(row.contract)
+            project = project_map.get(row.iftar_project)
+            row["proof"] = proof
+            row["verified_quantity"] = cint(proof.received_quantity) if proof else 0
+            row["contract_title"] = contract.contract_title if contract else ""
+            row["contract_number"] = contract.contract_number if contract else ""
+            row["iftar_project_title"] = project.project_title if project else ""
+            row["destination_name"] = row.destination_name or (project.distribution_site if project else "")
+            row["link_label"] = "مرتبط بعقد / Contract Linked" if row.contract else "بدون عقد / No Contract"
+        return trips
+
     def fetch_rows(target_date):
         data = frappe.get_all(
             "WAFD Iftar Daily Operation",
@@ -454,7 +546,7 @@ def get_dashboard(date=None):
                 row.name: row for row in frappe.get_all(
                     "WAFD Iftar Project",
                     filters={"name": ["in", project_names]},
-                    fields=["name", "project_title", "distribution_site", "contracting_entity"],
+                    fields=["name", "project_title", "distribution_site", "contracting_entity", "contract"],
                 )
             }
             for row in data:
@@ -462,9 +554,11 @@ def get_dashboard(date=None):
                 row.project_title = meta.project_title if meta else row.project
                 row.distribution_site = meta.distribution_site if meta else ""
                 row.contracting_entity = meta.contracting_entity if meta else ""
+                row.contract = meta.contract if meta else ""
         return data
 
     rows = fetch_rows(operation_date)
+    iftar_deliveries = fetch_iftar_deliveries(operation_date)
 
     # Self-healing: generate missing daily rows for projects covering selected date.
     if not rows:
@@ -510,7 +604,7 @@ def get_dashboard(date=None):
     active_projects = frappe.get_list(
         "WAFD Iftar Project",
         filters={"docstatus": ["<", 2]},
-        fields=["name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals", "total_meals", "status"],
+        fields=["name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals", "total_meals", "status", "contract"],
         order_by="start_date desc, modified desc",
         limit_page_length=500,
     )
@@ -518,12 +612,34 @@ def get_dashboard(date=None):
     sums["completion_percent"] = round(
         sums["received_meals"] / sums["planned_meals"] * 100, 1
     ) if sums["planned_meals"] else 0
+    by_operation = {}
+    for delivery in iftar_deliveries:
+        if delivery.iftar_daily_operation:
+            bucket = by_operation.setdefault(delivery.iftar_daily_operation, {"trips": 0, "planned": 0, "verified": 0})
+            bucket["trips"] += 1
+            bucket["planned"] += cint(delivery.quantity)
+            bucket["verified"] += cint(delivery.verified_quantity)
+    for row in rows:
+        verified = by_operation.get(row.name, {})
+        row["driver_trip_count"] = cint(verified.get("trips"))
+        row["driver_planned_meals"] = cint(verified.get("planned"))
+        row["driver_verified_meals"] = cint(verified.get("verified"))
+
+    contract_deliveries = [row for row in iftar_deliveries if row.contract]
+    standalone_deliveries = [row for row in iftar_deliveries if not row.contract]
+    sums["contract_delivery_count"] = len(contract_deliveries)
+    sums["contract_delivery_meals"] = sum(cint(row.quantity) for row in contract_deliveries)
+    sums["contract_verified_meals"] = sum(cint(row.verified_quantity) for row in contract_deliveries)
+    sums["standalone_delivery_count"] = len(standalone_deliveries)
+    sums["standalone_delivery_meals"] = sum(cint(row.quantity) for row in standalone_deliveries)
+    sums["standalone_verified_meals"] = sum(cint(row.verified_quantity) for row in standalone_deliveries)
     return {
         "summary": sums,
         "rows": rows,
         "selected_date": operation_date,
         "suggested_date": suggested_date,
         "active_projects": active_projects,
+        "iftar_deliveries": iftar_deliveries,
     }
 
 

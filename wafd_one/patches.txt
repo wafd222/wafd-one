@@ -469,3 +469,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc274.execute
 
 # RC275 employee beneficiary accounts, assigned read-only delivery data and mobile date fix
 wafd_one.wafd_one.patches.v10_0_0_rc275.execute
+
+# RC276 bridge Iftar contracts and standalone driver deliveries without changing the established Iftar workflow
+wafd_one.wafd_one.patches.v10_0_0_rc276.execute

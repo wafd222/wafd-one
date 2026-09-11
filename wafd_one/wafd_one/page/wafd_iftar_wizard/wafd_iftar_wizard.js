@@ -41,6 +41,7 @@ function build_wizard(wrapper) {
   </div>`).appendTo($section);
 
   const definitions = [
+    {step:1, fieldtype:'Link', fieldname:'contract', label:'عقد إفطار صائم (اختياري)', options:'WAFD Contract', get_query:()=>({filters:{status:['not in',['منتهي / Expired','ملغي / Cancelled']]}})},
     {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>z.location_name).join('\n')}`},
@@ -83,6 +84,21 @@ function build_wizard(wrapper) {
     controls[df.fieldname] = frappe.ui.form.make_control({parent: box, df, render_input: true});
   });
   wrapper.wafd_iftar_controls = controls;
+
+  controls.contract.$input.on('change', async function(){
+    const contract=this.value;
+    if(!contract) return;
+    try{
+      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_iftar_contract_context',args:{contract_name:contract}});
+      const x=response.message||{};
+      if(x.start_date) set('start_date',x.start_date);
+      if(x.end_date) set('end_date',x.end_date);
+      if(x.daily_meals) set('daily_meals',x.daily_meals);
+      if(x.contracting_entity) set('contracting_entity',x.contracting_entity);
+      if(x.distribution_site){set('project_title','مشروع أو موقع آخر / Other Project or Site');set('distribution_site',x.distribution_site);}
+      renderSummary();
+    }catch(e){set('contract','');}
+  });
 
   const value = name => controls[name] ? controls[name].get_value() : null;
   const set = (name, val) => controls[name] && controls[name].set_value(val == null ? '' : val);

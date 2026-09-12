@@ -42,6 +42,7 @@ add_to_apps_screen = [
 after_install = "wafd_one.setup.after_install"
 before_migrate = "wafd_one.setup.before_migrate"
 after_migrate = "wafd_one.setup.after_migrate"
+boot_session = "wafd_one.api.boot_session"
 
 page_js = {
     # Dashboard page JS is loaded automatically from the standard Page path.

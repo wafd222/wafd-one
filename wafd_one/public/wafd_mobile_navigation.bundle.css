@@ -112,6 +112,16 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
     color:#1b1c20;
   }
 
+  body.wafd-pwa-home-shell .wafd-pwa-brand-home {
+    border:0;
+    padding:6px 4px;
+    background:transparent;
+    color:#1b1c20;
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+
   body.wafd-pwa-home-shell .wafd-pwa-menu-btn {
     width:42px;
     height:42px;

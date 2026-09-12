@@ -292,7 +292,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     profile = matchedProfiles[0];
   }
   profile = profile || {role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []};
-  const viewerOnly = profile.role === "WAFD Delivery Viewer";
+  const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
+  const isolatedFieldProfile = matchedProfiles.length > 0 && matchedProfiles.every((candidate) => isolatedFieldRoles.has(candidate.role));
 
 
   function openNewHotelDialog() {
@@ -347,12 +348,12 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
           </button>
           <strong>WAFD ONE</strong>
           <div class="wafd-pwa-menu" role="menu" hidden>
-            ${viewerOnly ? "" : `<button type="button" data-action="home">⌂ <span>${tr("الرئيسية")}</span></button>`}
+            ${isolatedFieldProfile ? "" : `<button type="button" data-action="home">⌂ <span>${tr("الرئيسية")}</span></button>`}
             <label class="wafd-pwa-language-row" for="wafd-pwa-language">
               <span>文 ${tr("اللغة") || "Language"}</span>
               <select id="wafd-pwa-language" aria-label="${tr("اللغة") || "Language"}">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===uiLang?"selected":""}>${v}</option>`).join("")}</select>
             </label>
-            ${viewerOnly ? "" : `<div class="wafd-pwa-account"><small>${tr("المستخدم")}</small><b>${escapedUser}</b></div>`}
+            ${isolatedFieldProfile ? "" : `<div class="wafd-pwa-account"><small>${tr("المستخدم")}</small><b>${escapedUser}</b></div>`}
             <button type="button" class="is-danger" data-action="logout">↪ <span>${tr("تسجيل الخروج")}</span></button>
           </div>
         </section>

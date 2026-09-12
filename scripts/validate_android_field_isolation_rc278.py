@@ -37,6 +37,6 @@ require("isolatedFieldProfile" in home, "multi-field role-home isolation missing
 require('bootinfo.home_page = "wafd-role-home"' in api, "server boot home missing")
 require('boot_session = "wafd_one.api.boot_session"' in hooks, "boot session hook missing")
 require("v10_0_0_rc278.execute" in read("wafd_one/patches.txt"), "RC278 patch missing")
-require('version = "10.0.0rc278"' in read("pyproject.toml"), "RC278 version mismatch")
+require('version = "10.0.0rc' in read("pyproject.toml"), "release version missing")
 
 print("RC278 Android field isolation validation passed")

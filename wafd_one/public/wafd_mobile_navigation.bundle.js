@@ -251,7 +251,8 @@
     }
     if (!bar) {
       bar = createFieldAppbar();
-      document.body.prepend(bar);
+      const activePage = Array.from(document.querySelectorAll(".page-container")).find(elementIsActuallyVisible);
+      (activePage || document.body).prepend(bar);
     }
   }
 

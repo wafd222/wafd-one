@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC278
+# WAFD ONE 10.0.0 RC279
 
-**Current release: 10.0.0 RC278 — Direct Android Field Home and Isolated Internal Screens**
+**Current release: 10.0.0 RC279 — iPhone Full-width Field Screen Fix**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

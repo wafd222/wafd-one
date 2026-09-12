@@ -478,3 +478,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc277.execute
 
 # RC278 direct field-role login and isolated driver, cleaning and read-only internal screens
 wafd_one.wafd_one.patches.v10_0_0_rc278.execute
+
+# RC279 keep the isolated field header inside the active page to preserve full width on iPhone
+wafd_one.wafd_one.patches.v10_0_0_rc279.execute

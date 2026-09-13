@@ -17,6 +17,6 @@ assert "تقرير رسمي بنفس هوية تعهد الفندق" not in repo
 assert '"title": "تقارير التوصيل"' in page_json
 assert 'DELIVERY_REPORT_ROUTE = "wafd-delivery-report"' in navigation
 assert "isDeliverySupervisorShell" in navigation
-assert "deliveryReportShell" in navigation
+assert "deliverySupervisorShell" in navigation
 assert navigation == bundle
 print("RC288 delivery report search and isolation checks passed")

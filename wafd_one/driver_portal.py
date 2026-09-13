@@ -285,7 +285,7 @@ def list_my_trips():
 def set_my_trip_status(trip_name, action):
     trip = _authorized_trip(trip_name, write=True)
     transitions = {
-        "start": ({"مخططة / Planned", "تم التحميل / Loaded"}, "في الطريق / In Transit"),
+        "start": ({"مخططة / Planned", "تم التحميل / Loaded", "متأخرة / Delayed"}, "في الطريق / In Transit"),
         "arrive": ({"في الطريق / In Transit", "متأخرة / Delayed"}, "وصلت / Arrived"),
     }
     if action not in transitions:
@@ -302,6 +302,8 @@ def set_my_trip_status(trip_name, action):
         trip.driver_accepted_on = accepted_on
         trip.actual_departure = trip.actual_departure or accepted_on
     if action == "arrive":
+        if not trip.actual_departure:
+            frappe.throw(_("ابدأ الرحلة أولاً قبل تسجيل الوصول / Start the trip before marking arrival."))
         trip.actual_arrival = trip.actual_arrival or now_datetime()
     trip.status = target
     trip.save()

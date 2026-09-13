@@ -51,8 +51,8 @@ def _trip_rows():
             "meal_type", "quantity", "planned_arrival", "actual_departure", "actual_arrival",
             "driver", "vehicle", "status", "delay_minutes", "creation", "project", "contract",
             "iftar_project", "iftar_daily_operation", "iftar_link_type",
-            "delivery_schedule_id", "schedule_customer",
-            "contracting_entity", "safandash_count", "hot_cabinet_count",
+            "delivery_schedule_id", "schedule_customer", "contracting_entity",
+            "safandash_count", "hot_cabinet_count",
         ],
         order_by="trip_date desc, planned_arrival desc, creation desc",
         limit_page_length=300,
@@ -171,11 +171,47 @@ def get_delivery_board():
         ),
         "iftar_contracts": _iftar_contract_options(),
         "delivery_viewers": list_delivery_viewers(),
+        "delivery_clients": _delivery_clients(),
         "viewer_scope": "all_employees" if set(frappe.get_roles()) & {"System Manager", "WAFD Operations Manager"} else "approved_only",
         "current": current,
         "delivered": delivered,
         "summary": {"current": len(current), "delivered": len(delivered)},
     }
+
+
+def _delivery_clients():
+    if not frappe.db.exists("DocType", "WAFD Delivery Client"):
+        return []
+    return frappe.get_all(
+        "WAFD Delivery Client",
+        filters={"status": "نشط / Active"},
+        fields=["name", "client_name", "client_type", "contact_person", "mobile"],
+        order_by="client_name asc",
+        limit_page_length=1000,
+    )
+
+
+@frappe.whitelist()
+def add_delivery_client(client_name, client_type="شركة / Company", contact_person=None, mobile=None):
+    """Create a reusable contracting company/mission/entity for schedules and reports."""
+    _check_access()
+    client_name = (client_name or "").strip()
+    if not client_name:
+        frappe.throw(_("اسم الشركة أو البعثة أو الجهة مطلوب / Name is required"))
+    existing = frappe.db.get_value("WAFD Delivery Client", {"client_name": client_name}, "name")
+    if existing:
+        frappe.db.set_value("WAFD Delivery Client", existing, "status", "نشط / Active")
+        return frappe.db.get_value("WAFD Delivery Client", existing, ["name", "client_name", "client_type"], as_dict=True)
+    valid_types = {"شركة / Company", "بعثة / Mission", "جهة / Entity", "عميل آخر / Other Client"}
+    doc = frappe.get_doc({
+        "doctype": "WAFD Delivery Client",
+        "client_name": client_name,
+        "client_type": client_type if client_type in valid_types else "شركة / Company",
+        "contact_person": (contact_person or "").strip(),
+        "mobile": (mobile or "").strip(),
+        "status": "نشط / Active",
+    }).insert(ignore_permissions=True)
+    return {"name": doc.name, "client_name": doc.client_name, "client_type": doc.client_type}
 
 
 def _ensure_delivery_location(name):
@@ -262,7 +298,8 @@ def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", veh
         contract_row = frappe.db.get_value(
             "WAFD Contract", contract,
             ["name", "status", "project", "project_type", "contract_type", "first_meal", "last_meal",
-             "start_date", "end_date", "beneficiary_count", "delivery_location", "hotel", "mission", "contract_title"], as_dict=True,
+             "start_date", "end_date", "beneficiary_count", "delivery_location", "hotel",
+             "mission", "contract_title"], as_dict=True,
         )
         if not contract_row or contract_row.status in ("منتهي / Expired", "ملغي / Cancelled") or not _is_iftar_contract(contract_row):
             frappe.throw(_("اختر عقد إفطار صائم صالحاً / Select a valid Iftar contract"))
@@ -281,7 +318,7 @@ def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", veh
             "quantity": cint(quantity) or cint(
                 frappe.db.get_value("WAFD Iftar Project", iftar_project, "daily_meals") if iftar_project else 0
             ) or cint(contract_row.beneficiary_count),
-            "contracting_entity": (contracting_entity or contract_row.mission or contract_row.contract_title or "").strip() or None,
+            "contracting_entity": values.get("contracting_entity") or contract_row.mission or contract_row.contract_title,
         })
         if contract_row.hotel:
             values["hotel"] = contract_row.hotel
@@ -428,6 +465,8 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type=None,
     customer_name = (customer_name or "").strip()
     if not customer_name:
         frappe.throw(_("أدخل اسم العميل أو الشركة / Enter the customer or company name"))
+    if not frappe.db.exists("WAFD Delivery Client", {"client_name": customer_name}):
+        add_delivery_client(customer_name)
     schedule_id = f"WAFD-SCH-{start.strftime('%Y%m%d')}-{frappe.generate_hash(length=10)}"
     created, skipped = [], 0
     service_date = start
@@ -598,8 +637,8 @@ def remove_delivery_destination(destination_type, name):
 
 
 @frappe.whitelist()
-def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver, vehicle=None, quantity=0,
-                        contracting_entity=None, safandash_count=0, hot_cabinet_count=0):
+def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver,
+                        vehicle=None, quantity=0, contracting_entity=None, safandash_count=0, hot_cabinet_count=0):
     _check_access()
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
     if trip.trip_source != "خطة مشرف التوصيل / Delivery Supervisor Plan" or trip.status != "مخططة / Planned":

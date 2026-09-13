@@ -491,8 +491,11 @@ wafd_one.wafd_one.patches.v10_0_0_rc281.execute
 # RC282 simplify delivery-supervisor screens and add safe manager account maintenance
 wafd_one.wafd_one.patches.v10_0_0_rc282.execute
 
-# RC283 fix RTL mobile dates and reviewed Arabic hotel spellings
+# RC283 correct known hotel Arabic names without changing document links
 wafd_one.wafd_one.patches.v10_0_0_rc283.execute
 
-# RC284 optional Safandash/Hot Cabinet counts and official delivery PDF reports
+# RC284 add contracting entities, delivery equipment and printable reports
 wafd_one.wafd_one.patches.v10_0_0_rc284.execute
+
+# RC285 repair multi-day equipment, client selection, report preview and mobile dates
+wafd_one.wafd_one.patches.v10_0_0_rc285.execute

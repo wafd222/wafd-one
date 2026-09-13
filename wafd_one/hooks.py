@@ -59,6 +59,7 @@ app_include_js = [
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
     "/assets/wafd_one/js/wafd_mobile_choice_replace.js",
+    "/assets/wafd_one/js/wafd_date_inputs.js",
     "wafd_mobile_navigation.bundle.js",
 ]
 
@@ -68,6 +69,7 @@ app_include_css = [
     "/assets/wafd_one/css/wafd_one_dashboard.css",
     "/assets/wafd_one/css/wafd_one_enterprise.css",
     "/assets/wafd_one/css/wafd_launch_center.css",
+    "/assets/wafd_one/css/wafd_date_inputs.css",
 ]
 
 

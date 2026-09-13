@@ -1,21 +1,16 @@
-"""Install reporting fields and pages while preserving every delivery workflow."""
+"""Install delivery equipment, contracting entities and delivery reports."""
 
 import frappe
 
 
 def execute():
+    frappe.reload_doc("wafd_one", "doctype", "wafd_delivery_client", force=True)
     frappe.reload_doc("wafd_one", "doctype", "wafd_delivery_trip", force=True)
-    for page in ("wafd_role_home", "wafd_delivery_supervisor", "wafd_delivery_report", "wafd_one_dashboard"):
-        frappe.reload_doc("wafd_one", "page", page, force=True)
-
-    if frappe.db.exists("DocType", "WAFD Delivery Trip"):
-        frappe.db.sql(
-            """update `tabWAFD Delivery Trip`
-               set contracting_entity=schedule_customer
-               where (contracting_entity is null or contracting_entity='')
-                 and schedule_customer is not null and schedule_customer!=''"""
-        )
-
-    frappe.clear_cache(doctype="WAFD Delivery Trip")
-    frappe.clear_cache(doctype="Page")
+    frappe.reload_doc("wafd_one", "page", "wafd_delivery_report", force=True)
+    frappe.reload_doc("wafd_one", "page", "wafd_delivery_supervisor", force=True)
+    frappe.reload_doc("wafd_one", "page", "wafd_role_home", force=True)
+    frappe.reload_doc("wafd_one", "page", "wafd_one_dashboard", force=True)
+    frappe.db.sql("""update `tabWAFD Delivery Trip`
+        set contracting_entity=schedule_customer
+        where ifnull(contracting_entity,'')='' and ifnull(schedule_customer,'')!=''""")
     frappe.clear_cache()

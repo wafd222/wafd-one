@@ -111,8 +111,7 @@
   {
    "fieldname": "contracting_entity",
    "fieldtype": "Data",
-   "label": "اسم الشركة أو البعثة أو الجهة / Contracting Company, Mission or Entity",
-   "in_list_view": 0
+   "label": "اسم الشركة أو البعثة أو الجهة / Contracting Company, Mission or Entity"
   },
   {
    "fieldname": "loading_record",

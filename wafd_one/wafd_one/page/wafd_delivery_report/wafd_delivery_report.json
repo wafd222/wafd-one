@@ -1,14 +1,24 @@
 {
- "creation":"2026-09-13 20:00:00.000000",
- "doctype":"Page",
- "modified":"2026-09-13 20:00:00.000000",
- "modified_by":"Administrator",
- "module":"WAFD ONE",
- "name":"wafd-delivery-report",
- "owner":"Administrator",
- "page_name":"wafd-delivery-report",
- "roles":[{"role":"System Manager"},{"role":"WAFD Operations Manager"},{"role":"WAFD Delivery Supervisor"}],
- "standard":"Yes",
- "system_page":0,
- "title":"تقارير التوصيل"
+ "content": null,
+ "creation": "2026-09-13 21:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "printer",
+ "idx": 0,
+ "modified": "2026-09-13 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "wafd-delivery-report",
+ "owner": "Administrator",
+ "page_name": "wafd-delivery-report",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "WAFD Operations Manager"},
+  {"role": "WAFD Delivery Supervisor"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "تقارير التوصيل / Delivery Reports"
 }

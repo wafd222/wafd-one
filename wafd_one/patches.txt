@@ -499,3 +499,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc284.execute
 
 # RC285 repair multi-day equipment, client selection, report preview and mobile dates
 wafd_one.wafd_one.patches.v10_0_0_rc285.execute
+
+# RC286 complete Delivery Client controller installation after RC285 sync failure
+wafd_one.wafd_one.patches.v10_0_0_rc286.execute

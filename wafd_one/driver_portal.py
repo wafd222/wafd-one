@@ -6,11 +6,12 @@ import base64
 import binascii
 import re
 import uuid
+from datetime import timedelta
 from urllib.parse import quote_plus
 
 import frappe
 from frappe import _
-from frappe.utils import cint, now_datetime
+from frappe.utils import cint, get_datetime, now_datetime
 
 from wafd_one.driver_security import (
     get_drivers_for_user,
@@ -41,6 +42,8 @@ QUICK_NOTES_AR = {
     "access_issue": "تعذر الوصول إلى موقع التسليم",
     "receiver_refused": "رفض المستلم استلام الشحنة",
 }
+SEQUENCE_GRACE_HOURS = 2
+LOCKED_PREVIEW_COUNT = 2
 
 
 def _roles(user=None):
@@ -82,6 +85,79 @@ def _authorized_trip(trip_name, write=False):
 def _assigned_trip(trip_name, write=False):
     """Backward-compatible alias for the secured delivery authorization."""
     return _authorized_trip(trip_name, write=write)
+
+
+def _sequence_metadata(trips, proof_trip_names, current_time=None):
+    """Mark the chronological driver queue without hiding missed evidence work.
+
+    A delivery without proof stops later deliveries until it is documented.  Once
+    its planned time is two hours old it remains visible as missed/actionable, but
+    no longer blocks the next delivery.
+    """
+    current_time = current_time or now_datetime()
+    blocking_trip = None
+    metadata = {}
+    total = len(trips)
+    for index, trip in enumerate(trips, start=1):
+        if trip.name in proof_trip_names:
+            metadata[trip.name] = {
+                "sequence_state": "completed", "sequence_actionable": False,
+                "sequence_index": index, "sequence_total": total,
+            }
+            continue
+        planned = get_datetime(trip.planned_arrival or trip.trip_date)
+        unlock_at = planned + timedelta(hours=SEQUENCE_GRACE_HOURS) if planned else None
+        overdue = bool(unlock_at and current_time >= unlock_at)
+        if blocking_trip is None and overdue:
+            metadata[trip.name] = {
+                "sequence_state": "missed", "sequence_actionable": True,
+                "sequence_index": index, "sequence_total": total,
+                "unlock_at": unlock_at,
+            }
+        elif blocking_trip is None:
+            blocking_trip = trip
+            metadata[trip.name] = {
+                "sequence_state": "active", "sequence_actionable": True,
+                "sequence_index": index, "sequence_total": total,
+                "unlock_at": unlock_at,
+            }
+        else:
+            metadata[trip.name] = {
+                "sequence_state": "locked", "sequence_actionable": False,
+                "sequence_index": index, "sequence_total": total,
+                "blocked_by": blocking_trip.name,
+                "unlock_at": get_datetime(blocking_trip.planned_arrival or blocking_trip.trip_date) + timedelta(hours=SEQUENCE_GRACE_HOURS),
+            }
+    return metadata
+
+
+def _driver_queue(user):
+    rows = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
+        fields=["name", "trip_date", "planned_arrival", "driver", "assigned_driver_user"],
+        order_by="planned_arrival asc, creation asc",
+        limit_page_length=2000,
+    )
+    rows = trips_for_user(rows, user)
+    proofs = set(frappe.get_all(
+        "WAFD Delivery Proof",
+        filters={"delivery_trip": ["in", [row.name for row in rows]]},
+        pluck="delivery_trip",
+        limit_page_length=2000,
+    )) if rows else set()
+    return rows, proofs, _sequence_metadata(rows, proofs)
+
+
+def _assert_sequence_actionable(trip):
+    if _roles() & DELIVERY_OPERATOR_ROLES:
+        return
+    rows, proofs, metadata = _driver_queue(frappe.session.user)
+    state = metadata.get(trip.name) or {}
+    if trip.name in proofs:
+        frappe.throw(_("تم توثيق هذه الرحلة مسبقاً."))
+    if not state.get("sequence_actionable"):
+        frappe.throw(_("هذه الرحلة مقفلة. وثّق الرحلة السابقة أولاً، أو انتظر مرور ساعتين من وقتها المخطط."))
 
 
 def _decode_image(data_url):
@@ -192,9 +268,9 @@ def list_my_trips():
             "delay_minutes", "delay_reason", "notes", "loading_record", "driver",
             "assigned_driver_user", "trip_source", "delivery_kind", "delivery_location",
             "destination_name", "destination_name_en", "destination_map_url",
-            "destination_latitude", "destination_longitude", "meal_type",
+            "destination_latitude", "destination_longitude", "meal_type", "delivery_schedule_id",
         ],
-        order_by="trip_date desc, creation desc",
+        order_by="trip_date desc, creation desc" if is_manager else "planned_arrival asc, creation asc",
         # Managers see the operational window directly. Drivers are filtered
         # immediately below before any response is built, so no other driver's
         # row can leave the server.
@@ -228,6 +304,23 @@ def list_my_trips():
         ],
     ) if trips else []
     proof_map = {row.delivery_trip: row for row in proof_rows}
+    sequence = {}
+    hidden_upcoming_count = 0
+    if not is_manager:
+        sequence = _sequence_metadata(trips, set(proof_map))
+        visible_names = []
+        locked_seen = 0
+        for trip in trips:
+            state = sequence.get(trip.name, {}).get("sequence_state")
+            if state in {"missed", "active"}:
+                visible_names.append(trip.name)
+            elif state == "locked" and locked_seen < LOCKED_PREVIEW_COUNT:
+                visible_names.append(trip.name)
+                locked_seen += 1
+            elif state == "locked":
+                hidden_upcoming_count += 1
+        visible = set(visible_names)
+        trips = [trip for trip in trips if trip.name in visible]
     result = []
     for trip in trips:
         hotel = hotel_map.get(trip.hotel) or {}
@@ -247,6 +340,7 @@ def list_my_trips():
                 "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
                 "loading": loading,
                 "proof": proof,
+                **sequence.get(trip.name, {}),
             }
         )
     blocked = reconciliation["counts"].get("blocked", 0)
@@ -265,6 +359,8 @@ def list_my_trips():
         "drivers": drivers,
         "is_manager": is_manager,
         "trips": result,
+        "hidden_upcoming_count": hidden_upcoming_count,
+        "sequence_grace_hours": SEQUENCE_GRACE_HOURS,
         "empty_reason": empty_reason,
         "reconciliation": {
             "counts": reconciliation["counts"],
@@ -284,6 +380,7 @@ def list_my_trips():
 @frappe.whitelist()
 def set_my_trip_status(trip_name, action):
     trip = _authorized_trip(trip_name, write=True)
+    _assert_sequence_actionable(trip)
     transitions = {
         "start": ({"مخططة / Planned", "تم التحميل / Loaded", "متأخرة / Delayed"}, "في الطريق / In Transit"),
         "arrive": ({"في الطريق / In Transit", "متأخرة / Delayed"}, "وصلت / Arrived"),
@@ -315,6 +412,7 @@ def set_my_trip_status(trip_name, action):
 def upload_delivery_photo(trip_name, image_data):
     """Secure upload for the standard manager proof form and mobile page."""
     trip = _authorized_trip(trip_name, write=True)
+    _assert_sequence_actionable(trip)
     if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
         frappe.throw(_("ابدأ الرحلة أو سجل الوصول قبل تصوير التسليم."))
     if frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}):
@@ -351,6 +449,7 @@ def submit_delivery_proof(
     longitude=None,
 ):
     trip = _authorized_trip(trip_name, write=True)
+    _assert_sequence_actionable(trip)
     if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
         frappe.throw(_("ابدأ الرحلة وسجل الوصول قبل إثبات التسليم."))
     existing = frappe.db.get_value("WAFD Delivery Proof", {"delivery_trip": trip.name}, "name")

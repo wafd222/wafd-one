@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from urllib.parse import urlparse
 
 import frappe
@@ -21,6 +22,29 @@ MEAL_TIMES = {
 def _check_access():
     if not (set(frappe.get_roles()) & ALLOWED_ROLES):
         frappe.throw(_("هذه الشاشة لمشرف التوصيل والإدارة / Delivery Supervisor access required"), frappe.PermissionError)
+
+
+def _management_audit(trip, action, reason, details=None):
+    reason = (reason or "").strip()
+    if not reason:
+        frappe.throw(_("سبب التعديل أو الأرشفة مطلوب لحفظ سجل التدقيق / A reason is required for the audit trail"))
+    content = f"<b>{escape(action)}</b><br>{escape(reason)}"
+    if details:
+        content += f"<br><small>{escape(details)}</small>"
+    frappe.get_doc({
+        "doctype": "Comment", "comment_type": "Info",
+        "reference_doctype": "WAFD Delivery Trip", "reference_name": trip.name,
+        "content": content,
+    }).insert(ignore_permissions=True)
+
+
+def _disable_tracking_shares(trip_name):
+    for share_name in frappe.get_all(
+        "WAFD Delivery Tracking Share",
+        filters={"delivery_trip": trip_name, "enabled": 1},
+        pluck="name",
+    ):
+        frappe.db.set_value("WAFD Delivery Tracking Share", share_name, "enabled", 0, update_modified=False)
 
 
 def _active_drivers():
@@ -638,11 +662,11 @@ def remove_delivery_destination(destination_type, name):
 
 @frappe.whitelist()
 def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver,
-                        vehicle=None, quantity=0, contracting_entity=None, safandash_count=0, hot_cabinet_count=0):
+                        vehicle=None, quantity=0, contracting_entity=None, safandash_count=0, hot_cabinet_count=0,
+                        change_reason=None):
     _check_access()
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
-    if trip.trip_source != "خطة مشرف التوصيل / Delivery Supervisor Plan" or trip.status != "مخططة / Planned":
-        frappe.throw(_("يمكن تعديل الرحلة قبل أن يستلمها السائق فقط / The trip can only be edited before driver acceptance"))
+    _management_audit(trip, "تعديل رحلة التوصيل / Delivery correction", change_reason)
     if meal_type not in MEAL_TIMES:
         frappe.throw(_("اختر نوع الوجبة / Select a meal type"))
     try:
@@ -650,8 +674,6 @@ def update_planned_trip(trip_name, delivery_date, delivery_time, destination_typ
         trip.planned_arrival = get_datetime(f"{trip.trip_date} {delivery_time}")
     except Exception:
         frappe.throw(_("التاريخ أو الوقت غير صحيح / Invalid date or time"))
-    if trip.trip_date < getdate(nowdate()):
-        frappe.throw(_("لا يمكن اختيار تاريخ سابق / A past date is not allowed"))
     trip.hotel = destination if destination_type == "hotel" else None
     trip.delivery_location = destination if destination_type == "location" else None
     if not (trip.hotel or trip.delivery_location):
@@ -665,25 +687,105 @@ def update_planned_trip(trip_name, delivery_date, delivery_time, destination_typ
     trip.safandash_count = max(cint(safandash_count), 0)
     trip.hot_cabinet_count = max(cint(hot_cabinet_count), 0)
     trip.save(ignore_permissions=True)
-    return {"name": trip.name, "updated": True}
+    return {"name": trip.name, "updated": True, "proof_preserved": bool(frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}))}
 
 
 @frappe.whitelist()
-def archive_delivery_trip(trip_name):
-    """Cancel a mistaken plan or hide a completed test while preserving proof."""
+def archive_delivery_trip(trip_name, reason=None):
+    """Remove a trip from operations while preserving evidence and its audit trail."""
     _check_access()
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
+    _management_audit(trip, "أرشفة رحلة التوصيل / Delivery archived", reason)
     proof_exists = bool(frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}))
-    if trip.status == "مخططة / Planned" and not proof_exists:
+    if not proof_exists:
         trip.status = "ملغية / Cancelled"
         trip.save(ignore_permissions=True)
+        _disable_tracking_shares(trip.name)
         return {"name": trip.name, "cancelled": True}
-    if proof_exists or trip.status == "تم التسليم / Delivered":
-        frappe.db.set_value("WAFD Delivery Trip", trip.name, {"archived_from_board": 1, "archived_on": now_datetime(), "archived_by": frappe.session.user})
-        for share_name in frappe.get_all("WAFD Delivery Tracking Share", filters={"delivery_trip": trip.name, "enabled": 1}, pluck="name"):
-            frappe.db.set_value("WAFD Delivery Tracking Share", share_name, "enabled", 0, update_modified=False)
-        return {"name": trip.name, "archived": True}
-    frappe.throw(_("لا يمكن حذف رحلة بدأها السائق قبل إكمالها / An active driver trip cannot be removed before completion"))
+    frappe.db.set_value("WAFD Delivery Trip", trip.name, {"archived_from_board": 1, "archived_on": now_datetime(), "archived_by": frappe.session.user})
+    _disable_tracking_shares(trip.name)
+    return {"name": trip.name, "archived": True, "proof_preserved": proof_exists}
+
+
+@frappe.whitelist()
+def get_delivery_schedule(schedule_id):
+    _check_access()
+    schedule_id = (schedule_id or "").strip()
+    rows = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={"delivery_schedule_id": schedule_id, "status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
+        fields=["name", "trip_date", "planned_arrival", "driver", "vehicle", "schedule_customer", "contracting_entity", "status"],
+        order_by="planned_arrival asc, creation asc",
+        limit_page_length=12000,
+    )
+    if not rows:
+        frappe.throw(_("جدول التوصيل غير موجود / Delivery schedule not found"))
+    return {
+        "delivery_schedule_id": schedule_id, "count": len(rows),
+        "start_date": rows[0].trip_date, "end_date": rows[-1].trip_date,
+        "driver": rows[0].driver, "vehicle": rows[0].vehicle,
+        "contracting_entity": rows[0].contracting_entity or rows[0].schedule_customer,
+    }
+
+
+@frappe.whitelist()
+def update_delivery_schedule(schedule_id, driver, vehicle=None, contracting_entity=None,
+                             new_start_date=None, change_reason=None):
+    """Correct a whole project while retaining completed proofs and relative timing."""
+    _check_access()
+    schedule_id = (schedule_id or "").strip()
+    names = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={"delivery_schedule_id": schedule_id, "status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
+        pluck="name", order_by="planned_arrival asc, creation asc", limit_page_length=12000,
+    )
+    if not names:
+        frappe.throw(_("جدول التوصيل غير موجود / Delivery schedule not found"))
+    first = frappe.get_doc("WAFD Delivery Trip", names[0])
+    reason = (change_reason or "").strip()
+    if not reason:
+        frappe.throw(_("سبب التعديل مطلوب / Change reason is required"))
+    shift_days = 0
+    if new_start_date:
+        shift_days = (getdate(new_start_date) - getdate(first.trip_date)).days
+    updated = 0
+    for name in names:
+        trip = frappe.get_doc("WAFD Delivery Trip", name)
+        _management_audit(trip, "تعديل جدول التوصيل / Delivery schedule correction", reason, schedule_id)
+        trip.driver = (driver or "").strip()
+        trip.vehicle = (vehicle or "").strip() or None
+        entity = (contracting_entity or "").strip() or None
+        trip.contracting_entity = entity
+        trip.schedule_customer = entity
+        if shift_days:
+            trip.trip_date = getdate(add_days(trip.trip_date, shift_days))
+            if trip.planned_arrival:
+                trip.planned_arrival = get_datetime(add_days(trip.planned_arrival, shift_days))
+            if trip.planned_departure:
+                trip.planned_departure = get_datetime(add_days(trip.planned_departure, shift_days))
+        trip.save(ignore_permissions=True)
+        updated += 1
+    return {"delivery_schedule_id": schedule_id, "updated": updated, "date_shift_days": shift_days}
+
+
+@frappe.whitelist()
+def archive_delivery_schedule(schedule_id, reason=None):
+    """Archive/cancel every row in a multi-day project without deleting evidence."""
+    _check_access()
+    schedule_id = (schedule_id or "").strip()
+    names = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters={"delivery_schedule_id": schedule_id, "status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
+        pluck="name", limit_page_length=12000,
+    )
+    if not names:
+        frappe.throw(_("جدول التوصيل غير موجود / Delivery schedule not found"))
+    cancelled = archived = 0
+    for name in names:
+        result = archive_delivery_trip(name, reason=reason)
+        cancelled += int(bool(result.get("cancelled")))
+        archived += int(bool(result.get("archived")))
+    return {"delivery_schedule_id": schedule_id, "cancelled": cancelled, "archived": archived, "total": len(names)}
 
 
 @frappe.whitelist()

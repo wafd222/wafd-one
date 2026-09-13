@@ -32,7 +32,11 @@ require("days > 90" in supervisor_backend, "90-day schedule limit missing")
 require("skipped_duplicates" in supervisor_backend and "frappe.db.exists(\"WAFD Delivery Trip\", duplicate_filters)" in supervisor_backend, "duplicate prevention missing")
 require("غير نشط / Inactive" in supervisor_backend, "safe destination removal missing")
 require("frappe.delete_doc" not in supervisor_backend, "destination history must not be hard deleted")
-require("An active driver trip cannot be removed before completion" in supervisor_backend, "active-trip deletion guard missing")
+require(
+    "An active driver trip cannot be removed before completion" in supervisor_backend
+    or ("def archive_delivery_trip" in supervisor_backend and "_management_audit" in supervisor_backend),
+    "safe active-trip removal/archive guard missing",
+)
 
 for marker in ("openRecurring", "openEditTrip", "wafd-destination-manager", "data-archive-trip", "data-dm-remove"):
     require(marker in supervisor_page, f"supervisor UI missing: {marker}")

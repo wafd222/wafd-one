@@ -502,3 +502,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc285.execute
 
 # RC286 complete Delivery Client controller installation after RC285 sync failure
 wafd_one.wafd_one.patches.v10_0_0_rc286.execute
+
+# RC287 sequential driver queue and auditable trip/schedule management
+wafd_one.wafd_one.patches.v10_0_0_rc287.execute

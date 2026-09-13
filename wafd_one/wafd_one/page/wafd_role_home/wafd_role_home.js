@@ -100,6 +100,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "المواد المصروفة لي":{en:"Materials Issued to Me",id:"Bahan Dikeluarkan untuk Saya",ur:"مجھے جاری کردہ مواد",hi:"मुझे जारी सामग्री",bn:"আমাকে ইস্যু করা সামগ্রী",fr:"Articles qui me sont attribués",ha:"Kayan da aka ba ni",sw:"Vifaa Nilivyopewa",uz:"Menga berilgan materiallar"},
     "رحلات التوصيل":{en:"Delivery Trips",id:"Perjalanan Pengiriman",ur:"ڈیلیوری ٹرپس",hi:"डिलीवरी यात्राएँ",bn:"ডেলিভারি ট্রিপ",fr:"Trajets de livraison",ha:"Tafiyar Isarwa",sw:"Safari za Usafirishaji",uz:"Yetkazib berish safarlari"},
     "خطة التوصيل والمواقع والسائقون":{en:"Delivery plans, destinations, and drivers"},
+    "إدارة التوصيل":{en:"Delivery Management"},
+    "إنشاء الرحلات والجداول ومتابعة التسليم":{en:"Create deliveries and schedules, and track completion"},
     "إضافة رحلة وتعيين سائق":{en:"Add Delivery and Assign Driver"},
     "اختر الفندق أو الموقع والوقت والسائق":{en:"Choose destination, time, and driver"},
     "الرحلات الحالية":{en:"Current Deliveries"},
@@ -226,9 +228,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "خطة التوصيل والمواقع والسائقون",
       items: [
-        { label: "إضافة رحلة وتعيين سائق", desc: "اختر الفندق أو الموقع والوقت والسائق", icon: "＋", action: "delivery_new", page: "wafd-delivery-supervisor", primary: true },
-        { label: "الرحلات الحالية", desc: "متابعة استلام السائق والتوجه للموقع", icon: "➜", page: "wafd-delivery-supervisor" },
-        { label: "سجل التسليم", desc: "الوقت والموقع وصورة إثبات كل تسليم", icon: "▤", action: "delivery_delivered", page: "wafd-delivery-supervisor" },
+        { label: "إدارة التوصيل", desc: "إنشاء الرحلات والجداول ومتابعة التسليم", icon: "➜", page: "wafd-delivery-supervisor", primary: true },
         { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" }
       ]
     },

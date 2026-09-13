@@ -12,6 +12,8 @@
   "iftar_project",
   "iftar_daily_operation",
   "iftar_link_type",
+  "delivery_schedule_id",
+  "schedule_customer",
   "loading_record",
   "trip_source",
   "delivery_kind",
@@ -87,6 +89,21 @@
    "options": "غير إفطار صائم / Not Iftar\nمرتبط بعقد / Contract Linked\nبدون عقد / No Contract",
    "default": "غير إفطار صائم / Not Iftar",
    "read_only": 1
+  },
+  {
+   "fieldname": "delivery_schedule_id",
+   "fieldtype": "Data",
+   "label": "معرف جدول التوصيل / Delivery Schedule ID",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "schedule_customer",
+   "fieldtype": "Data",
+   "label": "العميل / Customer",
+   "read_only": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "loading_record",

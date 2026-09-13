@@ -51,6 +51,7 @@ def _trip_rows():
             "meal_type", "quantity", "planned_arrival", "actual_departure", "actual_arrival",
             "driver", "vehicle", "status", "delay_minutes", "creation", "project", "contract",
             "iftar_project", "iftar_daily_operation", "iftar_link_type",
+            "delivery_schedule_id", "schedule_customer",
         ],
         order_by="trip_date desc, planned_arrival desc, creation desc",
         limit_page_length=300,
@@ -136,6 +137,7 @@ def _iftar_contract_options():
 @frappe.whitelist()
 def get_delivery_board():
     _check_access()
+    from wafd_one.delivery_tracking import list_delivery_viewers
     hotels = frappe.get_all(
         "WAFD Hotel",
         filters={"status": "نشط / Active"},
@@ -167,6 +169,8 @@ def get_delivery_board():
             limit_page_length=200,
         ),
         "iftar_contracts": _iftar_contract_options(),
+        "delivery_viewers": list_delivery_viewers(),
+        "viewer_scope": "all_employees" if set(frappe.get_roles()) & {"System Manager", "WAFD Operations Manager"} else "approved_only",
         "current": current,
         "delivered": delivered,
         "summary": {"current": len(current), "delivered": len(delivered)},
@@ -339,6 +343,8 @@ def create_delivery_tasks(delivery_date, tasks):
             "quantity": max(cint(row.get("quantity")), 0),
             "status": "مخططة / Planned",
             "notes": (row.get("notes") or "").strip(),
+            "delivery_schedule_id": (row.get("delivery_schedule_id") or "").strip() or None,
+            "schedule_customer": (row.get("schedule_customer") or "").strip() or None,
         }
         if values.get("meal_type") == "إفطار صائم / Iftar Saim":
             values["iftar_link_type"] = "بدون عقد / No Contract"
@@ -355,8 +361,10 @@ def create_delivery_tasks(delivery_date, tasks):
 
 
 @frappe.whitelist()
-def create_recurring_delivery_tasks(start_date, end_date, destination_type, destination, meals, driver, vehicle=None):
-    """Create several daily meal trips from one simple supervisor entry."""
+def create_recurring_delivery_tasks(start_date, end_date, destination_type=None, destination=None,
+                                    meals=None, driver=None, vehicle=None, destinations=None,
+                                    customer_name=None, viewers=None):
+    """Create one tracked schedule across multiple destinations, days and meals."""
     _check_access()
     try:
         start, end = getdate(start_date), getdate(end_date)
@@ -381,36 +389,67 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type, dest
         except Exception:
             frappe.throw(_("وقت إحدى الوجبات غير صحيح / One of the meal times is invalid"))
         clean_meals.append({"meal_type": meal_type, "delivery_time": delivery_time, "quantity": max(cint(row.get("quantity")), 0)})
-    destination_type, destination, driver = (destination_type or "").strip(), (destination or "").strip(), (driver or "").strip()
-    if destination_type not in {"hotel", "location"} or not destination or not driver:
-        frappe.throw(_("اختر الوجهة والسائق / Choose destination and driver"))
+    driver = (driver or "").strip()
+    destination_rows = frappe.parse_json(destinations) if isinstance(destinations, str) else destinations
+    if not destination_rows:
+        destination_rows = [{"destination_type": destination_type, "destination": destination}]
+    if not isinstance(destination_rows, list) or len(destination_rows) > 30:
+        frappe.throw(_("اختر من وجهة واحدة إلى 30 وجهة / Choose between one and 30 destinations"))
+    cleaned_destinations = []
+    seen_destinations = set()
+    for row in destination_rows:
+        kind = (row.get("destination_type") or "").strip()
+        name = (row.get("destination") or "").strip()
+        if kind not in {"hotel", "location"} or not name:
+            frappe.throw(_("اختر الفنادق أو الجهات / Choose hotels or destinations"))
+        key = (kind, name)
+        if key not in seen_destinations:
+            cleaned_destinations.append({"destination_type": kind, "destination": name})
+            seen_destinations.add(key)
+    if not cleaned_destinations or not driver:
+        frappe.throw(_("اختر وجهة واحدة على الأقل والسائق / Choose at least one destination and the driver"))
+    viewer_users = frappe.parse_json(viewers) if isinstance(viewers, str) else viewers
+    if not isinstance(viewer_users, list) or not viewer_users:
+        frappe.throw(_("اختر مستفيداً أو متابعاً واحداً على الأقل / Choose at least one beneficiary or follower"))
+    customer_name = (customer_name or "").strip()
+    if not customer_name:
+        frappe.throw(_("أدخل اسم العميل أو الشركة / Enter the customer or company name"))
+    schedule_id = f"WAFD-SCH-{start.strftime('%Y%m%d')}-{frappe.generate_hash(length=10)}"
     created, skipped = [], 0
     service_date = start
     while service_date <= end:
-        for meal in clean_meals:
-            planned_arrival = get_datetime(f"{service_date} {meal['delivery_time']}")
-            duplicate_filters = {
-                "planned_arrival": planned_arrival,
-                "driver": driver,
-                "meal_type": meal["meal_type"],
-                "status": ["!=", "ملغية / Cancelled"],
-                "hotel" if destination_type == "hotel" else "delivery_location": destination,
-            }
-            if frappe.db.exists("WAFD Delivery Trip", duplicate_filters):
-                skipped += 1
-                continue
-            result = create_delivery_tasks(service_date, [{
-                "destination_type": destination_type,
-                "destination": destination,
-                "meal_type": meal["meal_type"],
-                "delivery_time": meal["delivery_time"],
-                "driver": driver,
-                "vehicle": (vehicle or "").strip(),
-                "quantity": meal["quantity"],
-            }])
-            created.extend(result["created"])
+        for destination_row in cleaned_destinations:
+            for meal in clean_meals:
+                planned_arrival = get_datetime(f"{service_date} {meal['delivery_time']}")
+                duplicate_filters = {
+                    "planned_arrival": planned_arrival,
+                    "driver": driver,
+                    "meal_type": meal["meal_type"],
+                    "status": ["!=", "ملغية / Cancelled"],
+                    "hotel" if destination_row["destination_type"] == "hotel" else "delivery_location": destination_row["destination"],
+                }
+                if frappe.db.exists("WAFD Delivery Trip", duplicate_filters):
+                    skipped += 1
+                    continue
+                result = create_delivery_tasks(service_date, [{
+                    **destination_row,
+                    "meal_type": meal["meal_type"],
+                    "delivery_time": meal["delivery_time"],
+                    "driver": driver,
+                    "vehicle": (vehicle or "").strip(),
+                    "quantity": meal["quantity"],
+                    "delivery_schedule_id": schedule_id,
+                    "schedule_customer": customer_name,
+                }])
+                created.extend(result["created"])
         service_date = getdate(add_days(service_date, 1))
-    return {"created": created, "count": len(created), "skipped_duplicates": skipped, "days": days}
+    if not created:
+        frappe.throw(_("لم تُنشأ رحلات جديدة لأن جميع الرحلات مكررة / No new trips were created because all entries already exist"))
+    from wafd_one.delivery_tracking import assign_schedule_viewers
+    assignments = assign_schedule_viewers(created, viewer_users)
+    return {"created": created, "count": len(created), "skipped_duplicates": skipped, "days": days,
+            "destinations": len(cleaned_destinations), "delivery_schedule_id": schedule_id,
+            "viewer_count": len(set(viewer_users)), "assignments": assignments}
 
 
 @frappe.whitelist()

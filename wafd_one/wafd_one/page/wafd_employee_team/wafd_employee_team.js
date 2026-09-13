@@ -56,7 +56,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       .wafd-employee-toolbar{display:grid;grid-template-columns:1fr 240px;gap:10px;margin:14px 0}.wafd-employee-toolbar input,.wafd-employee-toolbar select{height:42px;border:1px solid #ded8cb;border-radius:11px;padding:8px 11px;background:#faf9f6}
       .wafd-employee-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(180px,.8fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-employee-row:last-child{border-bottom:0}
       .wafd-employee-identity b,.wafd-employee-identity small{display:block}.wafd-employee-identity small{color:#777b82;margin-top:3px}.wafd-employee-role{display:flex;flex-wrap:wrap;gap:6px}.wafd-role-badge,.wafd-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:750}.wafd-role-badge{background:#f4eddd;color:#765b23}.wafd-status-badge.is-on{background:#e8f4ea;color:#2e6a38}.wafd-status-badge.is-off{background:#f3e8e8;color:#8b3030}
-      .wafd-row-actions{display:flex;gap:7px;justify-content:flex-end}.wafd-row-actions button{border:1px solid #ddd6c8;border-radius:10px;background:#fff;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap}.wafd-row-actions button.is-stop{color:#963434}.wafd-empty{padding:30px 10px;text-align:center;color:#7b7e83}.wafd-driver-note{display:none;margin-top:6px;color:#916d25;font-size:11px}
+      .wafd-row-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.wafd-row-actions button{border:1px solid #ddd6c8;border-radius:10px;background:#fff;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap}.wafd-row-actions button.is-stop,.wafd-row-actions button.is-delete{color:#963434}.wafd-row-actions button.is-delete{border-color:#e1bcbc;background:#fff8f8}.wafd-empty{padding:30px 10px;text-align:center;color:#7b7e83}.wafd-driver-note{display:none;margin-top:6px;color:#916d25;font-size:11px}
       @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-task-picker{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button{flex:1}.wafd-employee-role{justify-content:flex-start}}
     </style>
     <div class="wafd-employee-shell">
@@ -115,8 +115,10 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         <div class="wafd-employee-identity"><b>${esc(employee.full_name || employee.name)}</b><small dir="ltr">${esc(employee.email || employee.name)}</small></div>
         <div class="wafd-employee-role">${roles}<span class="wafd-status-badge ${employee.enabled ? "is-on" : "is-off"}">${employee.enabled ? tr("مفعّل", "Active") : tr("موقوف", "Disabled")}</span></div>
         <div class="wafd-row-actions">
+          <button type="button" class="wafd-edit-account" data-user="${esc(employee.name)}">${tr("تعديل الحساب", "Edit account")}</button>
           <button type="button" class="wafd-change-role" data-user="${esc(employee.name)}">${tr("تعديل المهمات", "Edit tasks")}</button>
           <button type="button" class="wafd-toggle-employee ${employee.enabled ? "is-stop" : ""}" data-user="${esc(employee.name)}" data-enabled="${employee.enabled ? 0 : 1}">${employee.enabled ? tr("إيقاف", "Disable") : tr("تفعيل", "Enable")}</button>
+          <button type="button" class="wafd-delete-account is-delete" data-user="${esc(employee.name)}">${tr("حذف الحساب", "Delete account")}</button>
         </div>
       </div>`;
     }).join(""));
@@ -169,6 +171,39 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     dialog.show();
   }
 
+  function editAccount(employee) {
+    const dialog = new frappe.ui.Dialog({
+      title: tr("تعديل حساب الموظف", "Edit employee account"),
+      fields: [
+        {fieldname: "full_name", fieldtype: "Data", label: tr("اسم الموظف", "Employee name"), default: employee.full_name || "", reqd: 1},
+        {fieldname: "new_email", fieldtype: "Data", label: tr("اسم المستخدم / البريد الإلكتروني", "Username / email"), default: employee.email || employee.name, reqd: 1},
+        {fieldname: "mobile", fieldtype: "Data", label: tr("رقم الجوال", "Mobile number"), default: employee.mobile_no || ""},
+        {fieldname: "new_password", fieldtype: "Password", label: tr("كلمة مرور جديدة (اختياري)", "New password (optional)"), description: tr("اتركها فارغة إذا لم ترغب بتغيير كلمة المرور. الحد الأدنى 8 أحرف.", "Leave blank to keep the password. Minimum 8 characters.")},
+      ],
+      primary_action_label: tr("حفظ تعديل الحساب", "Save account changes"),
+      primary_action: (values) => {
+        if (values.new_password && values.new_password.length < 8) {
+          frappe.msgprint(tr("كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.", "The new password must contain at least 8 characters."));
+          return;
+        }
+        frappe.call({
+          method: "wafd_one.employee_team.update_employee_account",
+          args: {user: employee.name, full_name: values.full_name, new_email: values.new_email, mobile: normalizeMobile(values.mobile), new_password: values.new_password || ""},
+          freeze: true,
+          freeze_message: tr("جاري تحديث الحساب...", "Updating account..."),
+          callback: (response) => {
+            if (!response.exc) {
+              dialog.hide();
+              frappe.show_alert({message: tr("تم تحديث حساب الموظف", "Employee account updated"), indicator: "green"});
+              load();
+            }
+          },
+        });
+      },
+    });
+    dialog.show();
+  }
+
   $root.on("change", "#wafd-employee-roles input", function () {
     $root.find(".wafd-driver-note").toggle(selectedCreateRoles().includes("WAFD Driver"));
   });
@@ -180,6 +215,10 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
   $root.on("click", ".wafd-change-role", function () {
     const employee = employees.find((item) => item.name === $(this).attr("data-user"));
     if (employee) changeRole(employee);
+  });
+  $root.on("click", ".wafd-edit-account", function () {
+    const employee = employees.find((item) => item.name === $(this).attr("data-user"));
+    if (employee) editAccount(employee);
   });
   $root.on("click", ".wafd-toggle-employee", function () {
     const user = $(this).attr("data-user");
@@ -197,6 +236,25 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     });
     if (enabled) run();
     else frappe.confirm(tr("سيتم إغلاق جلسات الموظف فورًا وإيقاف دخوله. هل تريد المتابعة؟", "The employee will be signed out immediately and their login disabled. Continue?"), run);
+  });
+  $root.on("click", ".wafd-delete-account", function () {
+    const user = $(this).attr("data-user");
+    frappe.confirm(
+      tr("هل تريد حذف هذا الحساب؟ إذا كان مرتبطاً بعمليات سابقة فسيتم أرشفته وإيقافه حفاظاً على السجلات.", "Delete this account? Accounts linked to prior operations will be archived and disabled to preserve records."),
+      () => frappe.call({
+        method: "wafd_one.employee_team.delete_employee_account",
+        args: {user},
+        freeze: true,
+        freeze_message: tr("جاري حذف الحساب...", "Deleting account..."),
+        callback: (response) => {
+          if (!response.exc) {
+            const archived = Boolean(response.message && response.message.archived);
+            frappe.show_alert({message: archived ? tr("تمت أرشفة الحساب وإيقافه لارتباطه بسجلات سابقة", "Account archived and disabled because it has historical records") : tr("تم حذف الحساب نهائياً", "Account permanently deleted"), indicator: archived ? "orange" : "green"}, 6);
+            load();
+          }
+        },
+      })
+    );
   });
   $root.on("click", "#wafd-add-employee", function () {
     const args = {

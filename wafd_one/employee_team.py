@@ -147,6 +147,47 @@ def _managed_role_rows(user_doc):
     return [row for row in user_doc.roles if row.role in MANAGED_ROLES]
 
 
+def _has_operational_links(user):
+    """Return True when deleting the User would damage an operational audit trail."""
+    link_fields = frappe.get_all(
+        "DocField",
+        filters={"fieldtype": "Link", "options": "User"},
+        fields=["parent", "fieldname"],
+        limit_page_length=5000,
+    )
+    link_fields += frappe.get_all(
+        "Custom Field",
+        filters={"fieldtype": "Link", "options": "User"},
+        fields=["dt as parent", "fieldname"],
+        limit_page_length=5000,
+    )
+    checked = set()
+    for row in link_fields:
+        key = (row.parent, row.fieldname)
+        if key in checked or row.parent == "User" or not frappe.db.table_exists(row.parent):
+            continue
+        checked.add(key)
+        if frappe.db.exists(row.parent, {row.fieldname: user}):
+            return True
+    return False
+
+
+def _archive_employee_account(user):
+    employee = frappe.get_doc("User", user)
+    managed_roles = set(MANAGED_ROLES)
+    employee.enabled = 0
+    employee.role_profile_name = None
+    employee.set("roles", [{"role": row.role} for row in employee.roles if row.role not in managed_roles])
+    employee.flags.ignore_permissions = True
+    employee.save()
+    _set_driver_status(user, "غير نشط / Inactive")
+    from frappe.sessions import clear_sessions
+
+    clear_sessions(user=user, keep_current=False, force=True)
+    frappe.clear_cache(user=user)
+    return {"user": user, "deleted": 0, "archived": 1}
+
+
 def _set_driver_status(user, status):
     if not frappe.db.exists("DocType", "WAFD Driver"):
         return
@@ -364,3 +405,71 @@ def set_employee_roles(user, roles=None, mobile=None):
         "roles": roles,
         "role_labels": [ROLE_LABELS[assigned_role] for assigned_role in roles],
     }
+
+
+@frappe.whitelist()
+def update_employee_account(user, full_name, new_email=None, mobile=None, new_password=None):
+    """Manager-only employee identity edit and optional secure password reset."""
+    _assert_manager()
+    _assert_manageable_user(user)
+    full_name = (full_name or "").strip()
+    if not full_name:
+        frappe.throw(_("Employee name is required."))
+    target_user = _normalize_email(new_email or user)
+    if target_user != user and frappe.db.exists("User", target_user):
+        frappe.throw(_("A user already exists with this email address."))
+    roles = _user_roles(user) & set(MANAGED_ROLES)
+    if not roles:
+        frappe.throw(_("This user is not a managed WAFD employee."))
+    mobile = _normalize_mobile(mobile, required=DRIVER_ROLE in roles)
+    password = new_password or ""
+    if password and len(password) < 8:
+        frappe.throw(_("New password must contain at least 8 characters."))
+
+    original_user = user
+    if target_user != user:
+        frappe.rename_doc("User", user, target_user, ignore_permissions=True, show_alert=False)
+        user = target_user
+    employee = frappe.get_doc("User", user)
+    employee.first_name = full_name
+    employee.last_name = ""
+    employee.email = user
+    employee.mobile_no = mobile
+    employee.flags.ignore_permissions = True
+    employee.save()
+    if DRIVER_ROLE in roles:
+        _ensure_driver_profile(user, full_name, mobile)
+    if password:
+        from frappe.utils.password import update_password
+
+        update_password(user, password, logout_all_sessions=True)
+    if original_user != user:
+        from frappe.sessions import clear_sessions
+
+        clear_sessions(user=original_user, keep_current=False, force=True)
+        clear_sessions(user=user, keep_current=False, force=True)
+    frappe.clear_cache(user=original_user)
+    frappe.clear_cache(user=user)
+    return {"old_user": original_user, "user": user, "email": user, "full_name": full_name,
+            "mobile_no": mobile, "password_changed": 1 if password else 0}
+
+
+@frappe.whitelist()
+def delete_employee_account(user):
+    """Delete unused test accounts; archive used accounts to preserve audit records."""
+    _assert_manager()
+    _assert_manageable_user(user)
+    roles = _user_roles(user) & set(MANAGED_ROLES)
+    if not roles:
+        frappe.throw(_("This user is not a managed WAFD employee."))
+    if _has_operational_links(user):
+        return _archive_employee_account(user)
+    from frappe.sessions import clear_sessions
+
+    clear_sessions(user=user, keep_current=False, force=True)
+    try:
+        frappe.delete_doc("User", user, ignore_permissions=True)
+    except frappe.LinkExistsError:
+        return _archive_employee_account(user)
+    frappe.clear_cache(user=user)
+    return {"user": user, "deleted": 1, "archived": 0}

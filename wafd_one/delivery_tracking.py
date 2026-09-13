@@ -10,6 +10,7 @@ from frappe.utils import add_days, cint, get_datetime, get_url, now_datetime
 
 
 ALLOWED_ROLES = {"System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"}
+MANAGER_ROLES = {"System Manager", "WAFD Operations Manager"}
 VIEWER_ROLE = "WAFD Delivery Viewer"
 
 
@@ -96,42 +97,51 @@ def revoke_tracking_share(share_name):
 
 @frappe.whitelist()
 def list_delivery_viewers():
-    """Return active employee accounts carrying the read-only delivery task."""
+    """Managers see all employees; supervisors see only approved delivery viewers."""
     _check_manager_access()
-    users = frappe.get_all(
-        "Has Role",
-        filters={"role": VIEWER_ROLE, "parenttype": "User"},
-        pluck="parent",
-    )
-    if not users:
-        return []
+    is_manager = bool(set(frappe.get_roles()) & MANAGER_ROLES)
+    approved_users = set(frappe.get_all(
+        "Has Role", filters={"role": VIEWER_ROLE, "parenttype": "User"}, pluck="parent"
+    ))
+    users = None
+    if not is_manager:
+        users = sorted(approved_users)
+        if not users:
+            return []
+    filters = {"enabled": 1, "user_type": "System User"}
+    if users is not None:
+        filters["name"] = ["in", sorted(set(users))]
     rows = frappe.get_all(
         "User",
-        filters={"name": ["in", sorted(set(users))], "enabled": 1, "user_type": "System User"},
+        filters=filters,
         fields=["name", "full_name", "email", "mobile_no"],
         order_by="full_name asc",
+        limit_page_length=1000,
     )
-    return [{**row, "display_name": row.full_name or row.email or row.name} for row in rows]
+    return [{**row, "display_name": row.full_name or row.email or row.name,
+             "has_viewer_task": row.name in approved_users} for row in rows]
 
 
-@frappe.whitelist()
-def assign_delivery_viewer(trip_name, viewer_user):
-    """Assign one delivery to an employee account without creating a public link."""
-    _check_manager_access()
-    trip_name = (trip_name or "").strip()
+def _prepare_viewer(viewer_user):
     viewer_user = (viewer_user or "").strip().lower()
-    if not frappe.db.exists("WAFD Delivery Trip", trip_name):
-        frappe.throw(_("رحلة التوصيل غير موجودة / Delivery trip not found"))
     user = frappe.db.get_value(
         "User", viewer_user, ["name", "full_name", "email", "mobile_no", "enabled", "user_type"], as_dict=True
     )
-    if not user or not user.enabled or user.user_type != "System User" or VIEWER_ROLE not in frappe.get_roles(user.name):
-        frappe.throw(_("اختر حساب مستفيد مفعلاً من إدارة الموظفين / Select an active beneficiary account from Employee Management"))
+    if not user or not user.enabled or user.user_type != "System User":
+        frappe.throw(_("اختر حساب موظف مفعلاً / Select an active employee account"))
+    roles = set(frappe.get_roles(user.name))
+    caller_is_manager = bool(set(frappe.get_roles()) & MANAGER_ROLES)
+    if VIEWER_ROLE not in roles:
+        if not caller_is_manager:
+            frappe.throw(_("اختر حساباً لديه مهمة متابعة بيانات التسليم / Select an approved delivery viewer account"))
+        account = frappe.get_doc("User", user.name)
+        account.add_roles(VIEWER_ROLE)
+    return user
 
+
+def _assign_one(trip_name, user):
     existing = frappe.db.get_value(
-        "WAFD Delivery Tracking Share",
-        {"delivery_trip": trip_name, "viewer_user": user.name},
-        "name",
+        "WAFD Delivery Tracking Share", {"delivery_trip": trip_name, "viewer_user": user.name}, "name"
     )
     values = {
         "viewer_name": user.full_name or user.email or user.name,
@@ -141,27 +151,88 @@ def assign_delivery_viewer(trip_name, viewer_user):
     }
     if existing:
         frappe.db.set_value("WAFD Delivery Tracking Share", existing, values)
-        return {"name": existing, "viewer_user": user.name, "created": 0}
-
+        return existing, 0
     doc = frappe.get_doc({
-        "doctype": "WAFD Delivery Tracking Share",
-        "delivery_trip": trip_name,
-        "viewer_user": user.name,
-        **values,
+        "doctype": "WAFD Delivery Tracking Share", "delivery_trip": trip_name,
+        "viewer_user": user.name, **values,
     }).insert(ignore_permissions=True)
-    return {"name": doc.name, "viewer_user": user.name, "created": 1}
+    return doc.name, 1
+
+
+@frappe.whitelist()
+def assign_delivery_viewer(trip_name, viewer_user):
+    """Assign a standalone trip or every trip belonging to the same schedule."""
+    _check_manager_access()
+    trip_name = (trip_name or "").strip()
+    if not frappe.db.exists("WAFD Delivery Trip", trip_name):
+        frappe.throw(_("رحلة التوصيل غير موجودة / Delivery trip not found"))
+    user = _prepare_viewer(viewer_user)
+    schedule_id = frappe.db.get_value("WAFD Delivery Trip", trip_name, "delivery_schedule_id")
+    trip_names = frappe.get_all(
+        "WAFD Delivery Trip", filters={"delivery_schedule_id": schedule_id}, pluck="name", limit_page_length=20000
+    ) if schedule_id else [trip_name]
+    created = 0
+    last_name = None
+    for current_trip in trip_names:
+        last_name, was_created = _assign_one(current_trip, user)
+        created += was_created
+    return {"name": last_name, "viewer_user": user.name, "created": created,
+            "delivery_schedule_id": schedule_id, "affected_trips": len(trip_names)}
+
+
+def assign_schedule_viewers(trip_names, viewer_users):
+    """Internal bulk assignment used when a recurring delivery table is created."""
+    assigned = 0
+    for viewer_user in dict.fromkeys(viewer_users or []):
+        user = _prepare_viewer(viewer_user)
+        for trip_name in trip_names:
+            _name, created = _assign_one(trip_name, user)
+            assigned += created
+    return assigned
+
+
+def inherit_schedule_viewers(trip_name):
+    """Copy viewers from an existing trip when a trip joins a saved schedule."""
+    schedule_id = frappe.db.get_value("WAFD Delivery Trip", trip_name, "delivery_schedule_id")
+    if not schedule_id:
+        return 0
+    sibling = frappe.db.get_value(
+        "WAFD Delivery Trip", {"delivery_schedule_id": schedule_id, "name": ["!=", trip_name]}, "name"
+    )
+    if not sibling:
+        return 0
+    viewers = frappe.get_all(
+        "WAFD Delivery Tracking Share",
+        filters={"delivery_trip": sibling, "viewer_user": ["is", "set"], "enabled": 1}, pluck="viewer_user"
+    )
+    assigned = 0
+    for viewer_user in viewers:
+        user = frappe.db.get_value(
+            "User", viewer_user, ["name", "full_name", "email", "mobile_no"], as_dict=True
+        )
+        if user:
+            _name, created = _assign_one(trip_name, user)
+            assigned += created
+    return assigned
 
 
 @frappe.whitelist()
 def get_trip_viewers(trip_name):
     _check_manager_access()
-    return frappe.get_all(
+    schedule_id = frappe.db.get_value("WAFD Delivery Trip", (trip_name or "").strip(), "delivery_schedule_id")
+    trip_names = frappe.get_all(
+        "WAFD Delivery Trip", filters={"delivery_schedule_id": schedule_id}, pluck="name", limit_page_length=20000
+    ) if schedule_id else [(trip_name or "").strip()]
+    rows = frappe.get_all(
         "WAFD Delivery Tracking Share",
-        filters={"delivery_trip": (trip_name or "").strip(), "viewer_user": ["is", "set"], "enabled": 1},
+        filters={"delivery_trip": ["in", trip_names], "viewer_user": ["is", "set"], "enabled": 1},
         fields=["name", "viewer_user", "viewer_name", "viewer_mobile"],
-        order_by="creation asc",
-        limit_page_length=100,
+        order_by="creation asc", limit_page_length=1000,
     )
+    unique = {}
+    for row in rows:
+        unique.setdefault(row.viewer_user, row)
+    return list(unique.values())
 
 
 @frappe.whitelist()
@@ -172,15 +243,31 @@ def remove_delivery_viewer(share_name):
     )
     if not row or not row.viewer_user:
         frappe.throw(_("تعيين المستفيد غير موجود / Beneficiary assignment not found"))
-    frappe.db.set_value("WAFD Delivery Tracking Share", row.name, "enabled", 0)
-    return {"name": row.name, "enabled": 0}
+    trip_name = frappe.db.get_value("WAFD Delivery Tracking Share", row.name, "delivery_trip")
+    schedule_id = frappe.db.get_value("WAFD Delivery Trip", trip_name, "delivery_schedule_id")
+    affected = 1
+    if schedule_id:
+        trip_names = frappe.get_all(
+            "WAFD Delivery Trip", filters={"delivery_schedule_id": schedule_id}, pluck="name", limit_page_length=20000
+        )
+        share_names = frappe.get_all(
+            "WAFD Delivery Tracking Share",
+            filters={"delivery_trip": ["in", trip_names], "viewer_user": row.viewer_user, "enabled": 1},
+            pluck="name", limit_page_length=20000,
+        )
+        for current_share in share_names:
+            frappe.db.set_value("WAFD Delivery Tracking Share", current_share, "enabled", 0)
+        affected = len(share_names)
+    else:
+        frappe.db.set_value("WAFD Delivery Tracking Share", row.name, "enabled", 0)
+    return {"name": row.name, "enabled": 0, "affected_trips": affected}
 
 
 def _delivery_data(trip_name):
     trip = frappe.db.get_value(
         "WAFD Delivery Trip",
         trip_name,
-        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "trip_date", "planned_arrival", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status"],
+        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "trip_date", "planned_arrival", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status", "delivery_schedule_id", "schedule_customer"],
         as_dict=True,
     )
     if not trip:
@@ -198,6 +285,8 @@ def _delivery_data(trip_name):
     proof = proof_rows[0] if proof_rows else None
     return {
         "name": trip.name,
+        "delivery_schedule_id": trip.delivery_schedule_id,
+        "schedule_customer": trip.schedule_customer,
         "destination_name": trip.destination_name or trip.destination_name_en or "—",
         "destination_name_en": trip.destination_name_en,
         "meal_type": trip.meal_type,
@@ -227,7 +316,7 @@ def get_my_delivery_tracking():
         filters={"viewer_user": frappe.session.user, "enabled": 1},
         fields=["name", "delivery_trip"],
         order_by="creation desc",
-        limit_page_length=500,
+        limit_page_length=5000,
     )
     rows = []
     for assignment in assignments:

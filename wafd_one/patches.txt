@@ -484,3 +484,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc279.execute
 
 # RC280 enforce departure before arrival for automatically delayed driver trips
 wafd_one.wafd_one.patches.v10_0_0_rc280.execute
+
+# RC281 assign beneficiaries once across a customer's complete multi-day delivery schedule
+wafd_one.wafd_one.patches.v10_0_0_rc281.execute
+
+# RC282 simplify delivery-supervisor screens and add safe manager account maintenance
+wafd_one.wafd_one.patches.v10_0_0_rc282.execute

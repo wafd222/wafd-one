@@ -59,6 +59,13 @@ class WAFDDeliveryTrip(Document):
         if self.status == "تم التسليم / Delivered" and not frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
             frappe.throw("لا يمكن اعتماد الرحلة مسلمة دون إثبات تسليم / Delivery proof is required")
 
+    def after_insert(self):
+        """New trips added to an existing schedule inherit its tracking viewers."""
+        if self.delivery_schedule_id:
+            from wafd_one.delivery_tracking import inherit_schedule_viewers
+
+            inherit_schedule_viewers(self.name)
+
     def _validate_loading_trip(self):
         loading = frappe.db.get_value("WAFD Loading Record", self.loading_record,
             ["project", "meal_plan", "vehicle", "driver", "hotel", "quantity", "status", "dispatch_time", "loading_date"], as_dict=True)

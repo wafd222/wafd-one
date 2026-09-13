@@ -490,3 +490,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc281.execute
 
 # RC282 simplify delivery-supervisor screens and add safe manager account maintenance
 wafd_one.wafd_one.patches.v10_0_0_rc282.execute
+
+# RC283 fix RTL mobile dates and reviewed Arabic hotel spellings
+wafd_one.wafd_one.patches.v10_0_0_rc283.execute

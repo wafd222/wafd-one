@@ -505,3 +505,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc286.execute
 
 # RC287 sequential driver queue and auditable trip/schedule management
 wafd_one.wafd_one.patches.v10_0_0_rc287.execute
+
+# RC288 searchable hotel reports and isolated supervisor report shell
+wafd_one.wafd_one.patches.v10_0_0_rc288.execute

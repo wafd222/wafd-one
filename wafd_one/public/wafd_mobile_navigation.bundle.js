@@ -14,6 +14,8 @@
   const CLEANING_CLASS = "wafd-at-cleaning-home";
   const VIEWER_ROUTE = "wafd-delivery-viewer";
   const VIEWER_CLASS = "wafd-at-delivery-viewer";
+  const DELIVERY_REPORT_ROUTE = "wafd-delivery-report";
+  const DELIVERY_REPORT_CLASS = "wafd-at-delivery-report";
   const LOADING_CLASS = "wafd-at-loading-record";
   const FIELD_APPBAR_ID = "wafd-field-appbar-rc278";
   const FIELD_ROLES = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
@@ -142,6 +144,19 @@
     if (routeName) return routeName === VIEWER_ROUTE;
     const path = String(window.location.pathname || "").replace(/\/$/, "");
     return path === "/desk/wafd-delivery-viewer" || path === "/app/wafd-delivery-viewer";
+  }
+
+  function isDeliveryReport() {
+    const routeName = currentRouteName();
+    if (routeName) return routeName === DELIVERY_REPORT_ROUTE;
+    return pathIsRoute(DELIVERY_REPORT_ROUTE);
+  }
+
+  function isDeliverySupervisorShell() {
+    const roles = new Set(window.frappe?.user_roles || []);
+    return roles.has("WAFD Delivery Supervisor")
+      && !roles.has("System Manager")
+      && !roles.has("WAFD Operations Manager");
   }
 
   function isLoadingRecordForm() {
@@ -310,15 +325,18 @@
     const driverTrips = isDriverTrips();
     const cleaningHome = isCleaningHome();
     const deliveryViewer = isDeliveryViewer();
+    const deliveryReport = isDeliveryReport();
+    const deliveryReportShell = deliveryReport && isDeliverySupervisorShell();
     const loadingRecord = isLoadingRecordForm();
     syncHomeState(home);
     document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
     document.body.classList.toggle(DRIVER_CLASS, driverTrips);
     document.body.classList.toggle(CLEANING_CLASS, cleaningHome);
     document.body.classList.toggle(VIEWER_CLASS, deliveryViewer);
+    document.body.classList.toggle(DELIVERY_REPORT_CLASS, deliveryReportShell);
     document.body.classList.toggle(LOADING_CLASS, loadingRecord);
-    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer);
-    syncFieldAppbar(driverTrips || cleaningHome);
+    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer || deliveryReportShell);
+    syncFieldAppbar(driverTrips || cleaningHome || deliveryReportShell);
 
     let btn = document.getElementById(ID);
     if (!isMobile() || home || employeeTeam || driverTrips || cleaningHome || deliveryViewer || loadingRecord || hasOpenModal()) {

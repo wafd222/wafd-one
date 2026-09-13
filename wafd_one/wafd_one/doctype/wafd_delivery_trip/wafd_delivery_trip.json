@@ -14,6 +14,7 @@
   "iftar_link_type",
   "delivery_schedule_id",
   "schedule_customer",
+  "contracting_entity",
   "loading_record",
   "trip_source",
   "delivery_kind",
@@ -30,6 +31,8 @@
   "assigned_driver_user",
   "hotel",
   "quantity",
+  "safandash_count",
+  "hot_cabinet_count",
   "planned_departure",
   "driver_accepted_on",
   "actual_departure",
@@ -103,6 +106,12 @@
    "fieldtype": "Data",
    "label": "العميل / Customer",
    "read_only": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "contracting_entity",
+   "fieldtype": "Data",
+   "label": "اسم الشركة أو البعثة أو الجهة / Contracting Company, Mission or Entity",
    "in_list_view": 0
   },
   {
@@ -210,6 +219,18 @@
    "fieldtype": "Int",
    "label": "الكمية / Quantity",
    "reqd": 0,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "safandash_count",
+   "fieldtype": "Int",
+   "label": "عدد السفندشات (اختياري) / Safandash Count (Optional)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "hot_cabinet_count",
+   "fieldtype": "Int",
+   "label": "عدد السخانات Hot Cabinet (اختياري) / Hot Cabinet Count (Optional)",
    "non_negative": 1
   },
   {

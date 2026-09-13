@@ -110,6 +110,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "الوقت والموقع وصورة إثبات كل تسليم":{en:"Time, location, and photo for every delivery"},
     "المواقع والفنادق":{en:"Locations and Hotels"},
     "إضافة فندق أو مسجد أو موقع إفطار صائم":{en:"Add a hotel, mosque, or Iftar site"},
+    "تقارير التوصيل":{en:"Delivery Reports"},
+    "PDF كامل المدة أو حسب الشركة أو الفندق":{en:"PDF for the full period, by company, or by hotel"},
     "سجلات التحميل":{en:"Loading Records",id:"Catatan Pemuatan",ur:"لوڈنگ ریکارڈز",hi:"लोडिंग रिकॉर्ड",bn:"লোডিং রেকর্ড",fr:"Registres de chargement",ha:"Bayanan Lodi",sw:"Rekodi za Upakiaji",uz:"Yuklash yozuvlari"},
     "سندات التسليم":{en:"Delivery Notes",id:"Surat Pengiriman",ur:"ڈیلیوری نوٹس",hi:"डिलीवरी नोट",bn:"ডেলিভারি নোট",fr:"Bons de livraison",ha:"Takardar Isarwa",sw:"Hati za Uwasilishaji",uz:"Yetkazib berish hujjatlari"},
     "سندات الاستلام":{en:"Receiving Notes",id:"Bukti Penerimaan",ur:"وصولی نوٹس",hi:"प्राप्ति नोट",bn:"রিসিভিং নোট",fr:"Bons de réception",ha:"Takardar Karɓa",sw:"Hati za Kupokea",uz:"Qabul hujjatlari"},
@@ -156,6 +158,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التشغيل", desc: "المشاريع والخطط والإنتاج", icon: "⚙", page: "wafd-operations-hub" },
         { label: "المخزون والمشتريات", desc: "المواد والحركات والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
+        { label: "تقارير التوصيل", desc: "PDF كامل المدة أو حسب الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" },
         { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
@@ -172,6 +175,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "التشغيل", desc: "المشاريع والخطط والإنتاج", icon: "⚙", page: "wafd-operations-hub" },
         { label: "المخزون والمشتريات", desc: "المواد والحركات والمشتريات", icon: "▣", page: "wafd-inventory-hub" },
         { label: "التوصيل", desc: "التحميل والرحلات والتسليم", icon: "➜", page: "wafd-delivery-hub" },
+        { label: "تقارير التوصيل", desc: "PDF كامل المدة أو حسب الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" },
         { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
         { label: "إفطار صائم", desc: "المشاريع الموسمية والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
@@ -229,7 +233,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "خطة التوصيل والمواقع والسائقون",
       items: [
         { label: "إدارة التوصيل", desc: "إنشاء الرحلات والجداول ومتابعة التسليم", icon: "➜", page: "wafd-delivery-supervisor", primary: true },
-        { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" }
+        { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" },
+        { label: "تقارير التوصيل", desc: "PDF كامل المدة أو حسب الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" }
       ]
     },
     {

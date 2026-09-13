@@ -34,6 +34,7 @@ frappe.pages["wafd-one-dashboard"].on_page_load = function (wrapper) {
         <button class="wafd-action" data-list="WAFD Hotel Undertaking"><b>▤</b><span>تعهدات الفنادق</span><small>عرض وطباعة التعهدات</small></button>
         <button class="wafd-action" data-list="WAFD Invoice"><b>ر.س</b><span>الفواتير</span><small>المستحقات وحالة الفوترة</small></button>
         <button class="wafd-action" data-list="WAFD Payment"><b>✓</b><span>التحصيلات</span><small>الدفعات والأرصدة</small></button>
+        <button class="wafd-action" data-route="wafd-delivery-report"><b>▤</b><span>تقارير التوصيل</span><small>PDF كامل المدة أو حسب الشركة أو الفندق</small></button>
       </section>
 
       <section class="wafd-section-head wafd-hub-section-head"><div><span>أقسام النظام</span><small>وصول سريع من نفس لوحة القيادة — التفاصيل تظهر عند فتح القسم فقط</small></div></section>

@@ -52,6 +52,7 @@ def _trip_rows():
             "driver", "vehicle", "status", "delay_minutes", "creation", "project", "contract",
             "iftar_project", "iftar_daily_operation", "iftar_link_type",
             "delivery_schedule_id", "schedule_customer",
+            "contracting_entity", "safandash_count", "hot_cabinet_count",
         ],
         order_by="trip_date desc, planned_arrival desc, creation desc",
         limit_page_length=300,
@@ -227,7 +228,8 @@ def _iftar_operation(iftar_project, delivery_date):
 @frappe.whitelist()
 def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", vehicle=None,
                                contract=None, destination_type=None, destination=None,
-                               quantity=0, notes=None):
+                               quantity=0, notes=None, contracting_entity=None,
+                               safandash_count=0, hot_cabinet_count=0):
     """Create either a contract-linked or explicitly standalone Iftar delivery."""
     _check_access()
     try:
@@ -251,13 +253,16 @@ def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", veh
         "vehicle": (vehicle or "").strip() or None,
         "status": "مخططة / Planned",
         "notes": (notes or "").strip(),
+        "contracting_entity": (contracting_entity or "").strip() or None,
+        "safandash_count": max(cint(safandash_count), 0),
+        "hot_cabinet_count": max(cint(hot_cabinet_count), 0),
     }
 
     if contract:
         contract_row = frappe.db.get_value(
             "WAFD Contract", contract,
             ["name", "status", "project", "project_type", "contract_type", "first_meal", "last_meal",
-             "start_date", "end_date", "beneficiary_count", "delivery_location", "hotel"], as_dict=True,
+             "start_date", "end_date", "beneficiary_count", "delivery_location", "hotel", "mission", "contract_title"], as_dict=True,
         )
         if not contract_row or contract_row.status in ("منتهي / Expired", "ملغي / Cancelled") or not _is_iftar_contract(contract_row):
             frappe.throw(_("اختر عقد إفطار صائم صالحاً / Select a valid Iftar contract"))
@@ -276,6 +281,7 @@ def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", veh
             "quantity": cint(quantity) or cint(
                 frappe.db.get_value("WAFD Iftar Project", iftar_project, "daily_meals") if iftar_project else 0
             ) or cint(contract_row.beneficiary_count),
+            "contracting_entity": (contracting_entity or contract_row.mission or contract_row.contract_title or "").strip() or None,
         })
         if contract_row.hotel:
             values["hotel"] = contract_row.hotel
@@ -345,6 +351,9 @@ def create_delivery_tasks(delivery_date, tasks):
             "notes": (row.get("notes") or "").strip(),
             "delivery_schedule_id": (row.get("delivery_schedule_id") or "").strip() or None,
             "schedule_customer": (row.get("schedule_customer") or "").strip() or None,
+            "contracting_entity": (row.get("contracting_entity") or row.get("schedule_customer") or "").strip() or None,
+            "safandash_count": max(cint(row.get("safandash_count")), 0),
+            "hot_cabinet_count": max(cint(row.get("hot_cabinet_count")), 0),
         }
         if values.get("meal_type") == "إفطار صائم / Iftar Saim":
             values["iftar_link_type"] = "بدون عقد / No Contract"
@@ -404,7 +413,12 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type=None,
             frappe.throw(_("اختر الفنادق أو الجهات / Choose hotels or destinations"))
         key = (kind, name)
         if key not in seen_destinations:
-            cleaned_destinations.append({"destination_type": kind, "destination": name})
+            cleaned_destinations.append({
+                "destination_type": kind,
+                "destination": name,
+                "safandash_count": max(cint(row.get("safandash_count")), 0),
+                "hot_cabinet_count": max(cint(row.get("hot_cabinet_count")), 0),
+            })
             seen_destinations.add(key)
     if not cleaned_destinations or not driver:
         frappe.throw(_("اختر وجهة واحدة على الأقل والسائق / Choose at least one destination and the driver"))
@@ -440,6 +454,9 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type=None,
                     "quantity": meal["quantity"],
                     "delivery_schedule_id": schedule_id,
                     "schedule_customer": customer_name,
+                    "contracting_entity": customer_name,
+                    "safandash_count": destination_row["safandash_count"],
+                    "hot_cabinet_count": destination_row["hot_cabinet_count"],
                 }])
                 created.extend(result["created"])
         service_date = getdate(add_days(service_date, 1))
@@ -581,7 +598,8 @@ def remove_delivery_destination(destination_type, name):
 
 
 @frappe.whitelist()
-def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver, vehicle=None, quantity=0):
+def update_planned_trip(trip_name, delivery_date, delivery_time, destination_type, destination, meal_type, driver, vehicle=None, quantity=0,
+                        contracting_entity=None, safandash_count=0, hot_cabinet_count=0):
     _check_access()
     trip = frappe.get_doc("WAFD Delivery Trip", trip_name)
     if trip.trip_source != "خطة مشرف التوصيل / Delivery Supervisor Plan" or trip.status != "مخططة / Planned":
@@ -604,6 +622,9 @@ def update_planned_trip(trip_name, delivery_date, delivery_time, destination_typ
     trip.destination_latitude = trip.destination_longitude = None
     trip.meal_type, trip.driver = meal_type, (driver or "").strip()
     trip.vehicle, trip.quantity = (vehicle or "").strip() or None, max(cint(quantity), 0)
+    trip.contracting_entity = (contracting_entity or "").strip() or None
+    trip.safandash_count = max(cint(safandash_count), 0)
+    trip.hot_cabinet_count = max(cint(hot_cabinet_count), 0)
     trip.save(ignore_permissions=True)
     return {"name": trip.name, "updated": True}
 

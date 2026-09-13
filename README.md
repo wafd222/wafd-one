@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC283
+# WAFD ONE 10.0.0 RC284
 
-**Current release: 10.0.0 RC283 — Mobile Dates & Reviewed Arabic Hotel Names**
+**Current release: 10.0.0 RC284 — Delivery Equipment & Official PDF Reports**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

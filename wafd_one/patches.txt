@@ -511,3 +511,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc288.execute
 
 # RC289 isolate the delivery supervisor management screen on mobile
 wafd_one.wafd_one.patches.v10_0_0_rc289.execute
+
+# RC290 safe mobile toolbar and fit-to-width A4 delivery report preview
+wafd_one.wafd_one.patches.v10_0_0_rc290.execute

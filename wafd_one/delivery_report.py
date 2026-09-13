@@ -113,13 +113,24 @@ def _report_html(report_mode="all", company=None, hotel=None, from_date=None, to
         <td><b>{_safe(delivered)}</b><small>المستلم: {_safe(receiver)}</small></td></tr>""")
     if not body:
         body.append("<tr><td colspan='6' class='empty'>لا توجد عمليات مطابقة للفلاتر المحددة</td></tr>")
-    return f"""<!doctype html><html lang='ar' dir='rtl'><head><meta charset='utf-8'><style>
+    return f"""<!doctype html><html lang='ar' dir='rtl'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1'><style>
 @page{{size:A4 portrait;margin:8mm 14mm}}html,body{{margin:0;padding:0;background:#fff}}body{{font-family:Tahoma,Arial,sans-serif;color:#111;font-size:10px;line-height:1.55}}.sheet{{direction:rtl;box-sizing:border-box;padding:0 1mm}}.head{{display:table;width:100%;table-layout:fixed;border-bottom:1px solid #b88a2a;padding-bottom:3mm;margin-bottom:4mm}}.head>div{{display:table-cell;vertical-align:middle}}.head-left{{width:34%;text-align:left;font-size:8.8px;color:#555}}.head-center{{width:48%;text-align:center}}.head-center b{{font-size:15px}}.head-center span{{font-size:8.8px;color:#666}}.head-right{{width:18%;text-align:right}}.logo{{width:24mm;height:25mm;object-fit:contain}}h1{{text-align:center;font-size:16px;text-decoration:underline;margin:2mm 0 4mm}}.details,.summary,.report{{width:100%;border-collapse:collapse}}.details{{margin:3mm 0;font-size:9.7px}}.details td{{border:1px solid #bbb;padding:2.2mm;vertical-align:top}}.summary{{margin:3mm 0}}.summary td{{border:1px solid #d7c9aa;text-align:center;padding:2mm}}.summary b{{display:block;font-size:14px;color:#8b681b}}.summary small,.report small{{display:block;color:#666;margin-top:1mm}}.report{{table-layout:fixed;font-size:8.2px}}.report th{{background:#1d1f22;color:#fff;padding:2mm 1mm;border:1px solid #444}}.report td{{border:1px solid #ccc;padding:2mm 1.3mm;vertical-align:top;overflow-wrap:anywhere}}.report th:nth-child(1){{width:4%}}.report th:nth-child(2){{width:11%}}.report th:nth-child(3){{width:27%}}.report th:nth-child(4){{width:22%}}.report th:nth-child(5){{width:16%}}.report th:nth-child(6){{width:20%}}thead{{display:table-header-group}}tr{{page-break-inside:avoid}}.empty{{text-align:center;padding:15mm!important;color:#777}}.footer{{border-top:1px solid #b88a2a;margin-top:5mm;padding-top:2mm;text-align:center;font-size:8px;color:#666}}
 </style></head><body><div class='sheet'><div class='head'><div class='head-left'><div>المدينة المنورة — حي الملك فهد</div><div dir='ltr'>0500336989</div><div dir='ltr'>wafd.almadinah@gmail.com</div></div><div class='head-center'><b>شركة وفد المدينة لخدمات الإعاشة</b><br><span>WAFD AL-MADINAH CATERING SERVICES</span></div><div class='head-right'><img class='logo' src='/assets/wafd_one/images/wafd-almadinah-official.png'></div></div><h1>تقرير تنفيذ وتسليم الوجبات</h1>
 <table class='details'><tr><td><b>نطاق التقرير</b><br>{_safe(scope)}</td><td><b>الفترة</b><br><span dir='ltr'>{_safe(_period(from_date,to_date))}</span></td></tr><tr><td><b>تاريخ الإصدار</b><br><span dir='ltr'>{formatdate(nowdate(),'dd-MM-yyyy')}</span></td><td><b>السجل التجاري</b><br>7051832694</td></tr></table>
 <table class='summary'><tr><td><b>{totals['trips']}</b><small>إجمالي الرحلات</small></td><td><b>{totals['delivered']}</b><small>التسليمات الموثقة</small></td><td><b>{totals['meals']}</b><small>الوجبات</small></td><td><b>{totals['safandash']}</b><small>السفندشات</small></td><td><b>{totals['heaters']}</b><small>السخانات</small></td></tr></table>
 <table class='report'><thead><tr><th>م</th><th>التاريخ</th><th>الشركة أو البعثة<br>الفندق أو الجهة</th><th>الوجبة والكميات</th><th>السائق والمركبة</th><th>التسليم والمستلم</th></tr></thead><tbody>{''.join(body)}</tbody></table>
 <div class='footer'>شركة وفد المدينة لخدمات الإعاشة — WAFD ONE</div></div></body></html>"""
+
+
+@frappe.whitelist()
+def preview_delivery_report_html(report_mode="all", company=None, hotel=None, from_date=None, to_date=None):
+    """Serve same-origin HTML so the mobile preview can fit A4 to the screen."""
+    _check_access()
+    frappe.local.response.filename = "wafd-delivery-report-preview.html"
+    frappe.local.response.filecontent = _report_html(report_mode, company, hotel, from_date, to_date)
+    frappe.local.response.type = "download"
+    frappe.local.response.content_type = "text/html; charset=utf-8"
+    frappe.local.response.display_content_as = "inline"
 
 
 @frappe.whitelist()

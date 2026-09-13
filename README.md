@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC289
+# WAFD ONE 10.0.0 RC290
 
-**Current release: 10.0.0 RC289 — Complete Delivery Supervisor Mobile Isolation**
+**Current release: 10.0.0 RC290 — Mobile Delivery Report Preview Fit**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

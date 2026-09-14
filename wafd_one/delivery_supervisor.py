@@ -17,6 +17,7 @@ MEAL_TIMES = {
     "عشاء / Dinner": "17:00",
     "إفطار صائم / Iftar Saim": "12:00",
 }
+DELIVERY_BOARD_LIMIT = 10000
 
 
 def _check_access():
@@ -53,7 +54,7 @@ def _active_drivers():
         filters={"status": ["not in", ["إجازة / Leave", "غير نشط / Inactive"]]},
         fields=["name", "driver_name", "system_user", "mobile", "status"],
         order_by="driver_name asc",
-        limit_page_length=300,
+        limit_page_length=DELIVERY_BOARD_LIMIT,
     )
     user_names = [row.system_user for row in rows if row.system_user]
     user_map = {
@@ -79,7 +80,7 @@ def _trip_rows():
             "safandash_count", "hot_cabinet_count",
         ],
         order_by="trip_date desc, planned_arrival desc, creation desc",
-        limit_page_length=300,
+        limit_page_length=DELIVERY_BOARD_LIMIT,
     )
     proofs = frappe.get_all(
         "WAFD Delivery Proof",
@@ -89,13 +90,27 @@ def _trip_rows():
             "received_quantity", "status", "latitude", "longitude", "notes",
             "delivery_photo_uploaded_by", "delivery_photo_uploaded_on",
         ],
-        limit_page_length=300,
+        limit_page_length=DELIVERY_BOARD_LIMIT,
     ) if rows else []
     proof_map = {row.delivery_trip: row for row in proofs}
     for row in rows:
         row["proof"] = proof_map.get(row.name)
         row["display_status"] = "تم التسليم / Delivered" if row.proof else row.status
     return rows
+
+
+def _split_delivery_board(trips):
+    """Keep the active board and delivery log mutually exclusive.
+
+    A saved delivery proof is the authoritative completion signal. This keeps
+    every missed delivery on the current board, regardless of its date, while
+    moving documented deliveries to the log immediately.
+    """
+    current = []
+    delivered = []
+    for row in trips:
+        (delivered if row.get("proof") else current).append(row)
+    return current, delivered
 
 
 def _is_iftar_contract(row):
@@ -178,8 +193,7 @@ def get_delivery_board():
         limit_page_length=500,
     )
     trips = _trip_rows()
-    current = [row for row in trips if not row.proof]
-    delivered = [row for row in trips if row.proof]
+    current, delivered = _split_delivery_board(trips)
     return {
         "today": nowdate(),
         "meal_times": MEAL_TIMES,

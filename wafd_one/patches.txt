@@ -514,3 +514,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc289.execute
 
 # RC290 safe mobile toolbar and fit-to-width A4 delivery report preview
 wafd_one.wafd_one.patches.v10_0_0_rc290.execute
+
+# RC291 one shared departure timestamp per driver vehicle meal run
+wafd_one.wafd_one.patches.v10_0_0_rc291.execute
+
+# RC292 automatic driver day rollover and supervisor delivery-log transfer
+wafd_one.wafd_one.patches.v10_0_0_rc292.execute

@@ -44,6 +44,7 @@ QUICK_NOTES_AR = {
 }
 SEQUENCE_GRACE_HOURS = 2
 LOCKED_PREVIEW_COUNT = 2
+DRIVER_QUEUE_LIMIT = 10000
 
 
 def _roles(user=None):
@@ -137,14 +138,14 @@ def _driver_queue(user):
         filters={"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
         fields=["name", "trip_date", "planned_arrival", "driver", "assigned_driver_user"],
         order_by="planned_arrival asc, creation asc",
-        limit_page_length=2000,
+        limit_page_length=DRIVER_QUEUE_LIMIT,
     )
     rows = trips_for_user(rows, user)
     proofs = set(frappe.get_all(
         "WAFD Delivery Proof",
         filters={"delivery_trip": ["in", [row.name for row in rows]]},
         pluck="delivery_trip",
-        limit_page_length=2000,
+        limit_page_length=DRIVER_QUEUE_LIMIT,
     )) if rows else set()
     return rows, proofs, _sequence_metadata(rows, proofs)
 
@@ -158,6 +159,110 @@ def _assert_sequence_actionable(trip):
         frappe.throw(_("تم توثيق هذه الرحلة مسبقاً."))
     if not state.get("sequence_actionable"):
         frappe.throw(_("هذه الرحلة مقفلة. وثّق الرحلة السابقة أولاً، أو انتظر مرور ساعتين من وقتها المخطط."))
+
+
+def _same_delivery_run_rows(trip):
+    """Return one vehicle departure run for a driver, date and meal.
+
+    A vehicle leaves once for all destinations of the same meal run. Destination
+    arrival and proof remain separate, while their departure timestamp is shared.
+    """
+    filters = {
+        "trip_date": trip.trip_date,
+        "driver": trip.driver,
+        "meal_type": trip.meal_type,
+        "status": ["!=", "ملغية / Cancelled"],
+        "archived_from_board": 0,
+    }
+    filters["vehicle"] = trip.vehicle if trip.vehicle else ["is", "not set"]
+    rows = frappe.get_all(
+        "WAFD Delivery Trip",
+        filters=filters,
+        fields=[
+            "name", "status", "actual_departure", "driver_accepted_on",
+            "planned_arrival", "loading_record", "driver", "assigned_driver_user",
+        ],
+        order_by="planned_arrival asc, creation asc",
+        limit_page_length=1000,
+    )
+    if _roles() & DELIVERY_OPERATOR_ROLES:
+        return rows
+    user = frappe.session.user
+    return [
+        row for row in rows
+        if trip_is_assigned_to_user(row.driver, row.assigned_driver_user, user)
+    ]
+
+
+def _start_delivery_run(trip):
+    """Start every destination on the same vehicle meal run at one timestamp."""
+    rows = _same_delivery_run_rows(trip)
+    if not rows:
+        rows = [trip]
+
+    existing_times = []
+    for row in rows:
+        for value in (row.actual_departure, row.driver_accepted_on):
+            if value:
+                existing_times.append(get_datetime(value))
+    departure_time = min(existing_times) if existing_times else now_datetime()
+
+    startable_statuses = {
+        "مخططة / Planned", "تم التحميل / Loaded", "متأخرة / Delayed",
+    }
+    startable = [row for row in rows if row.status in startable_statuses]
+
+    missing_loading_photos = []
+    for row in startable:
+        if row.loading_record and not frappe.db.get_value(
+            "WAFD Loading Record", row.loading_record, "loading_photo"
+        ):
+            missing_loading_photos.append(row.name)
+    if missing_loading_photos:
+        frappe.throw(_("لا يمكن بدء جولة التوصيل قبل توثيق صور التحميل لجميع رحلاتها."))
+
+    updated_names = []
+    for row in startable:
+        delay_minutes = 0
+        on_time_status = "غير محدد / Not Set"
+        if row.planned_arrival:
+            delay_minutes = max(int(
+                (departure_time - get_datetime(row.planned_arrival)).total_seconds() // 60
+            ), 0)
+            on_time_status = "متأخر / Delayed" if delay_minutes else "في الوقت / On Time"
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            row.name,
+            {
+                "driver_accepted_on": departure_time,
+                "actual_departure": departure_time,
+                "status": "في الطريق / In Transit",
+                "delay_minutes": delay_minutes,
+                "on_time_status": on_time_status,
+                "transit_duration_minutes": 0,
+            },
+        )
+        if row.loading_record:
+            frappe.db.set_value(
+                "WAFD Loading Record",
+                row.loading_record,
+                {"status": "خرجت / Dispatched", "dispatch_time": departure_time},
+                update_modified=False,
+            )
+        frappe.get_doc("WAFD Delivery Trip", row.name).notify_update()
+        updated_names.append(row.name)
+
+    if trip.vehicle and frappe.db.exists("WAFD Vehicle", trip.vehicle):
+        frappe.db.set_value(
+            "WAFD Vehicle", trip.vehicle, "status", "في مهمة / On Trip",
+            update_modified=False,
+        )
+    if trip.driver and frappe.db.exists("WAFD Driver", trip.driver):
+        frappe.db.set_value(
+            "WAFD Driver", trip.driver, "status", "في مهمة / On Trip",
+            update_modified=False,
+        )
+    return departure_time, updated_names
 
 
 def _decode_image(data_url):
@@ -274,7 +379,7 @@ def list_my_trips():
         # Managers see the operational window directly. Drivers are filtered
         # immediately below before any response is built, so no other driver's
         # row can leave the server.
-        limit_page_length=1000 if not is_manager else 100,
+        limit_page_length=DRIVER_QUEUE_LIMIT if not is_manager else 100,
     )
     if not is_manager:
         trips = trips_for_user(trips, frappe.session.user)
@@ -290,6 +395,7 @@ def list_my_trips():
                 "hot_cabinet_count", "hot_cabinet_sandwich_total", "temperature_at_loading",
                 "loading_photo_uploaded_by", "loading_photo_uploaded_on",
             ],
+            limit_page_length=DRIVER_QUEUE_LIMIT,
         )
     } if loading_names else {}
     proof_rows = frappe.get_all(
@@ -302,6 +408,7 @@ def list_my_trips():
             "delivery_photo_uploaded_by", "delivery_photo_uploaded_on",
             "latitude", "longitude",
         ],
+        limit_page_length=DRIVER_QUEUE_LIMIT,
     ) if trips else []
     proof_map = {row.delivery_trip: row for row in proof_rows}
     sequence = {}
@@ -391,13 +498,14 @@ def set_my_trip_status(trip_name, action):
     if trip.status not in allowed_from:
         frappe.throw(_("حالة الرحلة الحالية لا تسمح بهذا الإجراء."))
     if action == "start":
-        if trip.loading_record:
-            loading_photo = frappe.db.get_value("WAFD Loading Record", trip.loading_record, "loading_photo")
-            if not loading_photo:
-                frappe.throw(_("لا يمكن بدء الرحلة قبل توثيق صورة التحميل."))
-        accepted_on = trip.driver_accepted_on or now_datetime()
-        trip.driver_accepted_on = accepted_on
-        trip.actual_departure = trip.actual_departure or accepted_on
+        departure_time, updated_names = _start_delivery_run(trip)
+        return {
+            "name": trip.name,
+            "status": "في الطريق / In Transit",
+            "departure_time": departure_time,
+            "started_trip_names": updated_names,
+            "started_count": len(updated_names),
+        }
     if action == "arrive":
         if not trip.actual_departure:
             frappe.throw(_("ابدأ الرحلة أولاً قبل تسجيل الوصول / Start the trip before marking arrival."))

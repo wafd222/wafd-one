@@ -63,12 +63,12 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     dinner:{ar:"عشاء",en:"Dinner",id:"Makan malam",ur:"رات کا کھانا",hi:"रात का भोजन",bn:"রাতের খাবার",fr:"Dîner",ha:"Abincin dare",sw:"Chakula cha jioni",uz:"Kechki ovqat"},
     iftar_saim:{ar:"إفطار صائم",en:"Iftar meal",id:"Makanan berbuka",ur:"افطار کا کھانا",hi:"इफ़्तार भोजन",bn:"ইফতার খাবার",fr:"Repas d’iftar",ha:"Abincin buɗa baki",sw:"Chakula cha futari",uz:"Iftor taomi"},
     optional:{ar:"غير محدد",en:"Not specified",id:"Tidak ditentukan",ur:"متعین نہیں",hi:"निर्दिष्ट नहीं",bn:"নির্দিষ্ট নয়",fr:"Non précisé",ha:"Ba a ƙayyade ba",sw:"Haijabainishwa",uz:"Ko‘rsatilmagan"},
-    next_delivery:{ar:"التوصيل التالي",en:"Next delivery"},
+    current_round:{ar:"فنادق الجولة الحالية — اختر أي فندق حسب مسارك",en:"Current meal run — choose any destination along your route"},
     missed_delivery:{ar:"لم يتم توثيق هذه الرحلة في وقتها",en:"This delivery was not documented on time"},
     missed_help:{ar:"يمكنك توثيقها الآن، وقد فُتحت المرحلة التالية بعد مرور ساعتين.",en:"You can document it now; the next stage opened after two hours."},
-    locked_delivery:{ar:"رحلة قادمة مقفلة",en:"Upcoming delivery locked"},
-    locked_help:{ar:"تُفتح بعد توثيق الرحلة السابقة أو بعد مرور ساعتين من وقتها المخطط.",en:"It opens after the previous delivery is documented or its two-hour grace period ends."},
-    more_upcoming:{ar:"رحلات قادمة أخرى مخفية حتى يحين ترتيبها",en:"More upcoming deliveries are hidden until their turn"},
+    locked_delivery:{ar:"جولة وجبة قادمة مقفلة",en:"Upcoming meal run locked"},
+    locked_help:{ar:"تُفتح بعد توثيق جميع فنادق الوجبة الحالية أو بعد انتهاء مهلة الساعتين.",en:"It opens after every destination in the current meal run is documented or its two-hour grace period ends."},
+    more_upcoming:{ar:"جولات وجبات قادمة أخرى مخفية حتى يحين وقتها",en:"More upcoming meal runs are hidden until their turn"},
     actual_location:{ar:"يُحفظ موقعك تلقائياً مع صورة التسليم",en:"Your location is saved automatically with the delivery photo",id:"Lokasi Anda disimpan otomatis bersama foto",ur:"آپ کا مقام تصویر کے ساتھ خودکار محفوظ ہوگا",hi:"आपका स्थान फ़ोटो के साथ अपने आप सहेजा जाएगा",bn:"আপনার অবস্থান ছবির সাথে স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে",fr:"Votre position est enregistrée avec la photo",ha:"Za a ajiye wurinka tare da hoto",sw:"Eneo lako litahifadhiwa na picha",uz:"Joylashuvingiz rasm bilan saqlanadi"},
     location_ready:{ar:"تم تحديد الموقع",en:"Location captured",id:"Lokasi diperoleh",ur:"مقام مل گیا",hi:"स्थान मिल गया",bn:"অবস্থান পাওয়া গেছে",fr:"Position obtenue",ha:"An gano wuri",sw:"Eneo limepatikana",uz:"Joylashuv olindi"},
     location_unavailable:{ar:"تعذر تحديد الموقع؛ تأكد من السماح للموقع في الهاتف",en:"Location unavailable; allow location access on the phone",id:"Lokasi tidak tersedia; izinkan akses lokasi",ur:"مقام دستیاب نہیں؛ فون میں اجازت دیں",hi:"स्थान उपलब्ध नहीं; फ़ोन में अनुमति दें",bn:"অবস্থান পাওয়া যায়নি; ফোনে অনুমতি দিন",fr:"Position indisponible; autorisez la localisation",ha:"Ba a samu wuri ba; ba da izini",sw:"Eneo halipatikani; ruhusu ufikiaji",uz:"Joylashuv olinmadi; telefonda ruxsat bering"},
@@ -194,21 +194,26 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     $state.find("button").prop("hidden", !(pending && navigator.onLine && mode !== "syncing"));
   }
   function refreshLocalSequence() {
-    let activeAssigned = false, lockedShown = 0;
+    const runKey = trip => [trip.trip_date || "", trip.driver || "", trip.vehicle || "", trip.meal_type || ""].join("|");
+    const runs = [];
+    const byKey = new Map();
     for (const trip of trips) {
-      if (trip.sequence_state === "missed") {
-        trip.sequence_actionable = true;
-        trip.sequence_visible = true;
-      } else if (!activeAssigned) {
-        trip.sequence_state = "active";
-        trip.sequence_actionable = true;
-        trip.sequence_visible = true;
-        activeAssigned = true;
-      } else {
-        trip.sequence_state = "locked";
-        trip.sequence_actionable = false;
-        trip.sequence_visible = lockedShown < 2;
-        lockedShown += 1;
+      const key = runKey(trip);
+      if (!byKey.has(key)) {byKey.set(key, []); runs.push(byKey.get(key));}
+      byKey.get(key).push(trip);
+    }
+    let activeAssigned = false, lockedShown = 0;
+    const now = Date.now();
+    for (const run of runs) {
+      const plannedTimes = run.map(trip => new Date(String(trip.planned_arrival || trip.trip_date || "").replace(" ", "T")).getTime()).filter(Number.isFinite);
+      const overdue = plannedTimes.length && now >= Math.max(...plannedTimes) + (2 * 60 * 60 * 1000);
+      const state = activeAssigned ? "locked" : (overdue ? "missed" : "active");
+      if (state === "active") activeAssigned = true;
+      for (const trip of run) {
+        trip.sequence_state = state;
+        trip.sequence_actionable = state !== "locked";
+        trip.sequence_visible = state !== "locked" || lockedShown < 2;
+        if (state === "locked") lockedShown += 1;
       }
     }
   }
@@ -330,7 +335,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
         ? `<div class="wafd-sequence-note is-missed"><b>${esc(tr("missed_delivery"))}</b><small style="display:block">${esc(tr("missed_help"))}</small></div>`
         : sequenceState === "locked"
           ? `<div class="wafd-sequence-note"><b>🔒 ${esc(tr("locked_delivery"))}</b><small style="display:block">${esc(tr("locked_help"))}</small></div>`
-          : (!isManager ? `<div class="wafd-sequence-note">${esc(tr("next_delivery"))}</div>` : "");
+          : (!isManager ? `<div class="wafd-sequence-note">${esc(tr("current_round"))}</div>` : "");
       let actions = "";
       if (actionable && (["مخططة / Planned", "تم التحميل / Loaded"].includes(trip.status) || (trip.status === "متأخرة / Delayed" && !trip.actual_departure))) actions += `<button type="button" data-action="start" data-trip="${esc(trip.name)}">${esc(tr("start"))}</button>`;
       if (actionable && (trip.status === "في الطريق / In Transit" || (trip.status === "متأخرة / Delayed" && trip.actual_departure))) actions += `<button type="button" class="secondary" data-action="arrive" data-trip="${esc(trip.name)}">${esc(tr("mark_arrived"))}</button>`;

@@ -15,7 +15,7 @@ def require(path, needles):
 
 require("wafd_one/driver_portal.py", [
     "SEQUENCE_GRACE_HOURS = 2", "_assert_sequence_actionable(trip)",
-    '"sequence_state": "missed"', '"hidden_upcoming_count"',
+    '"missed" if overdue else "active"', '"hidden_upcoming_count"',
 ])
 require("wafd_one/delivery_supervisor.py", [
     "def update_delivery_schedule", "def archive_delivery_schedule",

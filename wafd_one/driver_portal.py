@@ -90,46 +90,73 @@ def _assigned_trip(trip_name, write=False):
 
 
 def _sequence_metadata(trips, proof_trip_names, current_time=None):
-    """Mark the chronological driver queue without hiding missed evidence work.
+    """Sequence meal runs while allowing destinations in one run in any order.
 
-    A delivery without proof stops later deliveries until it is documented.  Once
-    its planned time is two hours old it remains visible as missed/actionable, but
-    no longer blocks the next delivery.
+    All hotels sharing driver, vehicle, date and meal are one delivery run and
+    become actionable together.  Only a later meal run is locked.  An unfinished
+    run stops later runs until every hotel is documented, or until the two-hour
+    grace period has elapsed; its remaining hotels then stay visible as missed.
     """
     current_time = current_time or now_datetime()
-    blocking_trip = None
     metadata = {}
     total = len(trips)
+
+    def run_key(trip):
+        key = (
+            str(getattr(trip, "trip_date", None) or ""),
+            getattr(trip, "driver", None) or "",
+            getattr(trip, "vehicle", None) or "",
+            getattr(trip, "meal_type", None) or "",
+        )
+        # Keep callers that supply only a minimal historical row independent;
+        # production queue rows always carry the complete run identity above.
+        return key if any(key) else ("__trip__", trip.name, "", "")
+
+    runs = []
+    runs_by_key = {}
     for index, trip in enumerate(trips, start=1):
-        if trip.name in proof_trip_names:
-            metadata[trip.name] = {
-                "sequence_state": "completed", "sequence_actionable": False,
-                "sequence_index": index, "sequence_total": total,
-            }
+        key = run_key(trip)
+        if key not in runs_by_key:
+            runs_by_key[key] = []
+            runs.append(runs_by_key[key])
+        runs_by_key[key].append((index, trip))
+
+    blocking_run = None
+    blocking_unlock_at = None
+    for run_index, run in enumerate(runs, start=1):
+        incomplete = [(index, trip) for index, trip in run if trip.name not in proof_trip_names]
+        for index, trip in run:
+            if trip.name in proof_trip_names:
+                metadata[trip.name] = {
+                    "sequence_state": "completed", "sequence_actionable": False,
+                    "sequence_index": index, "sequence_total": total,
+                    "sequence_run_index": run_index, "sequence_run_total": len(runs),
+                }
+        if not incomplete:
             continue
-        planned = get_datetime(trip.planned_arrival or trip.trip_date)
-        unlock_at = planned + timedelta(hours=SEQUENCE_GRACE_HOURS) if planned else None
-        overdue = bool(unlock_at and current_time >= unlock_at)
-        if blocking_trip is None and overdue:
-            metadata[trip.name] = {
-                "sequence_state": "missed", "sequence_actionable": True,
+
+        planned_times = [
+            get_datetime(trip.planned_arrival or trip.trip_date)
+            for _, trip in incomplete if (trip.planned_arrival or trip.trip_date)
+        ]
+        run_unlock_at = max(planned_times) + timedelta(hours=SEQUENCE_GRACE_HOURS) if planned_times else None
+        overdue = bool(run_unlock_at and current_time >= run_unlock_at)
+        state = "locked" if blocking_run else ("missed" if overdue else "active")
+        actionable = state != "locked"
+        if state == "active":
+            blocking_run = incomplete
+            blocking_unlock_at = run_unlock_at
+
+        for index, trip in incomplete:
+            row = {
+                "sequence_state": state, "sequence_actionable": actionable,
                 "sequence_index": index, "sequence_total": total,
-                "unlock_at": unlock_at,
+                "sequence_run_index": run_index, "sequence_run_total": len(runs),
+                "unlock_at": blocking_unlock_at if state == "locked" else run_unlock_at,
             }
-        elif blocking_trip is None:
-            blocking_trip = trip
-            metadata[trip.name] = {
-                "sequence_state": "active", "sequence_actionable": True,
-                "sequence_index": index, "sequence_total": total,
-                "unlock_at": unlock_at,
-            }
-        else:
-            metadata[trip.name] = {
-                "sequence_state": "locked", "sequence_actionable": False,
-                "sequence_index": index, "sequence_total": total,
-                "blocked_by": blocking_trip.name,
-                "unlock_at": get_datetime(blocking_trip.planned_arrival or blocking_trip.trip_date) + timedelta(hours=SEQUENCE_GRACE_HOURS),
-            }
+            if state == "locked":
+                row["blocked_by"] = blocking_run[0][1].name
+            metadata[trip.name] = row
     return metadata
 
 
@@ -137,7 +164,10 @@ def _driver_queue(user):
     rows = frappe.get_all(
         "WAFD Delivery Trip",
         filters={"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0},
-        fields=["name", "trip_date", "planned_arrival", "driver", "assigned_driver_user"],
+        fields=[
+            "name", "trip_date", "planned_arrival", "driver", "vehicle",
+            "meal_type", "assigned_driver_user",
+        ],
         order_by="planned_arrival asc, creation asc",
         limit_page_length=DRIVER_QUEUE_LIMIT,
     )
@@ -159,7 +189,7 @@ def _assert_sequence_actionable(trip):
     if trip.name in proofs:
         frappe.throw(_("تم توثيق هذه الرحلة مسبقاً."))
     if not state.get("sequence_actionable"):
-        frappe.throw(_("هذه الرحلة مقفلة. وثّق الرحلة السابقة أولاً، أو انتظر مرور ساعتين من وقتها المخطط."))
+        frappe.throw(_("هذه الجولة مقفلة. أكمل فنادق الوجبة السابقة أولاً، أو انتظر انتهاء مهلة الساعتين."))
 
 
 def _same_delivery_run_rows(trip):

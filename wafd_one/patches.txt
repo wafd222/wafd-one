@@ -523,3 +523,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc292.execute
 
 # RC293 driver offline delivery capture and ordered automatic sync
 wafd_one.wafd_one.patches.v10_0_0_rc293.execute
+
+# RC294 free hotel routing inside the active driver meal run
+wafd_one.wafd_one.patches.v10_0_0_rc294.execute

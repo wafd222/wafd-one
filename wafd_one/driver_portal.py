@@ -44,6 +44,7 @@ QUICK_NOTES_AR = {
 }
 SEQUENCE_GRACE_HOURS = 2
 LOCKED_PREVIEW_COUNT = 2
+OFFLINE_PRELOAD_COUNT = 100
 DRIVER_QUEUE_LIMIT = 10000
 
 
@@ -194,7 +195,20 @@ def _same_delivery_run_rows(trip):
     ]
 
 
-def _start_delivery_run(trip):
+def _validated_offline_time(value):
+    """Accept a recent device timestamp while rejecting impossible future data."""
+    captured = get_datetime(value) if value else now_datetime()
+    if getattr(captured, "tzinfo", None):
+        captured = captured.astimezone().replace(tzinfo=None)
+    current = now_datetime()
+    if captured > current + timedelta(minutes=10):
+        frappe.throw(_("وقت العملية من الهاتف يقع في المستقبل. صحح وقت الجهاز ثم أعد المزامنة."))
+    if captured < current - timedelta(days=30):
+        frappe.throw(_("العملية المحفوظة أقدم من 30 يوماً وتحتاج مراجعة المشرف."))
+    return captured
+
+
+def _start_delivery_run(trip, captured_at=None):
     """Start every destination on the same vehicle meal run at one timestamp."""
     rows = _same_delivery_run_rows(trip)
     if not rows:
@@ -205,7 +219,9 @@ def _start_delivery_run(trip):
         for value in (row.actual_departure, row.driver_accepted_on):
             if value:
                 existing_times.append(get_datetime(value))
-    departure_time = min(existing_times) if existing_times else now_datetime()
+    requested_time = _validated_offline_time(captured_at) if captured_at else None
+    departure_candidates = existing_times + ([requested_time] if requested_time else [])
+    departure_time = min(departure_candidates) if departure_candidates else now_datetime()
 
     startable_statuses = {
         "مخططة / Planned", "تم التحميل / Loaded", "متأخرة / Delayed",
@@ -416,17 +432,25 @@ def list_my_trips():
     if not is_manager:
         sequence = _sequence_metadata(trips, set(proof_map))
         visible_names = []
+        rendered_names = []
         locked_seen = 0
+        locked_preloaded = 0
         for trip in trips:
             state = sequence.get(trip.name, {}).get("sequence_state")
             if state in {"missed", "active"}:
                 visible_names.append(trip.name)
-            elif state == "locked" and locked_seen < LOCKED_PREVIEW_COUNT:
-                visible_names.append(trip.name)
-                locked_seen += 1
+                rendered_names.append(trip.name)
             elif state == "locked":
-                hidden_upcoming_count += 1
+                if locked_preloaded < OFFLINE_PRELOAD_COUNT:
+                    visible_names.append(trip.name)
+                    locked_preloaded += 1
+                if locked_seen < LOCKED_PREVIEW_COUNT:
+                    rendered_names.append(trip.name)
+                    locked_seen += 1
+                else:
+                    hidden_upcoming_count += 1
         visible = set(visible_names)
+        rendered = set(rendered_names)
         trips = [trip for trip in trips if trip.name in visible]
     result = []
     for trip in trips:
@@ -447,6 +471,7 @@ def list_my_trips():
                 "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
                 "loading": loading,
                 "proof": proof,
+                "sequence_visible": is_manager or trip.name in rendered,
                 **sequence.get(trip.name, {}),
             }
         )
@@ -555,14 +580,16 @@ def submit_delivery_proof(
     operational_note_code=None,
     latitude=None,
     longitude=None,
+    captured_at=None,
 ):
     trip = _authorized_trip(trip_name, write=True)
-    _assert_sequence_actionable(trip)
-    if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
-        frappe.throw(_("ابدأ الرحلة وسجل الوصول قبل إثبات التسليم."))
     existing = frappe.db.get_value("WAFD Delivery Proof", {"delivery_trip": trip.name}, "name")
     if existing:
         return {"name": existing, "created": False}
+    _assert_sequence_actionable(trip)
+    if trip.status not in {"في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"}:
+        frappe.throw(_("ابدأ الرحلة وسجل الوصول قبل إثبات التسليم."))
+    delivery_time = _validated_offline_time(captured_at) if captured_at else now_datetime()
     valid_statuses = {
         "مقبول بالكامل / Fully Accepted",
         "مقبول جزئياً / Partially Accepted",
@@ -612,7 +639,7 @@ def submit_delivery_proof(
 
     if trip.status in {"في الطريق / In Transit", "متأخرة / Delayed"}:
         trip.status = "وصلت / Arrived"
-        trip.actual_arrival = trip.actual_arrival or now_datetime()
+        trip.actual_arrival = trip.actual_arrival or delivery_time
         trip.save()
 
     file_url = _save_private_image(
@@ -626,7 +653,7 @@ def submit_delivery_proof(
         {
             "doctype": "WAFD Delivery Proof",
             "delivery_trip": trip.name,
-            "delivery_time": now_datetime(),
+            "delivery_time": delivery_time,
             "received_quantity": received_quantity,
             "rejected_quantity": rejected_quantity,
             "receiver_name": receiver_name,
@@ -634,7 +661,7 @@ def submit_delivery_proof(
             "receiver_signature": signature_data,
             "delivery_photo": file_url,
             "delivery_photo_uploaded_by": frappe.session.user,
-            "delivery_photo_uploaded_on": now_datetime(),
+            "delivery_photo_uploaded_on": delivery_time,
             "latitude": latitude,
             "longitude": longitude,
             "status": status,
@@ -652,3 +679,53 @@ def submit_delivery_proof(
         "status": proof.status,
         "trip_status": "تم التسليم / Delivered",
     }
+
+
+@frappe.whitelist()
+def sync_offline_driver_action(trip_name, action, captured_at, payload=None):
+    """Replay one driver action captured offline in chronological order.
+
+    Every branch is idempotent so a connection loss after the server commit
+    cannot create a second proof or replace the original operational time.
+    """
+    if action not in {"start", "arrive", "proof"}:
+        frappe.throw(_("نوع عملية المزامنة غير صحيح."))
+    trip = _authorized_trip(trip_name, write=True)
+    captured = _validated_offline_time(captured_at)
+
+    if action == "start":
+        if trip.actual_departure:
+            return {"name": trip.name, "action": action, "already_synced": True}
+        _assert_sequence_actionable(trip)
+        departure_time, updated_names = _start_delivery_run(trip, captured)
+        return {
+            "name": trip.name, "action": action, "departure_time": departure_time,
+            "started_trip_names": updated_names,
+        }
+
+    if action == "arrive":
+        if trip.actual_arrival or frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": trip.name}):
+            return {"name": trip.name, "action": action, "already_synced": True}
+        _assert_sequence_actionable(trip)
+        if not trip.actual_departure:
+            frappe.throw(_("تعذر مزامنة الوصول قبل مزامنة بدء الرحلة."))
+        trip.actual_arrival = captured
+        trip.status = "وصلت / Arrived"
+        trip.save()
+        trip.notify_update()
+        return {"name": trip.name, "action": action, "arrival_time": captured}
+
+    values = frappe.parse_json(payload) if payload else {}
+    if not isinstance(values, dict):
+        frappe.throw(_("بيانات إثبات التسليم المحفوظة غير صحيحة."))
+    allowed = {
+        "receiver_name", "received_quantity", "rejected_quantity", "status",
+        "receiver_mobile", "signature_data", "image_data", "notes",
+        "notes_language", "operational_note_code", "latitude", "longitude",
+    }
+    proof_values = {key: values.get(key) for key in allowed if key in values}
+    return submit_delivery_proof(
+        trip_name=trip.name,
+        captured_at=captured,
+        **proof_values,
+    )

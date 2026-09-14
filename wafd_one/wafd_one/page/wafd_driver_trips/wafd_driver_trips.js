@@ -72,6 +72,16 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     actual_location:{ar:"يُحفظ موقعك تلقائياً مع صورة التسليم",en:"Your location is saved automatically with the delivery photo",id:"Lokasi Anda disimpan otomatis bersama foto",ur:"آپ کا مقام تصویر کے ساتھ خودکار محفوظ ہوگا",hi:"आपका स्थान फ़ोटो के साथ अपने आप सहेजा जाएगा",bn:"আপনার অবস্থান ছবির সাথে স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে",fr:"Votre position est enregistrée avec la photo",ha:"Za a ajiye wurinka tare da hoto",sw:"Eneo lako litahifadhiwa na picha",uz:"Joylashuvingiz rasm bilan saqlanadi"},
     location_ready:{ar:"تم تحديد الموقع",en:"Location captured",id:"Lokasi diperoleh",ur:"مقام مل گیا",hi:"स्थान मिल गया",bn:"অবস্থান পাওয়া গেছে",fr:"Position obtenue",ha:"An gano wuri",sw:"Eneo limepatikana",uz:"Joylashuv olindi"},
     location_unavailable:{ar:"تعذر تحديد الموقع؛ تأكد من السماح للموقع في الهاتف",en:"Location unavailable; allow location access on the phone",id:"Lokasi tidak tersedia; izinkan akses lokasi",ur:"مقام دستیاب نہیں؛ فون میں اجازت دیں",hi:"स्थान उपलब्ध नहीं; फ़ोन में अनुमति दें",bn:"অবস্থান পাওয়া যায়নি; ফোনে অনুমতি দিন",fr:"Position indisponible; autorisez la localisation",ha:"Ba a samu wuri ba; ba da izini",sw:"Eneo halipatikani; ruhusu ufikiaji",uz:"Joylashuv olinmadi; telefonda ruxsat bering"},
+    online_ready:{ar:"متصل — العمل والمزامنة يعملان",en:"Online — delivery and sync are ready"},
+    offline_ready:{ar:"دون إنترنت — سيتم حفظ العمليات في الهاتف",en:"Offline — actions will be saved on this phone"},
+    pending_sync:{ar:"عمليات بانتظار المزامنة",en:"actions waiting to sync"},
+    syncing_now:{ar:"جارٍ رفع العمليات المحفوظة…",en:"Uploading saved actions…"},
+    sync_now:{ar:"مزامنة الآن",en:"Sync now"},
+    saved_offline:{ar:"تم الحفظ في الهاتف وسيُرفع عند عودة الإنترنت",en:"Saved on this phone and will upload when online"},
+    cached_tasks:{ar:"تظهر المهام المحفوظة على الهاتف",en:"Showing tasks saved on this phone"},
+    offline_first_open:{ar:"افتح شاشة السائق مرة واحدة بوجود الإنترنت لتحميل المهام.",en:"Open the driver screen online once to download tasks."},
+    sync_problem:{ar:"توجد عملية تحتاج إعادة المزامنة",en:"An action needs to be synced again"},
+    offline_storage_error:{ar:"تعذر حفظ العملية في الهاتف. لا تغلق الشاشة وأعد المحاولة.",en:"Could not save the action on this phone. Keep the screen open and retry."},
   };
   const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
   const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
@@ -85,7 +95,12 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   let deliveryImageData = "";
   let signatureTouched = false;
   let deliveryLocation = {};
+  let offlineCacheActive = false;
+  let syncingOffline = false;
+  let offlineDbPromise = null;
   const subscribedTrips = new Set();
+  const offlineUser = frappe.session.user || "Guest";
+  const OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
 
   const statusKey = {
     "مخططة / Planned":"planned", "تم التحميل / Loaded":"loaded", "في الطريق / In Transit":"in_transit",
@@ -107,15 +122,162 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     receiver_refused:{ar:"رفض المستلم استلام الشحنة",en:"Receiver refused delivery",id:"Penerima menolak kiriman",ur:"وصول کنندہ نے ڈیلیوری مسترد کی",hi:"प्राप्तकर्ता ने डिलीवरी अस्वीकार की",bn:"গ্রহীতা ডেলিভারি প্রত্যাখ্যান করেছেন",fr:"Le destinataire a refusé",ha:"Mai karɓa ya ƙi karɓa",sw:"Mpokeaji amekataa kupokea",uz:"Qabul qiluvchi yetkazmani rad etdi"},
   };
 
+  function openOfflineDb() {
+    if (offlineDbPromise) return offlineDbPromise;
+    offlineDbPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("IndexedDB unavailable"));
+      const request = indexedDB.open(OFFLINE_DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("state")) db.createObjectStore("state", {keyPath:"key"});
+        if (!db.objectStoreNames.contains("queue")) db.createObjectStore("queue", {keyPath:"id"});
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("IndexedDB open failed"));
+    });
+    return offlineDbPromise;
+  }
+  async function dbRequest(storeName, mode, operation) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const request = operation(tx.objectStore(storeName));
+      let result;
+      let settled = false;
+      const finish = value => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const fail = error => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
+      request.onsuccess = () => {
+        result = request.result;
+        if (mode === "readonly") finish(result);
+      };
+      request.onerror = () => fail(request.error || new Error("IndexedDB request failed"));
+      tx.oncomplete = () => finish(result);
+      tx.onabort = () => fail(tx.error || new Error("IndexedDB transaction aborted"));
+      tx.onerror = () => fail(tx.error || new Error("IndexedDB transaction failed"));
+    });
+  }
+  const offlineStateKey = () => `driver:${offlineUser}`;
+  const readOfflineState = () => dbRequest("state", "readonly", store => store.get(offlineStateKey()));
+  const writeOfflineState = () => isManager ? Promise.resolve() : dbRequest("state", "readwrite", store => store.put({
+    key:offlineStateKey(), user:offlineUser, trips, hiddenUpcomingCount, emptyReason, emptyDetail,
+    saved_at:new Date().toISOString(),
+  }));
+  const pendingActions = async () => (await dbRequest("queue", "readonly", store => store.getAll()))
+    .filter(row => row.user === offlineUser).sort((a,b) => a.created_at.localeCompare(b.created_at));
+  const deletePendingAction = id => dbRequest("queue", "readwrite", store => store.delete(id));
+  const putPendingAction = row => dbRequest("queue", "readwrite", store => store.put(row));
+  function clientTimestamp() {
+    const d = new Date(), pad = value => String(value).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function isNetworkError(error) {
+    const status = Number(error?.status || error?.xhr?.status || error?.request?.status || 0);
+    return !navigator.onLine || status === 0 || /network|failed to fetch|offline/i.test(String(error?.message || error || ""));
+  }
+  async function updateOfflineBanner(mode, detail) {
+    const $state = $root.find("#wafd-offline-state");
+    if (!$state.length || isManager) return $state.hide();
+    let pending = 0;
+    try { pending = (await pendingActions()).length; } catch (error) { mode = "error"; }
+    const offline = mode === "offline" || !navigator.onLine;
+    const text = detail || (mode === "syncing" ? tr("syncing_now") : mode === "error" ? tr("sync_problem") : offline ? tr("offline_ready") : tr("online_ready"));
+    $state.removeClass("is-offline is-syncing is-error").addClass(mode === "syncing" ? "is-syncing" : mode === "error" ? "is-error" : offline ? "is-offline" : "");
+    $state.find("span").text(pending ? `${text} — ${pending} ${tr("pending_sync")}` : text);
+    $state.find("button").prop("hidden", !(pending && navigator.onLine && mode !== "syncing"));
+  }
+  function refreshLocalSequence() {
+    let activeAssigned = false, lockedShown = 0;
+    for (const trip of trips) {
+      if (trip.sequence_state === "missed") {
+        trip.sequence_actionable = true;
+        trip.sequence_visible = true;
+      } else if (!activeAssigned) {
+        trip.sequence_state = "active";
+        trip.sequence_actionable = true;
+        trip.sequence_visible = true;
+        activeAssigned = true;
+      } else {
+        trip.sequence_state = "locked";
+        trip.sequence_actionable = false;
+        trip.sequence_visible = lockedShown < 2;
+        lockedShown += 1;
+      }
+    }
+  }
+  async function applyLocalAction(tripName, action, capturedAt) {
+    const trip = trips.find(row => row.name === tripName);
+    if (!trip) return;
+    if (action === "start") {
+      trips.filter(row => row.trip_date === trip.trip_date && row.driver === trip.driver && (row.vehicle || "") === (trip.vehicle || "") && row.meal_type === trip.meal_type)
+        .forEach(row => {if (["مخططة / Planned","تم التحميل / Loaded","متأخرة / Delayed"].includes(row.status)) {row.status="في الطريق / In Transit";row.actual_departure=capturedAt;}});
+    } else if (action === "arrive") {
+      trip.status = "وصلت / Arrived";
+      trip.actual_arrival = capturedAt;
+    } else if (action === "proof") {
+      trips = trips.filter(row => row.name !== tripName);
+      hiddenUpcomingCount = Math.max(0, hiddenUpcomingCount - 1);
+      refreshLocalSequence();
+    }
+    offlineCacheActive = true;
+    await writeOfflineState();
+    renderTrips();
+  }
+  async function queueOfflineAction(tripName, action, payload={}) {
+    const capturedAt = clientTimestamp();
+    const id = `${offlineUser}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    await putPendingAction({id,user:offlineUser,trip_name:tripName,action,captured_at:capturedAt,payload,created_at:new Date().toISOString(),last_error:""});
+    await applyLocalAction(tripName, action, capturedAt);
+    await updateOfflineBanner("offline", tr("saved_offline"));
+  }
+  async function syncPendingActions() {
+    if (isManager || syncingOffline || !navigator.onLine) return false;
+    syncingOffline = true;
+    await updateOfflineBanner("syncing");
+    try {
+      const rows = await pendingActions();
+      for (const row of rows) {
+        try {
+          await frappe.call({
+            method:"wafd_one.driver_portal.sync_offline_driver_action",
+            args:{trip_name:row.trip_name,action:row.action,captured_at:row.captured_at,payload:JSON.stringify(row.payload || {})},
+            freeze:false,
+          });
+          await deletePendingAction(row.id);
+        } catch (error) {
+          if (!isNetworkError(error)) {
+            row.last_error = String(error?.message || error || "sync failed").slice(0,500);
+            await putPendingAction(row);
+            await updateOfflineBanner("error");
+          }
+          return false;
+        }
+      }
+      offlineCacheActive = false;
+      await updateOfflineBanner("online");
+      return true;
+    } finally {
+      syncingOffline = false;
+    }
+  }
+
   function renderShell() {
     page.set_title(tr(isManager ? "field_delivery" : "my_trips"));
     $root.attr("dir", ["ar", "ur"].includes(lang) ? "rtl" : "ltr").html(`
       <style>
-      .wafd-driver-shell{max-width:760px;margin:12px auto 44px;padding:0 12px;color:#1c1d21}.wafd-driver-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.wafd-driver-nav button{height:42px;border:1px solid #ded6c7;border-radius:12px;background:#f7f4ec;padding:0 14px;font-weight:750;color:#5f4819}.wafd-trip-list{display:grid;gap:13px}.wafd-trip-card{border:1px solid #e5dfd2;border-radius:20px;background:#fff;padding:17px;box-shadow:0 8px 24px rgba(20,21,25,.05)}.wafd-trip-card.is-locked{opacity:.72;background:#f5f4f1}.wafd-trip-card.is-missed{border-color:#b56b31;background:#fffaf5}.wafd-sequence-note{margin-bottom:10px;padding:10px 12px;border-radius:11px;font-weight:750;background:#f2ead7;color:#765716}.wafd-sequence-note.is-missed{background:#fff0e5;color:#963f20}.wafd-upcoming-note{margin-top:12px;padding:11px;text-align:center;border:1px dashed #d7ccb7;border-radius:12px;color:#6e6049}.wafd-trip-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.wafd-trip-head h3{font-size:19px;margin:0;font-weight:850}.wafd-trip-status{border-radius:999px;background:#f1ead9;color:#765a20;padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap}.wafd-trip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.wafd-trip-info{background:#f8f7f3;border-radius:12px;padding:10px}.wafd-trip-info small,.wafd-trip-info b{display:block}.wafd-trip-info small{color:#7a7d82;font-size:11px}.wafd-trip-info b{margin-top:3px}.wafd-loading-evidence{display:flex;gap:10px;align-items:center;margin-top:10px}.wafd-loading-evidence img{width:86px;height:70px;border-radius:11px;object-fit:cover;border:1px solid #e0d9ca}.wafd-trip-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.wafd-trip-actions button,.wafd-proof-submit{border:0;border-radius:12px;background:#1d1e22;color:#fff;padding:11px 15px;font-weight:800}.wafd-trip-actions .secondary{background:#c9972d}.wafd-trip-actions a{border:1px solid #ded6c7;border-radius:12px;padding:10px 14px;color:#6f531a;text-decoration:none;font-weight:750}.wafd-driver-empty{text-align:center;padding:70px 18px;color:#74777d;background:#fff;border:1px solid #e8e2d7;border-radius:20px}.wafd-driver-modal{position:fixed;inset:0;z-index:1200;background:rgba(12,13,16,.56);display:flex;align-items:flex-end;justify-content:center}.wafd-driver-modal[hidden]{display:none}.wafd-proof-panel{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -18px 48px rgba(0,0,0,.18)}.wafd-proof-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.wafd-proof-head h2{font-size:21px;margin:0}.wafd-proof-head button{border:0;border-radius:10px;background:#f2efe8;padding:8px 12px}.wafd-proof-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wafd-proof-field.full{grid-column:1/-1}.wafd-proof-field label{display:block;font-weight:750;margin-bottom:6px}.wafd-proof-field input,.wafd-proof-field select,.wafd-proof-field textarea{width:100%;border:1px solid #ddd6c8;border-radius:12px;background:#faf9f6;padding:10px;min-height:44px}.wafd-proof-field textarea{min-height:86px}.wafd-photo-preview{display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:#f5f4f1;margin-top:9px}.wafd-signature{width:100%;height:160px;border:1px solid #d8d0c1;border-radius:12px;background:#fff;touch-action:none}.wafd-clear-signature{margin-top:7px;border:1px solid #ddd6c8;border-radius:9px;background:#fff;padding:8px 11px}.wafd-proof-submit{width:100%;margin-top:16px}.wafd-proof-done{margin-top:12px;padding:11px;border-radius:12px;background:#e8f4ea;color:#2d6938;font-weight:750}
+      .wafd-driver-shell{max-width:760px;margin:12px auto 44px;padding:0 12px;color:#1c1d21}.wafd-driver-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.wafd-driver-nav button{height:42px;border:1px solid #ded6c7;border-radius:12px;background:#f7f4ec;padding:0 14px;font-weight:750;color:#5f4819}.wafd-offline-state{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;border-radius:13px;background:#e8f4ea;color:#28663a;font-weight:750}.wafd-offline-state.is-offline{background:#fff1df;color:#875319}.wafd-offline-state.is-syncing{background:#eef3fb;color:#315c94}.wafd-offline-state.is-error{background:#fbe9e8;color:#8e3030}.wafd-offline-state button{border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit;padding:7px 9px;font-weight:800}.wafd-trip-list{display:grid;gap:13px}.wafd-trip-card{border:1px solid #e5dfd2;border-radius:20px;background:#fff;padding:17px;box-shadow:0 8px 24px rgba(20,21,25,.05)}.wafd-trip-card.is-locked{opacity:.72;background:#f5f4f1}.wafd-trip-card.is-missed{border-color:#b56b31;background:#fffaf5}.wafd-sequence-note{margin-bottom:10px;padding:10px 12px;border-radius:11px;font-weight:750;background:#f2ead7;color:#765716}.wafd-sequence-note.is-missed{background:#fff0e5;color:#963f20}.wafd-upcoming-note{margin-top:12px;padding:11px;text-align:center;border:1px dashed #d7ccb7;border-radius:12px;color:#6e6049}.wafd-trip-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.wafd-trip-head h3{font-size:19px;margin:0;font-weight:850}.wafd-trip-status{border-radius:999px;background:#f1ead9;color:#765a20;padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap}.wafd-trip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.wafd-trip-info{background:#f8f7f3;border-radius:12px;padding:10px}.wafd-trip-info small,.wafd-trip-info b{display:block}.wafd-trip-info small{color:#7a7d82;font-size:11px}.wafd-trip-info b{margin-top:3px}.wafd-loading-evidence{display:flex;gap:10px;align-items:center;margin-top:10px}.wafd-loading-evidence img{width:86px;height:70px;border-radius:11px;object-fit:cover;border:1px solid #e0d9ca}.wafd-trip-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.wafd-trip-actions button,.wafd-proof-submit{border:0;border-radius:12px;background:#1d1e22;color:#fff;padding:11px 15px;font-weight:800}.wafd-trip-actions .secondary{background:#c9972d}.wafd-trip-actions a{border:1px solid #ded6c7;border-radius:12px;padding:10px 14px;color:#6f531a;text-decoration:none;font-weight:750}.wafd-driver-empty{text-align:center;padding:70px 18px;color:#74777d;background:#fff;border:1px solid #e8e2d7;border-radius:20px}.wafd-driver-modal{position:fixed;inset:0;z-index:1200;background:rgba(12,13,16,.56);display:flex;align-items:flex-end;justify-content:center}.wafd-driver-modal[hidden]{display:none}.wafd-proof-panel{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -18px 48px rgba(0,0,0,.18)}.wafd-proof-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.wafd-proof-head h2{font-size:21px;margin:0}.wafd-proof-head button{border:0;border-radius:10px;background:#f2efe8;padding:8px 12px}.wafd-proof-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wafd-proof-field.full{grid-column:1/-1}.wafd-proof-field label{display:block;font-weight:750;margin-bottom:6px}.wafd-proof-field input,.wafd-proof-field select,.wafd-proof-field textarea{width:100%;border:1px solid #ddd6c8;border-radius:12px;background:#faf9f6;padding:10px;min-height:44px}.wafd-proof-field textarea{min-height:86px}.wafd-photo-preview{display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:#f5f4f1;margin-top:9px}.wafd-signature{width:100%;height:160px;border:1px solid #d8d0c1;border-radius:12px;background:#fff;touch-action:none}.wafd-clear-signature{margin-top:7px;border:1px solid #ddd6c8;border-radius:9px;background:#fff;padding:8px 11px}.wafd-proof-submit{width:100%;margin-top:16px}.wafd-proof-done{margin-top:12px;padding:11px;border-radius:12px;background:#e8f4ea;color:#2d6938;font-weight:750}
       @media(max-width:600px){.wafd-trip-grid,.wafd-proof-form{grid-template-columns:1fr}.wafd-proof-field.full{grid-column:auto}.wafd-driver-shell{padding:0 9px}}
       </style>
       <div class="wafd-driver-shell">
         <div class="wafd-driver-nav"><button type="button" id="wafd-driver-back">${esc(tr("back"))}</button><button type="button" id="wafd-driver-refresh">${esc(tr("refresh"))}</button></div>
+        <div class="wafd-offline-state" id="wafd-offline-state"><span>${esc(tr("online_ready"))}</span><button type="button" id="wafd-sync-now" hidden>${esc(tr("sync_now"))}</button></div>
         <div id="wafd-driver-list"><div class="wafd-driver-empty">${esc(tr("refresh"))}...</div></div>
       </div>
       <div class="wafd-driver-modal" id="wafd-proof-modal" hidden><div class="wafd-proof-panel"><div class="wafd-proof-head"><h2>${esc(tr("proof"))}</h2><button type="button" id="wafd-proof-close">${esc(tr("close"))}</button></div><div id="wafd-proof-content"></div></div></div>
@@ -148,7 +310,8 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     return key ? tr(key) : value;
   }
   function renderTrips() {
-    if (!trips.length) {
+    const visibleTrips = isManager ? trips : trips.filter(trip => trip.sequence_visible !== false);
+    if (!visibleTrips.length) {
       const allowedReasons = new Set(["no_approved_loading", "trip_creation_blocked", "assignment_incomplete"]);
       const key = allowedReasons.has(emptyReason)
         ? (isManager && emptyReason === "no_approved_loading" ? "no_trips_manager" : emptyReason)
@@ -157,7 +320,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr(key))}${detail}</div>`);
       return;
     }
-    $root.find("#wafd-driver-list").html(`<div class="wafd-trip-list">${trips.map((trip) => {
+    $root.find("#wafd-driver-list").html(`<div class="wafd-trip-list">${visibleTrips.map((trip) => {
       const loading = trip.loading || {};
       const proof = trip.proof || null;
       const displayStatus = proof ? "تم التسليم / Delivered" : trip.status;
@@ -176,25 +339,90 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       return `<article class="wafd-trip-card ${sequenceState === "locked" ? "is-locked" : ""} ${sequenceState === "missed" ? "is-missed" : ""}">${sequenceNote}<div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(displayStatus))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}${trip.vehicle ? `<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div>` : ""}${Number(trip.quantity)>0 ? `<div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div>` : ""}${trip.meal_type ? `<div class="wafd-trip-info"><small>${esc(tr("meal"))}</small><b>${esc(mealName(trip.meal_type))}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div>${loading.seal_number ? `<div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number)}</b></div>` : ""}</div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}${proof?.delivery_photo ? `<div class="wafd-loading-evidence"><a href="${esc(proof.delivery_photo)}" target="_blank"><img src="${esc(proof.delivery_photo)}" alt="${esc(tr("proof"))}"></a><div><b>${esc(tr("delivered"))}</b><small>${esc(fmtDate(proof.delivery_time))}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
     }).join("")}${hiddenUpcomingCount ? `<div class="wafd-upcoming-note">${esc(hiddenUpcomingCount)} ${esc(tr("more_upcoming"))}</div>` : ""}</div>`);
   }
-  async function loadTrips() {
-    const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", freeze: true});
-    trips = response.message?.trips || [];
-    hiddenUpcomingCount = Number(response.message?.hidden_upcoming_count || 0);
-    emptyReason = response.message?.empty_reason || null;
-    emptyDetail = response.message?.reconciliation?.blocked?.[0]?.message || "";
-    if (isManager && typeof frappe.realtime?.doc_subscribe === "function") {
-      trips.forEach((trip) => {
-        if (subscribedTrips.has(trip.name)) return;
-        frappe.realtime.doc_subscribe("WAFD Delivery Trip", trip.name);
-        subscribedTrips.add(trip.name);
-      });
+  async function loadTrips(options={}) {
+    if (!isManager && !options.skipSync && navigator.onLine) {
+      const synced = await syncPendingActions();
+      if (!synced && (await pendingActions()).length) {
+        const cached = await readOfflineState();
+        if (cached) {
+          trips = cached.trips || [];
+          hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+          emptyReason = cached.emptyReason || null;
+          emptyDetail = cached.emptyDetail || "";
+          offlineCacheActive = true;
+          renderTrips();
+          return updateOfflineBanner(navigator.onLine ? "error" : "offline");
+        }
+      }
     }
-    renderTrips();
+    if (!isManager && !navigator.onLine) {
+      try {
+        const cached = await readOfflineState();
+        if (!cached) {
+          $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr("offline_first_open"))}</div>`);
+          return updateOfflineBanner("offline");
+        }
+        trips = cached.trips || [];
+        hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+        emptyReason = cached.emptyReason || null;
+        emptyDetail = cached.emptyDetail || "";
+        offlineCacheActive = true;
+        renderTrips();
+        return updateOfflineBanner("offline", tr("cached_tasks"));
+      } catch (error) {
+        $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr("offline_storage_error"))}</div>`);
+        return updateOfflineBanner("error");
+      }
+    }
+    try {
+      const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", freeze: true});
+      trips = response.message?.trips || [];
+      hiddenUpcomingCount = Number(response.message?.hidden_upcoming_count || 0);
+      emptyReason = response.message?.empty_reason || null;
+      emptyDetail = response.message?.reconciliation?.blocked?.[0]?.message || "";
+      offlineCacheActive = false;
+      if (!isManager) await writeOfflineState();
+      if (isManager && typeof frappe.realtime?.doc_subscribe === "function") {
+        trips.forEach((trip) => {
+          if (subscribedTrips.has(trip.name)) return;
+          frappe.realtime.doc_subscribe("WAFD Delivery Trip", trip.name);
+          subscribedTrips.add(trip.name);
+        });
+      }
+      renderTrips();
+      await updateOfflineBanner("online");
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      const cached = await readOfflineState();
+      if (!cached) throw error;
+      trips = cached.trips || [];
+      hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+      emptyReason = cached.emptyReason || null;
+      emptyDetail = cached.emptyDetail || "";
+      offlineCacheActive = true;
+      renderTrips();
+      await updateOfflineBanner("offline", tr("cached_tasks"));
+    }
   }
   async function runStatus(tripName, action) {
-    await frappe.call({method: "wafd_one.driver_portal.set_my_trip_status", args: {trip_name: tripName, action}, freeze: true});
-    await loadTrips();
-    if (action === "arrive") openProof(tripName);
+    if (!isManager && !navigator.onLine) {
+      try {
+        await queueOfflineAction(tripName, action);
+        if (action === "arrive") openProof(tripName);
+      } catch (error) { frappe.msgprint(tr("offline_storage_error")); }
+      return;
+    }
+    try {
+      await frappe.call({method: "wafd_one.driver_portal.set_my_trip_status", args: {trip_name: tripName, action}, freeze: true});
+      await loadTrips();
+      if (action === "arrive") openProof(tripName);
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      try {
+        await queueOfflineAction(tripName, action);
+        if (action === "arrive") openProof(tripName);
+      } catch (storageError) { frappe.msgprint(tr("offline_storage_error")); }
+    }
   }
   function openProof(tripName) {
     selectedTrip = trips.find((trip) => trip.name === tripName);
@@ -251,21 +479,31 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       frappe.msgprint(tr(simple ? "required_simple" : "required"));
       return;
     }
-    const response = await frappe.call({
-      method:"wafd_one.driver_portal.submit_delivery_proof",
-      args:{trip_name:selectedTrip.name,receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData,latitude:deliveryLocation.latitude,longitude:deliveryLocation.longitude},
-      freeze:true,freeze_message:tr("saving"),
-    });
-    if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips();}
+    const tripName = selectedTrip.name;
+    const payload = {receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData,latitude:deliveryLocation.latitude,longitude:deliveryLocation.longitude};
+    if (!isManager && !navigator.onLine) {
+      try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (error) {frappe.msgprint(tr("offline_storage_error"));}
+      return;
+    }
+    try {
+      const response = await frappe.call({method:"wafd_one.driver_portal.submit_delivery_proof",args:{trip_name:tripName,...payload},freeze:true,freeze_message:tr("saving")});
+      if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips();}
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (storageError) {frappe.msgprint(tr("offline_storage_error"));}
+    }
   }
 
   $root.on("click", "#wafd-driver-back", () => frappe.set_route("wafd-role-home"));
   $root.on("click", "#wafd-driver-refresh", loadTrips);
+  $root.on("click", "#wafd-sync-now", async()=>{if(await syncPendingActions())await loadTrips({skipSync:true});});
   $root.on("click", "[data-action]", async function(){const action=$(this).attr("data-action");const trip=$(this).attr("data-trip");if(action==="proof")openProof(trip);else await runStatus(trip,action);});
   $root.on("click", "#wafd-proof-close", closeProof);
   $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;captureLocation();deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
   $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
   $root.on("click", "#wafd-proof-submit", submitProof);
+  window.addEventListener("offline",()=>updateOfflineBanner("offline"));
+  window.addEventListener("online",async()=>{if(await syncPendingActions())await loadTrips({skipSync:true});});
   if (isManager && typeof frappe.realtime?.on === "function") {
     frappe.realtime.on("doc_update", (event) => {
       if (event?.doctype === "WAFD Delivery Trip" && subscribedTrips.has(event.name)) loadTrips();
@@ -282,6 +520,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     renderShell();
     renderTrips();
   };
+  if (!isManager && navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
   loadTrips();
   wrapper.wafdSequenceTimer = wrapper.wafdSequenceTimer || window.setInterval(() => {
     if (frappe.get_route()?.[0] === "wafd-driver-trips") loadTrips();

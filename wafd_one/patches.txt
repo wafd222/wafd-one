@@ -520,3 +520,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc291.execute
 
 # RC292 automatic driver day rollover and supervisor delivery-log transfer
 wafd_one.wafd_one.patches.v10_0_0_rc292.execute
+
+# RC293 driver offline delivery capture and ordered automatic sync
+wafd_one.wafd_one.patches.v10_0_0_rc293.execute

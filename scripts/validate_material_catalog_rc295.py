@@ -59,11 +59,10 @@ assert "limit 600" in service
 assert "item.preferred_warehouse != target_warehouse" in service
 
 page = (ROOT / "wafd_one/wafd_one/page/wafd_storekeeper_home/wafd_storekeeper_home.js").read_text(encoding="utf-8")
-assert "refreshReceiptCategories" in page
-assert "كل أقسام هذا المستودع" in page
+assert "refreshReceiptMaterials" in page
+assert "مواد هذا المستودع" in page
 
 patches = (ROOT / "wafd_one/patches.txt").read_text(encoding="utf-8")
 assert "wafd_one.wafd_one.patches.v10_0_0_rc295.execute" in patches
 
 print(f"RC295 material catalogue checks passed: {len(catalogue)} materials, {len(set(row['category'] for row in catalogue))} sections")
-

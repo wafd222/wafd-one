@@ -92,35 +92,27 @@ frappe.pages["wafd-storekeeper-home"].on_page_load = function (wrapper) {
     $panel.html(`<div class="wafd-guided-panel">
       <div class="wafd-step"><b>1</b><div><strong>${esc(tr("أين ستوضع المواد؟", "Where will the materials be stored?"))}</strong><small>${esc(tr("اختر المستودع أو الثلاجة مباشرة ويمكن تغييره دون مسح النص.", "Choose a warehouse or cold room; you can change it directly."))}</small></div></div>
       <select id="wafd-receipt-warehouse">${optionsHtml(base.warehouses || [], "name", warehouseLabel, tr("اختر المستودع أو الثلاجة", "Choose warehouse or cold room"))}</select>
-      <div class="wafd-step"><b>2</b><div><strong>${esc(tr("ابحث ثم اختر المواد", "Search and select materials"))}</strong><small>${esc(tr("اختر القسم أو اكتب اسم المادة، ثم اضغط البطاقة وأدخل الكمية والسعر.", "Choose a category or search for a material, then enter quantity and price."))}</small></div></div>
-      <div class="wafd-picker-filters"><select id="wafd-receipt-category" disabled><option value="">${esc(tr("اختر المستودع أولاً", "Choose a warehouse first"))}</option></select><input id="wafd-receipt-search" type="search" placeholder="${esc(tr("ابحث باسم المادة أو رمزها", "Search by material name or code"))}"></div>
-      <div id="wafd-receipt-items" class="wafd-material-results"><div class="wafd-picker-help">${esc(tr("اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.", "Choose a category or type at least two characters."))}</div></div>
+      <div class="wafd-step"><b>2</b><div><strong>${esc(tr("مواد هذا المستودع", "Materials in this warehouse"))}</strong><small>${esc(tr("تظهر المواد المطابقة للمستودع مباشرة؛ ابحث بالاسم عند الحاجة ثم أدخل الكمية والسعر.", "Matching materials appear immediately; search by name when needed, then enter quantity and price."))}</small></div></div>
+      <div class="wafd-picker-filters wafd-receipt-search-only"><input id="wafd-receipt-search" type="search" placeholder="${esc(tr("ابحث باسم المادة أو رمزها", "Search by material name or code"))}"></div>
+      <div id="wafd-receipt-items" class="wafd-material-results"><div class="wafd-picker-help">${esc(tr("اختر المستودع أو الثلاجة لتظهر مواده مباشرة.", "Choose a warehouse or cold room to show its materials."))}</div></div>
       <button type="button" class="wafd-secondary-link" id="wafd-open-orders">${esc(tr("عرض أوامر الشراء", "View purchase orders"))}</button>
     </div>`);
     const load = async () => {
-      const category = $panel.find("#wafd-receipt-category").val();
       const search = $panel.find("#wafd-receipt-search").val().trim();
       const warehouse = $panel.find("#wafd-receipt-warehouse").val();
       const $box = $panel.find("#wafd-receipt-items");
       readSelected($box, selected, "receipt");
       if (!warehouse) return $box.html(`<div class="wafd-picker-help">${esc(tr("اختر المستودع أو الثلاجة أولاً.", "Choose a warehouse or cold room first."))}</div>`);
-      if (!category && search.length < 2) return $box.html(`<div class="wafd-picker-help">${esc(tr("اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.", "Choose a category or type at least two characters."))}</div>`);
       $box.html(`<div class="wafd-storekeeper-loading">${esc(tr("جارٍ البحث…", "Searching…"))}</div>`);
-      const response = await api("get_storekeeper_workflow_options", {warehouse, category: category || null, search: search || null, receipt: 1, language: lang});
+      const response = await api("get_storekeeper_workflow_options", {warehouse, search: search || null, receipt: 1, language: lang});
       renderMaterialCards($box, (response.message || {}).items || [], selected, "receipt");
     };
-    const refreshReceiptCategories = async () => {
-      const warehouse = $panel.find("#wafd-receipt-warehouse").val();
-      const $category = $panel.find("#wafd-receipt-category");
+    const refreshReceiptMaterials = async () => {
       selected.clear();
-      $panel.find("#wafd-receipt-items").html(`<div class="wafd-picker-help">${esc(tr("اختر قسماً أو اكتب حرفين على الأقل لعرض المواد.", "Choose a category or type at least two characters."))}</div>`);
-      if (!warehouse) return $category.prop("disabled", true).html(`<option value="">${esc(tr("اختر المستودع أولاً", "Choose a warehouse first"))}</option>`);
-      const response = await api("get_storekeeper_workflow_options", {warehouse, receipt: 1, language: lang});
-      const categories = (response.message || {}).categories || [];
-      $category.prop("disabled", false).html(optionsHtml(categories.map((category) => ({category})), "category", (row) => localData(row.category), tr("كل أقسام هذا المستودع", "All sections in this warehouse")));
+      $panel.find("#wafd-receipt-search").val("");
+      await load();
     };
-    $panel.on("change", "#wafd-receipt-category", load);
-    $panel.on("change", "#wafd-receipt-warehouse", refreshReceiptCategories);
+    $panel.on("change", "#wafd-receipt-warehouse", refreshReceiptMaterials);
     $panel.on("input", "#wafd-receipt-search", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
     $panel.on("click", "#wafd-open-orders", () => frappe.set_route("List", "WAFD Purchase Order"));
   }

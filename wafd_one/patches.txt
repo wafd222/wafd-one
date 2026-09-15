@@ -529,3 +529,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc294.execute
 
 # RC295 curated catering material catalogue and strict warehouse sections
 wafd_one.wafd_one.patches.v10_0_0_rc295.execute
+
+# RC296 single storekeeper workspace and organized delivery status board
+wafd_one.wafd_one.patches.v10_0_0_rc296.execute

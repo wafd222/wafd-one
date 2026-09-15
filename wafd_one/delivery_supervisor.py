@@ -113,6 +113,39 @@ def _split_delivery_board(trips):
     return current, delivered
 
 
+def _group_delivery_board(trips):
+    """Return mutually exclusive operational queues for the supervisor board."""
+    buckets = {"planned": [], "in_transit": [], "attention": [], "delivered": []}
+    transit_statuses = {"تم التحميل / Loaded", "في الطريق / In Transit", "وصلت / Arrived"}
+    current_time = now_datetime()
+    for row in trips:
+        if row.get("proof"):
+            buckets["delivered"].append(row)
+            continue
+        status = row.get("status") or ""
+        if status in transit_statuses:
+            buckets["in_transit"].append(row)
+            continue
+        planned_arrival = row.get("planned_arrival")
+        overdue = bool(planned_arrival and get_datetime(planned_arrival) < current_time)
+        if status == "متأخرة / Delayed" or overdue:
+            buckets["attention"].append(row)
+        else:
+            buckets["planned"].append(row)
+
+    def planned_key(row):
+        return get_datetime(row.get("planned_arrival") or row.get("trip_date"))
+
+    buckets["planned"].sort(key=planned_key)
+    buckets["in_transit"].sort(key=planned_key)
+    buckets["attention"].sort(key=planned_key)
+    buckets["delivered"].sort(
+        key=lambda row: get_datetime((row.get("proof") or {}).get("delivery_time") or row.get("planned_arrival") or row.get("trip_date")),
+        reverse=True,
+    )
+    return buckets
+
+
 def _is_iftar_contract(row):
     return any(
         value in ("رمضان / Ramadan", "إفطار صائم / Iftar Saem", "إفطار صائم / Iftar Saim")
@@ -194,6 +227,7 @@ def get_delivery_board():
     )
     trips = _trip_rows()
     current, delivered = _split_delivery_board(trips)
+    buckets = _group_delivery_board(trips)
     return {
         "today": nowdate(),
         "meal_times": MEAL_TIMES,
@@ -212,8 +246,17 @@ def get_delivery_board():
         "delivery_clients": _delivery_clients(),
         "viewer_scope": "all_employees" if set(frappe.get_roles()) & {"System Manager", "WAFD Operations Manager"} else "approved_only",
         "current": current,
-        "delivered": delivered,
-        "summary": {"current": len(current), "delivered": len(delivered)},
+        "planned": buckets["planned"],
+        "in_transit": buckets["in_transit"],
+        "attention": buckets["attention"],
+        "delivered": buckets["delivered"],
+        "summary": {
+            "current": len(current),
+            "planned": len(buckets["planned"]),
+            "in_transit": len(buckets["in_transit"]),
+            "attention": len(buckets["attention"]),
+            "delivered": len(delivered),
+        },
     }
 
 

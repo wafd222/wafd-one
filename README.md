@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC295
+# WAFD ONE 10.0.0 RC296
 
-**Current release: 10.0.0 RC295 — Curated Catering Material Catalogue**
+**Current release: 10.0.0 RC296 — Storekeeper Flow and Delivery Status Board**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

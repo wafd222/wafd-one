@@ -483,22 +483,54 @@ UOM_MAP = {
 ITEM_GROUP_MAP = {
     "لحوم / Meat": "WAFD Meat",
     "دواجن / Poultry": "WAFD Poultry",
+    "أسماك ومأكولات بحرية / Fish & Seafood": "WAFD Fish and Seafood",
     "أرز وحبوب / Rice & Grains": "WAFD Rice and Grains",
+    "دقيق ومطاحن / Flour & Milling": "WAFD Flour and Milling",
+    "بقوليات / Legumes": "WAFD Legumes",
     "خضار / Vegetables": "WAFD Vegetables",
+    "فواكه / Fruits": "WAFD Fruits",
+    "تمور ومكسرات / Dates & Nuts": "WAFD Dates and Nuts",
     "ألبان / Dairy": "WAFD Dairy",
+    "مخبوزات / Bakery": "WAFD Bakery",
+    "بهارات وصلصات / Spices & Sauces": "WAFD Spices and Sauces",
+    "زيوت ودهون / Oils & Fats": "WAFD Oils and Fats",
     "مشروبات / Beverages": "WAFD Beverages",
+    "حلويات / Desserts": "WAFD Desserts",
+    "مواد غذائية معبأة / Packaged Foods": "WAFD Packaged Foods",
+    "مجمدات ومعجنات / Frozen Foods & Pastries": "WAFD Frozen Foods",
     "تغليف / Packaging": "WAFD Packaging",
+    "أواني ومعدات / Utensils & Equipment": "WAFD Utensils and Equipment",
+    "مستلزمات تقديم / Serving Supplies": "WAFD Serving Supplies",
+    "منظفات / Cleaning": "WAFD Cleaning",
+    "تعقيم وسلامة / Hygiene & Safety": "WAFD Hygiene and Safety",
+    "أدوات تشغيل / Operating Supplies": "WAFD Operating Supplies",
     "أخرى / Other": "WAFD Other Materials",
 }
 
 CATEGORY_WAREHOUSE_MAP = {
     "أرز وحبوب / Rice & Grains": "مستودع 3 - المواد الغذائية الجافة",
+    "دقيق ومطاحن / Flour & Milling": "مستودع 3 - المواد الغذائية الجافة",
+    "بقوليات / Legumes": "مستودع 3 - المواد الغذائية الجافة",
     "تغليف / Packaging": "مستودع 2 - التغليف",
     "مشروبات / Beverages": "مستودع 8 - المياه والمشروبات الكرتونية",
     "ألبان / Dairy": "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور",
+    "تمور ومكسرات / Dates & Nuts": "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور",
     "خضار / Vegetables": "ثلاجة 1 - الخضار والفواكه",
+    "فواكه / Fruits": "ثلاجة 1 - الخضار والفواكه",
     "دواجن / Poultry": "ثلاجة 2 - اللحوم والدواجن والأسماك",
     "لحوم / Meat": "ثلاجة 2 - اللحوم والدواجن والأسماك",
+    "أسماك ومأكولات بحرية / Fish & Seafood": "ثلاجة 2 - اللحوم والدواجن والأسماك",
+    "بهارات وصلصات / Spices & Sauces": "مستودع 1 - البهارات",
+    "زيوت ودهون / Oils & Fats": "مستودع 4 - المواد الغذائية المعبأة",
+    "مواد غذائية معبأة / Packaged Foods": "مستودع 4 - المواد الغذائية المعبأة",
+    "مجمدات ومعجنات / Frozen Foods & Pastries": "ثلاجة 4 - المجمدات والمعجنات",
+    "مخبوزات / Bakery": "مستودع 5 - مواد الاستعمال اليومي",
+    "حلويات / Desserts": "مستودع 5 - مواد الاستعمال اليومي",
+    "أواني ومعدات / Utensils & Equipment": "مستودع 6 - الأواني والمعدات",
+    "مستلزمات تقديم / Serving Supplies": "مستودع 6 - الأواني والمعدات",
+    "منظفات / Cleaning": "مستودع 7 - أدوات النظافة",
+    "تعقيم وسلامة / Hygiene & Safety": "مستودع 7 - أدوات النظافة",
+    "أدوات تشغيل / Operating Supplies": "مستودع 6 - الأواني والمعدات",
     "أخرى / Other": "مستودع 5 - مواد الاستعمال اليومي",
 }
 
@@ -522,12 +554,35 @@ def preferred_warehouse_for_ingredient(name: str, category: str | None = None) -
     """
     text = (name or "").strip()
 
+    if category in ("منظفات / Cleaning", "تعقيم وسلامة / Hygiene & Safety"):
+        return "مستودع 7 - أدوات النظافة"
+    if category in ("أواني ومعدات / Utensils & Equipment", "مستلزمات تقديم / Serving Supplies", "أدوات تشغيل / Operating Supplies"):
+        return "مستودع 6 - الأواني والمعدات"
+    if category == "تغليف / Packaging":
+        return "مستودع 2 - التغليف"
+    if category == "مجمدات ومعجنات / Frozen Foods & Pastries":
+        return "ثلاجة 4 - المجمدات والمعجنات"
+    if category in ("لحوم / Meat", "دواجن / Poultry", "أسماك ومأكولات بحرية / Fish & Seafood"):
+        return "ثلاجة 2 - اللحوم والدواجن والأسماك"
+    if category in ("خضار / Vegetables", "فواكه / Fruits"):
+        return "ثلاجة 1 - الخضار والفواكه"
+    if category in ("ألبان / Dairy", "تمور ومكسرات / Dates & Nuts"):
+        return "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور"
+    if category == "مشروبات / Beverages":
+        return "مستودع 8 - المياه والمشروبات الكرتونية"
+    if category in ("أرز وحبوب / Rice & Grains", "دقيق ومطاحن / Flour & Milling", "بقوليات / Legumes"):
+        return "مستودع 3 - المواد الغذائية الجافة"
+    if category in ("زيوت ودهون / Oils & Fats", "مواد غذائية معبأة / Packaged Foods"):
+        return "مستودع 4 - المواد الغذائية المعبأة"
+    if category in ("مخبوزات / Bakery", "حلويات / Desserts"):
+        return "مستودع 5 - مواد الاستعمال اليومي"
+    if category == "بهارات وصلصات / Spices & Sauces":
+        return "مستودع 4 - المواد الغذائية المعبأة" if any(k in text for k in PACKAGED_KEYWORDS + ("كاتشب", "مايونيز", "خردل", "صوص", "دبس", "ماء ورد", "ماء زهر")) else "مستودع 1 - البهارات"
+
     if any(k in text for k in CLEANING_KEYWORDS):
         return "مستودع 7 - أدوات النظافة"
     if any(k in text for k in EQUIPMENT_KEYWORDS):
         return "مستودع 6 - الأواني والمعدات"
-    if category == "تغليف / Packaging":
-        return "مستودع 2 - التغليف"
 
     # Explicit frozen wording always wins over the broader chilled/vegetable
     # categories (for example frozen peas and pastries).
@@ -539,15 +594,13 @@ def preferred_warehouse_for_ingredient(name: str, category: str | None = None) -
     if any(k in text for k in PACKAGED_KEYWORDS):
         return "مستودع 4 - المواد الغذائية المعبأة"
 
-    if category in ("لحوم / Meat", "دواجن / Poultry") or any(k in text for k in FISH_KEYWORDS):
+    if any(k in text for k in FISH_KEYWORDS):
         return "ثلاجة 2 - اللحوم والدواجن والأسماك"
-    if category == "خضار / Vegetables" or any(k in text for k in ("تفاح", "برتقال", "موز", "ليمون", "فواكه")):
+    if any(k in text for k in ("تفاح", "برتقال", "موز", "ليمون", "فواكه")):
         return "ثلاجة 1 - الخضار والفواكه"
-    if category == "ألبان / Dairy" or any(k in text for k in DRINK_KEYWORDS):
+    if any(k in text for k in DRINK_KEYWORDS):
         return "ثلاجة 3 - المشروبات والعصيرات والماء والزبادي والتمور"
-    if category == "مشروبات / Beverages":
-        return "مستودع 8 - المياه والمشروبات الكرتونية"
-    if category == "أرز وحبوب / Rice & Grains" or any(k in text for k in ("دقيق", "سكر", "أرز", "عدس", "حمص حب", "فول", "مكرونة")):
+    if any(k in text for k in ("دقيق", "سكر", "أرز", "عدس", "حمص حب", "فول", "مكرونة")):
         return "مستودع 3 - المواد الغذائية الجافة"
     if any(k in text for k in SPICE_KEYWORDS):
         return "مستودع 1 - البهارات"

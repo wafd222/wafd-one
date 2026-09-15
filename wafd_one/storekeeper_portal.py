@@ -76,27 +76,32 @@ def get_storekeeper_workflow_options(warehouse=None, search=None, category=None,
     if warehouse and warehouse not in valid_names:
         frappe.throw(_("اختر مستودعاً نشطاً / Select an active warehouse"))
 
+    is_receipt = bool(int(receipt or 0))
     conditions = ["i.status='نشط / Active'"]
-    values = []
+    join_values = []
+    where_values = []
     if category:
         conditions.append("i.category=%s")
-        values.append(category)
+        where_values.append(category)
     cleaned_search = (search or "").strip()
     if cleaned_search:
         like = f"%{cleaned_search}%"
         translated_field = language_field(language)
         translated_search = f" or coalesce(i.`{translated_field}`,'') like %s" if translated_field else ""
         conditions.append(f"(i.ingredient_name like %s{translated_search} or i.item_code like %s or i.category like %s)")
-        values.extend(([like] if translated_field else []) + [like, like, like])
+        where_values.extend(([like] if translated_field else []) + [like, like, like])
 
-    if warehouse and not int(receipt or 0):
+    if warehouse and not is_receipt:
         conditions.append("b.warehouse=%s and coalesce(b.available_quantity,0)>0")
-        values.append(warehouse)
+        where_values.append(warehouse)
         join = "join `tabWAFD Stock Balance` b on b.ingredient=i.name"
+    elif warehouse and is_receipt:
+        join = "left join `tabWAFD Stock Balance` b on b.ingredient=i.name and b.warehouse=%s"
+        join_values.append(warehouse)
+        conditions.append("i.preferred_warehouse=%s")
+        where_values.append(warehouse)
     else:
-        join = "left join `tabWAFD Stock Balance` b on b.ingredient=i.name and b.warehouse=%s" if warehouse else "left join `tabWAFD Stock Balance` b on 1=0"
-        if warehouse:
-            values.insert(0, warehouse)
+        join = "left join `tabWAFD Stock Balance` b on 1=0"
 
     items = frappe.db.sql(
         f"""select i.name as ingredient, i.item_code, i.category, i.uom,
@@ -107,17 +112,29 @@ def get_storekeeper_workflow_options(warehouse=None, search=None, category=None,
                {join}
               where {' and '.join(conditions)}
               order by i.category asc, i.ingredient_name asc
-              limit 80""",
-        tuple(values),
+              limit 600""",
+        tuple(join_values + where_values),
         as_dict=True,
     )
     for row in items:
         row["unit_cost"] = flt(row.average_cost) or flt(row.latest_market_cost) or flt(row.standard_cost)
     add_ingredient_labels(items, language)
+    category_join = ""
+    category_conditions = ["i.status='نشط / Active'", "coalesce(i.category,'')!=''"]
+    category_values = []
+    if warehouse and is_receipt:
+        category_conditions.append("i.preferred_warehouse=%s")
+        category_values.append(warehouse)
+    elif warehouse:
+        category_join = "join `tabWAFD Stock Balance` cb on cb.ingredient=i.name"
+        category_conditions.append("cb.warehouse=%s and coalesce(cb.available_quantity,0)>0")
+        category_values.append(warehouse)
     categories = frappe.db.sql(
-        """select distinct category from `tabWAFD Ingredient`
-            where status='نشط / Active' and coalesce(category,'')!=''
-            order by category asc""",
+        f"""select distinct i.category from `tabWAFD Ingredient` i
+             {category_join}
+             where {' and '.join(category_conditions)}
+             order by i.category asc""",
+        tuple(category_values),
         as_dict=True,
     )
     return {
@@ -141,9 +158,16 @@ def receive_inventory_materials(target_warehouse, items):
         ingredient = (row.get("ingredient") or "").strip()
         quantity = flt(row.get("quantity"))
         unit_cost = flt(row.get("unit_cost"))
-        item = frappe.db.get_value("WAFD Ingredient", ingredient, ["status", "uom"], as_dict=True)
+        item = frappe.db.get_value(
+            "WAFD Ingredient", ingredient, ["status", "uom", "preferred_warehouse"], as_dict=True
+        )
         if not item or item.status != "نشط / Active" or ingredient in seen:
             frappe.throw(_("قائمة المواد غير صالحة أو تحتوي تكراراً / Invalid or duplicate items"))
+        if item.preferred_warehouse and item.preferred_warehouse != target_warehouse:
+            frappe.throw(_(
+                f"المادة {ingredient} مخصصة لـ {item.preferred_warehouse} وليست للمستودع المختار / "
+                "The material belongs to a different warehouse"
+            ))
         if quantity <= 0:
             frappe.throw(_(f"اكتب كمية صحيحة للمادة {ingredient} / Enter a valid quantity"))
         if unit_cost < 0:

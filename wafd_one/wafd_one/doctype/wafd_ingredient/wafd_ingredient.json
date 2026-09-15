@@ -111,7 +111,7 @@
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "التصنيف / Category",
-   "options": "لحوم / Meat\nدواجن / Poultry\nأسماك ومأكولات بحرية / Fish & Seafood\nأرز وحبوب / Rice & Grains\nبقوليات / Legumes\nخضار / Vegetables\nفواكه / Fruits\nألبان / Dairy\nمخبوزات / Bakery\nبهارات وصلصات / Spices & Sauces\nزيوت ودهون / Oils & Fats\nمشروبات / Beverages\nحلويات / Desserts\nتغليف / Packaging\nمنظفات / Cleaning\nتعقيم وسلامة / Hygiene & Safety\nأدوات تشغيل / Operating Supplies\nأخرى / Other"
+   "options": "لحوم / Meat\nدواجن / Poultry\nأسماك ومأكولات بحرية / Fish & Seafood\nأرز وحبوب / Rice & Grains\nدقيق ومطاحن / Flour & Milling\nبقوليات / Legumes\nخضار / Vegetables\nفواكه / Fruits\nتمور ومكسرات / Dates & Nuts\nألبان / Dairy\nمخبوزات / Bakery\nبهارات وصلصات / Spices & Sauces\nزيوت ودهون / Oils & Fats\nمشروبات / Beverages\nحلويات / Desserts\nمواد غذائية معبأة / Packaged Foods\nمجمدات ومعجنات / Frozen Foods & Pastries\nتغليف / Packaging\nأواني ومعدات / Utensils & Equipment\nمستلزمات تقديم / Serving Supplies\nمنظفات / Cleaning\nتعقيم وسلامة / Hygiene & Safety\nأدوات تشغيل / Operating Supplies\nأخرى / Other"
   },
   {
    "fieldname": "uom",

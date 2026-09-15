@@ -526,3 +526,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc293.execute
 
 # RC294 free hotel routing inside the active driver meal run
 wafd_one.wafd_one.patches.v10_0_0_rc294.execute
+
+# RC295 curated catering material catalogue and strict warehouse sections
+wafd_one.wafd_one.patches.v10_0_0_rc295.execute

@@ -35,6 +35,16 @@ def main() -> None:
     for path in ROOT.rglob("*.json"):
         doc = json.loads(path.read_text(encoding="utf-8"))
         json_docs.append((path, doc))
+        if (
+            isinstance(doc, dict)
+            and doc.get("doctype") == "DocType"
+            and "doctype" in path.parts
+            and path.parent.name == path.stem
+        ):
+            controller = path.with_suffix(".py")
+            package_init = path.parent / "__init__.py"
+            assert controller.exists(), f"Missing DocType Python controller: {controller}"
+            assert package_init.exists(), f"Missing DocType package initializer: {package_init}"
         if isinstance(doc, dict) and doc.get("doctype") in {
             "DocType", "Workspace", "Page", "Report", "Print Format",
             "Dashboard Chart", "Number Card",

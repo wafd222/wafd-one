@@ -194,13 +194,15 @@
    "fieldname": "project_manager_user",
    "fieldtype": "Link",
    "label": "مدير المشروع / Project Manager",
-   "options": "User"
+   "options": "User",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "kitchen_supervisor_user",
    "fieldtype": "Link",
    "label": "مشرف المطبخ / Kitchen Supervisor",
-   "options": "User"
+   "options": "User",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "column_break_team",
@@ -210,13 +212,15 @@
    "fieldname": "delivery_supervisor_user",
    "fieldtype": "Link",
    "label": "مشرف التوصيل / Delivery Supervisor",
-   "options": "User"
+   "options": "User",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "site_manager_user",
    "fieldtype": "Link",
    "label": "مدير الموقع / Site Manager",
-   "options": "User"
+   "options": "User",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "start_date",

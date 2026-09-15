@@ -541,3 +541,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc298.execute
 
 # RC299 restore missing supervisor daily owner controller and recover migration
 wafd_one.wafd_one.patches.v10_0_0_rc299.execute
+
+# RC300 Iftar role dashboard permission isolation and permanent team assignment
+wafd_one.wafd_one.patches.v10_0_0_rc300.execute

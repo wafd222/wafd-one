@@ -222,8 +222,16 @@ def create_project(data):
     allowed = required + [
         "contract",
         "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
-        "haram_zone"
+        "haram_zone", "project_manager_user", "kitchen_supervisor_user",
+        "delivery_supervisor_user", "site_manager_user",
     ]
+    from wafd_one.wafd_one.iftar_team import _validate_team_user
+    for fieldname in (
+        "project_manager_user", "kitchen_supervisor_user",
+        "delivery_supervisor_user", "site_manager_user",
+    ):
+        if data.get(fieldname):
+            data[fieldname] = _validate_team_user(fieldname, data[fieldname])
     catering_project = None
     if data.get("contract"):
         context = get_iftar_contract_context(data.get("contract"))

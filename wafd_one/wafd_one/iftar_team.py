@@ -12,6 +12,13 @@ TEAM_ROLES = MANAGEMENT_ROLES | {
     "WAFD Delivery Supervisor", "WAFD Iftar Site Manager", "WAFD Iftar Supervisor",
 }
 
+PROJECT_TEAM_ROLE_MAP = {
+    "project_manager_user": ("WAFD Project Manager",),
+    "kitchen_supervisor_user": ("WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"),
+    "delivery_supervisor_user": ("WAFD Delivery Supervisor",),
+    "site_manager_user": ("WAFD Iftar Site Manager",),
+}
+
 
 def _roles():
     return set(frappe.get_roles(frappe.session.user))
@@ -20,6 +27,81 @@ def _roles():
 def _require(*allowed):
     if not (_roles() & set(allowed)):
         frappe.throw(_("غير مصرح بهذه المهمة / Not permitted for this task"), frappe.PermissionError)
+
+
+def _validate_team_user(fieldname, user):
+    user = (user or "").strip()
+    if not user:
+        return ""
+    if not frappe.db.exists("User", {"name": user, "enabled": 1, "user_type": "System User"}):
+        frappe.throw(_("اختر حساب موظف نشط / Select an active employee account"))
+    allowed_roles = set(PROJECT_TEAM_ROLE_MAP[fieldname])
+    if not (set(frappe.get_roles(user)) & allowed_roles):
+        labels = " أو ".join(allowed_roles)
+        frappe.throw(_("الحساب {0} لا يحمل الدور المطلوب: {1} / User does not have the required role").format(user, labels))
+    return user
+
+
+def backfill_unambiguous_project_team():
+    """Fill legacy blank assignments only when one active user owns the role.
+
+    This makes upgrades useful for a single-role test/production account without
+    guessing when more than one employee could legitimately own the assignment.
+    """
+    candidates = {}
+    for fieldname, allowed_roles in PROJECT_TEAM_ROLE_MAP.items():
+        users = set()
+        for role in allowed_roles:
+            users.update(frappe.get_all(
+                "Has Role",
+                filters={"role": role, "parenttype": "User"},
+                pluck="parent",
+                limit_page_length=1000,
+            ))
+        active = sorted(
+            user for user in users
+            if frappe.db.exists("User", {"name": user, "enabled": 1, "user_type": "System User"})
+        )
+        candidates[fieldname] = active[0] if len(active) == 1 else ""
+
+    updated = 0
+    for project in frappe.get_all(
+        "WAFD Iftar Project",
+        filters={"docstatus": ["<", 2]},
+        fields=["name", *PROJECT_TEAM_ROLE_MAP],
+        limit_page_length=1000,
+    ):
+        values = {
+            fieldname: user
+            for fieldname, user in candidates.items()
+            if user and not (project.get(fieldname) or "").strip()
+        }
+        if values:
+            frappe.db.set_value("WAFD Iftar Project", project.name, values, update_modified=False)
+            updated += 1
+    return {"updated_projects": updated, "unique_role_users": candidates}
+
+
+@frappe.whitelist()
+def assign_project_team(project_name, project_manager_user=None, kitchen_supervisor_user=None,
+                        delivery_supervisor_user=None, site_manager_user=None):
+    """Assign the permanent core team, including on an already-submitted project."""
+    _require("System Manager", "WAFD Operations Manager", "WAFD Project Manager")
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    if not (_roles() & GLOBAL_MANAGEMENT_ROLES):
+        if project.project_manager_user and project.project_manager_user != frappe.session.user:
+            frappe.throw(_("هذا المشروع مسند لمدير مشروع آخر / Project is assigned to another manager"), frappe.PermissionError)
+    supplied = {
+        "project_manager_user": project_manager_user,
+        "kitchen_supervisor_user": kitchen_supervisor_user,
+        "delivery_supervisor_user": delivery_supervisor_user,
+        "site_manager_user": site_manager_user,
+    }
+    values = {fieldname: _validate_team_user(fieldname, user) for fieldname, user in supplied.items()}
+    frappe.db.set_value("WAFD Iftar Project", project.name, values, update_modified=True)
+    for user in set(values.values()) - {""}:
+        frappe.clear_cache(user=user)
+    return {"project": project.name, **values}
 
 
 def _submitted_operation(operation_name):
@@ -141,7 +223,7 @@ def sync_iftar_delivery_proof(doc, method=None):
 
 
 def _project_filters(roles):
-    filters = {"docstatus": 1, "status": ["not in", ["مغلق / Closed", "ملغي / Cancelled"]]}
+    filters = {"docstatus": 1, "status": ["not in", ["مكتمل / Completed", "ملغي / Cancelled", "مغلق / Closed"]]}
     if roles & GLOBAL_MANAGEMENT_ROLES:
         return filters
     field = None
@@ -164,6 +246,12 @@ def get_team_dashboard(date=None, project=None):
     if not (roles & TEAM_ROLES):
         frappe.throw(_("لا توجد مهمة إفطار صائم مسندة لهذا الحساب / No Iftar task is assigned"), frappe.PermissionError)
     target_date = getdate(date or nowdate())
+    mode = (
+        "management" if roles & MANAGEMENT_ROLES else
+        "kitchen" if roles & {"WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"} else
+        "delivery" if "WAFD Delivery Supervisor" in roles else
+        "site" if "WAFD Iftar Site Manager" in roles else "supervisor"
+    )
     project_filters = _project_filters(roles)
     assigned_projects = None
     if "WAFD Iftar Supervisor" in roles and not (roles & MANAGEMENT_ROLES):
@@ -194,27 +282,26 @@ def get_team_dashboard(date=None, project=None):
         operation["cartons"] = (cint(operation.planned_meals) + 24) // 25
         operation["deliveries"] = _delivery_rows(operation)
 
-    report_filters = {"operation_date": target_date}
-    if project_names:
-        report_filters["project"] = ["in", project_names]
-    else:
-        report_filters["name"] = "__none__"
-    if "WAFD Iftar Supervisor" in roles and not (roles & MANAGEMENT_ROLES):
-        report_filters["supervisor_user"] = frappe.session.user
-    reports = frappe.get_list(
-        "WAFD Iftar Supervisor Daily Report", filters=report_filters,
-        fields=["name", "project", "daily_operation", "supervisor_name", "supervisor_user", "planned_meals", "cartons", "received_meals", "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals", "report_submitted", "manager_approved", "submitted_at", "approved_at"],
-        order_by="supervisor_name asc", limit_page_length=1000,
-    )
+    # Kitchen and delivery staff do not need supervisor reports. Avoid touching
+    # that DocType entirely so least-privilege accounts never trigger a permission dialog.
+    reports = []
+    if mode in {"management", "site", "supervisor"}:
+        report_filters = {"operation_date": target_date}
+        if project_names:
+            report_filters["project"] = ["in", project_names]
+        else:
+            report_filters["name"] = "__none__"
+        if mode == "supervisor":
+            report_filters["supervisor_user"] = frappe.session.user
+        reports = frappe.get_list(
+            "WAFD Iftar Supervisor Daily Report", filters=report_filters,
+            fields=["name", "project", "daily_operation", "supervisor_name", "supervisor_user", "planned_meals", "cartons", "received_meals", "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals", "report_submitted", "manager_approved", "submitted_at", "approved_at"],
+            order_by="supervisor_name asc", limit_page_length=1000,
+        )
     return {
         "date": target_date, "roles": sorted(roles & TEAM_ROLES), "projects": projects,
         "operations": operations, "reports": reports,
-        "mode": (
-            "management" if roles & MANAGEMENT_ROLES else
-            "kitchen" if roles & {"WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"} else
-            "delivery" if "WAFD Delivery Supervisor" in roles else
-            "site" if "WAFD Iftar Site Manager" in roles else "supervisor"
-        ),
+        "mode": mode,
     }
 
 

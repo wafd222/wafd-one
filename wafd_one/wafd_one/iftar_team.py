@@ -82,6 +82,62 @@ def backfill_unambiguous_project_team():
     return {"updated_projects": updated, "unique_role_users": candidates}
 
 
+def normalize_legacy_iftar_sequence():
+    """Map pre-RC301 quantities to valid stages and reject impossible downstream approvals."""
+    updated = 0
+    rows = frappe.get_all(
+        "WAFD Iftar Daily Operation", filters={"docstatus": ["<", 2]},
+        fields=[
+            "name", "owner", "modified", "modified_by", "produced_meals", "packaged_meals", "loaded_meals",
+            "kitchen_started", "kitchen_ready_approved", "kitchen_ready_meals", "delivery_plan_approved",
+            "site_receipt_approved", "site_receipt_time", "authority_inspection_approved",
+            "site_report_approved", "daily_report_sent", "administration_report_approved", "status",
+        ], limit_page_length=5000,
+    )
+    for row in rows:
+        actor = row.modified_by if frappe.db.exists("User", row.modified_by) else "Administrator"
+        values = {}
+        if cint(row.produced_meals) > 0 and not cint(row.kitchen_started):
+            values.update({"kitchen_started": 1, "kitchen_started_by": actor, "kitchen_started_at": row.modified})
+        if cint(row.packaged_meals) > 0 and not cint(row.kitchen_ready_approved):
+            values.update({
+                "kitchen_ready_meals": max(cint(row.kitchen_ready_meals), cint(row.packaged_meals)),
+                "kitchen_ready_approved": 1, "kitchen_ready_by": actor, "kitchen_ready_time": row.modified,
+            })
+        if cint(row.site_receipt_approved) and cint(row.loaded_meals) > 0 and not cint(row.delivery_plan_approved):
+            values.update({
+                "delivery_plan_approved": 1, "delivery_plan_approved_by": actor,
+                "delivery_plan_approved_at": row.site_receipt_time or row.modified,
+            })
+        # Old test forms allowed inspection before a verified site receipt. Keep
+        # the evidence fields, but the invalid approval must be repeated in order.
+        if cint(row.authority_inspection_approved) and not cint(row.site_receipt_approved):
+            values.update({"authority_inspection_approved": 0, "authority_inspection_approved_by": None})
+        if cint(row.daily_report_sent):
+            values.update({
+                "site_report_approved": 1, "site_report_approved_by": actor, "site_report_approved_at": row.modified,
+                "administration_report_approved": 1, "administration_report_approved_by": actor,
+                "administration_report_approved_at": row.modified, "authority_report_sent_at": row.modified,
+            })
+        effective_site = cint(row.site_receipt_approved)
+        effective_delivery = cint(row.delivery_plan_approved) or cint(values.get("delivery_plan_approved"))
+        effective_ready = cint(row.kitchen_ready_approved) or cint(values.get("kitchen_ready_approved"))
+        effective_started = cint(row.kitchen_started) or cint(values.get("kitchen_started"))
+        status = (
+            "مغلق / Closed" if cint(row.daily_report_sent) else
+            "مستلم / Received" if effective_site else
+            "في التوزيع / Distributing" if effective_delivery else
+            "جاهز للتحميل / Ready to Load" if effective_ready else
+            "قيد الإنتاج / In Production" if effective_started else "مخطط / Planned"
+        )
+        if status != row.status:
+            values["status"] = status
+        if values:
+            frappe.db.set_value("WAFD Iftar Daily Operation", row.name, values, update_modified=False)
+            updated += 1
+    return {"updated_operations": updated}
+
+
 @frappe.whitelist()
 def assign_project_team(project_name, project_manager_user=None, kitchen_supervisor_user=None,
                         delivery_supervisor_user=None, site_manager_user=None):
@@ -328,7 +384,7 @@ def get_team_dashboard(date=None, project=None):
             ("تقرير الموقع", operation.site_report_approved, operation.site_report_approved_at),
             ("إرسال الإدارة", operation.daily_report_sent, operation.authority_report_sent_at),
         ]
-        operation["stages"] = [{"label": label, "done": cint(done), "time": when} for label, done, when in stages]
+        operation["stages"] = [{"label": label, "done": cint(done), "time": when if cint(done) else None} for label, done, when in stages]
 
     # Kitchen and delivery staff do not need supervisor reports. Avoid touching
     # that DocType entirely so least-privilege accounts never trigger a permission dialog.

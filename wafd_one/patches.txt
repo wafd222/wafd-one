@@ -547,3 +547,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc300.execute
 
 # RC301 sequential Iftar approvals from administration plan through authority report
 wafd_one.wafd_one.patches.v10_0_0_rc301.execute
+
+# RC302 mobile Iftar card layout and safe legacy sequential-stage normalization
+wafd_one.wafd_one.patches.v10_0_0_rc302.execute

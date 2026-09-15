@@ -1,0 +1,13 @@
+RC302: Fix Iftar mobile cards and normalize legacy approval stages
+
+- replace flexible mobile rows with a stable two-column card layout
+- prevent meal quantities and separators from wrapping into isolated lines
+- improve mobile typography, spacing, dividers, and delivery summaries
+- show timestamps only for completed approval stages
+- hide plan activation until supervisor plans cover the full daily quantity
+- display a clear setup requirement when supervisors or allocations are missing
+- backfill kitchen start and readiness from valid legacy production data
+- infer legacy delivery approval only when a recorded site receipt proves it occurred
+- invalidate authority inspection approvals that predate site receipt while preserving evidence
+- recalculate legacy operation status to the nearest valid sequential stage
+- add RC302 migration patch, validation, release notes, and version bump

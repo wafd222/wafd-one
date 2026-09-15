@@ -63,6 +63,7 @@ class WAFDDeliveryProof(Document):
             from wafd_one.wafd_one.doctype.wafd_delivery_trip.wafd_delivery_trip import _sync_resource_statuses
             _sync_resource_statuses(trip.vehicle, trip.driver)
         self._sync_meal_plan()
+        self._sync_iftar_day()
 
     def on_trash(self):
         trip = frappe.db.get_value("WAFD Delivery Trip", self.delivery_trip, ["vehicle", "driver"], as_dict=True)
@@ -78,6 +79,9 @@ class WAFDDeliveryProof(Document):
         if trip:
             from wafd_one.wafd_one.doctype.wafd_delivery_trip.wafd_delivery_trip import _sync_resource_statuses
             _sync_resource_statuses(trip.vehicle, trip.driver)
+
+    def after_delete(self):
+        self._sync_iftar_day()
 
     def _sync_meal_plan(self, exclude_name=None):
         if not self.meal_plan:
@@ -100,3 +104,12 @@ class WAFDDeliveryProof(Document):
                 delivered_count = frappe.db.count("WAFD Meal Plan", {"name": ["in", linked], "status": "تم التسليم / Delivered"})
                 daily_status = "تم التسليم / Delivered" if delivered_count == len(linked) else "جاهزة / Ready"
                 frappe.db.set_value("WAFD Daily Meal Plan", daily_plan, "status", daily_status, update_modified=False)
+
+    def _sync_iftar_day(self):
+        operation_name = frappe.db.get_value(
+            "WAFD Delivery Trip", self.delivery_trip, "iftar_daily_operation"
+        )
+        if operation_name:
+            from wafd_one.wafd_one.iftar_team import sync_delivery_schedule
+
+            sync_delivery_schedule(operation_name)

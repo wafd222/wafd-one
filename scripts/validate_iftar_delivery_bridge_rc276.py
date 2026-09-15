@@ -32,9 +32,19 @@ require({"contract", "iftar_project", "iftar_daily_operation", "iftar_link_type"
 require({"contract", "catering_project"} <= iftar_fields, "Iftar project bridge fields missing")
 require("def create_iftar_delivery_task" in backend, "dedicated Iftar delivery endpoint missing")
 require("مرتبط بعقد / Contract Linked" in backend and "بدون عقد / No Contract" in backend, "delivery classification missing")
-require("عدد وجبات إفطار صائم يجب أن يكون أكبر من صفر" in backend, "positive Iftar quantity validation missing")
+# RC297 made the visible meal quantity optional for standalone delivery rows;
+# retain either the original strict validation or the newer normalized value.
+require(
+    "عدد وجبات إفطار صائم يجب أن يكون أكبر من صفر" in backend
+    or '"quantity": max(cint(row.get("quantity")), 0)' in backend,
+    "Iftar quantity normalization missing",
+)
 require("get_iftar_contract_context" in iftar_backend, "Iftar wizard contract context missing")
-require("إرسال إفطار صائم" in supervisor and "بدون عقد" in supervisor, "supervisor contract/standalone UI missing")
+require(
+    ("إرسال إفطار صائم" in supervisor or "إرسال وجبات إفطار صائم" in supervisor)
+    and "بدون عقد" in supervisor,
+    "supervisor contract/standalone UI missing",
+)
 require("عمليات التوصيل" in operations and "توثيق السائق" in operations, "Iftar evidence view missing")
 require("wafd-iftar-summary" in manager and "iftar_snapshot" in executive, "manager Iftar summary missing")
 require("v10_0_0_rc276.execute" in read("wafd_one/patches.txt"), "RC276 patch missing")

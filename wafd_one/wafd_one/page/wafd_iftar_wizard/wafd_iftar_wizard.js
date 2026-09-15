@@ -157,7 +157,12 @@ function build_wizard(wrapper) {
 
   function totals() {
     const start=value('start_date'), end=value('end_date'), daily=Number(value('daily_meals')||0), sale=Number(value('sale_price_per_meal')||0);
-    const days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
+    let days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
+    if(start&&end&&value('season_type')==='الاثنين والخميس / Monday & Thursday'){
+      days=0;
+      const cursor=new Date(`${start}T12:00:00`), finish=new Date(`${end}T12:00:00`);
+      while(cursor<=finish){if(cursor.getDay()===1||cursor.getDay()===4)days+=1;cursor.setDate(cursor.getDate()+1);}
+    }
     const meals=days*daily, cartons=Math.ceil(meals/25);
     return {days, meals, cartons, revenue:meals*sale};
   }

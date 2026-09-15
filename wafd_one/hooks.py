@@ -60,6 +60,7 @@ app_include_js = [
     "/assets/wafd_one/js/wafd_pwa.js",
     "/assets/wafd_one/js/wafd_mobile_choice_replace.js",
     "/assets/wafd_one/js/wafd_date_inputs.js",
+    "/assets/wafd_one/js/wafd_arabic_list_titles.js",
     "wafd_mobile_navigation.bundle.js",
 ]
 
@@ -126,6 +127,10 @@ permission_query_conditions = {
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_query",
     "WAFD Cleaning Material Usage": "wafd_one.cleaning_security.cleaning_usage_query",
     "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_query",
+    "WAFD Iftar Project": "wafd_one.wafd_one.iftar_security.project_query",
+    "WAFD Iftar Daily Operation": "wafd_one.wafd_one.iftar_security.daily_query",
+    "WAFD Iftar Supervisor Plan": "wafd_one.wafd_one.iftar_security.plan_query",
+    "WAFD Iftar Supervisor Daily Report": "wafd_one.wafd_one.iftar_security.report_query",
 }
 
 has_permission = {
@@ -136,6 +141,10 @@ has_permission = {
     "WAFD Stock Movement": "wafd_one.cleaning_security.stock_movement_has_permission",
     "WAFD Cleaning Material Usage": "wafd_one.cleaning_security.cleaning_usage_has_permission",
     "WAFD Hotel Undertaking": "wafd_one.undertaking_security.undertaking_has_permission",
+    "WAFD Iftar Project": "wafd_one.wafd_one.iftar_security.project_has_permission",
+    "WAFD Iftar Daily Operation": "wafd_one.wafd_one.iftar_security.daily_has_permission",
+    "WAFD Iftar Supervisor Plan": "wafd_one.wafd_one.iftar_security.plan_has_permission",
+    "WAFD Iftar Supervisor Daily Report": "wafd_one.wafd_one.iftar_security.report_has_permission",
     # RC213: narrow read bridge for private undertaking PDF/signature/stamp files.
     "File": "wafd_one.undertaking_file_security.file_has_permission",
 }

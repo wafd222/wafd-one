@@ -535,3 +535,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc296.execute
 
 # RC297 unified supervisor/viewer delivery filters and optional visible counts
 wafd_one.wafd_one.patches.v10_0_0_rc297.execute
+
+# RC298 role-based Iftar workforce operations and per-supervisor daily reports
+wafd_one.wafd_one.patches.v10_0_0_rc298.execute

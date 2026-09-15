@@ -28,6 +28,11 @@ QUOTATION_FILE_CREATORS = {
     "WAFD Project Manager",
     "WAFD Quotation Officer",
 }
+IFTAR_FILE_CREATORS = {
+    "System Manager", "WAFD Operations Manager", "WAFD Project Manager",
+    "WAFD Iftar Kitchen Supervisor", "WAFD Iftar Site Manager", "WAFD Iftar Supervisor",
+}
+IFTAR_FILE_DOCTYPES = {"WAFD Iftar Daily Operation", "WAFD Iftar Supervisor Daily Report"}
 
 
 def _roles(user: str) -> set[str]:
@@ -129,8 +134,14 @@ def _delivery_attachment_is_readable(doc, user: str) -> bool:
     if not trip_name:
         return False
     trip = frappe.db.get_value(
-        "WAFD Delivery Trip", trip_name, ["driver", "assigned_driver_user"], as_dict=True
+        "WAFD Delivery Trip", trip_name, ["driver", "assigned_driver_user", "iftar_daily_operation"], as_dict=True
     )
+    if trip and trip.iftar_daily_operation and _roles(user) & {
+        "WAFD Project Manager", "WAFD Iftar Site Manager"
+    } and frappe.has_permission(
+        "WAFD Iftar Daily Operation", ptype="read", doc=trip.iftar_daily_operation, user=user
+    ):
+        return True
     return bool(
         trip and trip_is_assigned_to_user(trip.driver, trip.assigned_driver_user, user)
     )
@@ -145,7 +156,7 @@ def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwar
     # True here makes the standard Attach/Attach Image control reliable even
     # when an existing site's Custom DocPerm cache has not yet been rebuilt.
     # Reading remains narrowly scoped below.
-    if permission_type == "create" and (_roles(user) & QUOTATION_FILE_CREATORS):
+    if permission_type == "create" and (_roles(user) & (QUOTATION_FILE_CREATORS | IFTAR_FILE_CREATORS)):
         return True
 
     # Never widen write/delete/share permissions on File.
@@ -160,6 +171,10 @@ def file_has_permission(doc, user=None, permission_type=None, ptype=None, **kwar
     attached_doctype = getattr(doc, "attached_to_doctype", None)
     attached_name = getattr(doc, "attached_to_name", None)
     attached_field = (getattr(doc, "attached_to_field", None) or "").strip()
+    if attached_doctype in IFTAR_FILE_DOCTYPES and attached_name and frappe.has_permission(
+        attached_doctype, ptype="read", doc=attached_name, user=user
+    ):
+        return True
     if (
         attached_doctype == QUOTATION_DOCTYPE
         and attached_name

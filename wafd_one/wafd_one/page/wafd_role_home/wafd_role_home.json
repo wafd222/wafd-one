@@ -52,9 +52,18 @@
   {
    "role": "WAFD Undertaking Reviewer"
   },
-  {
-   "role": "WAFD Quotation Officer"
-  }
+    {
+      "role": "WAFD Quotation Officer"
+    },
+    {
+      "role": "WAFD Iftar Kitchen Supervisor"
+    },
+    {
+      "role": "WAFD Iftar Site Manager"
+    },
+    {
+      "role": "WAFD Iftar Supervisor"
+    }
  ],
  "creation": "2026-08-15 16:21:00.000000",
  "modified": "2026-08-15 16:21:00.000000",

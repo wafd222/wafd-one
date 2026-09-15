@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC297
+# WAFD ONE 10.0.0 RC298
 
-**Current release: 10.0.0 RC297 — Unified Delivery Status Filters and Optional Counts**
+**Current release: 10.0.0 RC298 — Role-based Iftar Workforce Operations**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

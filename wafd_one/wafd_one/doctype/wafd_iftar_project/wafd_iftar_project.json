@@ -11,13 +11,21 @@
   "contract",
   "catering_project",
   "project_title",
+  "season_type",
   "contracting_entity_type",
   "contracting_entity",
   "column_break_a",
   "distribution_site",
   "haram_zone",
   "site_details",
+  "distribution_type",
   "status",
+  "team_section",
+  "project_manager_user",
+  "kitchen_supervisor_user",
+  "column_break_team",
+  "delivery_supervisor_user",
+  "site_manager_user",
   "schedule_section",
   "start_date",
   "end_date",
@@ -175,6 +183,40 @@
    "fieldname": "schedule_section",
    "fieldtype": "Section Break",
    "label": "الكميات والجدول / Quantities & Schedule"
+  },
+  {
+   "fieldname": "team_section",
+   "fieldtype": "Section Break",
+   "label": "فريق إفطار الصائم الثابت / Permanent Iftar Team",
+   "description": "يسجل مرة واحدة للمشروع ويستخدم طوال رمضان أو أيام الصيام المحددة"
+  },
+  {
+   "fieldname": "project_manager_user",
+   "fieldtype": "Link",
+   "label": "مدير المشروع / Project Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "kitchen_supervisor_user",
+   "fieldtype": "Link",
+   "label": "مشرف المطبخ / Kitchen Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_team",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivery_supervisor_user",
+   "fieldtype": "Link",
+   "label": "مشرف التوصيل / Delivery Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "site_manager_user",
+   "fieldtype": "Link",
+   "label": "مدير الموقع / Site Manager",
+   "options": "User"
   },
   {
    "fieldname": "start_date",
@@ -600,6 +642,31 @@
    "import": 0,
    "export": 0,
    "share": 0
+  },
+  {
+   "role": "WAFD Iftar Kitchen Supervisor",
+   "read": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Production Supervisor",
+   "read": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Delivery Supervisor",
+   "read": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Iftar Site Manager",
+   "read": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Iftar Supervisor",
+   "read": 1,
+   "print": 1
   }
  ],
  "sort_field": "modified",

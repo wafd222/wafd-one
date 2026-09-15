@@ -8,3 +8,4 @@
 .io-link-badge{display:inline-block;border-radius:999px;padding:5px 9px;font-weight:700;background:#ead7a8;color:#624a16;white-space:nowrap}
 .io-link-badge.is-standalone{background:#e1e4e8;color:#4d535a}
 .io-proof-thumb{width:54px;height:44px;object-fit:cover;border-radius:8px}
+.io-mobile-list{display:grid;gap:10px}.io-mobile-list article{background:#fff;border:1px solid #d8dbde;border-radius:14px;padding:14px;color:#30343a}.io-mobile-list article>b{display:block;font-size:16px;margin:7px 0 3px}.io-mobile-list article>small{display:block;color:#737980}.io-mobile-list dl{display:grid;grid-template-columns:42% 58%;margin:10px 0 0}.io-mobile-list dt,.io-mobile-list dd{padding:6px 0;margin:0;border-top:1px solid #eceef0}.io-mobile-list dt{color:#72777e}.io-mobile-list dd{font-weight:700}

@@ -20,6 +20,9 @@ ROLES = (
     "WAFD Undertaking Officer",
     "WAFD Undertaking Reviewer",
     "WAFD Quotation Officer",
+    "WAFD Iftar Kitchen Supervisor",
+    "WAFD Iftar Site Manager",
+    "WAFD Iftar Supervisor",
 )
 
 def _resolve_doctype_root():
@@ -448,6 +451,7 @@ def after_install():
     ensure_hotel_undertaking_print_format()
     ensure_quotation_print_format()
     ensure_quotation_file_permissions()
+    ensure_iftar_file_permissions()
     ensure_madinah_hotels_400()
     frappe.clear_cache()
 
@@ -565,6 +569,24 @@ def ensure_quotation_file_permissions():
             "permlevel": 0,
             "create": 1,
         }).insert(ignore_permissions=True)
+    frappe.clear_cache(doctype="File")
+
+
+def ensure_iftar_file_permissions():
+    """Allow Iftar field workers to attach only evidence used by their permitted records."""
+    if not frappe.db.exists("DocType", "File"):
+        return
+    from frappe.permissions import setup_custom_perms
+
+    roles = ("WAFD Iftar Kitchen Supervisor", "WAFD Iftar Site Manager", "WAFD Iftar Supervisor")
+    setup_custom_perms("File")
+    frappe.db.delete("Custom DocPerm", {"parent": "File", "role": ["in", list(roles)]})
+    for role in roles:
+        if frappe.db.exists("Role", role):
+            frappe.get_doc({
+                "doctype": "Custom DocPerm", "parent": "File", "parenttype": "DocType",
+                "parentfield": "permissions", "role": role, "permlevel": 0, "create": 1,
+            }).insert(ignore_permissions=True)
     frappe.clear_cache(doctype="File")
 
 

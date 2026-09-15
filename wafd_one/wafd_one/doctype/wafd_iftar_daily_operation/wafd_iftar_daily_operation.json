@@ -11,11 +11,20 @@
  "field_order": [
   "project_section",
   "project",
+  "project_title",
+  "distribution_site",
+  "contracting_entity",
   "operation_date",
   "status",
   "column_break_1",
   "planned_meals",
   "completion_percent",
+  "kitchen_section",
+  "kitchen_ready_meals",
+  "kitchen_ready_approved",
+  "kitchen_ready_time",
+  "kitchen_shortage_reported",
+  "kitchen_shortage_notes",
   "flow_section",
   "produced_meals",
   "packaged_meals",
@@ -26,7 +35,38 @@
   "surplus_meals",
   "waste_meals",
   "preservation_society_quantity",
+  "authority_section",
+  "authority_supervisor_name",
+  "authority_inspection_time",
+  "yogurt_checked",
+  "bread_checked",
+  "dates_checked",
+  "expiry_checked",
+  "authority_inspection_notes",
+  "authority_inspection_photo",
+  "authority_inspection_approved",
+  "field_close_section",
+  "tables_spread_completed",
+  "cleanup_completed",
+  "daily_report_sent",
+  "daily_photos_section",
+  "daily_photos",
+  "media_links",
   "distribution_section",
+  "delivery_sync_section",
+  "delivery_trip_count",
+  "delivery_scheduled_meals",
+  "delivery_verified_meals",
+  "delivery_proof_count",
+  "delivery_last_arrival",
+  "delivery_receivers",
+  "delivery_proof_photos",
+  "driver_schedule_summary",
+  "site_receipt_section",
+  "site_received_meals",
+  "site_receipt_approved",
+  "site_receipt_time",
+  "site_received_by",
   "recipient_name",
   "recipient_id",
   "receipt_number",
@@ -36,6 +76,11 @@
   "supervisor_name",
   "receipt_time",
   "notes",
+  "table_owner_name",
+  "supervisors_manager",
+  "assigned_meals",
+  "assistants_section",
+  "assistants_attendance",
   "sign_section",
   "delivered_by",
   "received_by",
@@ -113,6 +158,41 @@
    "fieldname": "authority_section",
    "fieldtype": "Section Break",
    "label": "فحص مشرف التغذية من الجهة / Authority Food Supervisor Inspection"
+  },
+  {
+   "fieldname": "kitchen_section",
+   "fieldtype": "Section Break",
+   "label": "جاهزية المطبخ والنواقص / Kitchen Readiness & Shortages"
+  },
+  {
+   "fieldname": "kitchen_ready_meals",
+   "fieldtype": "Int",
+   "label": "العدد الجاهز / Ready Meals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kitchen_ready_approved",
+   "fieldtype": "Check",
+   "label": "اعتماد الجاهزية / Readiness Approved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kitchen_ready_time",
+   "fieldtype": "Datetime",
+   "label": "وقت اعتماد الجاهزية / Readiness Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kitchen_shortage_reported",
+   "fieldtype": "Check",
+   "label": "يوجد نقص مواد / Material Shortage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kitchen_shortage_notes",
+   "fieldtype": "Small Text",
+   "label": "بيان النقص المرسل للإدارة / Shortage Notice",
+   "read_only": 1
   },
   {
    "fieldname": "authority_supervisor_name",
@@ -267,6 +347,89 @@
    "label": "التسليم والاستلام / Handover"
   },
   {
+   "fieldname": "delivery_sync_section",
+   "fieldtype": "Section Break",
+   "label": "مزامنة جدول التوصيل الحالي / Current Delivery Schedule Sync",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "delivery_trip_count",
+   "fieldtype": "Int",
+   "label": "عدد عمليات التوصيل / Delivery Operations",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_scheduled_meals",
+   "fieldtype": "Int",
+   "label": "المجدول مع السائقين / Driver Scheduled Meals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_verified_meals",
+   "fieldtype": "Int",
+   "label": "المثبت وصولها / Verified Arrivals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_proof_count",
+   "fieldtype": "Int",
+   "label": "عدد إثباتات الوصول / Delivery Proofs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_last_arrival",
+   "fieldtype": "Datetime",
+   "label": "آخر وقت وصول / Last Arrival",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_receivers",
+   "fieldtype": "Small Text",
+   "label": "المستلمون في إثباتات السائق / Driver Proof Receivers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_proof_photos",
+   "fieldtype": "Long Text",
+   "label": "صور إثبات الوصول / Arrival Proof Photos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "driver_schedule_summary",
+   "fieldtype": "Small Text",
+   "label": "السائقون والمركبات والمواقع / Drivers, Vehicles & Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_receipt_section",
+   "fieldtype": "Section Break",
+   "label": "اعتماد استلام مدير الموقع / Site Manager Receipt"
+  },
+  {
+   "fieldname": "site_received_meals",
+   "fieldtype": "Int",
+   "label": "العدد المستلم في الموقع / Site Received Meals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_receipt_approved",
+   "fieldtype": "Check",
+   "label": "اعتماد استلام الموقع / Site Receipt Approved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_receipt_time",
+   "fieldtype": "Datetime",
+   "label": "وقت اعتماد الاستلام / Site Receipt Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_received_by",
+   "fieldtype": "Data",
+   "label": "اعتمد الاستلام / Site Received By",
+   "read_only": 1
+  },
+  {
    "fieldname": "recipient_name",
    "fieldtype": "Data",
    "label": "اسم المستلم / Recipient Name"
@@ -419,8 +582,8 @@
   {
    "role": "WAFD Delivery Supervisor",
    "read": 1,
-   "write": 1,
-   "create": 1,
+   "write": 0,
+   "create": 0,
    "submit": 0,
    "print": 1,
    "report": 1,
@@ -432,6 +595,25 @@
    "import": 0,
    "export": 0,
    "share": 0
+  },
+  {
+   "role": "WAFD Iftar Kitchen Supervisor",
+   "read": 1,
+   "write": 0,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "WAFD Iftar Site Manager",
+   "read": 1,
+   "write": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "WAFD Iftar Supervisor",
+   "read": 1,
+   "print": 1
   }
  ],
  "default_print_format": "إفطار صائم — تسليم واستلام يومي",

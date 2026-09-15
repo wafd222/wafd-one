@@ -10,6 +10,7 @@
   "column_break_1",
   "supervisor_name",
   "supervisor_mobile",
+  "supervisor_user",
   "summary_section",
   "assigned_meals",
   "table_owners_count",
@@ -59,6 +60,13 @@
    "fieldtype": "Data",
    "label": "جوال المشرف / Supervisor Mobile",
    "in_list_view": 1
+  },
+  {
+   "fieldname": "supervisor_user",
+   "fieldtype": "Link",
+   "label": "حساب المشرف / Supervisor User",
+   "options": "User",
+   "description": "يحدد المشرف الذي تظهر له هذه الخطة وتقاريره اليومية فقط / Limits the plan and daily reports to this supervisor"
   },
   {
    "fieldname": "summary_section",
@@ -177,6 +185,25 @@
    "email": 1,
    "import": 0,
    "share": 1
+  },
+  {
+   "role": "WAFD Project Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Iftar Site Manager",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "WAFD Iftar Supervisor",
+   "read": 1,
+   "print": 1
   }
  ],
  "sort_field": "modified",

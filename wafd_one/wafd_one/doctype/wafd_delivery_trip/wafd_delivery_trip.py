@@ -65,6 +65,7 @@ class WAFDDeliveryTrip(Document):
             from wafd_one.delivery_tracking import inherit_schedule_viewers
 
             inherit_schedule_viewers(self.name)
+        self._sync_iftar_day()
 
     def _validate_loading_trip(self):
         loading = frappe.db.get_value("WAFD Loading Record", self.loading_record,
@@ -257,6 +258,7 @@ class WAFDDeliveryTrip(Document):
         if self.loading_record and self.status in ("في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed"):
             frappe.db.set_value("WAFD Loading Record", self.loading_record, {"status": "خرجت / Dispatched", "dispatch_time": self.actual_departure or now_datetime()}, update_modified=False)
         _sync_resource_statuses(self.vehicle, self.driver)
+        self._sync_iftar_day()
 
     def on_trash(self):
         if frappe.db.exists("WAFD Delivery Proof", {"delivery_trip": self.name}):
@@ -265,6 +267,15 @@ class WAFDDeliveryTrip(Document):
         if self.loading_record:
             frappe.db.set_value("WAFD Loading Record", self.loading_record, "status", "تم التحميل / Loaded", update_modified=False)
         _sync_resource_statuses(vehicle, driver, exclude_trip=self.name)
+
+    def after_delete(self):
+        self._sync_iftar_day()
+
+    def _sync_iftar_day(self):
+        if self.iftar_daily_operation:
+            from wafd_one.wafd_one.iftar_team import sync_iftar_delivery_trip
+
+            sync_iftar_delivery_trip(self)
 
 
 def _sync_resource_statuses(vehicle, driver, exclude_trip=None):

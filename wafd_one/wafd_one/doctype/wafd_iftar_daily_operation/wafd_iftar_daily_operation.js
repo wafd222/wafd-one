@@ -96,9 +96,9 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         if (window.matchMedia && window.matchMedia("(max-width: 768px)").matches) {
           const key = `wafd-mobile-stage-${frm.doc.name}`.replace(/[^a-zA-Z0-9_-]/g, "-");
           frm.$wrapper.find(".wafd-mobile-stage-action").remove();
-          frm.$wrapper.find(".form-layout").css("padding-bottom", "92px");
+          frm.$wrapper.find(".form-layout").css("padding-bottom", "70px");
           const mobile = $(`<button type="button" class="btn btn-primary wafd-mobile-stage-action" id="${key}">${label}</button>`);
-          mobile.css({position:"fixed",left:"12px",right:"12px",bottom:"calc(12px + env(safe-area-inset-bottom))",zIndex:1050,width:"auto",margin:"0",height:"50px",fontSize:"16px",fontWeight:700,borderRadius:"12px",boxShadow:"0 10px 28px rgba(0,0,0,.26)"});
+          mobile.css({position:"fixed",left:"auto",right:"16px",bottom:"calc(10px + env(safe-area-inset-bottom))",zIndex:1050,width:"min(68vw,320px)",margin:"0",height:"44px",fontSize:"15px",fontWeight:700,borderRadius:"12px",boxShadow:"0 8px 22px rgba(0,0,0,.22)"});
           mobile.on("click", async (e) => { e.preventDefault(); e.stopPropagation(); await action(); });
           $(document.body).append(mobile);
         }
@@ -111,6 +111,23 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         addStageAction(__("اعتماد التغليف"), () => advance("packaged", __("تم اعتماد التغليف")));
       } else if (!frm.doc.loaded_meals) {
         addStageAction(__("اعتماد التحميل"), () => advance("loaded", __("تم اعتماد التحميل")));
+      } else if (!frm.doc.delivered_meals) {
+        addStageAction(__("بانتظار وصول السائق"), () => {
+          frappe.route_options = {project: frm.doc.project, operation: frm.doc.name};
+          frappe.set_route("wafd-iftar-team");
+        });
+      } else if (!frm.doc.site_receipt_approved) {
+        addStageAction(__("اعتماد استلام الموقع"), () => {
+          const d = new frappe.ui.Dialog({
+            title: __("اعتماد استلام مدير الموقع"),
+            fields: [{fieldname:'received_meals',fieldtype:'Int',label:__('العدد المستلم'),reqd:1,default:frm.doc.delivery_verified_meals||frm.doc.delivered_meals}],
+            primary_action_label: __("اعتماد الاستلام"),
+            async primary_action(v){
+              await frappe.call({method:'wafd_one.wafd_one.iftar_team.approve_site_receipt',args:{operation_name:frm.doc.name,received_meals:v.received_meals},freeze:true});
+              d.hide(); await frm.reload_doc();
+            }
+          }); d.show();
+        });
       } else if (!frm.doc.authority_inspection_approved) {
         addStageAction(__("فحص مشرف التغذية"), () => {
           const q = new frappe.ui.Dialog({
@@ -118,15 +135,17 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
             fields: [
               {fieldname:'authority_supervisor_name',fieldtype:'Data',label:__('اسم مشرف التغذية'),reqd:1,default:frm.doc.authority_supervisor_name},
               {fieldtype:'Section Break',label:__('العينة العشوائية')},
-              {fieldname:'yogurt_checked',fieldtype:'Check',label:__('تم فحص الزبادي'),default:1},
-              {fieldname:'bread_checked',fieldtype:'Check',label:__('تم فحص الخبز'),default:1},
-              {fieldname:'dates_checked',fieldtype:'Check',label:__('تم فحص التمر'),default:1},
-              {fieldname:'expiry_checked',fieldtype:'Check',label:__('تم فحص تواريخ الصلاحية'),default:1},
+              {fieldname:'yogurt_checked',fieldtype:'Check',label:__('تم فحص الزبادي'),default:0},
+              {fieldname:'bread_checked',fieldtype:'Check',label:__('تم فحص الخبز'),default:0},
+              {fieldname:'dates_checked',fieldtype:'Check',label:__('تم فحص التمر'),default:0},
+              {fieldname:'expiry_checked',fieldtype:'Check',label:__('تم فحص تواريخ الصلاحية'),default:0},
+              {fieldname:'authority_inspection_photo',fieldtype:'Attach Image',label:__('صورة الفحص'),reqd:1},
               {fieldname:'authority_inspection_notes',fieldtype:'Small Text',label:__('ملاحظات الفحص')}
             ],
             primary_action_label: __('اعتماد الفحص'),
             async primary_action(v){
               if(!v.yogurt_checked||!v.bread_checked||!v.dates_checked||!v.expiry_checked) return frappe.msgprint(__('يجب إكمال جميع عناصر الفحص قبل الاعتماد'));
+              if(!v.authority_inspection_photo) return frappe.msgprint(__('صورة الفحص مطلوبة قبل الاعتماد'));
               q.hide();
               await frm.set_value(v);
               await frm.set_value('authority_inspection_approved',1);
@@ -136,44 +155,9 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
             }
           }); q.show();
         });
-      } else if (!frm.doc.delivered_meals) {
-        addStageAction(__("اعتماد التسليم"), () => advance("delivered", __("تم اعتماد التسليم")));
       } else if (!frm.doc.received_meals) {
-        addStageAction(__("اعتماد الاستلام"), async () => {
-          const roster=(await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_project_field_roster',args:{project_name:frm.doc.project}})).message||{};
-          const ownerOptions=['',...(roster.table_owners||[])].join('\n');
-          const supervisorOptions=['',...(roster.supervisors||[])].join('\n');
-          const managerOptions=['',...(roster.managers||[])].join('\n');
-          const assistantOptions=['',...(roster.assistants||[])].join('\n');
-          const dialog = new frappe.ui.Dialog({
-            title: __("بيانات الاستلام"),
-            size: "extra-large",
-            fields: [
-              { fieldname: "recipient_name", fieldtype: "Data", label: __("اسم المستلم"), reqd: 1, default: frm.doc.recipient_name },
-              { fieldname: "recipient_id", fieldtype: "Data", label: __("رقم الهوية"), default: frm.doc.recipient_id },
-              { fieldname: "table_owner_name", fieldtype: "Select", options: ownerOptions, label: __("اسم صاحب السفرة"), reqd: 1, default: frm.doc.table_owner_name },
-              { fieldname: "supervisor_name", fieldtype: "Select", options: supervisorOptions, label: __("اسم المشرف"), reqd: 1, default: frm.doc.supervisor_name },
-              { fieldname: "supervisors_manager", fieldtype: "Select", options: managerOptions, label: __("مدير المشرفين"), default: frm.doc.supervisors_manager },
-              { fieldname: "assigned_meals", fieldtype: "Int", label: __("عدد الوجبات المسلمة للمشرف"), reqd: 1, default: frm.doc.assigned_meals || frm.doc.planned_meals },
-              { fieldtype: "Section Break", label: __("المساعدون — العدد مفتوح حسب فريق المشرف") },
-              { fieldname: "assistants", fieldtype: "Table", label: __("حضور وغياب المساعدين"), in_place_edit: true,
-                data: (frm.doc.assistants_attendance || []).map(r => ({assistant_name:r.assistant_name,mobile_no:r.mobile_no,attendance_status:r.attendance_status,check_in_time:r.check_in_time,check_out_time:r.check_out_time,notes:r.notes})),
-                fields: [
-                  {fieldname:'assistant_name',fieldtype:'Select',options:assistantOptions,label:__('اسم المساعد'),in_list_view:1,reqd:1},
-                  {fieldname:'mobile_no',fieldtype:'Data',label:__('الجوال'),in_list_view:1},
-                  {fieldname:'attendance_status',fieldtype:'Select',label:__('الحالة'),options:'حاضر / Present\nغائب / Absent',default:'حاضر / Present',in_list_view:1},
-                  {fieldname:'check_in_time',fieldtype:'Time',label:__('الحضور'),in_list_view:1},
-                  {fieldname:'check_out_time',fieldtype:'Time',label:__('الانصراف'),in_list_view:1},
-                  {fieldname:'notes',fieldtype:'Data',label:__('ملاحظات'),in_list_view:1}
-                ] }
-            ],
-            primary_action_label: __("اعتماد الاستلام"),
-            primary_action(values) {
-              dialog.hide();
-              advance("received", __("تم اعتماد الاستلام"), {...values, assistants: JSON.stringify(values.assistants || [])});
-            }
-          });
-          dialog.show();
+        addStageAction(__("متابعة تقارير المشرفين"), () => {
+          frappe.set_route("wafd-iftar-team");
         });
       }
     }

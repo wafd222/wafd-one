@@ -8,6 +8,11 @@ from frappe.utils import cint
 class WAFDIftarSupervisorPlan(Document):
     def validate(self):
         project = frappe.get_doc("WAFD Iftar Project", self.project)
+        if self.supervisor_user and frappe.db.exists("WAFD Iftar Supervisor Plan", {
+            "project": self.project, "supervisor_user": self.supervisor_user,
+            "name": ["!=", self.name or ""],
+        }):
+            frappe.throw("حساب المشرف مرتبط بخطة أخرى في المشروع نفسه / Supervisor user already has a plan in this project")
         self.distribution_site = project.distribution_site
         self.haram_zone = getattr(project, "haram_zone", None)
         self.table_owners_count = len([r for r in (self.table_owners or []) if r.table_owner_name])
@@ -33,6 +38,7 @@ class WAFDIftarSupervisorPlan(Document):
     def on_update(self):
         self._sync_project_counters()
         self._sync_project_distribution()
+        self._seed_daily_assistants()
 
     def on_trash(self):
         self._sync_project_counters(exclude_self=True)
@@ -79,3 +85,34 @@ class WAFDIftarSupervisorPlan(Document):
                     "notes": owner.notes,
                 })
         project.save(ignore_permissions=True)
+
+    def _seed_daily_assistants(self):
+        """Add the registered monthly team to every day without erasing attendance history."""
+        assistants = []
+        for plan_name in frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": self.project}, pluck="name"):
+            plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
+            assistants.extend(
+                (row.assistant_name, row.mobile_no) for row in (plan.assistants or [])
+                if row.assistant_name and cint(row.active)
+            )
+        unique = dict(assistants)
+        if not unique:
+            return
+        for operation in frappe.get_all("WAFD Iftar Daily Operation", filters={"project": self.project}, pluck="name"):
+            existing = set(frappe.get_all(
+                "WAFD Iftar Assistant Attendance",
+                filters={"parent": operation, "parenttype": "WAFD Iftar Daily Operation", "parentfield": "assistants_attendance"},
+                pluck="assistant_name",
+            ))
+            idx = frappe.db.count("WAFD Iftar Assistant Attendance", {
+                "parent": operation, "parenttype": "WAFD Iftar Daily Operation", "parentfield": "assistants_attendance",
+            })
+            for name, mobile in unique.items():
+                if name in existing:
+                    continue
+                idx += 1
+                frappe.get_doc({
+                    "doctype": "WAFD Iftar Assistant Attendance", "parent": operation,
+                    "parenttype": "WAFD Iftar Daily Operation", "parentfield": "assistants_attendance", "idx": idx,
+                    "assistant_name": name, "mobile_no": mobile, "attendance_status": "لم يسجل / Not Marked",
+                }).db_insert()

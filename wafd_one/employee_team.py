@@ -26,6 +26,9 @@ ROLE_LABELS = {
     "WAFD Undertaking Officer": "مسؤول التعهدات",
     "WAFD Undertaking Reviewer": "مراجع التعهدات",
     "WAFD Quotation Officer": "مسؤول عروض الأسعار",
+    "WAFD Iftar Kitchen Supervisor": "مشرف مطبخ إفطار الصائم",
+    "WAFD Iftar Site Manager": "مدير موقع إفطار الصائم",
+    "WAFD Iftar Supervisor": "مشرف سفر إفطار الصائم",
 }
 ROLE_LABELS_EN = {
     "WAFD Project Manager": "Project Manager",
@@ -42,6 +45,9 @@ ROLE_LABELS_EN = {
     "WAFD Undertaking Officer": "Undertaking Officer",
     "WAFD Undertaking Reviewer": "Undertaking Reviewer",
     "WAFD Quotation Officer": "Quotation Officer",
+    "WAFD Iftar Kitchen Supervisor": "Iftar Kitchen Supervisor",
+    "WAFD Iftar Site Manager": "Iftar Site Manager",
+    "WAFD Iftar Supervisor": "Iftar Field Supervisor",
 }
 MANAGED_ROLES = tuple(ROLE_LABELS)
 DRIVER_ROLE = "WAFD Driver"

@@ -54,7 +54,9 @@ class WAFDIftarSupervisorDailyReport(Document):
             owner_delivered = sum(cint(row.delivered_meals) for row in (self.table_owners or []))
             if owner_delivered != cint(self.distributed_meals):
                 frappe.throw("إجمالي تسليم أصحاب السفر يجب أن يساوي الكمية الموزعة / Table-owner deliveries must equal distributed meals")
-            if not any(row.photo for row in (self.daily_photos or [])) and not (self.media_links or "").strip():
+            if not self.distribution_photo or not self.closeout_photo:
+                frappe.throw("صورتا التوزيع ورفع السفر مطلوبتان / Distribution and closeout photos are required")
+            if not any(row.photo for row in (self.daily_photos or [])) and not self.distribution_photo and not (self.media_links or "").strip():
                 frappe.throw("أرفق صورة واحدة على الأقل أو رابط توثيق / Attach at least one photo or evidence link")
             if not self.submitted_at:
                 self.submitted_at = now_datetime()
@@ -64,6 +66,7 @@ class WAFDIftarSupervisorDailyReport(Document):
             for field in (
                 "received_meals", "received_at", "tablecloths", "bread_bags",
                 "waste_bags", "gloves", "shoe_covers", "site_manager_user",
+                "handover_photo",
             ):
                 self.set(field, old.get(field) if old else self.get(field))
             self.manager_approved = cint(old.manager_approved) if old else 0
@@ -84,6 +87,7 @@ class WAFDIftarSupervisorDailyReport(Document):
                     "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals",
                     "tables_spread_completed", "distribution_completed", "cleanup_completed",
                     "report_submitted", "submitted_at", "media_links",
+                    "submitted_by", "distribution_photo", "closeout_photo",
                 )
                 if any(self.get(field) != old.get(field) for field in protected):
                     frappe.throw("مدير الموقع يعتمد التقرير ولا يغير بيانات المشرف / Site manager cannot alter supervisor report data")

@@ -1,0 +1,13 @@
+RC301: Add sequential Iftar operations and time-stamped approvals
+
+- add administration plan activation with complete team and supervisor-allocation validation
+- split administration and project-manager dashboards
+- add gated kitchen start/readiness approval and shortage reporting
+- extend existing delivery trips with Iftar bread, supplies, and loading photo fields
+- approve vehicle allocation without creating duplicate driver trips
+- gate site receipt on verified driver arrival and delivery-supervisor approval
+- add authority food-inspection approval with required checks and photo
+- add supervisor handover photo, assistant attendance, table-owner confirmations, and closeout evidence
+- separate site-manager consolidated report approval from final administration dispatch
+- record user and timestamp for every approval stage
+- add RC301 migration patch, schema validation, release notes, and version bump

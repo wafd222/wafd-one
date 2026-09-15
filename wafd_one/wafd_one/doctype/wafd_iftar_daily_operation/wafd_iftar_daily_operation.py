@@ -30,7 +30,8 @@ class WAFDIftarDailyOperation(Document):
             self.produced_meals, self.packaged_meals, self.loaded_meals,
             self.delivered_meals, self.received_meals,
             self.authority_inspection_approved, self.kitchen_ready_approved,
-            self.site_receipt_approved,
+            self.site_receipt_approved, self.delivery_plan_approved,
+            self.site_report_approved, self.administration_report_approved,
         ]
         if cint(project.docstatus) != 1 and any(cint(value) for value in operational_values):
             frappe.throw("لا يمكن تشغيل أو اعتماد مشروع مسودة / Draft projects cannot accept operational approvals")
@@ -95,6 +96,14 @@ class WAFDIftarDailyOperation(Document):
                 frappe.throw("صورة فحص الجهة مطلوبة قبل الاعتماد / Authority inspection photo is required")
             if not self.authority_inspection_time:
                 self.authority_inspection_time = now_datetime()
+        if cint(self.delivery_plan_approved) and not cint(self.kitchen_ready_approved):
+            frappe.throw("لا يمكن اعتماد التوصيل قبل جاهزية المطبخ / Delivery cannot be approved before kitchen readiness")
+        if cint(self.site_receipt_approved) and not cint(self.delivery_plan_approved):
+            frappe.throw("لا يمكن اعتماد الموقع قبل اعتماد التوصيل / Site receipt requires delivery approval")
+        if cint(self.site_report_approved) and not cint(self.authority_inspection_approved):
+            frappe.throw("لا يمكن اعتماد التقرير قبل فحص الجهة / Site report requires authority inspection")
+        if cint(self.daily_report_sent) and not cint(self.administration_report_approved):
+            frappe.throw("إرسال التقرير يتطلب اعتماد الإدارة / Sending the report requires administration approval")
         self.completion_percent = min(100, flt(received) / flt(self.planned_meals) * 100) if self.planned_meals else 0
         if received >= self.planned_meals and self.planned_meals:
             # Keep the day visibly pending until cleanup and the daily authority
@@ -128,11 +137,16 @@ class WAFDIftarDailyOperation(Document):
             "planned_meals", "produced_meals", "packaged_meals", "loaded_meals",
             "delivered_meals", "received_meals", "completion_percent", "status",
             "kitchen_ready_meals", "kitchen_ready_approved", "kitchen_ready_time",
+            "kitchen_started", "kitchen_started_by", "kitchen_started_at", "kitchen_ready_by",
             "kitchen_shortage_reported", "kitchen_shortage_notes",
             "delivery_trip_count", "delivery_scheduled_meals", "delivery_verified_meals",
             "delivery_proof_count", "delivery_last_arrival", "delivery_receivers",
             "delivery_proof_photos", "driver_schedule_summary", "vehicle", "driver_name",
             "site_received_meals", "site_receipt_approved", "site_receipt_time", "site_received_by",
+            "delivery_plan_approved", "delivery_plan_approved_by", "delivery_plan_approved_at",
+            "authority_inspection_approved_by", "site_report_approved", "site_report_approved_by",
+            "site_report_approved_at", "administration_report_approved", "administration_report_approved_by",
+            "administration_report_approved_at", "authority_report_recipient", "authority_report_sent_at",
         }
         changed = [field for field in protected if self.get(field) != old.get(field)]
         if changed:

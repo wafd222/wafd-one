@@ -544,3 +544,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc299.execute
 
 # RC300 Iftar role dashboard permission isolation and permanent team assignment
 wafd_one.wafd_one.patches.v10_0_0_rc300.execute
+
+# RC301 sequential Iftar approvals from administration plan through authority report
+wafd_one.wafd_one.patches.v10_0_0_rc301.execute

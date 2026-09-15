@@ -532,3 +532,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc295.execute
 
 # RC296 single storekeeper workspace and organized delivery status board
 wafd_one.wafd_one.patches.v10_0_0_rc296.execute
+
+# RC297 unified supervisor/viewer delivery filters and optional visible counts
+wafd_one.wafd_one.patches.v10_0_0_rc297.execute

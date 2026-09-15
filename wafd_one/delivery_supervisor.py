@@ -422,9 +422,6 @@ def create_iftar_delivery_task(delivery_date, driver, delivery_time="12:00", veh
         values["quantity"] = max(cint(quantity), 0)
         values["iftar_link_type"] = "بدون عقد / No Contract"
 
-    if cint(values.get("quantity")) <= 0:
-        frappe.throw(_("عدد وجبات إفطار صائم يجب أن يكون أكبر من صفر / Iftar meal count must be greater than zero"))
-
     doc = frappe.get_doc(values).insert(ignore_permissions=True)
     return {"name": doc.name, "count": 1, "iftar_link_type": doc.iftar_link_type}
 

@@ -267,7 +267,7 @@ def _delivery_data(trip_name):
     trip = frappe.db.get_value(
         "WAFD Delivery Trip",
         trip_name,
-        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "trip_date", "planned_arrival", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status", "delivery_schedule_id", "schedule_customer"],
+        ["name", "destination_name", "destination_name_en", "meal_type", "quantity", "safandash_count", "hot_cabinet_count", "trip_date", "planned_arrival", "loading_record", "driver", "vehicle", "driver_accepted_on", "actual_departure", "actual_arrival", "status", "delivery_schedule_id", "schedule_customer"],
         as_dict=True,
     )
     if not trip:
@@ -291,6 +291,8 @@ def _delivery_data(trip_name):
         "destination_name_en": trip.destination_name_en,
         "meal_type": trip.meal_type,
         "quantity": (loading.quantity if loading else None) or trip.quantity,
+        "safandash_count": cint(trip.safandash_count),
+        "hot_cabinet_count": cint(trip.hot_cabinet_count),
         "trip_date": trip.trip_date,
         "planned_arrival": trip.planned_arrival,
         "loading_time": loading.loading_date if loading else None,
@@ -305,6 +307,20 @@ def _delivery_data(trip_name):
         "has_delivery_photo": bool(proof and proof.delivery_photo),
         "status": "تم التسليم / Delivered" if proof else trip.status,
     }
+
+
+def _tracking_bucket(row):
+    """Use the same mutually exclusive operational states as the supervisor board."""
+    if row.get("delivery_time"):
+        return "delivered"
+    if row.get("status") in {"تم التحميل / Loaded", "في الطريق / In Transit", "وصلت / Arrived"}:
+        return "in_transit"
+    planned_arrival = row.get("planned_arrival")
+    if row.get("status") == "متأخرة / Delayed" or (
+        planned_arrival and get_datetime(planned_arrival) < now_datetime()
+    ):
+        return "attention"
+    return "planned"
 
 
 @frappe.whitelist()
@@ -323,10 +339,18 @@ def get_my_delivery_tracking():
         trip = _delivery_data(assignment.delivery_trip)
         if trip:
             trip["assignment_name"] = assignment.name
+            trip["board_bucket"] = _tracking_bucket(trip)
             rows.append(trip)
-    rows.sort(key=lambda row: str(row.get("planned_arrival") or row.get("trip_date") or ""), reverse=True)
+    rows.sort(key=lambda row: str(row.get("planned_arrival") or row.get("trip_date") or ""))
+    delivered = [row for row in rows if row["board_bucket"] == "delivered"]
+    delivered.sort(key=lambda row: str(row.get("delivery_time") or ""), reverse=True)
+    rows = [row for row in rows if row["board_bucket"] != "delivered"] + delivered
+    summary = {
+        bucket: sum(1 for row in rows if row["board_bucket"] == bucket)
+        for bucket in ("in_transit", "planned", "attention", "delivered")
+    }
     viewer_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
-    return {"read_only": True, "viewer_name": viewer_name, "trips": rows}
+    return {"read_only": True, "viewer_name": viewer_name, "trips": rows, "summary": summary}
 
 
 @frappe.whitelist(allow_guest=True)

@@ -556,3 +556,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc303.execute
 
 # RC304 package marker recovery for Frappe Cloud migration imports
 wafd_one.wafd_one.patches.v10_0_0_rc304.execute
+
+# RC305 allow management accounts to own any core Iftar assignment
+wafd_one.wafd_one.patches.v10_0_0_rc305.execute

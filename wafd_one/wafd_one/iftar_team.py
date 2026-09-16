@@ -35,8 +35,15 @@ def _validate_team_user(fieldname, user):
         return ""
     if not frappe.db.exists("User", {"name": user, "enabled": 1, "user_type": "System User"}):
         frappe.throw(_("اختر حساب موظف نشط / Select an active employee account"))
+    user_roles = set(frappe.get_roles(user))
+    # Management accounts may temporarily own any core task. This is useful
+    # for initial setup and controlled testing, and mirrors their existing
+    # server-side permission to execute every Iftar stage. Regular employee
+    # accounts must still carry the exact operational role.
+    if user_roles & GLOBAL_MANAGEMENT_ROLES:
+        return user
     allowed_roles = set(PROJECT_TEAM_ROLE_MAP[fieldname])
-    if not (set(frappe.get_roles(user)) & allowed_roles):
+    if not (user_roles & allowed_roles):
         labels = " أو ".join(allowed_roles)
         frappe.throw(_("الحساب {0} لا يحمل الدور المطلوب: {1} / User does not have the required role").format(user, labels))
     return user

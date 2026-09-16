@@ -38,10 +38,23 @@ def project_query(user=None):
     return _project_condition(user)
 
 
-def project_has_permission(doc, user=None, permission_type=None):
-    if _manager(user):
-        return None
+def project_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):
     user = user or frappe.session.user
+    roles = _roles(user)
+    permission = permission_type or ptype
+
+    # Frappe v16 expects controller permission hooks to return an explicit
+    # boolean.  Returning None here used to deny project creation even though
+    # the DocType role permissions allowed it.
+    if user == "Administrator" or roles & MANAGERS:
+        return True
+
+    # A project manager must be able to create the project before the selected
+    # team members can be stored on it.  Other operational roles only receive
+    # access after they have been assigned to an existing project.
+    if permission == "create" or getattr(doc, "__islocal", False):
+        return "WAFD Project Manager" in roles
+
     if user in {doc.project_manager_user, doc.kitchen_supervisor_user, doc.delivery_supervisor_user, doc.site_manager_user}:
         return True
     return bool(frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": doc.name, "supervisor_user": user}))
@@ -54,11 +67,11 @@ def daily_query(user=None):
     return "exists (select 1 from `tabWAFD Iftar Project` where `tabWAFD Iftar Project`.name=`tabWAFD Iftar Daily Operation`.project and {0})".format(condition)
 
 
-def daily_has_permission(doc, user=None, permission_type=None):
+def daily_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):
     if _manager(user):
-        return None
+        return True
     project = frappe.get_doc("WAFD Iftar Project", doc.project)
-    return project_has_permission(project, user, permission_type)
+    return project_has_permission(project, user, permission_type, ptype)
 
 
 def plan_query(user=None):
@@ -72,13 +85,13 @@ def plan_query(user=None):
     return "`tabWAFD Iftar Supervisor Plan`.`supervisor_user`={0}".format(frappe.db.escape(user or frappe.session.user))
 
 
-def plan_has_permission(doc, user=None, permission_type=None):
+def plan_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):
     if _manager(user):
-        return None
+        return True
     roles = _roles(user)
     if roles & {"WAFD Iftar Site Manager", "WAFD Project Manager"}:
         project = frappe.get_doc("WAFD Iftar Project", doc.project)
-        return project_has_permission(project, user, permission_type)
+        return project_has_permission(project, user, permission_type, ptype)
     return doc.supervisor_user == (user or frappe.session.user)
 
 
@@ -93,10 +106,10 @@ def report_query(user=None):
     return "`tabWAFD Iftar Supervisor Daily Report`.`supervisor_user`={0}".format(frappe.db.escape(user or frappe.session.user))
 
 
-def report_has_permission(doc, user=None, permission_type=None):
+def report_has_permission(doc, user=None, permission_type=None, ptype=None, **kwargs):
     if _manager(user):
-        return None
+        return True
     if _roles(user) & {"WAFD Iftar Site Manager", "WAFD Project Manager"}:
         project = frappe.get_doc("WAFD Iftar Project", doc.project)
-        return project_has_permission(project, user, permission_type)
+        return project_has_permission(project, user, permission_type, ptype)
     return doc.supervisor_user == (user or frappe.session.user)

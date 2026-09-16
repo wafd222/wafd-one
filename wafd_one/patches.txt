@@ -562,3 +562,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc305.execute
 
 # RC306 choose employees first and assign their Iftar project duties automatically
 wafd_one.wafd_one.patches.v10_0_0_rc306.execute
+
+# RC307 explicit Frappe v16 Iftar create permissions and permission resync
+wafd_one.wafd_one.patches.v10_0_0_rc307.execute

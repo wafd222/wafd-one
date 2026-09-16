@@ -559,3 +559,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc304.execute
 
 # RC305 allow management accounts to own any core Iftar assignment
 wafd_one.wafd_one.patches.v10_0_0_rc305.execute
+
+# RC306 choose employees first and assign their Iftar project duties automatically
+wafd_one.wafd_one.patches.v10_0_0_rc306.execute

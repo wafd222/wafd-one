@@ -1,0 +1,540 @@
+frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
+  const roles = new Set(frappe.user_roles || []);
+  const managerRoles = ["System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"];
+  const isManager = managerRoles.some((role) => roles.has(role));
+  if (!roles.has("WAFD Driver") && !isManager) {
+    wrapper.innerHTML = "";
+    requestAnimationFrame(() => frappe.set_route("wafd-role-home"));
+    return;
+  }
+
+  const supportedLanguages = new Set(["ar", "en", "id", "ur", "hi", "bn", "fr", "ha", "sw", "uz"]);
+  const activeLanguage = () => {
+    const selected = localStorage.getItem("wafd_lang") || "ar";
+    return supportedLanguages.has(selected) ? selected : "ar";
+  };
+  let lang = activeLanguage();
+  const T = {
+    my_trips:{ar:"رحلاتي",en:"My Trips",id:"Perjalanan Saya",ur:"میری ٹرپس",hi:"मेरी यात्राएँ",bn:"আমার ট্রিপ",fr:"Mes trajets",ha:"Tafiyoyina",sw:"Safari Zangu",uz:"Safarlarim"},
+    field_delivery:{ar:"التسليم الميداني",en:"Field Delivery",id:"Pengiriman Lapangan",ur:"فیلڈ ڈیلیوری",hi:"मैदानी डिलीवरी",bn:"মাঠ ডেলিভারি",fr:"Livraison terrain",ha:"Isarwa a fili",sw:"Uwasilishaji wa eneo",uz:"Joydagi yetkazish"},
+    back:{ar:"رجوع",en:"Back",id:"Kembali",ur:"واپس",hi:"वापस",bn:"ফিরুন",fr:"Retour",ha:"Baya",sw:"Rudi",uz:"Orqaga"},
+    refresh:{ar:"تحديث",en:"Refresh",id:"Muat ulang",ur:"تازہ کریں",hi:"रीफ़्रेश",bn:"রিফ্রেশ",fr:"Actualiser",ha:"Sabunta",sw:"Onyesha upya",uz:"Yangilash"},
+    no_trips:{ar:"لا توجد رحلات مسندة إليك حاليًا.",en:"No trips are currently assigned to you.",id:"Saat ini tidak ada perjalanan yang ditugaskan.",ur:"اس وقت آپ کو کوئی ٹرپ تفویض نہیں کیا گیا۔",hi:"अभी आपको कोई यात्रा नहीं सौंपी गई है।",bn:"বর্তমানে আপনাকে কোনো ট্রিপ দেওয়া হয়নি।",fr:"Aucun trajet ne vous est attribué actuellement.",ha:"Babu tafiya da aka ba ka yanzu.",sw:"Hakuna safari uliyopewa kwa sasa.",uz:"Hozir sizga safar biriktirilmagan."},
+    no_trips_manager:{ar:"لا توجد رحلات توصيل حالية.",en:"There are no current delivery trips.",id:"Tidak ada perjalanan pengiriman saat ini.",ur:"اس وقت کوئی ڈیلیوری ٹرپ نہیں ہے۔",hi:"अभी कोई डिलीवरी यात्रा नहीं है।",bn:"বর্তমানে কোনো ডেলিভারি ট্রিপ নেই।",fr:"Aucun trajet de livraison en cours.",ha:"Babu tafiyar isarwa a yanzu.",sw:"Hakuna safari ya uwasilishaji kwa sasa.",uz:"Hozir yetkazib berish safari yo‘q."},
+    no_approved_loading:{ar:"لا يوجد تحميل معتمد ومسند إلى حسابك. على المدير اعتماد التحميل واختيارك كسائق.",en:"No approved loading is assigned to your account. The manager must approve loading and select you as driver.",id:"Tidak ada pemuatan yang disetujui untuk akun Anda. Manajer harus menyetujui pemuatan dan memilih Anda sebagai pengemudi.",ur:"آپ کے اکاؤنٹ کو کوئی منظور شدہ لوڈنگ تفویض نہیں۔ مینیجر لوڈنگ منظور کرکے آپ کو ڈرائیور منتخب کرے۔",hi:"आपके खाते को कोई स्वीकृत लोडिंग नहीं सौंपी गई है। प्रबंधक लोडिंग स्वीकृत करके आपको चालक चुने।",bn:"আপনার অ্যাকাউন্টে অনুমোদিত কোনো লোডিং নেই। ম্যানেজারকে লোডিং অনুমোদন করে আপনাকে চালক নির্বাচন করতে হবে।",fr:"Aucun chargement approuvé n’est attribué à votre compte. Le responsable doit approuver le chargement et vous choisir comme chauffeur.",ha:"Babu lodin da aka amince da shi da aka ba asusunka. Manaja ya amince da lodi kuma ya zaɓe ka a matsayin direba.",sw:"Hakuna upakiaji ulioidhinishwa kwa akaunti yako. Meneja lazima aidhinishe upakiaji na akuchague kama dereva.",uz:"Hisobingizga tasdiqlangan yuklash biriktirilmagan. Menejer yuklashni tasdiqlab, sizni haydovchi sifatida tanlashi kerak."},
+    trip_creation_blocked:{ar:"يوجد تحميل معتمد، لكن تعذر إنشاء رحلة التوصيل. ظهرت المشكلة الفعلية أدناه ليتحقق منها المدير.",en:"An approved loading exists, but its delivery trip could not be created. The actual validation issue is shown below for the manager.",id:"Pemuatan telah disetujui, tetapi perjalanan pengiriman tidak dapat dibuat. Masalah validasi ditampilkan di bawah.",ur:"منظور شدہ لوڈنگ موجود ہے، مگر ڈیلیوری ٹرپ نہیں بن سکا۔ اصل توثیقی مسئلہ نیچے ہے۔",hi:"स्वीकृत लोडिंग मौजूद है, लेकिन डिलीवरी यात्रा नहीं बन सकी। वास्तविक सत्यापन समस्या नीचे है।",bn:"অনুমোদিত লোডিং আছে, কিন্তু ডেলিভারি ট্রিপ তৈরি হয়নি। প্রকৃত যাচাই সমস্যা নিচে দেখানো হয়েছে।",fr:"Un chargement approuvé existe, mais le trajet n’a pas pu être créé. Le problème de validation est indiqué ci-dessous.",ha:"Akwai lodin da aka amince da shi, amma ba a iya ƙirƙirar tafiyar isarwa ba. An nuna matsalar a ƙasa.",sw:"Upakiaji ulioidhinishwa upo, lakini safari ya uwasilishaji haikuweza kuundwa. Tatizo halisi limeonyeshwa hapa chini.",uz:"Tasdiqlangan yuklash bor, ammo yetkazish safari yaratilmadi. Tekshiruv muammosi quyida ko‘rsatilgan."},
+    assignment_incomplete:{ar:"تم العثور على تحميل معتمد، لكن ربط الرحلة بحساب السائق غير مكتمل. راجع ربط السائق في إدارة الموظفين.",en:"An approved loading was found, but the driver-account assignment is incomplete. Review the driver link in Employee Management.",id:"Pemuatan disetujui ditemukan, tetapi tautan akun pengemudi belum lengkap. Periksa di Manajemen Karyawan.",ur:"منظور شدہ لوڈنگ ملی، مگر ڈرائیور اکاؤنٹ ربط مکمل نہیں۔ ملازمین کے انتظام میں ربط دیکھیں۔",hi:"स्वीकृत लोडिंग मिली, लेकिन चालक-खाता लिंक अधूरा है। कर्मचारी प्रबंधन में लिंक जाँचें।",bn:"অনুমোদিত লোডিং পাওয়া গেছে, কিন্তু চালক-অ্যাকাউন্ট সংযোগ অসম্পূর্ণ। কর্মচারী ব্যবস্থাপনায় পরীক্ষা করুন।",fr:"Un chargement approuvé a été trouvé, mais le lien du compte chauffeur est incomplet. Vérifiez la gestion des employés.",ha:"An sami lodin da aka amince da shi, amma haɗin asusun direba bai cika ba. Duba Gudanar da Ma’aikata.",sw:"Upakiaji ulioidhinishwa umepatikana, lakini kiungo cha akaunti ya dereva hakijakamilika. Kagua Usimamizi wa Wafanyakazi.",uz:"Tasdiqlangan yuklash topildi, ammo haydovchi hisobi bog‘lanishi to‘liq emas. Xodimlar boshqaruvida tekshiring."},
+    hotel:{ar:"الوجهة",en:"Destination",id:"Tujuan",ur:"منزل",hi:"गंतव्य",bn:"গন্তব্য",fr:"Destination",ha:"Wurin zuwa",sw:"Mahali",uz:"Manzil"},
+    vehicle:{ar:"المركبة",en:"Vehicle",id:"Kendaraan",ur:"گاڑی",hi:"वाहन",bn:"যানবাহন",fr:"Véhicule",ha:"Mota",sw:"Gari",uz:"Transport"},
+    driver:{ar:"السائق",en:"Driver",id:"Pengemudi",ur:"ڈرائیور",hi:"चालक",bn:"চালক",fr:"Chauffeur",ha:"Direba",sw:"Dereva",uz:"Haydovchi"},
+    quantity:{ar:"الكمية",en:"Quantity",id:"Jumlah",ur:"مقدار",hi:"मात्रा",bn:"পরিমাণ",fr:"Quantité",ha:"Adadi",sw:"Kiasi",uz:"Miqdor"},
+    status:{ar:"الحالة",en:"Status",id:"Status",ur:"حالت",hi:"स्थिति",bn:"অবস্থা",fr:"Statut",ha:"Matsayi",sw:"Hali",uz:"Holat"},
+    arrival:{ar:"الوصول المخطط",en:"Planned arrival",id:"Tiba terencana",ur:"متوقع آمد",hi:"नियोजित आगमन",bn:"পরিকল্পিত আগমন",fr:"Arrivée prévue",ha:"Lokacin isowa",sw:"Muda wa kuwasili",uz:"Rejalashtirilgan yetib kelish"},
+    loading_photo:{ar:"صورة التحميل",en:"Loading photo",id:"Foto pemuatan",ur:"لوڈنگ تصویر",hi:"लोडिंग फ़ोटो",bn:"লোডিং ছবি",fr:"Photo du chargement",ha:"Hoton lodi",sw:"Picha ya upakiaji",uz:"Yuklash rasmi"},
+    uploaded_by:{ar:"وثقها",en:"Documented by",id:"Didokumentasikan oleh",ur:"دستاویز کنندہ",hi:"दर्ज करने वाला",bn:"নথিভুক্ত করেছেন",fr:"Documentée par",ha:"Wanda ya tabbatar",sw:"Aliyethibitisha",uz:"Tasdiqlagan"},
+    seal:{ar:"رقم الختم",en:"Seal number",id:"Nomor segel",ur:"مہر نمبر",hi:"सील नंबर",bn:"সিল নম্বর",fr:"Numéro de scellé",ha:"Lambar hatimi",sw:"Namba ya muhuri",uz:"Muhr raqami"},
+    start:{ar:"استلام الرحلة وبدء التوصيل",en:"Accept & start trip",id:"Terima & mulai perjalanan",ur:"ٹرپ قبول اور شروع کریں",hi:"यात्रा स्वीकार कर शुरू करें",bn:"ট্রিপ গ্রহণ ও শুরু করুন",fr:"Accepter et démarrer",ha:"Karɓa ka fara tafiya",sw:"Kubali na anza safari",uz:"Safarni qabul qilish va boshlash"},
+    mark_arrived:{ar:"تسجيل الوصول",en:"Mark arrived",id:"Tandai tiba",ur:"آمد درج کریں",hi:"आगमन दर्ज करें",bn:"আগমন নিশ্চিত করুন",fr:"Enregistrer l’arrivée",ha:"Yi rajistar isowa",sw:"Thibitisha kuwasili",uz:"Yetib kelishni belgilash"},
+    proof:{ar:"إثبات التسليم",en:"Delivery proof",id:"Bukti pengiriman",ur:"ڈیلیوری ثبوت",hi:"डिलीवरी प्रमाण",bn:"ডেলিভারি প্রমাণ",fr:"Preuve de livraison",ha:"Tabbacin isarwa",sw:"Uthibitisho wa uwasilishaji",uz:"Yetkazib berish dalili"},
+    delivered:{ar:"تم توثيق التسليم",en:"Delivery documented",id:"Pengiriman terdokumentasi",ur:"ڈیلیوری درج ہو گئی",hi:"डिलीवरी दर्ज हो गई",bn:"ডেলিভারি নথিভুক্ত",fr:"Livraison documentée",ha:"An tabbatar da isarwa",sw:"Uwasilishaji umethibitishwa",uz:"Yetkazib berish tasdiqlandi"},
+    receiver:{ar:"اسم المستلم",en:"Receiver name",id:"Nama penerima",ur:"وصول کنندہ کا نام",hi:"प्राप्तकर्ता का नाम",bn:"গ্রহীতার নাম",fr:"Nom du destinataire",ha:"Sunan mai karɓa",sw:"Jina la mpokeaji",uz:"Qabul qiluvchi"},
+    mobile:{ar:"جوال المستلم (اختياري)",en:"Receiver mobile (optional)",id:"Ponsel penerima (opsional)",ur:"وصول کنندہ کا موبائل (اختیاری)",hi:"प्राप्तकर्ता मोबाइल (वैकल्पिक)",bn:"গ্রহীতার মোবাইল (ঐচ্ছিক)",fr:"Téléphone du destinataire (facultatif)",ha:"Wayar mai karɓa (zaɓi)",sw:"Simu ya mpokeaji (hiari)",uz:"Qabul qiluvchi telefoni (ixtiyoriy)"},
+    received:{ar:"الكمية المستلمة",en:"Received quantity",id:"Jumlah diterima",ur:"وصول شدہ مقدار",hi:"प्राप्त मात्रा",bn:"গৃহীত পরিমাণ",fr:"Quantité reçue",ha:"Adadin da aka karɓa",sw:"Kiasi kilichopokelewa",uz:"Qabul qilingan miqdor"},
+    rejected:{ar:"الكمية المرفوضة",en:"Rejected quantity",id:"Jumlah ditolak",ur:"مسترد مقدار",hi:"अस्वीकृत मात्रा",bn:"প্রত্যাখ্যাত পরিমাণ",fr:"Quantité refusée",ha:"Adadin da aka ƙi",sw:"Kiasi kilichokataliwa",uz:"Rad etilgan miqdor"},
+    acceptance:{ar:"نتيجة الاستلام",en:"Acceptance result",id:"Hasil penerimaan",ur:"وصولی نتیجہ",hi:"स्वीकृति परिणाम",bn:"গ্রহণের ফল",fr:"Résultat de réception",ha:"Sakamakon karɓa",sw:"Matokeo ya kupokea",uz:"Qabul natijasi"},
+    full:{ar:"مقبول بالكامل",en:"Fully accepted",id:"Diterima penuh",ur:"مکمل قبول",hi:"पूर्ण स्वीकृत",bn:"সম্পূর্ণ গৃহীত",fr:"Accepté entièrement",ha:"An karɓa gaba ɗaya",sw:"Imekubaliwa yote",uz:"To‘liq qabul qilindi"},
+    partial:{ar:"مقبول جزئيًا",en:"Partially accepted",id:"Diterima sebagian",ur:"جزوی قبول",hi:"आंशिक स्वीकृत",bn:"আংশিক গৃহীত",fr:"Accepté partiellement",ha:"An karɓa wani ɓangare",sw:"Imekubaliwa sehemu",uz:"Qisman qabul qilindi"},
+    refused:{ar:"مرفوض",en:"Rejected",id:"Ditolak",ur:"مسترد",hi:"अस्वीकृत",bn:"প্রত্যাখ্যাত",fr:"Refusé",ha:"An ƙi",sw:"Imekataliwa",uz:"Rad etildi"},
+    quick_note:{ar:"ملاحظة تشغيلية",en:"Operational note",id:"Catatan operasional",ur:"آپریشنل نوٹ",hi:"परिचालन टिप्पणी",bn:"অপারেশন নোট",fr:"Note opérationnelle",ha:"Bayanin aiki",sw:"Dokezo la uendeshaji",uz:"Operatsion izoh"},
+    choose:{ar:"بدون ملاحظة محددة",en:"No preset note",id:"Tanpa catatan",ur:"کوئی طے شدہ نوٹ نہیں",hi:"कोई पूर्व टिप्पणी नहीं",bn:"কোনো নির্দিষ্ট নোট নেই",fr:"Aucune note prédéfinie",ha:"Babu zaɓaɓɓen bayani",sw:"Hakuna dokezo maalum",uz:"Tayyor izoh yo‘q"},
+    notes:{ar:"ملاحظة إضافية",en:"Additional note",id:"Catatan tambahan",ur:"اضافی نوٹ",hi:"अतिरिक्त टिप्पणी",bn:"অতিরিক্ত নোট",fr:"Note supplémentaire",ha:"Ƙarin bayani",sw:"Dokezo la ziada",uz:"Qo‘shimcha izoh"},
+    photo:{ar:"تصوير/اختيار صورة التسليم",en:"Capture/select delivery photo",id:"Ambil/pilih foto pengiriman",ur:"ڈیلیوری تصویر لیں/منتخب کریں",hi:"डिलीवरी फ़ोटो लें/चुनें",bn:"ডেলিভারি ছবি তুলুন/নির্বাচন করুন",fr:"Prendre/choisir la photo",ha:"Ɗauki/zaɓi hoton isarwa",sw:"Piga/chagua picha ya uwasilishaji",uz:"Yetkazish rasmini olish/tanlash"},
+    signature:{ar:"توقيع المستلم",en:"Receiver signature",id:"Tanda tangan penerima",ur:"وصول کنندہ کا دستخط",hi:"प्राप्तकर्ता हस्ताक्षर",bn:"গ্রহীতার স্বাক্ষর",fr:"Signature du destinataire",ha:"Sa hannun mai karɓa",sw:"Sahihi ya mpokeaji",uz:"Qabul qiluvchi imzosi"},
+    clear:{ar:"مسح التوقيع",en:"Clear signature",id:"Hapus tanda tangan",ur:"دستخط صاف کریں",hi:"हस्ताक्षर मिटाएँ",bn:"স্বাক্ষর মুছুন",fr:"Effacer la signature",ha:"Goge sa hannu",sw:"Futa sahihi",uz:"Imzoni tozalash"},
+    submit:{ar:"حفظ إثبات التسليم",en:"Save delivery proof",id:"Simpan bukti pengiriman",ur:"ڈیلیوری ثبوت محفوظ کریں",hi:"डिलीवरी प्रमाण सहेजें",bn:"ডেলিভারি প্রমাণ সংরক্ষণ",fr:"Enregistrer la preuve",ha:"Ajiye tabbacin isarwa",sw:"Hifadhi uthibitisho",uz:"Yetkazish dalilini saqlash"},
+    close:{ar:"إغلاق",en:"Close",id:"Tutup",ur:"بند کریں",hi:"बंद करें",bn:"বন্ধ",fr:"Fermer",ha:"Rufe",sw:"Funga",uz:"Yopish"},
+    saving:{ar:"جارٍ الحفظ...",en:"Saving...",id:"Menyimpan...",ur:"محفوظ ہو رہا ہے...",hi:"सहेजा जा रहा है...",bn:"সংরক্ষণ হচ্ছে...",fr:"Enregistrement...",ha:"Ana ajiyewa...",sw:"Inahifadhi...",uz:"Saqlanmoqda..."},
+    open_map:{ar:"فتح الموقع",en:"Open location",id:"Buka lokasi",ur:"مقام کھولیں",hi:"स्थान खोलें",bn:"অবস্থান খুলুন",fr:"Ouvrir l’emplacement",ha:"Buɗe wuri",sw:"Fungua eneo",uz:"Joylashuvni ochish"},
+    required:{ar:"أكمل اسم المستلم وصورة التسليم والتوقيع المطلوب.",en:"Complete the receiver name, delivery photo and required signature.",id:"Lengkapi nama penerima, foto pengiriman, dan tanda tangan.",ur:"وصول کنندہ کا نام، تصویر اور مطلوبہ دستخط مکمل کریں۔",hi:"प्राप्तकर्ता का नाम, डिलीवरी फ़ोटो और आवश्यक हस्ताक्षर पूरा करें।",bn:"গ্রহীতার নাম, ডেলিভারি ছবি ও প্রয়োজনীয় স্বাক্ষর দিন।",fr:"Complétez le nom, la photo et la signature requise.",ha:"Cika sunan mai karɓa, hoto da sa hannun da ake buƙata.",sw:"Jaza jina la mpokeaji, picha na sahihi inayohitajika.",uz:"Qabul qiluvchi nomi, rasm va kerakli imzoni kiriting."},
+    required_simple:{ar:"صورة التسليم والموقع مطلوبان. اسمح للموقع من إعدادات الهاتف.",en:"Delivery photo and location are required. Allow location access on the phone.",id:"Foto dan lokasi pengiriman wajib. Izinkan akses lokasi di ponsel.",ur:"ڈیلیوری تصویر اور مقام ضروری ہیں۔ فون میں مقام کی اجازت دیں۔",hi:"डिलीवरी फ़ोटो और स्थान आवश्यक हैं। फ़ोन में स्थान की अनुमति दें।",bn:"ডেলিভারি ছবি ও অবস্থান আবশ্যক। ফোনে অবস্থানের অনুমতি দিন।",fr:"La photo et la position sont obligatoires. Autorisez la localisation.",ha:"Ana buƙatar hoto da wurin isarwa. Ba da izinin wuri a waya.",sw:"Picha na eneo la uwasilishaji vinahitajika. Ruhusu eneo kwenye simu.",uz:"Yetkazish rasmi va joylashuv talab qilinadi. Telefonda ruxsat bering."},
+    meal:{ar:"الوجبة",en:"Meal",id:"Makanan",ur:"کھانا",hi:"भोजन",bn:"খাবার",fr:"Repas",ha:"Abinci",sw:"Chakula",uz:"Ovqat"},
+    breakfast:{ar:"إفطار",en:"Breakfast",id:"Sarapan",ur:"ناشتہ",hi:"नाश्ता",bn:"সকালের নাশতা",fr:"Petit-déjeuner",ha:"Karin kumallo",sw:"Kifungua kinywa",uz:"Nonushta"},
+    lunch:{ar:"غداء",en:"Lunch",id:"Makan siang",ur:"دوپہر کا کھانا",hi:"दोपहर का भोजन",bn:"দুপুরের খাবার",fr:"Déjeuner",ha:"Abincin rana",sw:"Chakula cha mchana",uz:"Tushlik"},
+    dinner:{ar:"عشاء",en:"Dinner",id:"Makan malam",ur:"رات کا کھانا",hi:"रात का भोजन",bn:"রাতের খাবার",fr:"Dîner",ha:"Abincin dare",sw:"Chakula cha jioni",uz:"Kechki ovqat"},
+    iftar_saim:{ar:"إفطار صائم",en:"Iftar meal",id:"Makanan berbuka",ur:"افطار کا کھانا",hi:"इफ़्तार भोजन",bn:"ইফতার খাবার",fr:"Repas d’iftar",ha:"Abincin buɗa baki",sw:"Chakula cha futari",uz:"Iftor taomi"},
+    optional:{ar:"غير محدد",en:"Not specified",id:"Tidak ditentukan",ur:"متعین نہیں",hi:"निर्दिष्ट नहीं",bn:"নির্দিষ্ট নয়",fr:"Non précisé",ha:"Ba a ƙayyade ba",sw:"Haijabainishwa",uz:"Ko‘rsatilmagan"},
+    current_round:{ar:"فنادق الجولة الحالية — اختر أي فندق حسب مسارك",en:"Current meal run — choose any destination along your route"},
+    missed_delivery:{ar:"لم يتم توثيق هذه الرحلة في وقتها",en:"This delivery was not documented on time"},
+    missed_help:{ar:"يمكنك توثيقها الآن، وقد فُتحت المرحلة التالية بعد مرور ساعتين.",en:"You can document it now; the next stage opened after two hours."},
+    locked_delivery:{ar:"جولة وجبة قادمة مقفلة",en:"Upcoming meal run locked"},
+    locked_help:{ar:"تُفتح بعد توثيق جميع فنادق الوجبة الحالية أو بعد انتهاء مهلة الساعتين.",en:"It opens after every destination in the current meal run is documented or its two-hour grace period ends."},
+    more_upcoming:{ar:"جولات وجبات قادمة أخرى مخفية حتى يحين وقتها",en:"More upcoming meal runs are hidden until their turn"},
+    actual_location:{ar:"يُحفظ موقعك تلقائياً مع صورة التسليم",en:"Your location is saved automatically with the delivery photo",id:"Lokasi Anda disimpan otomatis bersama foto",ur:"آپ کا مقام تصویر کے ساتھ خودکار محفوظ ہوگا",hi:"आपका स्थान फ़ोटो के साथ अपने आप सहेजा जाएगा",bn:"আপনার অবস্থান ছবির সাথে স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে",fr:"Votre position est enregistrée avec la photo",ha:"Za a ajiye wurinka tare da hoto",sw:"Eneo lako litahifadhiwa na picha",uz:"Joylashuvingiz rasm bilan saqlanadi"},
+    location_ready:{ar:"تم تحديد الموقع",en:"Location captured",id:"Lokasi diperoleh",ur:"مقام مل گیا",hi:"स्थान मिल गया",bn:"অবস্থান পাওয়া গেছে",fr:"Position obtenue",ha:"An gano wuri",sw:"Eneo limepatikana",uz:"Joylashuv olindi"},
+    location_unavailable:{ar:"تعذر تحديد الموقع؛ تأكد من السماح للموقع في الهاتف",en:"Location unavailable; allow location access on the phone",id:"Lokasi tidak tersedia; izinkan akses lokasi",ur:"مقام دستیاب نہیں؛ فون میں اجازت دیں",hi:"स्थान उपलब्ध नहीं; फ़ोन में अनुमति दें",bn:"অবস্থান পাওয়া যায়নি; ফোনে অনুমতি দিন",fr:"Position indisponible; autorisez la localisation",ha:"Ba a samu wuri ba; ba da izini",sw:"Eneo halipatikani; ruhusu ufikiaji",uz:"Joylashuv olinmadi; telefonda ruxsat bering"},
+    online_ready:{ar:"متصل — العمل والمزامنة يعملان",en:"Online — delivery and sync are ready"},
+    offline_ready:{ar:"دون إنترنت — سيتم حفظ العمليات في الهاتف",en:"Offline — actions will be saved on this phone"},
+    pending_sync:{ar:"عمليات بانتظار المزامنة",en:"actions waiting to sync"},
+    syncing_now:{ar:"جارٍ رفع العمليات المحفوظة…",en:"Uploading saved actions…"},
+    sync_now:{ar:"مزامنة الآن",en:"Sync now"},
+    saved_offline:{ar:"تم الحفظ في الهاتف وسيُرفع عند عودة الإنترنت",en:"Saved on this phone and will upload when online"},
+    cached_tasks:{ar:"تظهر المهام المحفوظة على الهاتف",en:"Showing tasks saved on this phone"},
+    offline_first_open:{ar:"افتح شاشة السائق مرة واحدة بوجود الإنترنت لتحميل المهام.",en:"Open the driver screen online once to download tasks."},
+    sync_problem:{ar:"توجد عملية تحتاج إعادة المزامنة",en:"An action needs to be synced again"},
+    offline_storage_error:{ar:"تعذر حفظ العملية في الهاتف. لا تغلق الشاشة وأعد المحاولة.",en:"Could not save the action on this phone. Keep the screen open and retry."},
+  };
+  const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
+  const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
+  const page = frappe.ui.make_app_page({parent: wrapper, title: tr(isManager ? "field_delivery" : "my_trips"), single_column: true});
+  const $root = $(page.body);
+  let trips = [];
+  let hiddenUpcomingCount = 0;
+  let emptyReason = null;
+  let emptyDetail = "";
+  let selectedTrip = null;
+  let deliveryImageData = "";
+  let signatureTouched = false;
+  let deliveryLocation = {};
+  let offlineCacheActive = false;
+  let syncingOffline = false;
+  let offlineDbPromise = null;
+  const subscribedTrips = new Set();
+  const offlineUser = frappe.session.user || "Guest";
+  const OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
+
+  const statusKey = {
+    "مخططة / Planned":"planned", "تم التحميل / Loaded":"loaded", "في الطريق / In Transit":"in_transit",
+    "وصلت / Arrived":"arrived", "تم التسليم / Delivered":"delivered", "متأخرة / Delayed":"delayed",
+  };
+  const statusText = {
+    planned:{ar:"مخططة",en:"Planned",id:"Direncanakan",ur:"منصوبہ بند",hi:"नियोजित",bn:"পরিকল্পিত",fr:"Planifié",ha:"An tsara",sw:"Imepangwa",uz:"Rejalashtirilgan"},
+    loaded:{ar:"تم التحميل",en:"Loaded",id:"Dimuat",ur:"لوڈ ہو گیا",hi:"लोड हो गया",bn:"লোড হয়েছে",fr:"Chargé",ha:"An loda",sw:"Imepakiwa",uz:"Yuklandi"},
+    in_transit:{ar:"في الطريق",en:"In transit",id:"Dalam perjalanan",ur:"راستے میں",hi:"रास्ते में",bn:"পথে",fr:"En route",ha:"A hanya",sw:"Njiani",uz:"Yo‘lda"},
+    arrived:{ar:"وصلت",en:"Arrived",id:"Tiba",ur:"پہنچ گیا",hi:"पहुँच गया",bn:"পৌঁছেছে",fr:"Arrivé",ha:"An isa",sw:"Imefika",uz:"Yetib keldi"},
+    delivered:{ar:"تم التسليم",en:"Delivered",id:"Terkirim",ur:"ڈیلیور ہو گیا",hi:"डिलीवर हो गया",bn:"ডেলিভারি হয়েছে",fr:"Livré",ha:"An isar",sw:"Imewasilishwa",uz:"Yetkazildi"},
+    delayed:{ar:"متأخرة",en:"Delayed",id:"Terlambat",ur:"تاخیر",hi:"विलंबित",bn:"বিলম্বিত",fr:"En retard",ha:"An makara",sw:"Imechelewa",uz:"Kechikdi"},
+  };
+  const quickNotes = {
+    delivered_ok:{ar:"تم التسليم بالكامل دون ملاحظات",en:"Delivered in full without issues",id:"Terkirim penuh tanpa masalah",ur:"بغیر مسئلے مکمل ڈیلیوری",hi:"बिना समस्या पूर्ण डिलीवरी",bn:"সমস্যা ছাড়াই সম্পূর্ণ ডেলিভারি",fr:"Livré entièrement sans incident",ha:"An isar gaba ɗaya ba tare da matsala ba",sw:"Imewasilishwa yote bila tatizo",uz:"Muammosiz to‘liq yetkazildi"},
+    receiver_delay:{ar:"تأخر حضور المستلم",en:"Receiver was delayed",id:"Penerima terlambat",ur:"وصول کنندہ تاخیر سے آیا",hi:"प्राप्तकर्ता देर से आया",bn:"গ্রহীতা দেরি করেছেন",fr:"Le destinataire était en retard",ha:"Mai karɓa ya makara",sw:"Mpokeaji alichelewa",uz:"Qabul qiluvchi kechikdi"},
+    quantity_issue:{ar:"يوجد اختلاف في الكمية",en:"Quantity discrepancy",id:"Perbedaan jumlah",ur:"مقدار میں فرق",hi:"मात्रा में अंतर",bn:"পরিমাণে পার্থক্য",fr:"Écart de quantité",ha:"Akwai bambancin adadi",sw:"Kuna tofauti ya kiasi",uz:"Miqdorda farq bor"},
+    access_issue:{ar:"تعذر الوصول إلى موقع التسليم",en:"Could not access delivery location",id:"Lokasi tidak dapat diakses",ur:"ڈیلیوری مقام تک رسائی نہیں ہوئی",hi:"डिलीवरी स्थान तक पहुँच नहीं मिली",bn:"ডেলিভারি স্থানে প্রবেশ সম্ভব হয়নি",fr:"Accès au site impossible",ha:"Ba a iya shiga wurin isarwa ba",sw:"Haikuwezekana kufika eneo la uwasilishaji",uz:"Yetkazish joyiga kirib bo‘lmadi"},
+    receiver_refused:{ar:"رفض المستلم استلام الشحنة",en:"Receiver refused delivery",id:"Penerima menolak kiriman",ur:"وصول کنندہ نے ڈیلیوری مسترد کی",hi:"प्राप्तकर्ता ने डिलीवरी अस्वीकार की",bn:"গ্রহীতা ডেলিভারি প্রত্যাখ্যান করেছেন",fr:"Le destinataire a refusé",ha:"Mai karɓa ya ƙi karɓa",sw:"Mpokeaji amekataa kupokea",uz:"Qabul qiluvchi yetkazmani rad etdi"},
+  };
+
+  function openOfflineDb() {
+    if (offlineDbPromise) return offlineDbPromise;
+    offlineDbPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("IndexedDB unavailable"));
+      const request = indexedDB.open(OFFLINE_DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("state")) db.createObjectStore("state", {keyPath:"key"});
+        if (!db.objectStoreNames.contains("queue")) db.createObjectStore("queue", {keyPath:"id"});
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("IndexedDB open failed"));
+    });
+    return offlineDbPromise;
+  }
+  async function dbRequest(storeName, mode, operation) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const request = operation(tx.objectStore(storeName));
+      let result;
+      let settled = false;
+      const finish = value => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const fail = error => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
+      request.onsuccess = () => {
+        result = request.result;
+        if (mode === "readonly") finish(result);
+      };
+      request.onerror = () => fail(request.error || new Error("IndexedDB request failed"));
+      tx.oncomplete = () => finish(result);
+      tx.onabort = () => fail(tx.error || new Error("IndexedDB transaction aborted"));
+      tx.onerror = () => fail(tx.error || new Error("IndexedDB transaction failed"));
+    });
+  }
+  const offlineStateKey = () => `driver:${offlineUser}`;
+  const readOfflineState = () => dbRequest("state", "readonly", store => store.get(offlineStateKey()));
+  const writeOfflineState = () => isManager ? Promise.resolve() : dbRequest("state", "readwrite", store => store.put({
+    key:offlineStateKey(), user:offlineUser, trips, hiddenUpcomingCount, emptyReason, emptyDetail,
+    saved_at:new Date().toISOString(),
+  }));
+  const pendingActions = async () => (await dbRequest("queue", "readonly", store => store.getAll()))
+    .filter(row => row.user === offlineUser).sort((a,b) => a.created_at.localeCompare(b.created_at));
+  const deletePendingAction = id => dbRequest("queue", "readwrite", store => store.delete(id));
+  const putPendingAction = row => dbRequest("queue", "readwrite", store => store.put(row));
+  function clientTimestamp() {
+    const d = new Date(), pad = value => String(value).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function isNetworkError(error) {
+    const status = Number(error?.status || error?.xhr?.status || error?.request?.status || 0);
+    return !navigator.onLine || status === 0 || /network|failed to fetch|offline/i.test(String(error?.message || error || ""));
+  }
+  async function updateOfflineBanner(mode, detail) {
+    const $state = $root.find("#wafd-offline-state");
+    if (!$state.length || isManager) return $state.hide();
+    let pending = 0;
+    try { pending = (await pendingActions()).length; } catch (error) { mode = "error"; }
+    const offline = mode === "offline" || !navigator.onLine;
+    const text = detail || (mode === "syncing" ? tr("syncing_now") : mode === "error" ? tr("sync_problem") : offline ? tr("offline_ready") : tr("online_ready"));
+    $state.removeClass("is-offline is-syncing is-error").addClass(mode === "syncing" ? "is-syncing" : mode === "error" ? "is-error" : offline ? "is-offline" : "");
+    $state.find("span").text(pending ? `${text} — ${pending} ${tr("pending_sync")}` : text);
+    $state.find("button").prop("hidden", !(pending && navigator.onLine && mode !== "syncing"));
+  }
+  function refreshLocalSequence() {
+    const runKey = trip => [trip.trip_date || "", trip.driver || "", trip.vehicle || "", trip.meal_type || ""].join("|");
+    const runs = [];
+    const byKey = new Map();
+    for (const trip of trips) {
+      const key = runKey(trip);
+      if (!byKey.has(key)) {byKey.set(key, []); runs.push(byKey.get(key));}
+      byKey.get(key).push(trip);
+    }
+    let activeAssigned = false, lockedShown = 0;
+    const now = Date.now();
+    for (const run of runs) {
+      const plannedTimes = run.map(trip => new Date(String(trip.planned_arrival || trip.trip_date || "").replace(" ", "T")).getTime()).filter(Number.isFinite);
+      const overdue = plannedTimes.length && now >= Math.max(...plannedTimes) + (2 * 60 * 60 * 1000);
+      const state = activeAssigned ? "locked" : (overdue ? "missed" : "active");
+      if (state === "active") activeAssigned = true;
+      for (const trip of run) {
+        trip.sequence_state = state;
+        trip.sequence_actionable = state !== "locked";
+        trip.sequence_visible = state !== "locked" || lockedShown < 2;
+        if (state === "locked") lockedShown += 1;
+      }
+    }
+  }
+  async function applyLocalAction(tripName, action, capturedAt) {
+    const trip = trips.find(row => row.name === tripName);
+    if (!trip) return;
+    if (action === "start") {
+      trips.filter(row => row.trip_date === trip.trip_date && row.driver === trip.driver && (row.vehicle || "") === (trip.vehicle || "") && row.meal_type === trip.meal_type)
+        .forEach(row => {if (["مخططة / Planned","تم التحميل / Loaded","متأخرة / Delayed"].includes(row.status)) {row.status="في الطريق / In Transit";row.actual_departure=capturedAt;}});
+    } else if (action === "arrive") {
+      trip.status = "وصلت / Arrived";
+      trip.actual_arrival = capturedAt;
+    } else if (action === "proof") {
+      trips = trips.filter(row => row.name !== tripName);
+      hiddenUpcomingCount = Math.max(0, hiddenUpcomingCount - 1);
+      refreshLocalSequence();
+    }
+    offlineCacheActive = true;
+    await writeOfflineState();
+    renderTrips();
+  }
+  async function queueOfflineAction(tripName, action, payload={}) {
+    const capturedAt = clientTimestamp();
+    const id = `${offlineUser}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    await putPendingAction({id,user:offlineUser,trip_name:tripName,action,captured_at:capturedAt,payload,created_at:new Date().toISOString(),last_error:""});
+    await applyLocalAction(tripName, action, capturedAt);
+    await updateOfflineBanner("offline", tr("saved_offline"));
+  }
+  async function syncPendingActions() {
+    if (isManager || syncingOffline || !navigator.onLine) return false;
+    syncingOffline = true;
+    await updateOfflineBanner("syncing");
+    try {
+      const rows = await pendingActions();
+      for (const row of rows) {
+        try {
+          await frappe.call({
+            method:"wafd_one.driver_portal.sync_offline_driver_action",
+            args:{trip_name:row.trip_name,action:row.action,captured_at:row.captured_at,payload:JSON.stringify(row.payload || {})},
+            freeze:false,
+          });
+          await deletePendingAction(row.id);
+        } catch (error) {
+          if (!isNetworkError(error)) {
+            row.last_error = String(error?.message || error || "sync failed").slice(0,500);
+            await putPendingAction(row);
+            await updateOfflineBanner("error");
+          }
+          return false;
+        }
+      }
+      offlineCacheActive = false;
+      await updateOfflineBanner("online");
+      return true;
+    } finally {
+      syncingOffline = false;
+    }
+  }
+
+  function renderShell() {
+    page.set_title(tr(isManager ? "field_delivery" : "my_trips"));
+    $root.attr("dir", ["ar", "ur"].includes(lang) ? "rtl" : "ltr").html(`
+      <style>
+      .wafd-driver-shell{max-width:760px;margin:12px auto 44px;padding:0 12px;color:#1c1d21}.wafd-driver-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.wafd-driver-nav button{height:42px;border:1px solid #ded6c7;border-radius:12px;background:#f7f4ec;padding:0 14px;font-weight:750;color:#5f4819}.wafd-offline-state{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;border-radius:13px;background:#e8f4ea;color:#28663a;font-weight:750}.wafd-offline-state.is-offline{background:#fff1df;color:#875319}.wafd-offline-state.is-syncing{background:#eef3fb;color:#315c94}.wafd-offline-state.is-error{background:#fbe9e8;color:#8e3030}.wafd-offline-state button{border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit;padding:7px 9px;font-weight:800}.wafd-trip-list{display:grid;gap:13px}.wafd-trip-card{border:1px solid #e5dfd2;border-radius:20px;background:#fff;padding:17px;box-shadow:0 8px 24px rgba(20,21,25,.05)}.wafd-trip-card.is-locked{opacity:.72;background:#f5f4f1}.wafd-trip-card.is-missed{border-color:#b56b31;background:#fffaf5}.wafd-sequence-note{margin-bottom:10px;padding:10px 12px;border-radius:11px;font-weight:750;background:#f2ead7;color:#765716}.wafd-sequence-note.is-missed{background:#fff0e5;color:#963f20}.wafd-upcoming-note{margin-top:12px;padding:11px;text-align:center;border:1px dashed #d7ccb7;border-radius:12px;color:#6e6049}.wafd-trip-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.wafd-trip-head h3{font-size:19px;margin:0;font-weight:850}.wafd-trip-status{border-radius:999px;background:#f1ead9;color:#765a20;padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap}.wafd-trip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.wafd-trip-info{background:#f8f7f3;border-radius:12px;padding:10px}.wafd-trip-info small,.wafd-trip-info b{display:block}.wafd-trip-info small{color:#7a7d82;font-size:11px}.wafd-trip-info b{margin-top:3px}.wafd-loading-evidence{display:flex;gap:10px;align-items:center;margin-top:10px}.wafd-loading-evidence img{width:86px;height:70px;border-radius:11px;object-fit:cover;border:1px solid #e0d9ca}.wafd-trip-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.wafd-trip-actions button,.wafd-proof-submit{border:0;border-radius:12px;background:#1d1e22;color:#fff;padding:11px 15px;font-weight:800}.wafd-trip-actions .secondary{background:#c9972d}.wafd-trip-actions a{border:1px solid #ded6c7;border-radius:12px;padding:10px 14px;color:#6f531a;text-decoration:none;font-weight:750}.wafd-driver-empty{text-align:center;padding:70px 18px;color:#74777d;background:#fff;border:1px solid #e8e2d7;border-radius:20px}.wafd-driver-modal{position:fixed;inset:0;z-index:1200;background:rgba(12,13,16,.56);display:flex;align-items:flex-end;justify-content:center}.wafd-driver-modal[hidden]{display:none}.wafd-proof-panel{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -18px 48px rgba(0,0,0,.18)}.wafd-proof-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.wafd-proof-head h2{font-size:21px;margin:0}.wafd-proof-head button{border:0;border-radius:10px;background:#f2efe8;padding:8px 12px}.wafd-proof-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wafd-proof-field.full{grid-column:1/-1}.wafd-proof-field label{display:block;font-weight:750;margin-bottom:6px}.wafd-proof-field input,.wafd-proof-field select,.wafd-proof-field textarea{width:100%;border:1px solid #ddd6c8;border-radius:12px;background:#faf9f6;padding:10px;min-height:44px}.wafd-proof-field textarea{min-height:86px}.wafd-photo-preview{display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;background:#f5f4f1;margin-top:9px}.wafd-signature{width:100%;height:160px;border:1px solid #d8d0c1;border-radius:12px;background:#fff;touch-action:none}.wafd-clear-signature{margin-top:7px;border:1px solid #ddd6c8;border-radius:9px;background:#fff;padding:8px 11px}.wafd-proof-submit{width:100%;margin-top:16px}.wafd-proof-done{margin-top:12px;padding:11px;border-radius:12px;background:#e8f4ea;color:#2d6938;font-weight:750}
+      @media(max-width:600px){.wafd-trip-grid,.wafd-proof-form{grid-template-columns:1fr}.wafd-proof-field.full{grid-column:auto}.wafd-driver-shell{padding:0 9px}}
+      </style>
+      <div class="wafd-driver-shell">
+        <div class="wafd-driver-nav"><button type="button" id="wafd-driver-back">${esc(tr("back"))}</button><button type="button" id="wafd-driver-refresh">${esc(tr("refresh"))}</button></div>
+        <div class="wafd-offline-state" id="wafd-offline-state"><span>${esc(tr("online_ready"))}</span><button type="button" id="wafd-sync-now" hidden>${esc(tr("sync_now"))}</button></div>
+        <div id="wafd-driver-list"><div class="wafd-driver-empty">${esc(tr("refresh"))}...</div></div>
+      </div>
+      <div class="wafd-driver-modal" id="wafd-proof-modal" hidden><div class="wafd-proof-panel"><div class="wafd-proof-head"><h2>${esc(tr("proof"))}</h2><button type="button" id="wafd-proof-close">${esc(tr("close"))}</button></div><div id="wafd-proof-content"></div></div></div>
+    `);
+  }
+
+  renderShell();
+  const placeMapByDestination = () => {
+    $root.find(".wafd-trip-card").each(function(){
+      const $card=$(this),$map=$card.find(".wafd-trip-actions a").first();
+      if(!$map.length||$map.hasClass("wafd-map-by-name"))return;
+      $map.addClass("wafd-map-by-name").css({display:"inline-flex",alignItems:"center",marginTop:"7px",width:"max-content",padding:"7px 10px",borderRadius:"10px",fontSize:"12px"});
+      $card.find(".wafd-trip-head h3").first().after($map);
+    });
+  };
+  new MutationObserver(placeMapByDestination).observe($root[0],{childList:true,subtree:true});
+
+  function fmtDate(value) {
+    return value ? frappe.datetime.str_to_user(value) : "—";
+  }
+  function tripStatus(value) {
+    const key = statusKey[value];
+    return key ? (statusText[key]?.[lang] || statusText[key]?.en) : value;
+  }
+  function hotelName(trip) {
+    return lang === "ar" ? (trip.destination_name || trip.hotel_name_ar || trip.hotel) : (trip.destination_name_en || trip.hotel_name_en || trip.destination_name || trip.hotel_name_ar || trip.hotel);
+  }
+  function mealName(value) {
+    const key = {"إفطار / Breakfast":"breakfast", "غداء / Lunch":"lunch", "عشاء / Dinner":"dinner", "إفطار صائم / Iftar Saim":"iftar_saim"}[value];
+    return key ? tr(key) : value;
+  }
+  function renderTrips() {
+    const visibleTrips = isManager ? trips : trips.filter(trip => trip.sequence_visible !== false);
+    if (!visibleTrips.length) {
+      const allowedReasons = new Set(["no_approved_loading", "trip_creation_blocked", "assignment_incomplete"]);
+      const key = allowedReasons.has(emptyReason)
+        ? (isManager && emptyReason === "no_approved_loading" ? "no_trips_manager" : emptyReason)
+        : (isManager ? "no_trips_manager" : "no_trips");
+      const detail = emptyDetail ? `<small style="display:block;margin-top:12px;direction:auto">${esc(emptyDetail)}</small>` : "";
+      $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr(key))}${detail}</div>`);
+      return;
+    }
+    $root.find("#wafd-driver-list").html(`<div class="wafd-trip-list">${visibleTrips.map((trip) => {
+      const loading = trip.loading || {};
+      const proof = trip.proof || null;
+      const displayStatus = proof ? "تم التسليم / Delivered" : trip.status;
+      const sequenceState = trip.sequence_state || "active";
+      const actionable = isManager || trip.sequence_actionable !== false;
+      const sequenceNote = sequenceState === "missed"
+        ? `<div class="wafd-sequence-note is-missed"><b>${esc(tr("missed_delivery"))}</b><small style="display:block">${esc(tr("missed_help"))}</small></div>`
+        : sequenceState === "locked"
+          ? `<div class="wafd-sequence-note"><b>🔒 ${esc(tr("locked_delivery"))}</b><small style="display:block">${esc(tr("locked_help"))}</small></div>`
+          : (!isManager ? `<div class="wafd-sequence-note">${esc(tr("current_round"))}</div>` : "");
+      let actions = "";
+      if (actionable && (["مخططة / Planned", "تم التحميل / Loaded"].includes(trip.status) || (trip.status === "متأخرة / Delayed" && !trip.actual_departure))) actions += `<button type="button" data-action="start" data-trip="${esc(trip.name)}">${esc(tr("start"))}</button>`;
+      if (actionable && (trip.status === "في الطريق / In Transit" || (trip.status === "متأخرة / Delayed" && trip.actual_departure))) actions += `<button type="button" class="secondary" data-action="arrive" data-trip="${esc(trip.name)}">${esc(tr("mark_arrived"))}</button>`;
+      if (actionable && trip.status === "وصلت / Arrived" && !proof) actions += `<button type="button" data-action="proof" data-trip="${esc(trip.name)}">${esc(tr("proof"))}</button>`;
+      if (proof) actions += `<div class="wafd-proof-done">${esc(tr("delivered"))}: ${esc(proof.receiver_name || "")}</div>`;
+      return `<article class="wafd-trip-card ${sequenceState === "locked" ? "is-locked" : ""} ${sequenceState === "missed" ? "is-missed" : ""}">${sequenceNote}<div class="wafd-trip-head"><h3>${esc(hotelName(trip))}</h3><span class="wafd-trip-status">${esc(tripStatus(displayStatus))}</span></div><div class="wafd-trip-grid">${isManager ? `<div class="wafd-trip-info"><small>${esc(tr("driver"))}</small><b>${esc(trip.driver || "—")}</b></div>` : ""}${trip.vehicle ? `<div class="wafd-trip-info"><small>${esc(tr("vehicle"))}</small><b>${esc(trip.vehicle)}</b></div>` : ""}${Number(trip.quantity)>0 ? `<div class="wafd-trip-info"><small>${esc(tr("quantity"))}</small><b>${esc(trip.quantity)}</b></div>` : ""}${trip.meal_type ? `<div class="wafd-trip-info"><small>${esc(tr("meal"))}</small><b>${esc(mealName(trip.meal_type))}</b></div>` : ""}<div class="wafd-trip-info"><small>${esc(tr("arrival"))}</small><b>${esc(fmtDate(trip.planned_arrival))}</b></div>${loading.seal_number ? `<div class="wafd-trip-info"><small>${esc(tr("seal"))}</small><b>${esc(loading.seal_number)}</b></div>` : ""}</div>${loading.loading_photo ? `<div class="wafd-loading-evidence"><img src="${esc(loading.loading_photo)}" alt="${esc(tr("loading_photo"))}"><div><b>${esc(tr("loading_photo"))}</b><small>${esc(tr("uploaded_by"))}: ${esc(loading.loading_photo_uploaded_by || loading.supervisor || "—")}</small></div></div>` : ""}${proof?.delivery_photo ? `<div class="wafd-loading-evidence"><a href="${esc(proof.delivery_photo)}" target="_blank"><img src="${esc(proof.delivery_photo)}" alt="${esc(tr("proof"))}"></a><div><b>${esc(tr("delivered"))}</b><small>${esc(fmtDate(proof.delivery_time))}</small></div></div>` : ""}<div class="wafd-trip-actions">${actions}${trip.map_url ? `<a href="${esc(trip.map_url)}" target="_blank" rel="noopener">${esc(tr("open_map"))}</a>` : ""}</div></article>`;
+    }).join("")}${hiddenUpcomingCount ? `<div class="wafd-upcoming-note">${esc(hiddenUpcomingCount)} ${esc(tr("more_upcoming"))}</div>` : ""}</div>`);
+  }
+  async function loadTrips(options={}) {
+    if (!isManager && !options.skipSync && navigator.onLine) {
+      const synced = await syncPendingActions();
+      if (!synced && (await pendingActions()).length) {
+        const cached = await readOfflineState();
+        if (cached) {
+          trips = cached.trips || [];
+          hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+          emptyReason = cached.emptyReason || null;
+          emptyDetail = cached.emptyDetail || "";
+          offlineCacheActive = true;
+          renderTrips();
+          return updateOfflineBanner(navigator.onLine ? "error" : "offline");
+        }
+      }
+    }
+    if (!isManager && !navigator.onLine) {
+      try {
+        const cached = await readOfflineState();
+        if (!cached) {
+          $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr("offline_first_open"))}</div>`);
+          return updateOfflineBanner("offline");
+        }
+        trips = cached.trips || [];
+        hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+        emptyReason = cached.emptyReason || null;
+        emptyDetail = cached.emptyDetail || "";
+        offlineCacheActive = true;
+        renderTrips();
+        return updateOfflineBanner("offline", tr("cached_tasks"));
+      } catch (error) {
+        $root.find("#wafd-driver-list").html(`<div class="wafd-driver-empty">${esc(tr("offline_storage_error"))}</div>`);
+        return updateOfflineBanner("error");
+      }
+    }
+    try {
+      const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", freeze: true});
+      trips = response.message?.trips || [];
+      hiddenUpcomingCount = Number(response.message?.hidden_upcoming_count || 0);
+      emptyReason = response.message?.empty_reason || null;
+      emptyDetail = response.message?.reconciliation?.blocked?.[0]?.message || "";
+      offlineCacheActive = false;
+      if (!isManager) await writeOfflineState();
+      if (isManager && typeof frappe.realtime?.doc_subscribe === "function") {
+        trips.forEach((trip) => {
+          if (subscribedTrips.has(trip.name)) return;
+          frappe.realtime.doc_subscribe("WAFD Delivery Trip", trip.name);
+          subscribedTrips.add(trip.name);
+        });
+      }
+      renderTrips();
+      await updateOfflineBanner("online");
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      const cached = await readOfflineState();
+      if (!cached) throw error;
+      trips = cached.trips || [];
+      hiddenUpcomingCount = Number(cached.hiddenUpcomingCount || 0);
+      emptyReason = cached.emptyReason || null;
+      emptyDetail = cached.emptyDetail || "";
+      offlineCacheActive = true;
+      renderTrips();
+      await updateOfflineBanner("offline", tr("cached_tasks"));
+    }
+  }
+  async function runStatus(tripName, action) {
+    if (!isManager && !navigator.onLine) {
+      try {
+        await queueOfflineAction(tripName, action);
+        if (action === "arrive") openProof(tripName);
+      } catch (error) { frappe.msgprint(tr("offline_storage_error")); }
+      return;
+    }
+    try {
+      await frappe.call({method: "wafd_one.driver_portal.set_my_trip_status", args: {trip_name: tripName, action}, freeze: true});
+      await loadTrips();
+      if (action === "arrive") openProof(tripName);
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      try {
+        await queueOfflineAction(tripName, action);
+        if (action === "arrive") openProof(tripName);
+      } catch (storageError) { frappe.msgprint(tr("offline_storage_error")); }
+    }
+  }
+  function openProof(tripName) {
+    selectedTrip = trips.find((trip) => trip.name === tripName);
+    if (!selectedTrip) return;
+    deliveryImageData = "";
+    signatureTouched = false;
+    deliveryLocation = {};
+    const simple = Boolean(selectedTrip.simple_delivery);
+    const hasQuantity = Number(selectedTrip.quantity || 0) > 0;
+    const options = Object.entries(quickNotes).map(([code, values]) => `<option value="${esc(code)}">${esc(values[lang] || values.en)}</option>`).join("");
+    $root.find("#wafd-proof-content").html(`<div class="wafd-proof-form"><div class="wafd-proof-field"><label>${esc(tr("receiver"))}${simple?` (${esc(tr("optional"))})`:""}</label><input id="wafd-receiver-name" autocomplete="name"></div>${simple?"":`<div class="wafd-proof-field"><label>${esc(tr("mobile"))}</label><input id="wafd-receiver-mobile" type="tel" dir="ltr" autocomplete="tel"></div>`}${hasQuantity?`<div class="wafd-proof-field"><label>${esc(tr("received"))}</label><input id="wafd-received-qty" type="number" min="0" value="${esc(selectedTrip.quantity)}"></div><div class="wafd-proof-field"><label>${esc(tr("rejected"))}</label><input id="wafd-rejected-qty" type="number" min="0" value="0"></div><div class="wafd-proof-field full"><label>${esc(tr("acceptance"))}</label><select id="wafd-proof-status"><option value="مقبول بالكامل / Fully Accepted">${esc(tr("full"))}</option><option value="مقبول جزئياً / Partially Accepted">${esc(tr("partial"))}</option><option value="مرفوض / Rejected">${esc(tr("refused"))}</option></select></div>`:`<input id="wafd-proof-status" type="hidden" value="مقبول بالكامل / Fully Accepted"><input id="wafd-received-qty" type="hidden" value="0"><input id="wafd-rejected-qty" type="hidden" value="0">`}<div class="wafd-proof-field full"><label>${esc(tr("quick_note"))}</label><select id="wafd-quick-note"><option value="">${esc(tr("choose"))}</option>${options}</select></div><div class="wafd-proof-field full"><label>${esc(tr("notes"))}</label><textarea id="wafd-proof-notes"></textarea></div><div class="wafd-proof-field full"><label>${esc(tr("photo"))}</label><input id="wafd-delivery-photo" type="file" accept="image/*" capture="environment"><img class="wafd-photo-preview" id="wafd-photo-preview"><small id="wafd-location-state">${esc(tr("actual_location"))}</small></div>${simple?"":`<div class="wafd-proof-field full" id="wafd-signature-field"><label>${esc(tr("signature"))}</label><canvas class="wafd-signature" id="wafd-signature"></canvas><button type="button" class="wafd-clear-signature" id="wafd-clear-signature">${esc(tr("clear"))}</button></div>`}</div><button type="button" class="wafd-proof-submit" id="wafd-proof-submit">${esc(tr("submit"))}</button>`);
+    $root.find("#wafd-proof-modal").removeAttr("hidden");
+    captureLocation();
+    if (!simple) setupSignature();
+  }
+  function closeProof() {
+    $root.find("#wafd-proof-modal").attr("hidden", true);
+    selectedTrip = null;
+    deliveryLocation = {};
+  }
+  function captureLocation(){
+    if(!navigator.geolocation){$root.find("#wafd-location-state").text(tr("location_unavailable"));return;}
+    navigator.geolocation.getCurrentPosition(pos=>{deliveryLocation={latitude:pos.coords.latitude,longitude:pos.coords.longitude};$root.find("#wafd-location-state").text(tr("location_ready"));},()=>{$root.find("#wafd-location-state").text(tr("location_unavailable"));},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  }
+  function setupSignature() {
+    const canvas = $root.find("#wafd-signature")[0];
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * ratio));
+    canvas.height = Math.max(1, Math.round(rect.height * ratio));
+    const ctx = canvas.getContext("2d");
+    ctx.scale(ratio, ratio); ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.strokeStyle = "#17181c";
+    let drawing = false;
+    const point = (event) => {const r = canvas.getBoundingClientRect(); const touch = event.touches?.[0] || event.changedTouches?.[0] || event; return {x: touch.clientX-r.left, y: touch.clientY-r.top};};
+    const start = (event) => {event.preventDefault(); drawing=true; signatureTouched=true; const p=point(event); ctx.beginPath(); ctx.moveTo(p.x,p.y);};
+    const move = (event) => {if(!drawing)return; event.preventDefault(); const p=point(event); ctx.lineTo(p.x,p.y); ctx.stroke();};
+    const end = (event) => {if(drawing)event.preventDefault(); drawing=false;};
+    ["pointerdown","touchstart"].forEach((name)=>canvas.addEventListener(name,start,{passive:false}));
+    ["pointermove","touchmove"].forEach((name)=>canvas.addEventListener(name,move,{passive:false}));
+    ["pointerup","pointercancel","touchend","touchcancel"].forEach((name)=>canvas.addEventListener(name,end,{passive:false}));
+    $root.find("#wafd-clear-signature").on("click",()=>{ctx.clearRect(0,0,canvas.width,canvas.height);signatureTouched=false;});
+  }
+  function compressDriverImage(file, maxDimension=1600, quality=.82) {
+    return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error("image"));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error("image"));image.onload=()=>{const scale=Math.min(1,maxDimension/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",quality));};image.src=reader.result;};reader.readAsDataURL(file);});
+  }
+  async function submitProof() {
+    if (!selectedTrip) return;
+    const proofStatus = $root.find("#wafd-proof-status").val();
+    const simple = Boolean(selectedTrip.simple_delivery);
+    const canvas = $root.find("#wafd-signature")[0];
+    const signatureData = !simple && signatureTouched && canvas ? canvas.toDataURL("image/png") : "";
+    const receiverName = String($root.find("#wafd-receiver-name").val() || "").trim();
+    if (!deliveryImageData || (simple && (deliveryLocation.latitude == null || deliveryLocation.longitude == null)) || (!simple && (!receiverName || (proofStatus !== "مرفوض / Rejected" && !signatureData)))) {
+      frappe.msgprint(tr(simple ? "required_simple" : "required"));
+      return;
+    }
+    const tripName = selectedTrip.name;
+    const payload = {receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData,latitude:deliveryLocation.latitude,longitude:deliveryLocation.longitude};
+    if (!isManager && !navigator.onLine) {
+      try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (error) {frappe.msgprint(tr("offline_storage_error"));}
+      return;
+    }
+    try {
+      const response = await frappe.call({method:"wafd_one.driver_portal.submit_delivery_proof",args:{trip_name:tripName,...payload},freeze:true,freeze_message:tr("saving")});
+      if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips();}
+    } catch (error) {
+      if (isManager || !isNetworkError(error)) throw error;
+      try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (storageError) {frappe.msgprint(tr("offline_storage_error"));}
+    }
+  }
+
+  $root.on("click", "#wafd-driver-back", () => frappe.set_route("wafd-role-home"));
+  $root.on("click", "#wafd-driver-refresh", loadTrips);
+  $root.on("click", "#wafd-sync-now", async()=>{if(await syncPendingActions())await loadTrips({skipSync:true});});
+  $root.on("click", "[data-action]", async function(){const action=$(this).attr("data-action");const trip=$(this).attr("data-trip");if(action==="proof")openProof(trip);else await runStatus(trip,action);});
+  $root.on("click", "#wafd-proof-close", closeProof);
+  $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;captureLocation();deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
+  $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
+  $root.on("click", "#wafd-proof-submit", submitProof);
+  window.addEventListener("offline",()=>updateOfflineBanner("offline"));
+  window.addEventListener("online",async()=>{if(await syncPendingActions())await loadTrips({skipSync:true});});
+  if (isManager && typeof frappe.realtime?.on === "function") {
+    frappe.realtime.on("doc_update", (event) => {
+      if (event?.doctype === "WAFD Delivery Trip" && subscribedTrips.has(event.name)) loadTrips();
+    });
+  }
+  wrapper.wafdRefreshTrips = loadTrips;
+  wrapper.wafdApplyTripLanguage = function () {
+    const selected = activeLanguage();
+    if (selected === lang) return;
+    lang = selected;
+    selectedTrip = null;
+    deliveryImageData = "";
+    signatureTouched = false;
+    renderShell();
+    renderTrips();
+  };
+  if (!isManager && navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
+  loadTrips();
+  wrapper.wafdSequenceTimer = wrapper.wafdSequenceTimer || window.setInterval(() => {
+    if (frappe.get_route()?.[0] === "wafd-driver-trips") loadTrips();
+  }, 60000);
+};
+
+frappe.pages["wafd-driver-trips"].on_page_show = function (wrapper) {
+  // Frappe caches Page instances. Re-read the language chosen on Role Home,
+  // then refresh the data every time the user returns to this page.
+  if (typeof wrapper.wafdApplyTripLanguage === "function") wrapper.wafdApplyTripLanguage();
+  if (typeof wrapper.wafdRefreshTrips === "function") wrapper.wafdRefreshTrips();
+};

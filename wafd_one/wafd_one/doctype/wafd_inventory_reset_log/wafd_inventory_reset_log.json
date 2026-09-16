@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:WAFD-GOLIVE-{YYYY}-{#####}",
+ "creation": "2026-08-15 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reset_at",
+  "reset_by",
+  "balance_count",
+  "movement_count",
+  "stock_value_before",
+  "balances_snapshot",
+  "movements_snapshot",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "reset_at",
+   "fieldtype": "Datetime",
+   "label": "وقت التهيئة / Reset At",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reset_by",
+   "fieldtype": "Link",
+   "label": "نفذ بواسطة / Reset By",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "balance_count",
+   "fieldtype": "Int",
+   "label": "أرصدة تم تصفيرها / Balances Reset",
+   "read_only": 1
+  },
+  {
+   "fieldname": "movement_count",
+   "fieldtype": "Int",
+   "label": "حركات اختبار مؤرشفة / Test Movements Archived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_value_before",
+   "fieldtype": "Currency",
+   "label": "قيمة المخزون قبل التهيئة / Stock Value Before",
+   "read_only": 1
+  },
+  {
+   "fieldname": "balances_snapshot",
+   "fieldtype": "Long Text",
+   "label": "لقطة الأرصدة / Balances Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "movements_snapshot",
+   "fieldtype": "Long Text",
+   "label": "لقطة الحركات / Movements Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-08-15 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Inventory Reset Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

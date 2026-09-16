@@ -1,0 +1,3 @@
+frappe.pages["wafd-delivery-hub"].on_page_load = function(wrapper) {
+  window.wafd_one_render_hub(wrapper, { title: "التوصيل", items: [{"label": "رحلات التوصيل", "icon": "🚚", "doctype": "WAFD Delivery Trip"}, {"label": "سندات التسليم", "icon": "📄", "doctype": "WAFD Delivery Note"}, {"label": "سندات الاستلام", "icon": "🧾", "doctype": "WAFD Receiving Note"}, {"label": "إثبات التسليم", "icon": "📸", "doctype": "WAFD Delivery Proof"}, {"label": "السائقون", "icon": "👤", "doctype": "WAFD Driver"}, {"label": "المركبات", "icon": "🚐", "doctype": "WAFD Vehicle"}, {"label": "الفنادق", "icon": "🏨", "doctype": "WAFD Hotel"}] });
+};

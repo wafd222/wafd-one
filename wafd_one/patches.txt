@@ -553,3 +553,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc302.execute
 
 # RC303 simplified Iftar employee task screens and automatic project activation
 wafd_one.wafd_one.patches.v10_0_0_rc303.execute
+
+# RC304 package marker recovery for Frappe Cloud migration imports
+wafd_one.wafd_one.patches.v10_0_0_rc304.execute

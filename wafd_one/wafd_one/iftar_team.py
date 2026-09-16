@@ -162,7 +162,12 @@ def assign_project_team(project_name, project_manager_user=None, kitchen_supervi
 
 @frappe.whitelist()
 def approve_project_plan(project_name):
-    """Administration gate: validate the monthly plan, submit it, and create its days."""
+    """Start a legacy draft after its core employees have been assigned.
+
+    Field-supervisor allocations are intentionally not a start-up gate. They can
+    be completed during the month and are validated when daily assignments are
+    generated at the site.
+    """
     _require("System Manager", "WAFD Operations Manager")
     project = frappe.get_doc("WAFD Iftar Project", project_name)
     missing = [field for field in PROJECT_TEAM_ROLE_MAP if not (project.get(field) or "").strip()]
@@ -170,16 +175,9 @@ def approve_project_plan(project_name):
         frappe.throw(_("أكمل إسناد مدير المشروع ومشرف المطبخ ومشرف التوصيل ومدير الموقع قبل اعتماد الخطة / Assign the complete core team first"))
     plans = frappe.get_all(
         "WAFD Iftar Supervisor Plan", filters={"project": project.name},
-        fields=["name", "supervisor_name", "supervisor_user", "assigned_meals"], limit_page_length=1000,
+        fields=["name", "assigned_meals"], limit_page_length=1000,
     )
-    if not plans:
-        frappe.throw(_("أضف خطط المشرفين وأصحاب السفر والمساعدين قبل اعتماد الخطة / Add supervisor plans, table owners and assistants first"))
-    without_user = [row.supervisor_name for row in plans if not row.supervisor_user]
-    if without_user:
-        frappe.throw(_("اربط حساب المستخدم للمشرفين: {0} / Link supervisor user accounts").format("، ".join(without_user)))
     assigned = sum(cint(row.assigned_meals) for row in plans)
-    if assigned != cint(project.daily_meals):
-        frappe.throw(_("إجمالي توزيع المشرفين ({0}) يجب أن يساوي الوجبات اليومية ({1}) / Supervisor allocation must equal daily meals").format(assigned, cint(project.daily_meals)))
     if cint(project.docstatus) == 0:
         project.submit()
     elif cint(project.docstatus) != 1:
@@ -351,7 +349,7 @@ def get_team_dashboard(date=None, project=None):
         project_filters["name"] = project if assigned_projects is None or project in assigned_projects else "__none__"
     projects = frappe.get_list(
         "WAFD Iftar Project", filters=project_filters,
-        fields=["name", "project_title", "season_type", "distribution_site", "contracting_entity", "start_date", "end_date", "daily_meals", "total_meals", "status", "docstatus", "modified", "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user", "site_manager_user"],
+        fields=["name", "project_title", "season_type", "distribution_site", "contracting_entity", "start_date", "end_date", "daily_meals", "number_of_days", "total_meals", "total_revenue", "total_project_cost", "expected_profit", "status", "docstatus", "modified", "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user", "site_manager_user"],
         order_by="start_date desc", limit_page_length=200,
     )
     project_names = [row.name for row in projects]
@@ -548,6 +546,8 @@ def ensure_supervisor_reports(operation_name):
         frappe.throw(_("يجب اعتماد فحص الجهة قبل تجهيز تكليفات المشرفين / Authority inspection is required before supervisor assignments"))
     created, skipped = [], []
     plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name}, pluck="name", order_by="creation asc", limit_page_length=500)
+    if not plans:
+        frappe.throw(_("لم تُسجل خطة المشرفين لهذا المشروع. تطلب الإدارة إضافة المشرفين وأصحاب السفر أولاً / Add the project supervisor plan first"))
     for name in plans:
         plan = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
         if not plan.supervisor_user:
@@ -570,6 +570,8 @@ def ensure_supervisor_reports(operation_name):
                 report.append("assistants_attendance", {"assistant_name": assistant.assistant_name, "mobile_no": assistant.mobile_no, "attendance_status": "لم يسجل / Not Marked"})
         report.insert(ignore_permissions=True)
         created.append(report.name)
+    if not created and skipped:
+        frappe.throw(_("اربط حسابات المستخدمين للمشرفين: {0} / Link supervisor user accounts").format("، ".join(skipped)))
     return {"created": created, "skipped_without_user": skipped, "total_plans": len(plans)}
 
 

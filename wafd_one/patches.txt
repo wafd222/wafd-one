@@ -550,3 +550,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc301.execute
 
 # RC302 mobile Iftar card layout and safe legacy sequential-stage normalization
 wafd_one.wafd_one.patches.v10_0_0_rc302.execute
+
+# RC303 simplified Iftar employee task screens and automatic project activation
+wafd_one.wafd_one.patches.v10_0_0_rc303.execute

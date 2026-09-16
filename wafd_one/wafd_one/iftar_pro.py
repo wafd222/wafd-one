@@ -230,8 +230,9 @@ def create_project(data):
         "project_manager_user", "kitchen_supervisor_user",
         "delivery_supervisor_user", "site_manager_user",
     ):
-        if data.get(fieldname):
-            data[fieldname] = _validate_team_user(fieldname, data[fieldname])
+        if not data.get(fieldname):
+            frappe.throw(_("اختر مدير المشروع ومشرف المطبخ ومشرف التوصيل ومدير الموقع قبل إنشاء المشروع / Assign the core team first"))
+        data[fieldname] = _validate_team_user(fieldname, data[fieldname])
     catering_project = None
     if data.get("contract"):
         context = get_iftar_contract_context(data.get("contract"))
@@ -320,6 +321,11 @@ def create_project(data):
                 doc.save(ignore_permissions=True)
             _copy_supervisor_plans(previous_doc.name, doc.name)
 
+    # The administration has already completed the commercial data and assigned
+    # the core employees in the wizard. Start the operational calendar here so
+    # employees receive their simple daily task immediately. Supervisor/table
+    # allocations remain editable before the site-distribution stage.
+    doc.submit()
     generate_daily_operations(doc.name, ignore_permissions=True)
     first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
     return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}

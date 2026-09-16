@@ -4,14 +4,13 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   const $root = $(wrapper).find(".layout-main-section").html(`
     <div class="ift-simple">
       <header class="ift-head">
-        <div><span class="ift-kicker">WAFD ONE</span><h1>مشروع إفطار الصائم</h1><p class="ift-role"></p></div>
+        <div><span class="ift-kicker">WAFD ONE</span><h1 class="ift-title">إفطار الصائم</h1><p class="ift-role"></p></div>
         <div class="ift-filters">
-          <input type="date" class="form-control ift-date">
-          <select class="form-control ift-project"><option value="">جميع المشاريع</option></select>
+          <input type="date" class="form-control ift-date" aria-label="تاريخ التشغيل">
           <button class="btn btn-light ift-refresh">تحديث</button>
         </div>
       </header>
-      <main class="ift-content"><div class="ift-loading">جارٍ تحميل مهمتك…</div></main>
+      <main class="ift-content"><div class="ift-loading">جارٍ تحميل الشاشة…</div></main>
     </div>`);
 
   $root.find(".ift-date").val(frappe.datetime.get_today());
@@ -40,30 +39,57 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
     return `<section class="ift-empty"><span>✓</span><h2>${esc(message)}</h2><p>اختر تاريخاً آخر عند الحاجة، أو انتظر إسناد المهمة من الإدارة.</p></section>`;
   }
 
+  function operationForProject(projectName) {
+    return (data.operations || []).find(operation => operation.project === projectName) || null;
+  }
+
+  function stageStrip(operation, submitted) {
+    const stages = [
+      ["الإدارة", submitted],
+      ["المطبخ", operation && operation.kitchen_ready_approved],
+      ["التوصيل", operation && operation.delivery_plan_approved],
+      ["الموقع", operation && operation.site_receipt_approved],
+      ["التوزيع", operation && operation.site_report_approved],
+      ["التقرير", operation && operation.daily_report_sent],
+    ];
+    return `<div class="ift-stage-strip">${stages.map(([label, done]) => `<span class="${done ? "done" : ""}">${done ? "✓ " : ""}${esc(label)}</span>`).join("")}</div>`;
+  }
+
   function adminView() {
     const projects = data.projects || [];
     return `
-      <section class="ift-admin-actions">
-        <button data-page="wafd-iftar-wizard"><span>＋</span><b>إنشاء مشروع جديد</b><small>العقد والأعداد والأسعار والرواتب والموظفون</small></button>
-        <button data-list="WAFD Iftar Supervisor Plan"><span>♙</span><b>المشرفون والفريق</b><small>أصحاب السفر والمساعدون والتوزيع الشهري</small></button>
-        <button data-page="wafd-iftar-operations"><span>▦</span><b>المتابعة والتقارير</b><small>متابعة التنفيذ والتقرير الرسمي</small></button>
+      <section class="ift-admin-main">
+        <div><b>إدارة المشروع والمهام</b><span>سجل بيانات المشروع والفريق أولاً، ثم اعتمد المشروع مرة واحدة لإظهار مهمة كل مرحلة للموظف المسؤول.</span></div>
+        <button class="btn btn-dark" data-page="wafd-iftar-wizard">＋ تسجيل مشروع جديد</button>
       </section>
       <div class="ift-section-title"><h2>المشاريع</h2><span>${num(projects.length)}</span></div>
-      ${projects.length ? `<section class="ift-project-list">${projects.map(project => `
-        <article class="ift-project-card">
-          <div class="ift-card-top"><span class="ift-state ${Number(project.docstatus) === 1 ? "done" : "waiting"}">${Number(project.docstatus) === 1 ? "يعمل الآن" : "مسودة"}</span><small>${esc(project.name)}</small></div>
+      ${projects.length ? `<section class="ift-project-list">${projects.map(project => {
+        const submitted = Number(project.docstatus) === 1;
+        const operation = operationForProject(project.name);
+        return `
+        <article class="ift-project-card admin-project">
+          <div class="ift-card-top"><span class="ift-state ${submitted ? "done" : "waiting"}">${submitted ? "معتمد · المهام ظاهرة للموظفين" : "بانتظار اعتماد الإدارة"}</span><small>${esc(project.name)}</small></div>
           <h3>${esc(project.project_title)}</h3>
           <p>${esc(project.distribution_site)} · ${esc(project.contracting_entity)}</p>
           <div class="ift-numbers">
             <div><b>${num(project.daily_meals)}</b><span>وجبة يومياً</span></div>
             <div><b>${num(project.number_of_days)}</b><span>يوم تشغيل</span></div>
-            <div><b>${num(project.supervisors_count)}</b><span>مشرف</span></div>
+            <div><b>${num(project.supervisors_count)}</b><span>مشرف ميداني</span></div>
+          </div>
+          ${stageStrip(operation, submitted)}
+          <div class="ift-team-summary">
+            <span><b>مدير المشروع</b>${esc(project.project_manager_user || "—")}</span>
+            <span><b>المطبخ</b>${esc(project.kitchen_supervisor_user || "—")}</span>
+            <span><b>التوصيل</b>${esc(project.delivery_supervisor_user || "—")}</span>
+            <span><b>الموقع</b>${esc(project.site_manager_user || "—")}</span>
           </div>
           <div class="ift-actions">
-            <button class="btn btn-default" data-open-project="${esc(project.name)}">فتح البيانات والتكاليف</button>
-            ${Number(project.docstatus) === 0 ? `<button class="btn btn-dark" data-activate="${esc(project.name)}">بدء تشغيل الموظفين</button>` : ""}
+            <button class="btn btn-default" data-open-project="${esc(project.name)}">تعديل / مراجعة البيانات</button>
+            <button class="btn btn-default" data-supervisors="${esc(project.name)}">المشرفون وأصحاب السفر</button>
+            ${!submitted ? `<button class="btn btn-dark" data-activate="${esc(project.name)}">اعتماد المشروع وإظهار المهام للموظفين</button>` : ""}
           </div>
-        </article>`).join("")}</section>` : empty("لا يوجد مشروع مسجل بعد")}
+        </article>`;
+      }).join("")}</section>` : empty("لا يوجد مشروع مسجل بعد")}
       ${adminReports()}`;
   }
 
@@ -100,14 +126,13 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   function kitchenView() {
     if (!data.operations.length) return empty();
     return `<section class="ift-task-list">${data.operations.map(operation => {
-      if (operation.kitchen_ready_approved) return doneCard(operation, "اكتملت مهمة المطبخ", `${num(operation.kitchen_ready_meals)} وجبة جاهزة ومحملة للتسليم`, operation.kitchen_ready_time);
-      const started = Number(operation.kitchen_started);
+      if (operation.kitchen_ready_approved) return doneCard(operation, "تم اعتماد مرحلة المطبخ", `${num(operation.kitchen_ready_meals)} وجبة جاهزة ومغلفة`, operation.kitchen_ready_time);
       return `<article class="ift-task-card focus">
-        <span class="ift-state ${started ? "working" : "waiting"}">${started ? "قيد التجهيز" : "مهمة اليوم"}</span>
+        <span class="ift-state working">مهمتك الآن</span>
         <h2>${esc(operation.project_title)}</h2><p>${esc(operation.distribution_site)}</p>
         <div class="ift-big-number"><b>${num(operation.planned_meals)}</b><span>وجبة مطلوبة اليوم</span></div>
-        ${operation.kitchen_shortage_reported ? `<div class="ift-notice"><b>تم إرسال نقص المواد للإدارة</b><span>${esc(operation.kitchen_shortage_notes)}</span></div>` : ""}
-        ${started ? `<button class="btn btn-dark ift-primary" data-kitchen="${esc(operation.name)}" data-ready="${operation.kitchen_ready_meals || operation.planned_meals}">تسجيل العدد الجاهز وإنهاء المهمة</button>` : `<button class="btn btn-dark ift-primary" data-start-kitchen="${esc(operation.name)}">بدء تجهيز الوجبات</button>`}
+        <div class="ift-notice"><span>بعد اكتمال الإنتاج والتغليف سجّل العدد الجاهز واعتمد مرحلتك. بعدها تظهر مهمة التوصيل تلقائياً.</span></div>
+        <button class="btn btn-dark ift-primary" data-kitchen="${esc(operation.name)}" data-ready="${operation.kitchen_ready_meals || operation.planned_meals}">اعتماد مرحلة المطبخ</button>
       </article>`;
     }).join("")}</section>`;
   }
@@ -180,33 +205,33 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
 
   function render() {
     const labels = {
-      administration: "الإدارة · المشاريع والتكاليف والتقارير",
-      project_manager: "مدير المشروع · متابعة التنفيذ",
-      kitchen: "مشرف المطبخ · مهمة اليوم",
-      delivery: "مشرف التوصيل · السيارات والتحميل",
-      site: "مدير الموقع · الاستلام والتوزيع",
-      supervisor: "المشرف الميداني · مهمة اليوم"
+      administration: "الإدارة · تسجيل البيانات واعتماد المشروع ومتابعة المهام",
+      project_manager: "مدير المشروع · متابعة اليوم فقط",
+      kitchen: "مشرف المطبخ · اعتماد مرحلة المطبخ",
+      delivery: "مشرف التوصيل · اعتماد مرحلة التحميل والتوصيل",
+      site: "مدير الموقع · اعتماد الاستلام والتوزيع",
+      supervisor: "المشرف الميداني · تنفيذ وتسليم مهمة اليوم"
     };
+    const titles = {administration: "إدارة إفطار الصائم", project_manager: "متابعة المشروع", kitchen: "مهمة المطبخ", delivery: "مهمة التوصيل", site: "مهمة الموقع", supervisor: "مهمة المشرف"};
+    $root.find(".ift-title").text(titles[data.mode] || "إفطار الصائم");
     $root.find(".ift-role").text(labels[data.mode] || "المهمة اليومية");
     const views = {administration: adminView, project_manager: projectManagerView, kitchen: kitchenView, delivery: deliveryView, site: siteView, supervisor: supervisorView};
     $root.find(".ift-content").html((views[data.mode] || (() => empty()))());
   }
 
   async function load() {
-    const response = await call("get_team_dashboard", {date: $root.find(".ift-date").val(), project: $root.find(".ift-project").val() || null});
+    const response = await call("get_team_dashboard", {date: $root.find(".ift-date").val()});
     data = response.message || data;
-    const current = $root.find(".ift-project").val();
-    $root.find(".ift-project").html(`<option value="">جميع المشاريع</option>${(data.projects || []).map(project => `<option value="${esc(project.name)}">${esc(project.project_title)} — ${esc(project.distribution_site)}</option>`).join("")}`).val(current || "");
     render();
   }
 
   $root.on("click", "[data-page]", function() { frappe.set_route($(this).data("page")); });
   $root.on("click", "[data-list]", function() { frappe.set_route("List", $(this).data("list")); });
   $root.on("click", "[data-open-project]", function() { frappe.set_route("Form", "WAFD Iftar Project", $(this).data("open-project")); });
+  $root.on("click", "[data-supervisors]", function() { frappe.route_options = {project: $(this).data("supervisors")}; frappe.set_route("List", "WAFD Iftar Supervisor Plan"); });
   $root.on("click", "[data-report]", function() { frappe.set_route("Form", "WAFD Iftar Supervisor Daily Report", $(this).data("report")); });
-  $root.on("click", "[data-activate]", async function() { await call("approve_project_plan", {project_name: $(this).data("activate")}); frappe.show_alert({message: "بدأ التشغيل وظهرت المهام للموظفين", indicator: "green"}, 5); load(); });
-  $root.on("click", "[data-start-kitchen]", async function() { await call("start_kitchen", {operation_name: $(this).data("start-kitchen")}); load(); });
-  $root.on("click", "[data-kitchen]", function() { const name = $(this).data("kitchen"); dialog("إنهاء تجهيز الوجبات", [{fieldname: "ready_meals", fieldtype: "Int", label: "العدد الجاهز", reqd: 1, default: $(this).data("ready")}, {fieldname: "shortage_reported", fieldtype: "Check", label: "يوجد نقص مواد"}, {fieldname: "shortage_notes", fieldtype: "Small Text", label: "المواد الناقصة", depends_on: "shortage_reported"}], "اعتماد الجاهزية", values => call("update_kitchen", {operation_name: name, ...values, approve: 1})); });
+  $root.on("click", "[data-activate]", async function() { await call("approve_project_plan", {project_name: $(this).data("activate")}); frappe.show_alert({message: "تم اعتماد المشروع وظهرت مهمة كل مرحلة للموظف المسؤول", indicator: "green"}, 5); load(); });
+  $root.on("click", "[data-kitchen]", function() { const name = $(this).data("kitchen"); dialog("اعتماد مرحلة المطبخ", [{fieldname: "ready_meals", fieldtype: "Int", label: "العدد الجاهز", reqd: 1, default: $(this).data("ready")}, {fieldname: "shortage_reported", fieldtype: "Check", label: "يوجد نقص مواد"}, {fieldname: "shortage_notes", fieldtype: "Small Text", label: "المواد الناقصة", depends_on: "shortage_reported"}], "اعتماد المرحلة", values => call("update_kitchen", {operation_name: name, ...values, approve: 1})); });
   $root.on("click", "[data-trip]", function() { const name = $(this).data("trip"); dialog("بيانات السيارة والعهدة", [{fieldname: "bread_quantity", fieldtype: "Int", label: "أكياس الخبز", reqd: 1, default: $(this).data("bread")}, {fieldname: "tablecloths", fieldtype: "Int", label: "السفر"}, {fieldname: "waste_bags", fieldtype: "Int", label: "أكياس النفايات"}, {fieldname: "gloves", fieldtype: "Int", label: "القفازات"}, {fieldname: "shoe_covers", fieldtype: "Int", label: "غطاء الأرجل"}, upload("loading_photo", "صورة التحميل"), {fieldname: "notes", fieldtype: "Small Text", label: "ملاحظات"}], "حفظ", values => call("update_delivery_allocation", {trip_name: name, ...values})); });
   $root.on("click", "[data-dispatch]", async function() { await call("approve_delivery_dispatch", {operation_name: $(this).data("dispatch")}); frappe.show_alert({message: "تم اعتماد التحميل والتوجيه", indicator: "green"}, 5); load(); });
   $root.on("click", "[data-site-receipt]", function() { const name = $(this).data("site-receipt"); dialog("استلام الوجبات", [{fieldname: "received_meals", fieldtype: "Int", label: "العدد المستلم", reqd: 1, default: $(this).data("arrived")}], "اعتماد الاستلام", values => call("approve_site_receipt", {operation_name: name, ...values})); });
@@ -219,6 +244,6 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   $root.on("click", "[data-approve]", async function() { await call("approve_supervisor_report", {report_name: $(this).data("approve")}); load(); });
   $root.on("click", "[data-finalize]", async function() { await call("finalize_daily_report", {operation_name: $(this).data("finalize")}); frappe.show_alert({message: "وصل التقرير إلى الإدارة", indicator: "green"}, 5); load(); });
   $root.on("click", "[data-send]", function() { const name = $(this).data("send"); dialog("إرسال التقرير الرسمي", [{fieldname: "recipient", fieldtype: "Data", label: "رئاسة شؤون الحرمين أو الجهة المتعاقدة", reqd: 1}], "اعتماد وإرسال", values => call("send_authority_report", {operation_name: name, ...values})); });
-  $root.on("click", ".ift-refresh", load).on("change", ".ift-date,.ift-project", load);
+  $root.on("click", ".ift-refresh", load).on("change", ".ift-date", load);
   load();
 };

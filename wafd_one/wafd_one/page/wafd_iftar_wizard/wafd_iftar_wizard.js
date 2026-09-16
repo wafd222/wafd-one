@@ -1,5 +1,5 @@
 frappe.pages["wafd-iftar-wizard"].on_page_load = function(wrapper) {
-  frappe.ui.make_app_page({parent: wrapper, title: __("إنشاء مشروع إفطار صائم"), single_column: true});
+  frappe.ui.make_app_page({parent: wrapper, title: __("تسجيل بيانات مشروع إفطار صائم"), single_column: true});
   wrapper.wafd_iftar_defaults = null;
   wrapper.wafd_iftar_state = { step: 1, creating: false, build_id: 0 };
 };
@@ -24,7 +24,7 @@ function build_wizard(wrapper) {
 
   const $root = $(`<div class="iftar-wizard">
     <section class="iw-hero">
-      <div><span>WAFD IFTAR PRO</span><h2>إنشاء مشروع إفطار صائم</h2><p>أربع خطوات واضحة من الموقع حتى بدء التشغيل.</p></div>
+      <div><span>WAFD IFTAR PRO</span><h2>تسجيل بيانات مشروع إفطار صائم</h2><p>أربع خطوات لتسجيل البيانات والفريق. بعد الحفظ يعتمد المشروع من شاشة الإدارة الرئيسية.</p></div>
       <div class="iw-steps">${[1,2,3,4].map((n,i)=>`<button type="button" data-step="${n}" class="${i===0?'active':''}">${n}</button>${i<3?'<i></i>':''}`).join('')}</div>
     </section>
     <section class="iw-card">
@@ -35,7 +35,7 @@ function build_wizard(wrapper) {
       <div class="iw-actions">
         <button type="button" class="btn btn-default iw-prev">السابق</button>
         <button type="button" class="btn btn-primary iw-next">التالي</button>
-        <button type="button" class="btn btn-primary iw-create">إنشاء المشروع وبدء التشغيل</button>
+        <button type="button" class="btn btn-primary iw-create">حفظ بيانات المشروع</button>
       </div>
     </section>
   </div>`).appendTo($section);
@@ -236,20 +236,20 @@ function build_wizard(wrapper) {
     e.preventDefault();
     if(state.creating || !validateStep(4)) return;
     state.creating=true;
-    createButton.disabled=true; createButton.textContent='جارٍ إنشاء المشروع...';
+    createButton.disabled=true; createButton.textContent='جارٍ حفظ البيانات...';
     try {
       const data=collect();
       if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam') data.include_zamzam=1;
-      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
+      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ حفظ بيانات المشروع...'});
       sessionStorage.removeItem('wafd_iftar_wizard_draft');
-      frappe.show_alert({message:'تم إنشاء المشروع وبدأ التشغيل للموظفين',indicator:'green'},5);
+      frappe.show_alert({message:'تم حفظ بيانات المشروع. اعتمد المشروع من الشاشة الرئيسية لإظهار المهام للموظفين.',indicator:'green'},6);
       const msg=response.message||{};
       frappe.set_route('wafd-iftar-team');
     } catch(err) {
       console.error(err);
       frappe.msgprint({title:'تعذر إنشاء المشروع',message:(err?.message||'لم يتم إنشاء المشروع. راجع الرسالة الظاهرة ثم حاول مرة أخرى.'),indicator:'red'});
     } finally {
-      state.creating=false; createButton.disabled=false; createButton.textContent='إنشاء المشروع وبدء التشغيل';
+      state.creating=false; createButton.disabled=false; createButton.textContent='حفظ بيانات المشروع';
     }
   });
 

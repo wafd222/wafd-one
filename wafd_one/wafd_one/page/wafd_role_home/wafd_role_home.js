@@ -311,6 +311,105 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
   profile = profile || {role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []};
   const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
   const isolatedFieldProfile = matchedProfiles.length > 0 && matchedProfiles.every((candidate) => isolatedFieldRoles.has(candidate.role));
+  const driverOfflineProfile = roles.has("WAFD Driver") && isolatedFieldProfile;
+  const DRIVER_OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
+  const DRIVER_OFFLINE_STATE_KEY = `driver:${frappe.session.user || "Guest"}`;
+  let driverOfflineDbPromise = null;
+  let driverHomeSyncing = false;
+
+  function openDriverOfflineDb() {
+    if (driverOfflineDbPromise) return driverOfflineDbPromise;
+    driverOfflineDbPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("IndexedDB unavailable"));
+      const request = indexedDB.open(DRIVER_OFFLINE_DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("state")) db.createObjectStore("state", {keyPath:"key"});
+        if (!db.objectStoreNames.contains("queue")) db.createObjectStore("queue", {keyPath:"id"});
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("IndexedDB open failed"));
+    });
+    return driverOfflineDbPromise;
+  }
+
+  async function driverDbRequest(storeName, mode, operation) {
+    const db = await openDriverOfflineDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const request = operation(tx.objectStore(storeName));
+      let result;
+      let settled = false;
+      const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
+      const fail = (error) => { if (!settled) { settled = true; reject(error); } };
+      request.onsuccess = () => { result = request.result; if (mode === "readonly") finish(result); };
+      request.onerror = () => fail(request.error || new Error("IndexedDB request failed"));
+      tx.oncomplete = () => finish(result);
+      tx.onabort = () => fail(tx.error || new Error("IndexedDB transaction aborted"));
+      tx.onerror = () => fail(tx.error || new Error("IndexedDB transaction failed"));
+    });
+  }
+
+  async function driverPendingActions() {
+    const rows = await driverDbRequest("queue", "readonly", store => store.getAll());
+    return (rows || []).filter(row => row.user === (frappe.session.user || "Guest"))
+      .sort((a,b) => String(a.created_at || "").localeCompare(String(b.created_at || "")));
+  }
+
+  async function updateDriverConnectivity(mode, detail="") {
+    if (!driverOfflineProfile) return;
+    const $bar = $root.find("#wafd-driver-connectivity");
+    if (!$bar.length) return;
+    let pending = 0;
+    try { pending = (await driverPendingActions()).length; } catch (_error) {}
+    const offline = mode === "offline" || !navigator.onLine;
+    let label = detail;
+    if (!label) {
+      if (mode === "syncing") label = uiLang === "ar" ? "جارٍ مزامنة العمليات المحفوظة…" : "Syncing saved actions…";
+      else if (mode === "error") label = uiLang === "ar" ? "تعذر إكمال المزامنة — ستتم إعادة المحاولة تلقائياً" : "Sync is pending — it will retry automatically";
+      else if (offline) label = uiLang === "ar" ? "دون إنترنت — يمكنك العمل من رحلاتي المحفوظة" : "Offline — you can work from My Trips saved on this phone";
+      else label = uiLang === "ar" ? "متصل — الرحلات والمزامنة جاهزة" : "Online — trips and sync are ready";
+    }
+    if (pending) label += uiLang === "ar" ? ` — ${pending} بانتظار المزامنة` : ` — ${pending} waiting to sync`;
+    $bar.removeClass("is-offline is-syncing is-error")
+      .addClass(mode === "syncing" ? "is-syncing" : mode === "error" ? "is-error" : offline ? "is-offline" : "is-online")
+      .find("span").text(label);
+  }
+
+  async function preloadDriverOfflineData() {
+    if (!driverOfflineProfile) return;
+    if (!navigator.onLine) { await updateDriverConnectivity("offline"); return; }
+    if (driverHomeSyncing) return;
+    driverHomeSyncing = true;
+    await updateDriverConnectivity("syncing");
+    try {
+      const pending = await driverPendingActions();
+      for (const row of pending) {
+        await frappe.call({
+          method:"wafd_one.driver_portal.sync_offline_driver_action",
+          args:{trip_name:row.trip_name, action:row.action, captured_at:row.captured_at, payload:JSON.stringify(row.payload || {})},
+          freeze:false,
+        });
+        await driverDbRequest("queue", "readwrite", store => store.delete(row.id));
+      }
+      const response = await frappe.call({method:"wafd_one.driver_portal.list_my_trips", freeze:false});
+      const message = response.message || {};
+      await driverDbRequest("state", "readwrite", store => store.put({
+        key:DRIVER_OFFLINE_STATE_KEY,
+        user:frappe.session.user || "Guest",
+        trips:message.trips || [],
+        hiddenUpcomingCount:Number(message.hidden_upcoming_count || 0),
+        emptyReason:message.empty_reason || null,
+        emptyDetail:message.reconciliation?.blocked?.[0]?.message || "",
+        saved_at:new Date().toISOString(),
+      }));
+      await updateDriverConnectivity("online", uiLang === "ar" ? "متصل — تم تحديث الرحلات وحفظها على الهاتف" : "Online — trips updated and saved on this phone");
+    } catch (_error) {
+      await updateDriverConnectivity(navigator.onLine ? "error" : "offline");
+    } finally {
+      driverHomeSyncing = false;
+    }
+  }
 
 
   function openNewHotelDialog() {
@@ -385,6 +484,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
             <div><small>${tr("التاريخ")}</small><strong>${frappe.utils.escape_html(today)}</strong></div>
           </div>
         </section>
+        ${driverOfflineProfile ? `<section class="wafd-driver-connectivity" id="wafd-driver-connectivity" role="status" aria-live="polite"><i></i><span>${navigator.onLine ? (uiLang==='ar'?'متصل — جارٍ تحديث الرحلات':'Online — updating trips') : (uiLang==='ar'?'دون إنترنت — يمكنك العمل من رحلاتي المحفوظة':'Offline — use My Trips saved on this phone')}</span></section>` : ""}
         <section class="wafd-mobile-grid">
           ${items.map((item, idx) => `<button type="button" class="wafd-mobile-card ${item.primary ? "is-primary" : ""} ${item.special ? "is-special" : ""}" data-idx="${idx}"><b>${item.icon || "•"}</b><span>${frappe.utils.escape_html(tr(item.label || ""))}</span><small>${frappe.utils.escape_html(tr(item.desc || ""))}</small><i>${rtl()?"←":"→"}</i></button>`).join("")}
         </section>
@@ -432,6 +532,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       localStorage.setItem("wafd_lang",uiLang);
       document.documentElement.lang=uiLang;
       document.documentElement.dir=rtl()?"rtl":"ltr";
+      if (driverOfflineProfile && !navigator.onLine) {
+        renderRoleHome();
+        await updateDriverConnectivity("offline");
+        return;
+      }
       await frappe.call({method:"wafd_one.language.set_user_language",args:{language:uiLang},freeze:true,freeze_message:tr("اللغة")+"…"});
       window.location.reload();
     });
@@ -466,16 +571,28 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     });
   }
   renderRoleHome();
+  if (driverOfflineProfile) {
+    window.addEventListener("offline", () => updateDriverConnectivity("offline"));
+    window.addEventListener("online", () => preloadDriverOfflineData());
+    window.addEventListener("wafd-driver-connectivity", (event) => {
+      const mode = event?.detail?.online === false ? "offline" : "online";
+      updateDriverConnectivity(mode);
+    });
+    if (navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
+    wrapper.wafdPreloadDriverOffline = preloadDriverOfflineData;
+    preloadDriverOfflineData();
+  }
 
 };
 
 
 // RC217: Frappe can revisit an already-loaded Page without re-running on_page_load.
-frappe.pages["wafd-role-home"].on_page_show = function () {
+frappe.pages["wafd-role-home"].on_page_show = function (wrapper) {
   document.body.classList.add("wafd-at-role-home");
   document.getElementById("wafd-global-mobile-back")?.remove();
   document.getElementById("wafd-mobile-back-v218")?.remove();
   document.getElementById("wafd-mobile-back-v219")?.remove();
   setTimeout(() => { document.getElementById("wafd-global-mobile-back")?.remove(); document.getElementById("wafd-mobile-back-v218")?.remove();
   document.getElementById("wafd-mobile-back-v219")?.remove(); }, 120);
+  if (typeof wrapper?.wafdPreloadDriverOffline === "function") wrapper.wafdPreloadDriverOffline();
 };

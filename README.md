@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC302
+# WAFD ONE 10.0.0 RC309
 
-**Current release: 10.0.0 RC302 — Iftar Mobile Layout & Legacy Sequence Repair**
+**Current release: 10.0.0 RC309 — Simplified Iftar Management & Stage Approval Screens**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 

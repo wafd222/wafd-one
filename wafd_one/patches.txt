@@ -565,3 +565,9 @@ wafd_one.wafd_one.patches.v10_0_0_rc306.execute
 
 # RC307 explicit Frappe v16 Iftar create permissions and permission resync
 wafd_one.wafd_one.patches.v10_0_0_rc307.execute
+
+# RC308 driver offline-first home preload, quiet network state and reconnect synchronization
+wafd_one.wafd_one.patches.v10_0_0_rc308.execute
+
+# RC309 single Iftar management screen and per-employee sequential stage approvals
+wafd_one.wafd_one.patches.v10_0_0_rc309.execute

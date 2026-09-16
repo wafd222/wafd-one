@@ -236,6 +236,8 @@ def approve_project_plan(project_name):
         fields=["name", "assigned_meals"], limit_page_length=1000,
     )
     assigned = sum(cint(row.assigned_meals) for row in plans)
+    if not plans:
+        frappe.throw(_("أضف المشرفين وأصحاب السفر من شاشة الإدارة قبل اعتماد المشروع / Add field supervisors and table owners before project approval"))
     if cint(project.docstatus) == 0:
         project.submit()
     elif cint(project.docstatus) != 1:
@@ -485,8 +487,6 @@ def update_kitchen(operation_name, ready_meals, shortage_reported=0, shortage_no
     _require("System Manager", "WAFD Operations Manager", "WAFD Project Manager", "WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor")
     operation, project = _submitted_operation(operation_name)
     _assigned(project, "kitchen_supervisor_user")
-    if not cint(operation.kitchen_started):
-        frappe.throw(_("اضغط بدء عمل المطبخ أولاً / Start the kitchen stage first"))
     if cint(operation.kitchen_ready_approved):
         frappe.throw(_("تم اعتماد الجاهزية ولا يمكن تعديلها / Approved readiness cannot be changed"))
     ready = cint(ready_meals)
@@ -498,6 +498,9 @@ def update_kitchen(operation_name, ready_meals, shortage_reported=0, shortage_no
     if shortage and not (shortage_notes or "").strip():
         frappe.throw(_("اكتب بيان المواد الناقصة لإرساله للإدارة / Describe the material shortage"))
     values = {
+        "kitchen_started": 1,
+        "kitchen_started_by": operation.kitchen_started_by or frappe.session.user,
+        "kitchen_started_at": operation.kitchen_started_at or now_datetime(),
         "kitchen_ready_meals": ready, "kitchen_ready_approved": cint(approve),
         "kitchen_ready_time": now_datetime() if cint(approve) else None,
         "kitchen_ready_by": frappe.session.user if cint(approve) else None,

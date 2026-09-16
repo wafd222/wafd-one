@@ -254,7 +254,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
     }
     if (frm.fields_dict.reports_html) {
       const w=frm.fields_dict.reports_html.$wrapper;
-      w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-operations">لوحة التشغيل اليومية</button><button data-page="wafd-iftar-report-center">مركز التقارير والطباعة</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
+      w.html(`<div class="iftar-report-grid"><button data-page="wafd-iftar-team">لوحة التشغيل اليومية</button><button data-page="wafd-iftar-report-center">مركز التقارير والطباعة</button><button data-list="WAFD Iftar Daily Operation">السجلات اليومية</button><button data-print="1">ملخص المشروع</button><button data-list="WAFD Iftar Daily Operation">نماذج التسليم والاستلام</button></div>`);
       w.off('click').on('click','[data-page]',function(){const page=$(this).data('page');if(page==='wafd-iftar-report-center')frappe.route_options={project:frm.doc.name};frappe.set_route(page)}).on('click','[data-list]',function(){frappe.route_options={project:frm.doc.name};frappe.set_route('List',$(this).data('list'))}).on('click','[data-print]',()=>{frappe.route_options={print_format:'WAFD Iftar Project Summary'};frappe.set_route('print', frm.doctype, frm.doc.name);});
     }
   },

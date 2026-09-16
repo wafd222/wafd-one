@@ -67,3 +67,11 @@
   .wafd-mobile-card{min-width:0;max-width:100%;box-sizing:border-box}
   body.wafd-pwa-home-shell .wafd-mobile-lang{display:none!important}
 }
+
+/* RC308 driver offline-first home status. */
+.wafd-driver-connectivity{display:flex;align-items:center;gap:9px;margin:12px 10px 0;padding:10px 12px;border-radius:13px;border:1px solid #d9eadc;background:#edf7ef;color:#2d6938;font-size:11px;font-weight:800;line-height:1.45}
+.wafd-driver-connectivity i{display:block;width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px rgba(45,105,56,.1)}
+.wafd-driver-connectivity.is-offline{border-color:#efdfc4;background:#fff5e7;color:#8a5818}
+.wafd-driver-connectivity.is-syncing{border-color:#d9e4f4;background:#f0f5fc;color:#315c94}
+.wafd-driver-connectivity.is-error{border-color:#efd8d5;background:#fff0ee;color:#8e3030}
+@media(min-width:901px){.wafd-driver-connectivity{margin-inline:4px}}

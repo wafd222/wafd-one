@@ -357,14 +357,12 @@ def create_project(data):
                 doc.save(ignore_permissions=True)
             _copy_supervisor_plans(previous_doc.name, doc.name)
 
-    # The administration has already completed the commercial data and assigned
-    # the core employees in the wizard. Start the operational calendar here so
-    # employees receive their simple daily task immediately. Supervisor/table
-    # allocations remain editable before the site-distribution stage.
-    doc.submit()
-    generate_daily_operations(doc.name, ignore_permissions=True)
-    first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
-    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
+    # RC309: registration and activation are intentionally separate.
+    # The administration first saves the project as a draft. Field employees do
+    # not see draft projects. A single explicit approval from the management
+    # screen submits the project and creates the daily operations, after which
+    # each employee sees only the stage assigned to that account.
+    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "draft": 1}
 
 
 def _copy_supervisor_plans(source_project, target_project):

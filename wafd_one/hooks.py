@@ -58,6 +58,7 @@ app_include_js = [
     "/assets/wafd_one/js/wafd_ios_silent_mode.js",
     "/assets/wafd_one/js/wafd_hub.js",
     "/assets/wafd_one/js/wafd_pwa.js",
+    "/assets/wafd_one/js/wafd_driver_offline_guard.js",
     "/assets/wafd_one/js/wafd_mobile_choice_replace.js",
     "/assets/wafd_one/js/wafd_date_inputs.js",
     "/assets/wafd_one/js/wafd_arabic_list_titles.js",

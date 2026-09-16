@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "autoname": "format:WAFD-CLEAN-USAGE-{#####}",
+ "creation": "2026-09-10 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["supervisor", "usage_date", "source_handover", "purpose", "location", "items", "notes", "status", "recorded_by", "recorded_on"],
+ "fields": [
+  {"fieldname":"supervisor","fieldtype":"Link","label":"مشرف النظافة / Cleaning Supervisor","options":"User","reqd":1,"read_only":1,"in_list_view":1},
+  {"fieldname":"usage_date","fieldtype":"Datetime","label":"تاريخ الصرف / Usage Date","reqd":1,"in_list_view":1},
+  {"fieldname":"source_handover","fieldtype":"Link","label":"سند التسليم / Source Handover","options":"WAFD Stock Movement","reqd":1,"in_list_view":1},
+  {"fieldname":"purpose","fieldtype":"Data","label":"غرض الصرف / Usage Purpose","reqd":1,"in_list_view":1},
+  {"fieldname":"location","fieldtype":"Data","label":"الموقع / Location"},
+  {"fieldname":"items","fieldtype":"Table","label":"المواد المصروفة / Used Items","options":"WAFD Cleaning Material Usage Item","reqd":1},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"ملاحظات / Notes"},
+  {"fieldname":"status","fieldtype":"Select","label":"الحالة / Status","options":"مسجل / Recorded","default":"مسجل / Recorded","read_only":1},
+  {"fieldname":"recorded_by","fieldtype":"Link","label":"سجل بواسطة / Recorded By","options":"User","read_only":1},
+  {"fieldname":"recorded_on","fieldtype":"Datetime","label":"سجل في / Recorded On","read_only":1}
+ ],
+ "index_web_pages_for_search": 0,
+ "module": "WAFD ONE",
+ "modified":"2026-09-10 15:00:00.000000",
+ "modified_by":"Administrator",
+ "name": "WAFD Cleaning Material Usage",
+ "owner":"Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"write":1,"create":1,"print":1,"report":1,"export":1},
+  {"role":"WAFD Operations Manager","read":1,"print":1,"report":1,"export":1},
+  {"role":"WAFD Storekeeper","read":1,"print":1,"report":1}
+ ],
+ "sort_field":"creation",
+ "sort_order":"DESC",
+ "states":[],
+ "track_changes":1
+}

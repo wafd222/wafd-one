@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-08-31 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["meal_type", "menu_source", "wafd_menu", "menu_description", "custom_menu_description", "daily_quantity", "service_days", "total_quantity", "unit_price", "amount", "notes"],
+ "fields": [
+  {"fieldname":"meal_type","fieldtype":"Select","label":"نوع الوجبة / Meal Type","options":"إفطار / Breakfast\nغداء / Lunch\nعشاء / Dinner\nسحور / Suhoor\nإفطار صائم / Iftar Saem\nكوفي بريك / Coffee Break\nبوفيه / Buffet\nوجبة خفيفة / Snack\nأخرى / Other","reqd":1,"in_list_view":1,"columns":2},
+  {"fieldname":"menu_source","fieldtype":"Select","label":"مصدر المنيو / Menu Source","options":"منيو وفد المدينة / WAFD Menu\nحسب طلب الشركة / Customer Requested Menu","default":"منيو وفد المدينة / WAFD Menu","reqd":1,"in_list_view":1,"columns":2},
+  {"fieldname":"wafd_menu","fieldtype":"Link","label":"منيو وفد / WAFD Menu","options":"WAFD Recipe","depends_on":"eval:doc.menu_source=='منيو وفد المدينة / WAFD Menu'"},
+  {"fieldname":"menu_description","fieldtype":"Small Text","label":"وصف المنيو / Menu Description","read_only":1},
+  {"fieldname":"custom_menu_description","fieldtype":"Small Text","label":"وصف طلب الشركة / Customer Menu Description","depends_on":"eval:doc.menu_source=='حسب طلب الشركة / Customer Requested Menu'"},
+  {"fieldname":"daily_quantity","fieldtype":"Int","label":"الكمية اليومية / Daily Quantity","reqd":1,"non_negative":1,"in_list_view":1,"columns":1},
+  {"fieldname":"service_days","fieldtype":"Int","label":"الأيام / Days","read_only":1,"in_list_view":1,"columns":1},
+  {"fieldname":"total_quantity","fieldtype":"Int","label":"إجمالي الكمية / Total Quantity","read_only":1,"in_list_view":1,"columns":1},
+  {"fieldname":"unit_price","fieldtype":"Currency","label":"سعر الوحدة / Unit Price","reqd":1,"non_negative":1,"in_list_view":1,"columns":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"الإجمالي / Amount","read_only":1,"in_list_view":1,"columns":1},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"ملاحظات / Notes"}
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "modified": "2026-08-31 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Quotation Item",
+ "owner": "Administrator",
+ "permissions": []
+}

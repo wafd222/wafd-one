@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "creation": "2026-07-24 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "hot_cabinet",
+  "capacity",
+  "sandwich_count",
+  "hotel",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "hot_cabinet",
+   "fieldtype": "Link",
+   "label": "السخان / Hot Cabinet",
+   "options": "WAFD Hot Cabinet",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Int",
+   "label": "السعة / Capacity",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sandwich_count",
+   "fieldtype": "Int",
+   "label": "عدد السفندشات داخل السخان / Sandwiches in Cabinet",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hotel",
+   "fieldtype": "Link",
+   "label": "الفندق / Hotel",
+   "options": "WAFD Hotel",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Data",
+   "label": "ملاحظات / Notes"
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-07-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Hot Cabinet Allocation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

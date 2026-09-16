@@ -75,3 +75,7 @@
 .wafd-driver-connectivity.is-syncing{border-color:#d9e4f4;background:#f0f5fc;color:#315c94}
 .wafd-driver-connectivity.is-error{border-color:#efd8d5;background:#fff0ee;color:#8e3030}
 @media(min-width:901px){.wafd-driver-connectivity{margin-inline:4px}}
+
+/* RC310 live Iftar assignment badge: server-truth task indicator on employee home. */
+.wafd-mobile-card .wafd-iftar-live-badge{position:absolute;top:11px;left:11px;z-index:2;min-width:27px;height:27px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:#fff;color:#6f531b;font-style:normal;font-size:11px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.14)}
+.wafd-mobile-card.is-special .wafd-iftar-live-badge{background:#d7b45e;color:#18191d}

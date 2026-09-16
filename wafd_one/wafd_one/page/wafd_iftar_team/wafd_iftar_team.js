@@ -103,52 +103,58 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
         <button class="btn btn-dark ift-primary" data-send="${esc(operation.name)}">اعتماد وإرسال التقرير</button></article>`).join("")}</section>`;
   }
 
+  function projectManagerCard(operation) {
+    const supervisorReports = (data.reports || []).filter(report => report.daily_operation === operation.name);
+    const completed = supervisorReports.filter(report => report.manager_approved).length;
+    return `<article class="ift-task-card manager">
+      <div class="ift-card-top"><span class="ift-state">متابعة اليوم</span><small>${esc(operation.project)}</small></div>
+      <h2>${esc(operation.project_title)}</h2><p>${esc(operation.distribution_site)}</p>
+      <div class="ift-numbers four">
+        <div><b>${num(operation.planned_meals)}</b><span>المطلوب</span></div>
+        <div><b>${num(operation.kitchen_ready_meals)}</b><span>جاهز</span></div>
+        <div><b>${num(operation.loaded_meals)}</b><span>محمل</span></div>
+        <div><b>${num(operation.site_received_meals)}</b><span>وصل الموقع</span></div>
+      </div>
+      <div class="ift-simple-progress"><i style="width:${Math.min(100, Number(operation.completion_percent || 0))}%"></i></div>
+      <div class="ift-summary-line"><span>تقارير المشرفين المعتمدة</span><b>${num(completed)} من ${num(supervisorReports.length)}</b></div>
+    </article>`;
+  }
+
   function projectManagerView() {
     if (!data.operations.length) return empty();
-    return `<section class="ift-task-list">${data.operations.map(operation => {
-      const supervisorReports = (data.reports || []).filter(report => report.daily_operation === operation.name);
-      const completed = supervisorReports.filter(report => report.manager_approved).length;
-      return `<article class="ift-task-card manager">
-        <div class="ift-card-top"><span class="ift-state">متابعة اليوم</span><small>${esc(operation.project)}</small></div>
-        <h2>${esc(operation.project_title)}</h2><p>${esc(operation.distribution_site)}</p>
-        <div class="ift-numbers four">
-          <div><b>${num(operation.planned_meals)}</b><span>المطلوب</span></div>
-          <div><b>${num(operation.kitchen_ready_meals)}</b><span>جاهز</span></div>
-          <div><b>${num(operation.loaded_meals)}</b><span>محمل</span></div>
-          <div><b>${num(operation.site_received_meals)}</b><span>وصل الموقع</span></div>
-        </div>
-        <div class="ift-simple-progress"><i style="width:${Math.min(100, Number(operation.completion_percent || 0))}%"></i></div>
-        <div class="ift-summary-line"><span>تقارير المشرفين المعتمدة</span><b>${num(completed)} من ${num(supervisorReports.length)}</b></div>
-      </article>`;
-    }).join("")}</section>`;
+    return `<section class="ift-task-list">${data.operations.map(projectManagerCard).join("")}</section>`;
+  }
+
+  function kitchenCard(operation) {
+    if (operation.kitchen_ready_approved) return doneCard(operation, "تم اعتماد مرحلة المطبخ", `${num(operation.kitchen_ready_meals)} وجبة جاهزة ومغلفة`, operation.kitchen_ready_time);
+    return `<article class="ift-task-card focus">
+      <span class="ift-state working">مهمتك الآن</span>
+      <h2>${esc(operation.project_title)}</h2><p>${esc(operation.distribution_site)}</p>
+      <div class="ift-big-number"><b>${num(operation.planned_meals)}</b><span>وجبة مطلوبة اليوم</span></div>
+      <div class="ift-notice"><span>بعد اكتمال الإنتاج والتغليف سجّل العدد الجاهز واعتمد مرحلتك. بعدها تظهر مهمة التوصيل تلقائياً.</span></div>
+      <button class="btn btn-dark ift-primary" data-kitchen="${esc(operation.name)}" data-ready="${operation.kitchen_ready_meals || operation.planned_meals}">اعتماد مرحلة المطبخ</button>
+    </article>`;
   }
 
   function kitchenView() {
     if (!data.operations.length) return empty();
-    return `<section class="ift-task-list">${data.operations.map(operation => {
-      if (operation.kitchen_ready_approved) return doneCard(operation, "تم اعتماد مرحلة المطبخ", `${num(operation.kitchen_ready_meals)} وجبة جاهزة ومغلفة`, operation.kitchen_ready_time);
-      return `<article class="ift-task-card focus">
-        <span class="ift-state working">مهمتك الآن</span>
-        <h2>${esc(operation.project_title)}</h2><p>${esc(operation.distribution_site)}</p>
-        <div class="ift-big-number"><b>${num(operation.planned_meals)}</b><span>وجبة مطلوبة اليوم</span></div>
-        <div class="ift-notice"><span>بعد اكتمال الإنتاج والتغليف سجّل العدد الجاهز واعتمد مرحلتك. بعدها تظهر مهمة التوصيل تلقائياً.</span></div>
-        <button class="btn btn-dark ift-primary" data-kitchen="${esc(operation.name)}" data-ready="${operation.kitchen_ready_meals || operation.planned_meals}">اعتماد مرحلة المطبخ</button>
-      </article>`;
-    }).join("")}</section>`;
+    return `<section class="ift-task-list">${data.operations.map(kitchenCard).join("")}</section>`;
+  }
+
+  function deliveryCard(operation) {
+    if (!operation.kitchen_ready_approved) return waitingCard(operation, "بانتظار جاهزية المطبخ", "تم إسناد مهمة التوصيل لك. ستصبح قابلة للتنفيذ تلقائياً بعد اعتماد المطبخ.");
+    if (operation.delivery_plan_approved) return doneCard(operation, "تم اعتماد التحميل والتوجيه", `${num(operation.loaded_meals)} وجبة موزعة على السيارات`, operation.delivery_plan_approved_at);
+    const trips = operation.deliveries || [];
+    return `<article class="ift-task-card focus"><span class="ift-state working">مهمتك الآن</span>
+      <h2>توزيع السيارات</h2><p>${esc(operation.project_title)} · ${num(operation.kitchen_ready_meals)} وجبة جاهزة</p>
+      ${trips.length ? `<div class="ift-vehicle-list">${trips.map(trip => `<button data-trip="${esc(trip.name)}" data-bread="${trip.iftar_bread_quantity || 0}"><b>${esc(trip.driver || "اختر السائق")} · ${esc(trip.vehicle || "اختر السيارة")}</b><span>${esc(trip.destination_name || "حدد الموقع")} · ${num(trip.quantity)} وجبة · ${num(trip.iftar_bread_quantity)} خبز</span></button>`).join("")}</div>` : `<div class="ift-notice"><b>لم تُربط سيارات بعد</b><span>استخدم جدول التوصيل الحالي؛ لن ينشئ النظام رحلة مكررة.</span></div>`}
+      <div class="ift-actions stacked"><button class="btn btn-default" data-page="wafd-delivery-supervisor">فتح جدول التوصيل</button>${trips.length ? `<button class="btn btn-dark" data-dispatch="${esc(operation.name)}">اعتماد التحميل والتوجيه</button>` : ""}</div>
+    </article>`;
   }
 
   function deliveryView() {
     if (!data.operations.length) return empty();
-    return `<section class="ift-task-list">${data.operations.map(operation => {
-      if (!operation.kitchen_ready_approved) return waitingCard(operation, "بانتظار جاهزية المطبخ", "ستظهر مهمة التوصيل تلقائياً بعد انتهاء المطبخ.");
-      if (operation.delivery_plan_approved) return doneCard(operation, "تم اعتماد التحميل والتوجيه", `${num(operation.loaded_meals)} وجبة موزعة على السيارات`, operation.delivery_plan_approved_at);
-      const trips = operation.deliveries || [];
-      return `<article class="ift-task-card focus"><span class="ift-state working">مهمتك الآن</span>
-        <h2>توزيع السيارات</h2><p>${esc(operation.project_title)} · ${num(operation.kitchen_ready_meals)} وجبة جاهزة</p>
-        ${trips.length ? `<div class="ift-vehicle-list">${trips.map(trip => `<button data-trip="${esc(trip.name)}" data-bread="${trip.iftar_bread_quantity || 0}"><b>${esc(trip.driver || "اختر السائق")} · ${esc(trip.vehicle || "اختر السيارة")}</b><span>${esc(trip.destination_name || "حدد الموقع")} · ${num(trip.quantity)} وجبة · ${num(trip.iftar_bread_quantity)} خبز</span></button>`).join("")}</div>` : `<div class="ift-notice"><b>لم تُربط سيارات بعد</b><span>استخدم جدول التوصيل الحالي؛ لن ينشئ النظام رحلة مكررة.</span></div>`}
-        <div class="ift-actions stacked"><button class="btn btn-default" data-page="wafd-delivery-supervisor">فتح جدول التوصيل</button>${trips.length ? `<button class="btn btn-dark" data-dispatch="${esc(operation.name)}">اعتماد التحميل والتوجيه</button>` : ""}</div>
-      </article>`;
-    }).join("")}</section>`;
+    return `<section class="ift-task-list">${data.operations.map(deliveryCard).join("")}</section>`;
   }
 
   function siteView() {
@@ -159,7 +165,7 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   function siteOperation(operation) {
     const reports = (data.reports || []).filter(report => report.daily_operation === operation.name);
     if (operation.site_report_approved) return doneCard(operation, "تم إرسال تقرير الموقع للإدارة", "اكتمل عمل الموقع لهذا اليوم", operation.site_report_approved_at);
-    if (!operation.delivery_plan_approved) return waitingCard(operation, "بانتظار التوصيل", "ستظهر بيانات السيارات والسائقين بعد اعتماد مشرف التوصيل.");
+    if (!operation.delivery_plan_approved) return waitingCard(operation, "بانتظار التوصيل", "تم إسناد مهمة الموقع لك. ستظهر بيانات السيارات والسائقين بعد اعتماد مشرف التوصيل.");
     if (!Number(operation.delivery_verified_meals)) return waitingCard(operation, "السيارات في الطريق", `${num(operation.delivery_scheduled_meals)} وجبة موزعة على ${num(operation.delivery_trip_count)} سيارة`);
     if (!operation.site_receipt_approved) return actionCard(operation, "استلام السيارات والوجبات", `${num(operation.delivery_verified_meals)} وجبة وصلت بإثبات السائقين`, `<button class="btn btn-dark ift-primary" data-site-receipt="${esc(operation.name)}" data-arrived="${operation.delivery_verified_meals}">اعتماد الاستلام</button>`);
     if (!operation.authority_inspection_approved) return actionCard(operation, "فحص مفتش التغذية", "سجل اسم المفتش والفحص والصورة قبل توزيع الوجبات.", `<button class="btn btn-dark ift-primary" data-inspection="${esc(operation.name)}">تسجيل واعتماد الفحص</button>`);
@@ -176,9 +182,10 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
       <div class="ift-actions stacked">${!report.received_meals ? `<button class="btn btn-dark" data-receive="${esc(report.name)}" data-planned="${report.planned_meals || 0}">تسليم الوجبات والعهدة</button>` : ""}${report.report_submitted && !report.manager_approved ? `<button class="btn btn-dark" data-approve="${esc(report.name)}">اعتماد تقرير المشرف</button>` : ""}<button class="btn btn-default" data-report="${esc(report.name)}">عرض التقرير والصور</button></div></article>`).join("")}</section>`;
   }
 
-  function supervisorView() {
-    if (!data.reports.length) return empty("لم يسلّمك مدير الموقع مهمة اليوم بعد");
-    return `<section class="ift-task-list">${data.reports.map(report => {
+  function supervisorCards(onlyMine = true) {
+    const reports = (data.reports || []).filter(report => !onlyMine || report.supervisor_user === frappe.session.user);
+    if (!reports.length) return empty("تم إسناد مهمة الإشراف لك، وبانتظار تسليم مدير الموقع لمهمة اليوم");
+    return `<section class="ift-task-list">${reports.map(report => {
       if (report.manager_approved) return doneCard({project_title: report.supervisor_name}, "اعتمد مدير الموقع تقريرك", `${num(report.distributed_meals)} وجبة موزعة`, report.approved_at);
       const assistants = report.assistants || [];
       const owners = report.owners || [];
@@ -189,6 +196,26 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
         ${report.report_submitted ? `<div class="ift-success">تم إرسال التقرير إلى مدير الموقع</div>` : report.received_meals ? `<button class="btn btn-dark ift-primary" data-submit-report="${esc(report.name)}" data-received="${report.received_meals || 0}">إنهاء المهمة وإرسال التقرير</button>` : `<div class="ift-notice"><span>سيظهر زر التنفيذ بعد استلام الوجبات والعهدة من مدير الموقع.</span></div>`}
       </article>`;
     }).join("")}</section>`;
+  }
+
+  function supervisorView() {
+    return supervisorCards(true);
+  }
+
+  function multiView() {
+    const cards = [];
+    (data.operations || []).forEach(operation => {
+      (operation.my_duties || []).forEach(duty => {
+        if (duty === "project_manager") cards.push(projectManagerCard(operation));
+        if (duty === "kitchen") cards.push(kitchenCard(operation));
+        if (duty === "delivery") cards.push(deliveryCard(operation));
+        if (duty === "site") cards.push(siteOperation(operation));
+      });
+    });
+    let html = cards.length ? `<section class="ift-task-list">${cards.join("")}</section>` : "";
+    if ((data.duty_modes || []).includes("site")) html += siteReports();
+    if ((data.duty_modes || []).includes("supervisor")) html += supervisorCards(true);
+    return html || empty();
   }
 
   function actionCard(operation, title, description, action) {
@@ -210,12 +237,13 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
       kitchen: "مشرف المطبخ · اعتماد مرحلة المطبخ",
       delivery: "مشرف التوصيل · اعتماد مرحلة التحميل والتوصيل",
       site: "مدير الموقع · اعتماد الاستلام والتوزيع",
-      supervisor: "المشرف الميداني · تنفيذ وتسليم مهمة اليوم"
+      supervisor: "المشرف الميداني · تنفيذ وتسليم مهمة اليوم",
+      multi: "مهام إفطار الصائم المسندة لهذا الحساب"
     };
-    const titles = {administration: "إدارة إفطار الصائم", project_manager: "متابعة المشروع", kitchen: "مهمة المطبخ", delivery: "مهمة التوصيل", site: "مهمة الموقع", supervisor: "مهمة المشرف"};
+    const titles = {administration: "إدارة إفطار الصائم", project_manager: "متابعة المشروع", kitchen: "مهمة المطبخ", delivery: "مهمة التوصيل", site: "مهمة الموقع", supervisor: "مهمة المشرف", multi: "مهامي في إفطار الصائم"};
     $root.find(".ift-title").text(titles[data.mode] || "إفطار الصائم");
     $root.find(".ift-role").text(labels[data.mode] || "المهمة اليومية");
-    const views = {administration: adminView, project_manager: projectManagerView, kitchen: kitchenView, delivery: deliveryView, site: siteView, supervisor: supervisorView};
+    const views = {administration: adminView, project_manager: projectManagerView, kitchen: kitchenView, delivery: deliveryView, site: siteView, supervisor: supervisorView, multi: multiView};
     $root.find(".ift-content").html((views[data.mode] || (() => empty()))());
   }
 
@@ -230,7 +258,7 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   $root.on("click", "[data-open-project]", function() { frappe.set_route("Form", "WAFD Iftar Project", $(this).data("open-project")); });
   $root.on("click", "[data-supervisors]", function() { frappe.route_options = {project: $(this).data("supervisors")}; frappe.set_route("List", "WAFD Iftar Supervisor Plan"); });
   $root.on("click", "[data-report]", function() { frappe.set_route("Form", "WAFD Iftar Supervisor Daily Report", $(this).data("report")); });
-  $root.on("click", "[data-activate]", async function() { await call("approve_project_plan", {project_name: $(this).data("activate")}); frappe.show_alert({message: "تم اعتماد المشروع وظهرت مهمة كل مرحلة للموظف المسؤول", indicator: "green"}, 5); load(); });
+  $root.on("click", "[data-activate]", async function() { const response = await call("approve_project_plan", {project_name: $(this).data("activate")}); const count = Number(response.message?.published_count || 0); frappe.show_alert({message: `تم اعتماد المشروع وإرسال المهام إلى ${count} موظف`, indicator: "green"}, 6); load(); });
   $root.on("click", "[data-kitchen]", function() { const name = $(this).data("kitchen"); dialog("اعتماد مرحلة المطبخ", [{fieldname: "ready_meals", fieldtype: "Int", label: "العدد الجاهز", reqd: 1, default: $(this).data("ready")}, {fieldname: "shortage_reported", fieldtype: "Check", label: "يوجد نقص مواد"}, {fieldname: "shortage_notes", fieldtype: "Small Text", label: "المواد الناقصة", depends_on: "shortage_reported"}], "اعتماد المرحلة", values => call("update_kitchen", {operation_name: name, ...values, approve: 1})); });
   $root.on("click", "[data-trip]", function() { const name = $(this).data("trip"); dialog("بيانات السيارة والعهدة", [{fieldname: "bread_quantity", fieldtype: "Int", label: "أكياس الخبز", reqd: 1, default: $(this).data("bread")}, {fieldname: "tablecloths", fieldtype: "Int", label: "السفر"}, {fieldname: "waste_bags", fieldtype: "Int", label: "أكياس النفايات"}, {fieldname: "gloves", fieldtype: "Int", label: "القفازات"}, {fieldname: "shoe_covers", fieldtype: "Int", label: "غطاء الأرجل"}, upload("loading_photo", "صورة التحميل"), {fieldname: "notes", fieldtype: "Small Text", label: "ملاحظات"}], "حفظ", values => call("update_delivery_allocation", {trip_name: name, ...values})); });
   $root.on("click", "[data-dispatch]", async function() { await call("approve_delivery_dispatch", {operation_name: $(this).data("dispatch")}); frappe.show_alert({message: "تم اعتماد التحميل والتوجيه", indicator: "green"}, 5); load(); });
@@ -245,5 +273,6 @@ frappe.pages["wafd-iftar-team"].on_page_load = function(wrapper) {
   $root.on("click", "[data-finalize]", async function() { await call("finalize_daily_report", {operation_name: $(this).data("finalize")}); frappe.show_alert({message: "وصل التقرير إلى الإدارة", indicator: "green"}, 5); load(); });
   $root.on("click", "[data-send]", function() { const name = $(this).data("send"); dialog("إرسال التقرير الرسمي", [{fieldname: "recipient", fieldtype: "Data", label: "رئاسة شؤون الحرمين أو الجهة المتعاقدة", reqd: 1}], "اعتماد وإرسال", values => call("send_authority_report", {operation_name: name, ...values})); });
   $root.on("click", ".ift-refresh", load).on("change", ".ift-date", load);
+  if (frappe.realtime?.on) frappe.realtime.on("wafd_iftar_task_published", () => load());
   load();
 };

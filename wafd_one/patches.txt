@@ -571,3 +571,4 @@ wafd_one.wafd_one.patches.v10_0_0_rc308.execute
 
 # RC309 single Iftar management screen and per-employee sequential stage approvals
 wafd_one.wafd_one.patches.v10_0_0_rc309.execute
+wafd_one.wafd_one.patches.v10_0_0_rc310.execute

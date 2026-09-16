@@ -451,6 +451,43 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
   const items = (profile.items || []).filter(canRead);
 
+  async function refreshIftarAssignmentCard() {
+    if (isExecutive || !navigator.onLine) return;
+    try {
+      const response = await frappe.call({
+        method: "wafd_one.wafd_one.iftar_team.get_my_iftar_task_summary",
+        args: {date: frappe.datetime.get_today()},
+        freeze: false,
+      });
+      const summary = response.message || {};
+      const count = Number(summary.count || 0);
+      const projectCount = Number(summary.project_count || 0);
+      const existingIndex = items.findIndex(item => item.page === "wafd-iftar-team");
+      const $grid = $root.find(".wafd-mobile-grid");
+      $root.find(".wafd-iftar-live-task").remove();
+      $root.find(".wafd-mobile-card[data-iftar-live='1']").removeAttr("data-iftar-live").find(".wafd-iftar-live-badge").remove();
+      if (!count || !$grid.length) return;
+      const label = uiLang === "ar" ? "مهمة إفطار الصائم اليوم" : "Today's Iftar task";
+      const desc = uiLang === "ar"
+        ? `${count} مهمة في ${projectCount} مشروع — اضغط لفتح شاشة مهامك`
+        : `${count} task(s) in ${projectCount} project(s) — tap to open`;
+      if (existingIndex >= 0) {
+        const $card = $root.find(`.wafd-mobile-card[data-idx="${existingIndex}"]`);
+        if ($card.length) {
+          $card.attr("data-iftar-live", "1").addClass("is-primary is-special");
+          $card.find("small").text(desc);
+          $card.prepend(`<em class="wafd-iftar-live-badge">${count}</em>`);
+        }
+      } else {
+        const $card = $(`<button type="button" class="wafd-mobile-card is-primary is-special wafd-iftar-live-task"><em class="wafd-iftar-live-badge">${count}</em><b>☾</b><span>${frappe.utils.escape_html(label)}</span><small>${frappe.utils.escape_html(desc)}</small><i>${rtl()?"←":"→"}</i></button>`);
+        $grid.prepend($card);
+        $card.on("click", () => frappe.set_route("wafd-iftar-team"));
+      }
+    } catch (error) {
+      console.debug("Iftar task summary unavailable", error);
+    }
+  }
+
   function renderRoleHome() {
     $root.attr("dir", rtl() ? "rtl" : "ltr");
     const roleLabel = tr(profile.title);
@@ -571,6 +608,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     });
   }
   renderRoleHome();
+  wrapper.wafdRefreshIftarAssignments = refreshIftarAssignmentCard;
+  refreshIftarAssignmentCard();
+  if (frappe.realtime?.on) frappe.realtime.on("wafd_iftar_task_published", () => refreshIftarAssignmentCard());
   if (driverOfflineProfile) {
     window.addEventListener("offline", () => updateDriverConnectivity("offline"));
     window.addEventListener("online", () => preloadDriverOfflineData());
@@ -595,4 +635,5 @@ frappe.pages["wafd-role-home"].on_page_show = function (wrapper) {
   setTimeout(() => { document.getElementById("wafd-global-mobile-back")?.remove(); document.getElementById("wafd-mobile-back-v218")?.remove();
   document.getElementById("wafd-mobile-back-v219")?.remove(); }, 120);
   if (typeof wrapper?.wafdPreloadDriverOffline === "function") wrapper.wafdPreloadDriverOffline();
+  if (typeof wrapper?.wafdRefreshIftarAssignments === "function") wrapper.wafdRefreshIftarAssignments();
 };

@@ -244,7 +244,35 @@ def approve_project_plan(project_name):
         frappe.throw(_("المشروع ملغي ولا يمكن تشغيله / Cancelled project cannot be activated"))
     from wafd_one.wafd_one.iftar_pro import generate_daily_operations
     result = generate_daily_operations(project.name, ignore_permissions=True)
-    return {"project": project.name, "operations": result, "supervisors": len(plans), "assigned_meals": assigned}
+
+    # RC310: publishing means more than submitting the project. Clear every
+    # assigned employee cache and push a realtime signal so an already-open
+    # employee home can surface the task immediately without logging out.
+    published_users = {
+        (project.get("project_manager_user") or "").strip(),
+        (project.get("kitchen_supervisor_user") or "").strip(),
+        (project.get("delivery_supervisor_user") or "").strip(),
+        (project.get("site_manager_user") or "").strip(),
+    }
+    published_users.update(
+        (row or "").strip() for row in frappe.get_all(
+            "WAFD Iftar Supervisor Plan", filters={"project": project.name},
+            pluck="supervisor_user", limit_page_length=1000,
+        )
+    )
+    published_users.discard("")
+    for user in sorted(published_users):
+        frappe.clear_cache(user=user)
+        frappe.publish_realtime(
+            "wafd_iftar_task_published",
+            {"project": project.name, "date": str(project.start_date or "")},
+            user=user,
+        )
+    return {
+        "project": project.name, "operations": result, "supervisors": len(plans),
+        "assigned_meals": assigned, "published_users": sorted(published_users),
+        "published_count": len(published_users),
+    }
 
 
 def _submitted_operation(operation_name):
@@ -365,60 +393,172 @@ def sync_iftar_delivery_proof(doc, method=None):
         sync_delivery_schedule(operation_name)
 
 
-def _project_filters(roles):
-    filters = {"docstatus": ["<", 2], "status": ["not in", ["مكتمل / Completed", "ملغي / Cancelled", "مغلق / Closed"]]}
+def _assignment_duties(project, user=None):
+    """Return the duties explicitly assigned to *user* on this project.
+
+    RC310 deliberately uses the project assignment fields as the source of
+    truth.  A user can legitimately carry several WAFD roles from other
+    projects, so role priority must never decide which Iftar project is visible.
+    """
+    user = (user or frappe.session.user or "").strip()
+    duties = []
+    mapping = (
+        ("project_manager", "project_manager_user"),
+        ("kitchen", "kitchen_supervisor_user"),
+        ("delivery", "delivery_supervisor_user"),
+        ("site", "site_manager_user"),
+    )
+    for duty, fieldname in mapping:
+        if (project.get(fieldname) or "").strip() == user:
+            duties.append(duty)
+    return duties
+
+
+def _visible_project_rows(roles, project_name=None):
+    fields = [
+        "name", "project_title", "season_type", "distribution_site", "contracting_entity",
+        "start_date", "end_date", "daily_meals", "number_of_days", "total_meals",
+        "total_revenue", "total_project_cost", "expected_profit", "status", "docstatus",
+        "modified", "project_manager_user", "kitchen_supervisor_user",
+        "delivery_supervisor_user", "site_manager_user",
+    ]
+    filters = {
+        "docstatus": ["<", 2],
+        "status": ["not in", ["مكتمل / Completed", "ملغي / Cancelled", "مغلق / Closed"]],
+    }
+    if project_name:
+        filters["name"] = project_name
+
     if roles & GLOBAL_MANAGEMENT_ROLES:
-        return filters
+        rows = frappe.get_list(
+            "WAFD Iftar Project", filters=filters, fields=fields,
+            order_by="start_date desc", limit_page_length=200,
+        )
+        for row in rows:
+            row["my_duties"] = ["administration"]
+        return rows
+
+    # Employee visibility is driven by the explicit project assignment, not by
+    # whichever role happens to appear first in frappe.get_roles().  get_all is
+    # safe here because we filter the result to the current user's own links
+    # before returning anything to the caller.
     filters["docstatus"] = 1
-    field = None
-    if "WAFD Project Manager" in roles:
-        field = "project_manager_user"
-    elif roles & {"WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"}:
-        field = "kitchen_supervisor_user"
-    elif "WAFD Delivery Supervisor" in roles:
-        field = "delivery_supervisor_user"
-    elif "WAFD Iftar Site Manager" in roles:
-        field = "site_manager_user"
-    if field:
-        filters[field] = frappe.session.user
-    return filters
+    candidates = frappe.get_all(
+        "WAFD Iftar Project", filters=filters, fields=fields,
+        order_by="start_date desc", limit_page_length=500,
+    )
+    supervisor_projects = set(frappe.get_all(
+        "WAFD Iftar Supervisor Plan",
+        filters={"supervisor_user": frappe.session.user},
+        pluck="project", limit_page_length=1000,
+    ))
+    visible = []
+    for row in candidates:
+        duties = _assignment_duties(row)
+        if row.name in supervisor_projects:
+            duties.append("supervisor")
+        if duties:
+            row["my_duties"] = list(dict.fromkeys(duties))
+            visible.append(row)
+    return visible
+
+
+def _fallback_mode_from_roles(roles):
+    return (
+        "project_manager" if "WAFD Project Manager" in roles else
+        "kitchen" if roles & {"WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"} else
+        "delivery" if "WAFD Delivery Supervisor" in roles else
+        "site" if "WAFD Iftar Site Manager" in roles else
+        "supervisor" if "WAFD Iftar Supervisor" in roles else ""
+    )
+
+
+@frappe.whitelist()
+def get_my_iftar_task_summary(date=None):
+    """Small server-truth summary used by the employee home screen.
+
+    This makes an approved Iftar assignment visible immediately even when the
+    employee browser still has an older client-side role list cached.
+    """
+    if frappe.session.user in ("Guest", ""):
+        return {"count": 0, "tasks": []}
+    roles = _roles()
+    if roles & GLOBAL_MANAGEMENT_ROLES:
+        return {"count": 0, "tasks": []}
+    target_date = getdate(date or nowdate())
+    projects = _visible_project_rows(roles)
+    names = [row.name for row in projects]
+    operations = frappe.get_all(
+        "WAFD Iftar Daily Operation",
+        filters={"project": ["in", names], "operation_date": target_date, "docstatus": ["<", 2]} if names else {"name": "__none__"},
+        fields=["name", "project", "kitchen_ready_approved", "delivery_plan_approved", "site_receipt_approved", "site_report_approved", "daily_report_sent"],
+        limit_page_length=500,
+    )
+    op_map = {row.project: row for row in operations}
+    tasks = []
+    for project in projects:
+        operation = op_map.get(project.name)
+        for duty in project.get("my_duties") or []:
+            state = "waiting"
+            if duty == "project_manager":
+                state = "active"
+            elif duty == "kitchen":
+                state = "done" if operation and cint(operation.kitchen_ready_approved) else "active"
+            elif duty == "delivery":
+                state = "done" if operation and cint(operation.delivery_plan_approved) else ("active" if operation and cint(operation.kitchen_ready_approved) else "waiting")
+            elif duty == "site":
+                state = "done" if operation and cint(operation.site_report_approved) else ("active" if operation and cint(operation.delivery_plan_approved) else "waiting")
+            elif duty == "supervisor":
+                state = "active" if operation and cint(operation.site_receipt_approved) else "waiting"
+            tasks.append({
+                "project": project.name,
+                "project_title": project.project_title,
+                "distribution_site": project.distribution_site,
+                "duty": duty,
+                "state": state,
+                "operation": operation.name if operation else None,
+            })
+    return {"count": len(tasks), "project_count": len(projects), "date": target_date, "tasks": tasks}
 
 
 @frappe.whitelist()
 def get_team_dashboard(date=None, project=None):
     roles = _roles()
     if not (roles & TEAM_ROLES):
-        frappe.throw(_("لا توجد مهمة إفطار صائم مسندة لهذا الحساب / No Iftar task is assigned"), frappe.PermissionError)
+        # The project link itself is authoritative in RC310. This fallback lets
+        # a newly assigned employee open the task screen before the browser has
+        # refreshed its cached role array, while still returning only their own
+        # explicitly assigned projects below.
+        has_assignment = bool(_visible_project_rows(roles, project_name=project))
+        if not has_assignment:
+            frappe.throw(_("لا توجد مهمة إفطار صائم مسندة لهذا الحساب / No Iftar task is assigned"), frappe.PermissionError)
+
     target_date = getdate(date or nowdate())
-    mode = (
-        "administration" if roles & GLOBAL_MANAGEMENT_ROLES else
-        "project_manager" if "WAFD Project Manager" in roles else
-        "kitchen" if roles & {"WAFD Iftar Kitchen Supervisor", "WAFD Production Supervisor"} else
-        "delivery" if "WAFD Delivery Supervisor" in roles else
-        "site" if "WAFD Iftar Site Manager" in roles else "supervisor"
-    )
-    project_filters = _project_filters(roles)
-    assigned_projects = None
-    if "WAFD Iftar Supervisor" in roles and not (roles & MANAGEMENT_ROLES):
-        assigned_projects = frappe.get_all(
-            "WAFD Iftar Supervisor Plan", filters={"supervisor_user": frappe.session.user},
-            pluck="project", limit_page_length=500,
-        )
-        project_filters["name"] = ["in", assigned_projects] if assigned_projects else "__none__"
-    if project:
-        project_filters["name"] = project if assigned_projects is None or project in assigned_projects else "__none__"
-    projects = frappe.get_list(
-        "WAFD Iftar Project", filters=project_filters,
-        fields=["name", "project_title", "season_type", "distribution_site", "contracting_entity", "start_date", "end_date", "daily_meals", "number_of_days", "total_meals", "total_revenue", "total_project_cost", "expected_profit", "status", "docstatus", "modified", "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user", "site_manager_user"],
-        order_by="start_date desc", limit_page_length=200,
-    )
+    projects = _visible_project_rows(roles, project_name=project)
+    duty_modes = []
+    for item in projects:
+        duty_modes.extend(item.get("my_duties") or [])
+    duty_modes = list(dict.fromkeys(duty_modes))
+    if roles & GLOBAL_MANAGEMENT_ROLES:
+        mode = "administration"
+    elif len(duty_modes) == 1:
+        mode = duty_modes[0]
+    elif len(duty_modes) > 1:
+        mode = "multi"
+    else:
+        mode = _fallback_mode_from_roles(roles)
+
     project_names = [row.name for row in projects]
     for item in projects:
-        plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": item.name}, fields=["assigned_meals", "table_owners_count", "assistants_count"], limit_page_length=1000)
+        plans = frappe.get_all(
+            "WAFD Iftar Supervisor Plan", filters={"project": item.name},
+            fields=["assigned_meals", "table_owners_count", "assistants_count"], limit_page_length=1000,
+        )
         item["supervisors_count"] = len(plans)
         item["table_owners_count"] = sum(cint(x.table_owners_count) for x in plans)
         item["assistants_count"] = sum(cint(x.assistants_count) for x in plans)
         item["assigned_meals"] = sum(cint(x.assigned_meals) for x in plans)
+
     operations = frappe.get_all(
         "WAFD Iftar Daily Operation",
         filters={"project": ["in", project_names], "operation_date": target_date, "docstatus": ["<", 2]} if project_names else {"name": "__none__"},
@@ -430,6 +570,7 @@ def get_team_dashboard(date=None, project=None):
         meta = project_map.get(operation.project) or {}
         operation["project_title"] = meta.get("project_title") or operation.project
         operation["distribution_site"] = meta.get("distribution_site") or ""
+        operation["my_duties"] = meta.get("my_duties") or []
         operation["cartons"] = (cint(operation.planned_meals) + 24) // 25
         operation["deliveries"] = _delivery_rows(operation)
         stages = [
@@ -444,29 +585,38 @@ def get_team_dashboard(date=None, project=None):
         ]
         operation["stages"] = [{"label": label, "done": cint(done), "time": when if cint(done) else None} for label, done, when in stages]
 
-    # Kitchen and delivery staff do not need supervisor reports. Avoid touching
-    # that DocType entirely so least-privilege accounts never trigger a permission dialog.
+    # Fetch reports only when one of the user's actual assignments requires them.
+    duty_set = set(duty_modes)
     reports = []
-    if mode in {"administration", "project_manager", "site", "supervisor"}:
+    if mode == "administration" or duty_set & {"project_manager", "site", "supervisor"}:
         report_filters = {"operation_date": target_date}
         if project_names:
             report_filters["project"] = ["in", project_names]
         else:
             report_filters["name"] = "__none__"
-        if mode == "supervisor":
+        if duty_set == {"supervisor"}:
             report_filters["supervisor_user"] = frappe.session.user
-        reports = frappe.get_list(
+        reports = frappe.get_all(
             "WAFD Iftar Supervisor Daily Report", filters=report_filters,
             fields=["name", "project", "daily_operation", "supervisor_name", "supervisor_user", "planned_meals", "cartons", "received_meals", "received_at", "handover_photo", "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals", "tables_spread_completed", "distribution_completed", "cleanup_completed", "distribution_photo", "closeout_photo", "report_submitted", "submitted_by", "manager_approved", "submitted_at", "approved_at"],
             order_by="supervisor_name asc", limit_page_length=1000,
         )
         for report in reports:
-            report["owners"] = frappe.get_all("WAFD Iftar Supervisor Daily Owner", filters={"parent": report.name, "parenttype": "WAFD Iftar Supervisor Daily Report"}, fields=["name", "table_owner_name", "mobile_no", "distribution_point", "planned_meals", "delivered_meals", "delivery_time", "owner_confirmed"], order_by="idx asc", limit_page_length=500)
-            report["assistants"] = frappe.get_all("WAFD Iftar Assistant Attendance", filters={"parent": report.name, "parenttype": "WAFD Iftar Supervisor Daily Report"}, fields=["name", "assistant_name", "mobile_no", "attendance_status", "check_in_time", "check_out_time"], order_by="idx asc", limit_page_length=500)
+            report["owners"] = frappe.get_all(
+                "WAFD Iftar Supervisor Daily Owner",
+                filters={"parent": report.name, "parenttype": "WAFD Iftar Supervisor Daily Report"},
+                fields=["name", "table_owner_name", "mobile_no", "distribution_point", "planned_meals", "delivered_meals", "delivery_time", "owner_confirmed"],
+                order_by="idx asc", limit_page_length=500,
+            )
+            report["assistants"] = frappe.get_all(
+                "WAFD Iftar Assistant Attendance",
+                filters={"parent": report.name, "parenttype": "WAFD Iftar Supervisor Daily Report"},
+                fields=["name", "assistant_name", "mobile_no", "attendance_status", "check_in_time", "check_out_time"],
+                order_by="idx asc", limit_page_length=500,
+            )
     return {
         "date": target_date, "roles": sorted(roles & TEAM_ROLES), "projects": projects,
-        "operations": operations, "reports": reports,
-        "mode": mode,
+        "operations": operations, "reports": reports, "mode": mode, "duty_modes": duty_modes,
     }
 
 

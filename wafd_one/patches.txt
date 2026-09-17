@@ -581,3 +581,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc312.execute
 
 # RC313 allow manual Iftar supervisor/table-owner entry and reuse names on later days
 wafd_one.wafd_one.patches.v10_0_0_rc313.execute
+
+# RC314 practical Iftar staged workflow: kitchen -> delivery -> read-only tracking
+wafd_one.wafd_one.patches.v10_0_0_rc314.execute

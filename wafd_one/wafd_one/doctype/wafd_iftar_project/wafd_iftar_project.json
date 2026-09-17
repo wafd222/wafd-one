@@ -26,6 +26,7 @@
   "column_break_team",
   "delivery_supervisor_user",
   "site_manager_user",
+  "external_viewer_user",
   "schedule_section",
   "start_date",
   "end_date",
@@ -221,6 +222,13 @@
    "label": "مدير الموقع / Site Manager",
    "options": "User",
    "allow_on_submit": 1
+  },
+  {
+   "fieldname": "external_viewer_user",
+   "fieldtype": "Link",
+   "label": "متابعة الطرف الخارجي / External Viewer",
+   "options": "User",
+   "description": "قراءة مراحل المشروع فقط / Read-only project stage tracking"
   },
   {
    "fieldname": "start_date",

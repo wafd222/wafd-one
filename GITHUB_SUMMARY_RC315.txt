@@ -1,0 +1,10 @@
+Fix Iftar team assignment by auto-adding only the required project role
+
+- Allow management to assign active users to Iftar project duties without manually editing User roles first.
+- Automatically add only the missing role required for Project Manager, Kitchen Supervisor, Delivery Supervisor, or External Viewer assignment.
+- Preserve every existing role on the selected user; no roles are removed or replaced.
+- Leave System Manager and WAFD Operations Manager accounts unchanged because they already have management access.
+- Keep project assignment validation for inactive or non-System users.
+- Clear the assigned user's cache immediately so the new Iftar screen becomes available after assignment.
+- Limit the change to the Iftar stage-portal assignment flow introduced in RC314.
+- No changes to Delivery Management, drivers, trips, offline synchronization, Undertaking, Quotation, Inventory, Cleaning, Finance, users outside the selected assignment, or language modules.

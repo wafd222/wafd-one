@@ -53,18 +53,36 @@ def _active_user(user):
     return user
 
 
+def _ensure_team_role(user, required_role):
+    """Grant only the Iftar assignment role needed by the selected user.
+
+    Team assignment is a management-only action.  We deliberately do not
+    remove or replace any existing roles, and global management accounts are
+    left untouched because they already have full Iftar access.
+    """
+    roles = _roles(user)
+    if required_role in roles or (roles & GLOBAL_MANAGEMENT_ROLES):
+        return
+    if not frappe.db.exists("Role", required_role):
+        frappe.throw(
+            _("الدور المطلوب غير موجود في النظام: {0} / Required role does not exist").format(required_role)
+        )
+
+    user_doc = frappe.get_doc("User", user)
+    existing = {row.role for row in (user_doc.roles or []) if row.role}
+    if required_role not in existing:
+        user_doc.append("roles", {"role": required_role})
+        user_doc.flags.ignore_permissions = True
+        user_doc.save(ignore_permissions=True)
+    frappe.clear_cache(user=user)
+
+
 def _validate_team_user(fieldname, user):
     user = _active_user(user)
     if not user:
         return ""
     required_role = TEAM_ROLE_BY_FIELD[fieldname]
-    roles = _roles(user)
-    if required_role not in roles and not (roles & GLOBAL_MANAGEMENT_ROLES):
-        frappe.throw(
-            _("الحساب {0} لا يحمل الدور المطلوب: {1} / User is missing the required role").format(
-                user, required_role
-            )
-        )
+    _ensure_team_role(user, required_role)
     return user
 
 

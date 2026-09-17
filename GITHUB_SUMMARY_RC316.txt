@@ -1,0 +1,7 @@
+Fix RC315 Frappe Cloud migration patch packaging
+
+- Convert the RC315 migration patch from a single Python module into the package structure expected by the existing patches.txt entry.
+- Add v10_0_0_rc315/__init__.py and v10_0_0_rc315/execute.py so Frappe can import wafd_one.wafd_one.patches.v10_0_0_rc315.execute correctly.
+- Keep the RC315 patch identifier unchanged so the previously failed migration can be retried safely after this update.
+- Align application version metadata to 10.0.0rc316.
+- No changes to Iftar business logic, Delivery Management, Delivery Supervisor, drivers, trips, offline synchronization, Undertaking, Quotation, Inventory, Cleaning, Finance, users, or languages.

@@ -202,7 +202,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "الخطط اليومية", desc: "الكميات المطلوب إنتاجها", icon: "◫", doctype: "WAFD Daily Meal Plan" },
         { label: "سجلات التغليف", desc: "متابعة الكميات المعبأة", icon: "□", doctype: "WAFD Packaging Record" },
         { label: "الوصفات", desc: "مراجع الوصفات المعتمدة", icon: "≡", doctype: "WAFD Recipe" }
-        ,{ label: "مطبخ إفطار الصائم", desc: "الجاهزية والتغليف ونواقص المواد", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },
     {
@@ -232,22 +231,21 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Delivery Supervisor", title: "مشرف التوصيل", subtitle: "خطة التوصيل والمواقع والسائقون",
       items: [
         { label: "إدارة التوصيل", desc: "إنشاء الرحلات والجداول ومتابعة التسليم", icon: "➜", page: "wafd-delivery-supervisor", primary: true },
-        { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" }
-        ,{ label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" }
-        ,{ label: "توصيل إفطار الصائم", desc: "نفس جدول السائقين مع الربط التلقائي بالمشروع", icon: "☾", page: "wafd-iftar-operations", special: true }
+        { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" },
+        { label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" }
       ]
     },
     {
       role: "WAFD Iftar Kitchen Supervisor", title: "مشرف مطبخ إفطار الصائم", subtitle: "التجهيز والتغليف والنواقص والجاهزية",
-      items: [{ label: "تشغيل المطبخ اليومي", desc: "تسجيل العدد الجاهز وإرسال النواقص للإدارة", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
+      items: []
     },
     {
       role: "WAFD Iftar Site Manager", title: "مدير موقع إفطار الصائم", subtitle: "الاستلام والفحص وتسليم المشرفين واعتماد التقارير",
-      items: [{ label: "إدارة موقع الإفطار", desc: "الكراتين والعهد والتقارير والصور", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
+      items: []
     },
     {
       role: "WAFD Iftar Supervisor", title: "مشرف سفر إفطار الصائم", subtitle: "السفر والمساعدون والتوزيع والتوثيق",
-      items: [{ label: "تكليفي اليومي", desc: "المواقع وأصحاب السفر والوجبات والصور والتقرير", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
+      items: []
     },
     {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",

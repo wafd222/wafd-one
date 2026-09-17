@@ -1,0 +1,10 @@
+Remove legacy Iftar employee shortcut cards without changing operational modules
+
+- Remove the old Iftar shortcut card from Delivery Supervisor home.
+- Remove the old Iftar kitchen shortcut from Production Supervisor home.
+- Remove the temporary Iftar Kitchen Supervisor, Site Manager, and Iftar Supervisor entry cards so the new employee workflow can be designed from a clean starting point.
+- Keep the main management Iftar entry and the restored RC144 Iftar program unchanged.
+- Preserve Delivery Management, schedules, locations, reports, drivers, and offline synchronization exactly as in RC311.
+- Preserve the existing Iftar/delivery backend linkage and data; only role-home shortcut cards are removed.
+- Add a UI-only migration that reloads wafd_role_home and clears cache.
+- No changes to Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

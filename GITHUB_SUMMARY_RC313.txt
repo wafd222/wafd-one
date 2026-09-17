@@ -1,0 +1,9 @@
+Fix Iftar supervisor and table-owner name entry during daily receipt
+
+- Allow manual entry of Iftar table-owner and supervisor names when no pre-created roster exists.
+- Allow manual entry of supervisors manager and assistant names to avoid the same empty-select issue.
+- Keep previously registered names visible as guidance in the receipt dialog.
+- Reuse names entered in prior Iftar daily operations as project roster suggestions on later days.
+- Preserve existing Iftar project, daily-operation, reporting, inspection, production, packaging, loading, delivery and receipt data.
+- Limit the change to Iftar daily-operation UI and Iftar roster lookup only.
+- No changes to Delivery Management, Delivery Supervisor, drivers, trips, offline sync, Undertaking, Quotation, Inventory, Cleaning, Finance, users or languages.

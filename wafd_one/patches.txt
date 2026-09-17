@@ -578,3 +578,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc311.execute
 
 # RC312 remove legacy Iftar employee shortcut cards only; preserve all operational modules
 wafd_one.wafd_one.patches.v10_0_0_rc312.execute
+
+# RC313 allow manual Iftar supervisor/table-owner entry and reuse names on later days
+wafd_one.wafd_one.patches.v10_0_0_rc313.execute

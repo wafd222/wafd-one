@@ -141,25 +141,24 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
       } else if (!frm.doc.received_meals) {
         addStageAction(__("اعتماد الاستلام"), async () => {
           const roster=(await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_project_field_roster',args:{project_name:frm.doc.project}})).message||{};
-          const ownerOptions=['',...(roster.table_owners||[])].join('\n');
-          const supervisorOptions=['',...(roster.supervisors||[])].join('\n');
-          const managerOptions=['',...(roster.managers||[])].join('\n');
-          const assistantOptions=['',...(roster.assistants||[])].join('\n');
+          const ownerNames=roster.table_owners||[];
+          const supervisorNames=roster.supervisors||[];
+          const managerNames=roster.managers||[];
           const dialog = new frappe.ui.Dialog({
             title: __("بيانات الاستلام"),
             size: "extra-large",
             fields: [
               { fieldname: "recipient_name", fieldtype: "Data", label: __("اسم المستلم"), reqd: 1, default: frm.doc.recipient_name },
               { fieldname: "recipient_id", fieldtype: "Data", label: __("رقم الهوية"), default: frm.doc.recipient_id },
-              { fieldname: "table_owner_name", fieldtype: "Select", options: ownerOptions, label: __("اسم صاحب السفرة"), reqd: 1, default: frm.doc.table_owner_name },
-              { fieldname: "supervisor_name", fieldtype: "Select", options: supervisorOptions, label: __("اسم المشرف"), reqd: 1, default: frm.doc.supervisor_name },
-              { fieldname: "supervisors_manager", fieldtype: "Select", options: managerOptions, label: __("مدير المشرفين"), default: frm.doc.supervisors_manager },
+              { fieldname: "table_owner_name", fieldtype: "Data", label: __("اسم صاحب السفرة"), reqd: 1, default: frm.doc.table_owner_name, description: ownerNames.length ? __("يمكن كتابة اسم جديد. الأسماء المسجلة سابقاً: ") + ownerNames.join("، ") : __("اكتب اسم صاحب السفرة") },
+              { fieldname: "supervisor_name", fieldtype: "Data", label: __("اسم المشرف"), reqd: 1, default: frm.doc.supervisor_name, description: supervisorNames.length ? __("يمكن كتابة اسم جديد. الأسماء المسجلة سابقاً: ") + supervisorNames.join("، ") : __("اكتب اسم المشرف") },
+              { fieldname: "supervisors_manager", fieldtype: "Data", label: __("مدير المشرفين"), default: frm.doc.supervisors_manager, description: managerNames.length ? __("يمكن كتابة اسم جديد. الأسماء المسجلة سابقاً: ") + managerNames.join("، ") : __("اكتب اسم مدير المشرفين عند الحاجة") },
               { fieldname: "assigned_meals", fieldtype: "Int", label: __("عدد الوجبات المسلمة للمشرف"), reqd: 1, default: frm.doc.assigned_meals || frm.doc.planned_meals },
               { fieldtype: "Section Break", label: __("المساعدون — العدد مفتوح حسب فريق المشرف") },
               { fieldname: "assistants", fieldtype: "Table", label: __("حضور وغياب المساعدين"), in_place_edit: true,
                 data: (frm.doc.assistants_attendance || []).map(r => ({assistant_name:r.assistant_name,mobile_no:r.mobile_no,attendance_status:r.attendance_status,check_in_time:r.check_in_time,check_out_time:r.check_out_time,notes:r.notes})),
                 fields: [
-                  {fieldname:'assistant_name',fieldtype:'Select',options:assistantOptions,label:__('اسم المساعد'),in_list_view:1,reqd:1},
+                  {fieldname:'assistant_name',fieldtype:'Data',label:__('اسم المساعد'),in_list_view:1,reqd:1},
                   {fieldname:'mobile_no',fieldtype:'Data',label:__('الجوال'),in_list_view:1},
                   {fieldname:'attendance_status',fieldtype:'Select',label:__('الحالة'),options:'حاضر / Present\nغائب / Absent',default:'حاضر / Present',in_list_view:1},
                   {fieldname:'check_in_time',fieldtype:'Time',label:__('الحضور'),in_list_view:1},

@@ -340,6 +340,30 @@ def get_project_field_roster(project_name):
             assistants.append(row.assistant_name)
             if row.assistant_name and row.mobile_no:
                 assistant_mobile[row.assistant_name] = row.mobile_no
+    # Names entered directly during daily receipt are valid operational roster
+    # entries too. Include them so a name typed on the first day is reusable on
+    # later days even when the project had no pre-created supervisor plan.
+    operation_names = frappe.get_all(
+        "WAFD Iftar Daily Operation",
+        filters={"project": project_name, "docstatus": ["<", 2]},
+        fields=["name", "table_owner_name", "supervisor_name", "supervisors_manager"],
+        order_by="operation_date asc, creation asc",
+        limit_page_length=1000,
+    )
+    for operation in operation_names:
+        owners.append(operation.table_owner_name)
+        supervisors.append(operation.supervisor_name)
+        managers.append(operation.supervisors_manager)
+        for row in frappe.get_all(
+            "WAFD Iftar Assistant Attendance",
+            filters={"parent": operation.name, "parenttype": "WAFD Iftar Daily Operation"},
+            fields=["assistant_name", "mobile_no"],
+            order_by="idx asc",
+            limit_page_length=1000,
+        ):
+            assistants.append(row.assistant_name)
+            if row.assistant_name and row.mobile_no:
+                assistant_mobile[row.assistant_name] = row.mobile_no
     return {
         "table_owners": unique(owners),
         "supervisors": unique(supervisors),

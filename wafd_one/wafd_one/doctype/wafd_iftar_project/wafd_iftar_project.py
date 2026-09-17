@@ -5,7 +5,7 @@ import math
 import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from frappe.utils import add_days, cint, flt, getdate, now_datetime
+from frappe.utils import cint, date_diff, flt, now_datetime
 
 
 DAILY_DISTRIBUTION = "يومي (يتكرر لكل يوم) / Daily (Repeats Each Day)"
@@ -49,20 +49,6 @@ STANDARD_COMPONENTS = [
     ("خبز فتوت", 1, "أساسي / Core", 1),
     ("غلاف إفطار صائم", 1, "تغليف / Packaging", 1),
 ]
-
-
-def get_operation_dates(start_date, end_date, season_type=None):
-    """Return real service dates; recurring Monday/Thursday skips other days."""
-    if not start_date or not end_date:
-        return []
-    start, end = getdate(start_date), getdate(end_date)
-    dates = []
-    current = start
-    while current <= end:
-        if season_type != "الاثنين والخميس / Monday & Thursday" or current.weekday() in (0, 3):
-            dates.append(current)
-        current = add_days(current, 1)
-    return dates
 
 
 class WAFDIftarProject(Document):
@@ -178,10 +164,8 @@ class WAFDIftarProject(Document):
             frappe.throw("موعد التسليم لا يمكن أن يسبق وقت الوصول / Distribution deadline cannot precede arrival")
 
     def _calculate_quantities(self):
-        days = len(get_operation_dates(self.start_date, self.end_date, self.season_type))
+        days = date_diff(self.end_date, self.start_date) + 1 if self.start_date and self.end_date else 0
         self.number_of_days = max(days, 0)
-        if self.start_date and self.end_date and not days:
-            frappe.throw("النطاق المحدد لا يحتوي يوم تشغيل لهذا الموسم / Selected range has no service day for this season")
         if cint(self.daily_meals) <= 0:
             frappe.throw("عدد الوجبات اليومية يجب أن يكون أكبر من صفر / Daily meals must be greater than zero")
         self.total_meals = cint(self.daily_meals) * cint(self.number_of_days)
@@ -431,8 +415,8 @@ class WAFDIftarProject(Document):
             frappe.throw("تعذر إنشاء خطة الكراتين تلقائياً / Automatic carton plan generation failed")
 
     def after_insert(self):
-        # Drafts remain pricing/staffing records. Operational days are generated
-        # only after formal project submission.
+        # Create the daily plan immediately after the project is first saved so
+        # the operations screen is useful even before formal submission.
         self._sync_daily_operations()
 
     def on_update(self):

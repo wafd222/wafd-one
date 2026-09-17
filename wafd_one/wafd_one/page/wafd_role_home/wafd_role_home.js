@@ -159,7 +159,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" },
         { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
-        { label: "إفطار صائم", desc: "الإدارة والفريق والتشغيل اليومي", icon: "☾", page: "wafd-iftar-team", special: true },
+        { label: "إفطار صائم", desc: "الإدارة والفريق والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "المستندات والتعهدات", desc: "المستندات والطباعة", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "العروض المرسلة", desc: "فقط العروض التي تمت مشاركتها وتسجيل إرسالها", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
@@ -176,7 +176,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" },
         { label: "التسليم الميداني", desc: "بدء الرحلة والتصوير وإثبات التسليم", icon: "📷", page: "wafd-driver-trips" },
         { label: "المالية", desc: "الفواتير والتحصيل", icon: "ر.س", page: "wafd-finance-hub" },
-        { label: "إفطار صائم", desc: "الإدارة والفريق والتشغيل اليومي", icon: "☾", page: "wafd-iftar-team", special: true },
+        { label: "إفطار صائم", desc: "الإدارة والفريق والتشغيل اليومي", icon: "☾", page: "wafd-iftar-operations", special: true },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "العروض المرسلة", desc: "فقط العروض التي تمت مشاركتها وتسجيل إرسالها", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
         { label: "إدارة الموظفين", desc: "إضافة الحسابات وتحديد المهمات", icon: "♙", page: "wafd-employee-team" }
@@ -192,7 +192,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "المستندات", desc: "التعهدات والمستندات التشغيلية", icon: "▤", page: "wafd-documents-hub" },
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "العروض المرسلة", desc: "فقط العروض التي تمت مشاركتها وتسجيل إرسالها", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
-        { label: "إفطار صائم", desc: "المشروع والفريق والتقارير اليومية", icon: "☾", page: "wafd-iftar-team", special: true }
+        { label: "إفطار صائم", desc: "المشروع والفريق والتقارير اليومية", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },
     {
@@ -202,7 +202,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "الخطط اليومية", desc: "الكميات المطلوب إنتاجها", icon: "◫", doctype: "WAFD Daily Meal Plan" },
         { label: "سجلات التغليف", desc: "متابعة الكميات المعبأة", icon: "□", doctype: "WAFD Packaging Record" },
         { label: "الوصفات", desc: "مراجع الوصفات المعتمدة", icon: "≡", doctype: "WAFD Recipe" }
-        ,{ label: "مطبخ إفطار الصائم", desc: "الجاهزية والتغليف ونواقص المواد", icon: "☾", page: "wafd-iftar-team", special: true }
+        ,{ label: "مطبخ إفطار الصائم", desc: "الجاهزية والتغليف ونواقص المواد", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },
     {
@@ -234,20 +234,20 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إدارة التوصيل", desc: "إنشاء الرحلات والجداول ومتابعة التسليم", icon: "➜", page: "wafd-delivery-supervisor", primary: true },
         { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" }
         ,{ label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" }
-        ,{ label: "توصيل إفطار الصائم", desc: "نفس جدول السائقين مع الربط التلقائي بالمشروع", icon: "☾", page: "wafd-iftar-team", special: true }
+        ,{ label: "توصيل إفطار الصائم", desc: "نفس جدول السائقين مع الربط التلقائي بالمشروع", icon: "☾", page: "wafd-iftar-operations", special: true }
       ]
     },
     {
       role: "WAFD Iftar Kitchen Supervisor", title: "مشرف مطبخ إفطار الصائم", subtitle: "التجهيز والتغليف والنواقص والجاهزية",
-      items: [{ label: "تشغيل المطبخ اليومي", desc: "تسجيل العدد الجاهز وإرسال النواقص للإدارة", icon: "☾", page: "wafd-iftar-team", primary: true, special: true }]
+      items: [{ label: "تشغيل المطبخ اليومي", desc: "تسجيل العدد الجاهز وإرسال النواقص للإدارة", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
     },
     {
       role: "WAFD Iftar Site Manager", title: "مدير موقع إفطار الصائم", subtitle: "الاستلام والفحص وتسليم المشرفين واعتماد التقارير",
-      items: [{ label: "إدارة موقع الإفطار", desc: "الكراتين والعهد والتقارير والصور", icon: "☾", page: "wafd-iftar-team", primary: true, special: true }]
+      items: [{ label: "إدارة موقع الإفطار", desc: "الكراتين والعهد والتقارير والصور", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
     },
     {
       role: "WAFD Iftar Supervisor", title: "مشرف سفر إفطار الصائم", subtitle: "السفر والمساعدون والتوزيع والتوثيق",
-      items: [{ label: "تكليفي اليومي", desc: "المواقع وأصحاب السفر والوجبات والصور والتقرير", icon: "☾", page: "wafd-iftar-team", primary: true, special: true }]
+      items: [{ label: "تكليفي اليومي", desc: "المواقع وأصحاب السفر والوجبات والصور والتقرير", icon: "☾", page: "wafd-iftar-operations", primary: true, special: true }]
     },
     {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",
@@ -451,43 +451,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
   const items = (profile.items || []).filter(canRead);
 
-  async function refreshIftarAssignmentCard() {
-    if (isExecutive || !navigator.onLine) return;
-    try {
-      const response = await frappe.call({
-        method: "wafd_one.wafd_one.iftar_team.get_my_iftar_task_summary",
-        args: {date: frappe.datetime.get_today()},
-        freeze: false,
-      });
-      const summary = response.message || {};
-      const count = Number(summary.count || 0);
-      const projectCount = Number(summary.project_count || 0);
-      const existingIndex = items.findIndex(item => item.page === "wafd-iftar-team");
-      const $grid = $root.find(".wafd-mobile-grid");
-      $root.find(".wafd-iftar-live-task").remove();
-      $root.find(".wafd-mobile-card[data-iftar-live='1']").removeAttr("data-iftar-live").find(".wafd-iftar-live-badge").remove();
-      if (!count || !$grid.length) return;
-      const label = uiLang === "ar" ? "مهمة إفطار الصائم اليوم" : "Today's Iftar task";
-      const desc = uiLang === "ar"
-        ? `${count} مهمة في ${projectCount} مشروع — اضغط لفتح شاشة مهامك`
-        : `${count} task(s) in ${projectCount} project(s) — tap to open`;
-      if (existingIndex >= 0) {
-        const $card = $root.find(`.wafd-mobile-card[data-idx="${existingIndex}"]`);
-        if ($card.length) {
-          $card.attr("data-iftar-live", "1").addClass("is-primary is-special");
-          $card.find("small").text(desc);
-          $card.prepend(`<em class="wafd-iftar-live-badge">${count}</em>`);
-        }
-      } else {
-        const $card = $(`<button type="button" class="wafd-mobile-card is-primary is-special wafd-iftar-live-task"><em class="wafd-iftar-live-badge">${count}</em><b>☾</b><span>${frappe.utils.escape_html(label)}</span><small>${frappe.utils.escape_html(desc)}</small><i>${rtl()?"←":"→"}</i></button>`);
-        $grid.prepend($card);
-        $card.on("click", () => frappe.set_route("wafd-iftar-team"));
-      }
-    } catch (error) {
-      console.debug("Iftar task summary unavailable", error);
-    }
-  }
-
   function renderRoleHome() {
     $root.attr("dir", rtl() ? "rtl" : "ltr");
     const roleLabel = tr(profile.title);
@@ -608,9 +571,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     });
   }
   renderRoleHome();
-  wrapper.wafdRefreshIftarAssignments = refreshIftarAssignmentCard;
-  refreshIftarAssignmentCard();
-  if (frappe.realtime?.on) frappe.realtime.on("wafd_iftar_task_published", () => refreshIftarAssignmentCard());
   if (driverOfflineProfile) {
     window.addEventListener("offline", () => updateDriverConnectivity("offline"));
     window.addEventListener("online", () => preloadDriverOfflineData());
@@ -635,5 +595,4 @@ frappe.pages["wafd-role-home"].on_page_show = function (wrapper) {
   setTimeout(() => { document.getElementById("wafd-global-mobile-back")?.remove(); document.getElementById("wafd-mobile-back-v218")?.remove();
   document.getElementById("wafd-mobile-back-v219")?.remove(); }, 120);
   if (typeof wrapper?.wafdPreloadDriverOffline === "function") wrapper.wafdPreloadDriverOffline();
-  if (typeof wrapper?.wafdRefreshIftarAssignments === "function") wrapper.wafdRefreshIftarAssignments();
 };

@@ -1,5 +1,5 @@
 frappe.pages["wafd-iftar-wizard"].on_page_load = function(wrapper) {
-  frappe.ui.make_app_page({parent: wrapper, title: __("تسجيل بيانات مشروع إفطار صائم"), single_column: true});
+  frappe.ui.make_app_page({parent: wrapper, title: __("إنشاء مشروع إفطار صائم"), single_column: true});
   wrapper.wafd_iftar_defaults = null;
   wrapper.wafd_iftar_state = { step: 1, creating: false, build_id: 0 };
 };
@@ -24,7 +24,7 @@ function build_wizard(wrapper) {
 
   const $root = $(`<div class="iftar-wizard">
     <section class="iw-hero">
-      <div><span>WAFD IFTAR PRO</span><h2>تسجيل بيانات مشروع إفطار صائم</h2><p>أربع خطوات لتسجيل البيانات والفريق. بعد الحفظ يعتمد المشروع من شاشة الإدارة الرئيسية.</p></div>
+      <div><span>WAFD IFTAR PRO</span><h2>إنشاء مشروع إفطار صائم</h2><p>أربع خطوات واضحة من الموقع حتى بدء التشغيل.</p></div>
       <div class="iw-steps">${[1,2,3,4].map((n,i)=>`<button type="button" data-step="${n}" class="${i===0?'active':''}">${n}</button>${i<3?'<i></i>':''}`).join('')}</div>
     </section>
     <section class="iw-card">
@@ -35,13 +35,12 @@ function build_wizard(wrapper) {
       <div class="iw-actions">
         <button type="button" class="btn btn-default iw-prev">السابق</button>
         <button type="button" class="btn btn-primary iw-next">التالي</button>
-        <button type="button" class="btn btn-primary iw-create">حفظ بيانات المشروع</button>
+        <button type="button" class="btn btn-primary iw-create">إنشاء المشروع وبدء التشغيل</button>
       </div>
     </section>
   </div>`).appendTo($section);
 
   const definitions = [
-    {step:1, fieldtype:'Link', fieldname:'contract', label:'عقد إفطار صائم (اختياري)', options:'WAFD Contract', get_query:()=>({filters:{status:['not in',['منتهي / Expired','ملغي / Cancelled']]}})},
     {step:1, fieldtype:'Select', fieldname:'season_type', label:'الموسم', options:`رمضان / Ramadan\nالاثنين والخميس / Monday & Thursday\nالأيام البيض / White Days\nالعشر من ذي الحجة / First 10 of Dhul Hijjah\nيوم عرفة / Arafah Day\nعاشوراء / Ashura\nمشروع خاص / Special Project`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'project_title', label:'الموقع الرئيسي', options:`\nالمسجد النبوي الشريف / Prophet’s Mosque\nمسجد قباء / Quba Mosque\nمسجد القبلتين / Qiblatain Mosque\nمسجد الميقات (ذي الحليفة) / Miqat Mosque (Dhul Hulayfah)\nمشروع أو موقع آخر / Other Project or Site`, reqd:1},
     {step:1, fieldtype:'Select', fieldname:'haram_zone', label:'منطقة التوزيع المعتمدة داخل الحرم', options:`\n${(defaults.haram_zones||[]).map(z=>z.location_name).join('\n')}`},
@@ -57,11 +56,6 @@ function build_wizard(wrapper) {
     {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:`استبدال الماء العادي بزمزم 330 مل`},
     {step:3, fieldtype:'HTML', fieldname:'optional_items', label:'إضافات الوجبة المخصصة'},
     {step:4, fieldtype:'Check', fieldname:'reuse_last_setup', label:'نسخ أصحاب السفر والطاقم من آخر مشروع لنفس الموقع', default:1},
-    {step:4, fieldtype:'HTML', fieldname:'team_assignment_note'},
-    {step:4, fieldtype:'Link', fieldname:'project_manager_user', label:'اختر الموظف — مدير المشروع', options:'User', reqd:1, get_query:()=>({query:'wafd_one.wafd_one.iftar_pro.search_project_employees'})},
-    {step:4, fieldtype:'Link', fieldname:'kitchen_supervisor_user', label:'اختر الموظف — مشرف المطبخ', options:'User', reqd:1, get_query:()=>({query:'wafd_one.wafd_one.iftar_pro.search_project_employees'})},
-    {step:4, fieldtype:'Link', fieldname:'delivery_supervisor_user', label:'اختر الموظف — مشرف التوصيل', options:'User', reqd:1, get_query:()=>({query:'wafd_one.wafd_one.iftar_pro.search_project_employees'})},
-    {step:4, fieldtype:'Link', fieldname:'site_manager_user', label:'اختر الموظف — مدير الموقع', options:'User', reqd:1, get_query:()=>({query:'wafd_one.wafd_one.iftar_pro.search_project_employees'})},
     {step:4, fieldtype:'Currency', fieldname:'carton_unit_cost', label:'سعر الكرتون الواحد (25 وجبة)'},
     {step:4, fieldtype:'Int', fieldname:'tablecloth_count', label:'عدد السفر يومياً'},
     {step:4, fieldtype:'Currency', fieldname:'tablecloth_unit_cost', label:'سعر السفرة الواحدة'},
@@ -89,23 +83,6 @@ function build_wizard(wrapper) {
     controls[df.fieldname] = frappe.ui.form.make_control({parent: box, df, render_input: true});
   });
   wrapper.wafd_iftar_controls = controls;
-  controls.team_assignment_note.$wrapper.html(`<div class="iw-team-note"><b>اختيار الموظفين وإسناد المهمات</b><span>اختر الموظف لكل مهمة، وسيمنحه النظام الصلاحية المطلوبة تلقائياً عند إنشاء المشروع. يمكن اختيار الموظف نفسه لأكثر من مهمة.</span></div>`);
-  controls.team_assignment_note.$wrapper.closest('.iw-field').addClass('iw-team-note-field');
-
-  controls.contract.$input.on('change', async function(){
-    const contract=this.value;
-    if(!contract) return;
-    try{
-      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_iftar_contract_context',args:{contract_name:contract}});
-      const x=response.message||{};
-      if(x.start_date) set('start_date',x.start_date);
-      if(x.end_date) set('end_date',x.end_date);
-      if(x.daily_meals) set('daily_meals',x.daily_meals);
-      if(x.contracting_entity) set('contracting_entity',x.contracting_entity);
-      if(x.distribution_site){set('project_title','مشروع أو موقع آخر / Other Project or Site');set('distribution_site',x.distribution_site);}
-      renderSummary();
-    }catch(e){set('contract','');}
-  });
 
   const value = name => controls[name] ? controls[name].get_value() : null;
   const set = (name, val) => controls[name] && controls[name].set_value(val == null ? '' : val);
@@ -164,12 +141,7 @@ function build_wizard(wrapper) {
 
   function totals() {
     const start=value('start_date'), end=value('end_date'), daily=Number(value('daily_meals')||0), sale=Number(value('sale_price_per_meal')||0);
-    let days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
-    if(start&&end&&value('season_type')==='الاثنين والخميس / Monday & Thursday'){
-      days=0;
-      const cursor=new Date(`${start}T12:00:00`), finish=new Date(`${end}T12:00:00`);
-      while(cursor<=finish){if(cursor.getDay()===1||cursor.getDay()===4)days+=1;cursor.setDate(cursor.getDate()+1);}
-    }
+    const days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
     const meals=days*daily, cartons=Math.ceil(meals/25);
     return {days, meals, cartons, revenue:meals*sale};
   }
@@ -187,7 +159,7 @@ function build_wizard(wrapper) {
   function showStep(step) {
     state.step=Math.max(1,Math.min(4,step));
     $root.find('[data-field-step]').hide().filter(`[data-field-step="${state.step}"]`).show();
-    const titles={1:'1. بيانات الجهة والموقع',2:'2. المدة والكميات والسعر',3:'3. مكونات الوجبة وطريقة التوزيع',4:'4. اختيار الموظفين والتكاليف والمراجعة'};
+    const titles={1:'1. بيانات الجهة والموقع',2:'2. المدة والكميات والسعر',3:'3. مكونات الوجبة وطريقة التوزيع',4:'4. التكاليف التشغيلية والمراجعة'};
     $root.find('.iw-step-title').text(titles[state.step]);
     $root.find('.iw-steps button').removeClass('active done').each(function(){const n=Number($(this).data('step')); if(n===state.step)$(this).addClass('active'); else if(n<state.step)$(this).addClass('done');});
     $root.find('.iw-prev').toggle(state.step>1);
@@ -213,7 +185,7 @@ function build_wizard(wrapper) {
 
   // Clean initial state. These values are intentional defaults, never remnants from a previous project.
   Object.entries(controls).forEach(([name,c]) => {
-    if(name === 'optional_items' || name === 'team_assignment_note') return;
+    if(name === 'optional_items') return;
     try { c.set_value(c.df.fieldtype === 'Check' ? 0 : (['Int','Float','Currency'].includes(c.df.fieldtype) ? 0 : '')); } catch(e) {}
   });
   addonHost.find('input[type=checkbox]').prop('checked', false);
@@ -236,20 +208,22 @@ function build_wizard(wrapper) {
     e.preventDefault();
     if(state.creating || !validateStep(4)) return;
     state.creating=true;
-    createButton.disabled=true; createButton.textContent='جارٍ حفظ البيانات...';
+    createButton.disabled=true; createButton.textContent='جارٍ إنشاء المشروع...';
     try {
       const data=collect();
       if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam') data.include_zamzam=1;
-      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ حفظ بيانات المشروع...'});
+      const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
       sessionStorage.removeItem('wafd_iftar_wizard_draft');
-      frappe.show_alert({message:'تم حفظ بيانات المشروع. اعتمد المشروع من الشاشة الرئيسية لإظهار المهام للموظفين.',indicator:'green'},6);
+      frappe.show_alert({message:'تم إنشاء المشروع بنجاح — فتح أول يوم تشغيل',indicator:'green'},5);
       const msg=response.message||{};
-      frappe.set_route('wafd-iftar-team');
+      if(msg.first_operation) frappe.set_route('Form','WAFD Iftar Daily Operation',msg.first_operation);
+      else if(msg.name) frappe.set_route('Form','WAFD Iftar Project',msg.name);
+      else frappe.set_route('wafd-iftar-operations');
     } catch(err) {
       console.error(err);
       frappe.msgprint({title:'تعذر إنشاء المشروع',message:(err?.message||'لم يتم إنشاء المشروع. راجع الرسالة الظاهرة ثم حاول مرة أخرى.'),indicator:'red'});
     } finally {
-      state.creating=false; createButton.disabled=false; createButton.textContent='حفظ بيانات المشروع';
+      state.creating=false; createButton.disabled=false; createButton.textContent='إنشاء المشروع وبدء التشغيل';
     }
   });
 

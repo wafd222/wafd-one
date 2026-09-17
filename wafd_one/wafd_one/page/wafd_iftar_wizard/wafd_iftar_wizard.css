@@ -11,6 +11,3 @@
 
 /* RC138: unmistakable Zamzam selection state. */
 .wafd-zamzam-selected{background:#f3ead3!important;border:2px solid #b89345!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 0 0 3px rgba(184,147,69,.12)!important}.wafd-zamzam-selected .control-label,.wafd-zamzam-selected label{color:#5a451b!important;font-weight:800!important}.wafd-zamzam-selected input[type=checkbox]{accent-color:#a67f2f!important;outline:2px solid rgba(166,127,47,.18)}
-
-/* RC306: employee-first project-duty assignment. */
-.iw-team-note-field{grid-column:1/-1}.iw-team-note{display:flex;flex-direction:column;gap:5px;padding:14px 16px;border:1px solid #d8c79f;border-radius:13px;background:#f6eedb;color:#493816}.iw-team-note b{font-size:15px}.iw-team-note span{font-size:13px;line-height:1.7;color:#6d5a31}

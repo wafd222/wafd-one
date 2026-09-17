@@ -1,0 +1,10 @@
+Restore approved RC144 Iftar workflow on current WAFD ONE platform
+
+- Restore the RC144 Iftar project wizard, daily operations, report center, controller behavior, styling, and approved Iftar print formats.
+- Keep the current RC310 platform as the base so all non-Iftar features remain unchanged.
+- Preserve modern Iftar DocType schemas and later delivery-link fields for backward/forward data compatibility.
+- Retire the newer complex Iftar team UI from navigation and redirect old Iftar team bookmarks to the restored operations page.
+- Remove only post-RC144 Iftar row-level assignment hooks that conflicted with the approved original workflow.
+- Keep current dashboard and role-home behavior, changing only Iftar routes to the restored RC144 operations screen.
+- Add an RC311 migration patch that reloads Iftar-only metadata/pages/print formats and clears cache safely.
+- Preserve driver offline-first sync, Delivery Supervisor, Undertaking, Quotation, Inventory, Cleaning, Finance, languages, and all unrelated modules.

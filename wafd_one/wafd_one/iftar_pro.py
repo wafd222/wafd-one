@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import cint, getdate, nowdate
+from frappe.utils import add_days, cint, getdate, nowdate
 
 
 WIZARD_BASE_PRICE = 9.0
@@ -87,69 +87,6 @@ def get_wizard_defaults():
             {"name": row["name"], "location_name": row["location_name"]}
             for row in _unique_haram_locations()
         ],
-    }
-
-
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def search_project_employees(doctype, txt, searchfield, start, page_len, filters=None):
-    """Search every active managed employee for project-duty assignment."""
-    from wafd_one.employee_team import MANAGED_ROLES, MANAGERS
-
-    if not (set(frappe.get_roles(frappe.session.user)) & (set(MANAGERS) | {"WAFD Project Manager"})):
-        frappe.throw(_("غير مصرح بعرض موظفي المشروع / Not permitted to view project employees"), frappe.PermissionError)
-    allowed_roles = tuple(dict.fromkeys((*MANAGED_ROLES, *MANAGERS)))
-    text = f"%{(txt or '').strip()}%"
-    return frappe.db.sql(
-        """
-        SELECT DISTINCT user.name, user.full_name
-          FROM `tabUser` user
-          JOIN `tabHas Role` role
-            ON role.parent = user.name AND role.parenttype = 'User'
-         WHERE user.enabled = 1
-           AND user.user_type = 'System User'
-           AND user.name NOT IN ('Administrator', 'Guest')
-           AND role.role IN %(roles)s
-           AND (user.name LIKE %(text)s OR user.full_name LIKE %(text)s OR user.email LIKE %(text)s)
-         ORDER BY user.full_name ASC, user.name ASC
-         LIMIT %(start)s, %(page_len)s
-        """,
-        {
-            "roles": allowed_roles,
-            "text": text,
-            "start": max(0, cint(start)),
-            "page_len": max(20, min(cint(page_len) or 20, 100)),
-        },
-    )
-
-
-@frappe.whitelist()
-def get_iftar_contract_context(contract_name):
-    """Prefill only shared fields; the established Iftar wizard remains authoritative."""
-    contract = frappe.get_doc("WAFD Contract", contract_name)
-    contract.check_permission("read")
-    if contract.status in ("منتهي / Expired", "ملغي / Cancelled"):
-        frappe.throw(_("العقد غير نشط / Contract is not active"))
-    is_iftar = any(
-        value in ("رمضان / Ramadan", "إفطار صائم / Iftar Saem", "إفطار صائم / Iftar Saim")
-        for value in (contract.project_type, contract.contract_type, contract.first_meal, contract.last_meal)
-    )
-    if not is_iftar:
-        frappe.throw(_("العقد المحدد ليس عقد إفطار صائم أو رمضان / Selected contract is not an Iftar or Ramadan contract"))
-    destination = (contract.delivery_location or "").strip()
-    if contract.hotel:
-        destination = frappe.db.get_value("WAFD Hotel", contract.hotel, "hotel_name_ar") or contract.hotel
-    contracting_entity = contract.mission or contract.contract_title
-    if contract.mission:
-        contracting_entity = frappe.db.get_value("WAFD Mission", contract.mission, "mission_name") or contract.mission
-    return {
-        "contract": contract.name,
-        "catering_project": contract.project,
-        "contracting_entity": contracting_entity,
-        "distribution_site": destination,
-        "start_date": contract.start_date,
-        "end_date": contract.end_date,
-        "daily_meals": cint(contract.beneficiary_count),
     }
 
 
@@ -253,29 +190,11 @@ def create_project(data):
     if missing:
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
-        "contract",
         "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
-        "haram_zone", "project_manager_user", "kitchen_supervisor_user",
-        "delivery_supervisor_user", "site_manager_user",
+        "haram_zone"
     ]
-    from wafd_one.wafd_one.iftar_team import assign_project_team_roles, _validate_team_user
-    team_fields = (
-        "project_manager_user", "kitchen_supervisor_user",
-        "delivery_supervisor_user", "site_manager_user",
-    )
-    for fieldname in team_fields:
-        if not data.get(fieldname):
-            frappe.throw(_("اختر مدير المشروع ومشرف المطبخ ومشرف التوصيل ومدير الموقع قبل إنشاء المشروع / Assign the core team first"))
-    assign_project_team_roles({fieldname: data.get(fieldname) for fieldname in team_fields})
-    for fieldname in team_fields:
-        data[fieldname] = _validate_team_user(fieldname, data[fieldname])
-    catering_project = None
-    if data.get("contract"):
-        context = get_iftar_contract_context(data.get("contract"))
-        catering_project = context.get("catering_project")
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",
-        "catering_project": catering_project,
         **{key: value for key, value in data.items() if key in allowed},
     })
     doc.insert()
@@ -357,12 +276,9 @@ def create_project(data):
                 doc.save(ignore_permissions=True)
             _copy_supervisor_plans(previous_doc.name, doc.name)
 
-    # RC309: registration and activation are intentionally separate.
-    # The administration first saves the project as a draft. Field employees do
-    # not see draft projects. A single explicit approval from the management
-    # screen submits the project and creates the daily operations, after which
-    # each employee sees only the stage assigned to that account.
-    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "draft": 1}
+    generate_daily_operations(doc.name, ignore_permissions=True)
+    first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
+    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
 
 
 def _copy_supervisor_plans(source_project, target_project):
@@ -377,7 +293,6 @@ def _copy_supervisor_plans(source_project, target_project):
         dst.manager_name = src.manager_name
         dst.supervisor_name = src.supervisor_name
         dst.supervisor_mobile = src.supervisor_mobile
-        dst.supervisor_user = src.supervisor_user
         dst.notes = src.notes
         for row in src.table_owners or []:
             dst.append("table_owners", {
@@ -443,14 +358,13 @@ def generate_daily_operations(project_name, ignore_permissions=False):
     if not project.start_date or not project.end_date or cint(project.daily_meals) <= 0:
         return {"created": 0, "updated": 0, "removed": 0}
 
-    # A draft project is still being priced and staffed.  Its operational days
-    # must not appear to workers or accept approvals before the manager submits it.
-    if cint(project.docstatus) == 0:
-        return {"created": 0, "updated": 0, "removed": 0, "draft": 1}
-
-    from wafd_one.wafd_one.doctype.wafd_iftar_project.wafd_iftar_project import get_operation_dates
-
-    expected_dates = set(get_operation_dates(project.start_date, project.end_date, project.season_type))
+    start = getdate(project.start_date)
+    end = getdate(project.end_date)
+    expected_dates = set()
+    day = start
+    while day <= end:
+        expected_dates.add(day)
+        day = add_days(day, 1)
 
     existing = frappe.get_all(
         "WAFD Iftar Daily Operation",
@@ -501,37 +415,7 @@ def generate_daily_operations(project_name, ignore_permissions=False):
             frappe.delete_doc("WAFD Iftar Daily Operation", row.name, ignore_permissions=True)
             removed += 1
 
-    _seed_daily_assistants(project.name)
-
     return {"created": created, "updated": updated, "removed": removed}
-
-
-def _seed_daily_assistants(project_name):
-    """Populate registered assistants on generated days without overwriting attendance."""
-    assistant_map = {}
-    for plan_name in frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project_name}, pluck="name"):
-        plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
-        for row in plan.assistants or []:
-            if row.assistant_name and cint(row.active):
-                assistant_map[row.assistant_name] = row.mobile_no
-    if not assistant_map:
-        return
-    for operation in frappe.get_all("WAFD Iftar Daily Operation", filters={"project": project_name}, pluck="name"):
-        existing = set(frappe.get_all(
-            "WAFD Iftar Assistant Attendance",
-            filters={"parent": operation, "parenttype": "WAFD Iftar Daily Operation", "parentfield": "assistants_attendance"},
-            pluck="assistant_name",
-        ))
-        idx = len(existing)
-        for name, mobile in assistant_map.items():
-            if name in existing:
-                continue
-            idx += 1
-            frappe.get_doc({
-                "doctype": "WAFD Iftar Assistant Attendance", "parent": operation,
-                "parenttype": "WAFD Iftar Daily Operation", "parentfield": "assistants_attendance", "idx": idx,
-                "assistant_name": name, "mobile_no": mobile, "attendance_status": "لم يسجل / Not Marked",
-            }).db_insert()
 
 
 @frappe.whitelist()
@@ -553,73 +437,10 @@ def get_project_operations(project_name):
 def get_dashboard(date=None):
     operation_date = getdate(date or nowdate())
 
-    def fetch_iftar_deliveries(target_date):
-        trips = frappe.get_all(
-            "WAFD Delivery Trip",
-            filters={
-                "trip_date": target_date,
-                "meal_type": "إفطار صائم / Iftar Saim",
-                "status": ["!=", "ملغية / Cancelled"],
-            },
-            fields=[
-                "name", "contract", "project", "iftar_project", "iftar_daily_operation",
-                "iftar_link_type", "destination_name", "destination_name_en", "destination_map_url",
-                "delivery_kind", "quantity", "driver", "vehicle", "planned_arrival",
-                "actual_departure", "actual_arrival", "status", "creation",
-            ],
-            order_by="planned_arrival asc, creation asc",
-            limit_page_length=1000,
-        )
-        if not trips:
-            return []
-        proofs = frappe.get_all(
-            "WAFD Delivery Proof",
-            filters={"delivery_trip": ["in", [row.name for row in trips]]},
-            fields=[
-                "delivery_trip", "delivery_time", "delivery_photo", "receiver_name",
-                "received_quantity", "rejected_quantity", "status", "latitude", "longitude",
-            ],
-            limit_page_length=1000,
-        )
-        proof_map = {row.delivery_trip: row for row in proofs}
-        contract_names = list({row.contract for row in trips if row.contract})
-        contract_map = {
-            row.name: row for row in frappe.get_all(
-                "WAFD Contract", filters={"name": ["in", contract_names]},
-                fields=["name", "contract_title", "contract_number"],
-            )
-        } if contract_names else {}
-        project_names = list({row.iftar_project for row in trips if row.iftar_project})
-        project_map = {
-            row.name: row for row in frappe.get_all(
-                "WAFD Iftar Project", filters={"name": ["in", project_names]},
-                fields=["name", "project_title", "distribution_site"],
-            )
-        } if project_names else {}
-        for row in trips:
-            proof = proof_map.get(row.name)
-            contract = contract_map.get(row.contract)
-            project = project_map.get(row.iftar_project)
-            row["proof"] = proof
-            row["verified_quantity"] = cint(proof.received_quantity) if proof else 0
-            row["contract_title"] = contract.contract_title if contract else ""
-            row["contract_number"] = contract.contract_number if contract else ""
-            row["iftar_project_title"] = project.project_title if project else ""
-            row["destination_name"] = row.destination_name or (project.distribution_site if project else "")
-            row["link_label"] = "مرتبط بعقد / Contract Linked" if row.contract else "بدون عقد / No Contract"
-        return trips
-
     def fetch_rows(target_date):
-        submitted_projects = frappe.get_all(
-            "WAFD Iftar Project",
-            filters={"docstatus": 1, "start_date": ["<=", target_date], "end_date": [">=", target_date]},
-            pluck="name", limit_page_length=1000,
-        )
-        if not submitted_projects:
-            return []
         data = frappe.get_all(
             "WAFD Iftar Daily Operation",
-            filters={"operation_date": target_date, "project": ["in", submitted_projects]},
+            filters={"operation_date": target_date},
             fields=[
                 "name", "project", "status", "planned_meals", "produced_meals",
                 "packaged_meals", "loaded_meals", "delivered_meals", "received_meals",
@@ -633,7 +454,7 @@ def get_dashboard(date=None):
                 row.name: row for row in frappe.get_all(
                     "WAFD Iftar Project",
                     filters={"name": ["in", project_names]},
-                    fields=["name", "project_title", "distribution_site", "contracting_entity", "contract"],
+                    fields=["name", "project_title", "distribution_site", "contracting_entity"],
                 )
             }
             for row in data:
@@ -641,11 +462,9 @@ def get_dashboard(date=None):
                 row.project_title = meta.project_title if meta else row.project
                 row.distribution_site = meta.distribution_site if meta else ""
                 row.contracting_entity = meta.contracting_entity if meta else ""
-                row.contract = meta.contract if meta else ""
         return data
 
     rows = fetch_rows(operation_date)
-    iftar_deliveries = fetch_iftar_deliveries(operation_date)
 
     # Self-healing: generate missing daily rows for projects covering selected date.
     if not rows:
@@ -654,7 +473,7 @@ def get_dashboard(date=None):
             filters={
                 "start_date": ["<=", operation_date],
                 "end_date": [">=", operation_date],
-                "docstatus": 1,
+                "docstatus": ["<", 2],
             },
             pluck="name",
         )
@@ -672,10 +491,6 @@ def get_dashboard(date=None):
             select operation_date
             from `tabWAFD Iftar Daily Operation`
             where docstatus < 2
-              and exists (
-                select 1 from `tabWAFD Iftar Project` p
-                where p.name=`tabWAFD Iftar Daily Operation`.project and p.docstatus=1
-              )
             order by abs(datediff(operation_date, %s)), operation_date asc
             limit 1
             """,
@@ -694,8 +509,8 @@ def get_dashboard(date=None):
     sums["project_count"] = len({row.project for row in rows})
     active_projects = frappe.get_list(
         "WAFD Iftar Project",
-        filters={"docstatus": 1, "status": ["not in", ["مغلق / Closed", "ملغي / Cancelled"]]},
-        fields=["name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals", "total_meals", "status", "contract"],
+        filters={"docstatus": ["<", 2]},
+        fields=["name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals", "total_meals", "status"],
         order_by="start_date desc, modified desc",
         limit_page_length=500,
     )
@@ -703,34 +518,12 @@ def get_dashboard(date=None):
     sums["completion_percent"] = round(
         sums["received_meals"] / sums["planned_meals"] * 100, 1
     ) if sums["planned_meals"] else 0
-    by_operation = {}
-    for delivery in iftar_deliveries:
-        if delivery.iftar_daily_operation:
-            bucket = by_operation.setdefault(delivery.iftar_daily_operation, {"trips": 0, "planned": 0, "verified": 0})
-            bucket["trips"] += 1
-            bucket["planned"] += cint(delivery.quantity)
-            bucket["verified"] += cint(delivery.verified_quantity)
-    for row in rows:
-        verified = by_operation.get(row.name, {})
-        row["driver_trip_count"] = cint(verified.get("trips"))
-        row["driver_planned_meals"] = cint(verified.get("planned"))
-        row["driver_verified_meals"] = cint(verified.get("verified"))
-
-    contract_deliveries = [row for row in iftar_deliveries if row.contract]
-    standalone_deliveries = [row for row in iftar_deliveries if not row.contract]
-    sums["contract_delivery_count"] = len(contract_deliveries)
-    sums["contract_delivery_meals"] = sum(cint(row.quantity) for row in contract_deliveries)
-    sums["contract_verified_meals"] = sum(cint(row.verified_quantity) for row in contract_deliveries)
-    sums["standalone_delivery_count"] = len(standalone_deliveries)
-    sums["standalone_delivery_meals"] = sum(cint(row.quantity) for row in standalone_deliveries)
-    sums["standalone_verified_meals"] = sum(cint(row.verified_quantity) for row in standalone_deliveries)
     return {
         "summary": sums,
         "rows": rows,
         "selected_date": operation_date,
         "suggested_date": suggested_date,
         "active_projects": active_projects,
-        "iftar_deliveries": iftar_deliveries,
     }
 
 
@@ -752,9 +545,6 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
 
     doc = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
     doc.check_permission("write")
-    project = frappe.get_doc("WAFD Iftar Project", doc.project)
-    if cint(project.docstatus) != 1:
-        frappe.throw(_("لا يمكن اعتماد التشغيل قبل اعتماد مشروع إفطار الصائم / Submit the Iftar project before operational approvals"))
     planned = cint(doc.planned_meals)
     values = {
         "produced_meals": cint(doc.produced_meals),
@@ -772,26 +562,8 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
     }[stage]
     if stage != "produced" and source <= 0:
         frappe.throw(_("يجب اعتماد المرحلة السابقة أولاً / Complete the previous stage first"))
-    if stage == "delivered":
-        trips = frappe.get_all(
-            "WAFD Delivery Trip",
-            filters={"iftar_daily_operation": doc.name, "status": ["!=", "ملغية / Cancelled"]},
-            fields=["name", "driver", "vehicle", "quantity"], limit_page_length=500,
-        )
-        if not trips:
-            frappe.throw(_("أضف عملية إفطار الصائم إلى جدول التوصيل الحالي وحدد السائق والمركبة أولاً / Add this operation to the existing delivery schedule first"))
-        incomplete = [row.name for row in trips if not row.driver or not row.vehicle]
-        if incomplete:
-            frappe.throw(_("حدد السائق والمركبة لجميع عمليات جدول التوصيل قبل اعتماد التسليم / Assign driver and vehicle to every scheduled delivery"))
-        if sum(cint(row.quantity) for row in trips) < source:
-            frappe.throw(_("إجمالي كميات جدول التوصيل أقل من الكمية المحملة / Scheduled delivery quantities are below loaded meals"))
-        proofs = frappe.get_all(
-            "WAFD Delivery Proof", filters={"delivery_trip": ["in", [row.name for row in trips]]},
-            fields=["received_quantity"], limit_page_length=500,
-        )
-        verified = sum(cint(row.received_quantity) for row in proofs)
-        if verified < source:
-            frappe.throw(_("بانتظار إثبات وصول السائقين لكامل الكمية المحملة / Driver arrival proof is required for the full loaded quantity"))
+    if stage == "delivered" and not cint(doc.authority_inspection_approved):
+        frappe.throw(_("يجب اعتماد فحص مشرف التغذية قبل التسليم والتوزيع / Authority food inspection must be approved before distribution"))
 
     updates = {_STAGE_FIELDS[stage]: source}
     if stage == "received":
@@ -829,7 +601,7 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
                     "idx": idx,
                     "assistant_name": name,
                     "mobile_no": row.get("mobile_no"),
-                    "attendance_status": row.get("attendance_status") or "لم يسجل / Not Marked",
+                    "attendance_status": row.get("attendance_status") or "حاضر / Present",
                     "check_in_time": row.get("check_in_time"),
                     "check_out_time": row.get("check_out_time"),
                     "notes": row.get("notes"),

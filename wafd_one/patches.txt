@@ -590,3 +590,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc315.execute
 
 # RC317 reliable offline driver capture and reconnect synchronization
 wafd_one.wafd_one.patches.v10_0_0_rc317.execute
+
+# RC319 make explicit Iftar assignment authoritative and remove duplicate supervisor Iftar entry
+wafd_one.wafd_one.patches.v10_0_0_rc319.execute

@@ -91,14 +91,19 @@ def _project_access(project, roles=None):
     user = frappe.session.user
     if _is_global_manager(roles):
         return {"management"}
+
+    # RC319: the explicit project assignment is the source of truth.
+    # Do not hide an assigned task because a User-role cache is stale or the
+    # role was added moments earlier by management.  Security is still strict:
+    # only the exact User stored on the project receives that duty.
     duties = set()
-    if PROJECT_MANAGER_ROLE in roles and (project.get("project_manager_user") or "").strip() == user:
+    if (project.get("project_manager_user") or "").strip() == user:
         duties.add("project_manager")
-    if KITCHEN_ROLE in roles and (project.get("kitchen_supervisor_user") or "").strip() == user:
+    if (project.get("kitchen_supervisor_user") or "").strip() == user:
         duties.add("kitchen")
-    if DELIVERY_ROLE in roles and (project.get("delivery_supervisor_user") or "").strip() == user:
+    if (project.get("delivery_supervisor_user") or "").strip() == user:
         duties.add("delivery")
-    if EXTERNAL_VIEWER_ROLE in roles and (project.get("external_viewer_user") or "").strip() == user:
+    if (project.get("external_viewer_user") or "").strip() == user:
         duties.add("viewer")
     return duties
 

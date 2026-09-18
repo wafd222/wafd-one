@@ -23,7 +23,13 @@ frappe.pages["wafd-delivery-supervisor"].on_page_load = function(wrapper) {
       {key:"delivered",label:tr("تم التسليم","Delivered")},
     ];
     const queueTabs=queues.map(queue=>`<button data-view="${queue.key}" class="${view===queue.key?'is-active':''}"><span>${esc(queue.label)}</span><b>${esc(data.summary?.[queue.key]||0)}</b></button>`).join("");
-    $root.attr("dir",ar?"rtl":"ltr").html(`<div class="wafd-delivery-board"><section class="wafd-delivery-hero"><div><small>WAFD ONE</small><h2>${esc(tr("إدارة التوصيل","Delivery Management"))}</h2></div><div class="wafd-delivery-actions"><button class="primary" data-action="new">＋ ${esc(tr("رحلة واحدة","Single delivery"))}</button><button data-action="recurring">＋ ${esc(tr("جدول عدة أيام","Multi-day schedule"))}</button><button data-action="iftar">＋ ${esc(tr("إفطار صائم","Iftar delivery"))}</button></div></section><div class="wafd-delivery-tabs">${queueTabs}</div><div id="wafd-delivery-list" class="wafd-delivery-list"></div></div>`);
+    const roles = new Set(frappe.user_roles || []);
+    const isManagement = roles.has("System Manager") || roles.has("WAFD Operations Manager");
+    // RC319: delivery supervisors use the dedicated assigned Iftar task screen.
+    // Keep the legacy/manual Iftar-delivery creator only for management so the
+    // supervisor no longer sees two different Iftar entry points.
+    const iftarAction = isManagement ? `<button data-action="iftar">＋ ${esc(tr("إفطار صائم","Iftar delivery"))}</button>` : "";
+    $root.attr("dir",ar?"rtl":"ltr").html(`<div class="wafd-delivery-board"><section class="wafd-delivery-hero"><div><small>WAFD ONE</small><h2>${esc(tr("إدارة التوصيل","Delivery Management"))}</h2></div><div class="wafd-delivery-actions"><button class="primary" data-action="new">＋ ${esc(tr("رحلة واحدة","Single delivery"))}</button><button data-action="recurring">＋ ${esc(tr("جدول عدة أيام","Multi-day schedule"))}</button>${iftarAction}</div></section><div class="wafd-delivery-tabs">${queueTabs}</div><div id="wafd-delivery-list" class="wafd-delivery-list"></div></div>`);
     renderList();
   }
   function renderList(){

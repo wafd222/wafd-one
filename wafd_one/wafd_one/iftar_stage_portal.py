@@ -803,8 +803,11 @@ def get_supervisor_user_options():
 def save_quick_supervisor_setup(project_name, plans_json):
     """Mobile-first one-screen setup for supervisors and table owners.
 
-    This deliberately keeps the approved RC144 Supervisor Plan documents as
-    the source of truth; the portal is only a simpler editor for them.
+    RC326: run the entire supervisor-plan write as a trusted project-scoped
+    operation. WAFD Iftar Distribution Recipient is a child table and must
+    inherit permission from WAFD Iftar Project; on some Frappe v16 builds the
+    nested child sync could otherwise be permission-checked as a standalone
+    DocType for non-System-Manager site staff.
     """
     if frappe.session.user in ("Guest", ""):
         frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
@@ -840,7 +843,7 @@ def save_quick_supervisor_setup(project_name, plans_json):
         name = (raw.get("supervisor_name") or frappe.utils.get_fullname(user) or user).strip()
         mobile = (raw.get("supervisor_mobile") or "").strip()
         owners = []
-        for oidx, owner in enumerate(raw.get("table_owners") or [], 1):
+        for owner in raw.get("table_owners") or []:
             owner = owner or {}
             owner_name = (owner.get("table_owner_name") or "").strip()
             qty = cint(owner.get("meal_quantity"))
@@ -877,36 +880,51 @@ def save_quick_supervisor_setup(project_name, plans_json):
     if total_meals != cint(project.daily_meals):
         frappe.throw(_("إجمالي وجبات أصحاب السفر ({0}) يجب أن يساوي الوجبات اليومية للمشروع ({1}) / Allocated meals must equal project daily meals").format(total_meals, cint(project.daily_meals)))
 
-    # Safe because we block destructive replacement after daily reports begin.
-    for name in existing_names:
-        frappe.delete_doc("WAFD Iftar Supervisor Plan", name, ignore_permissions=True, force=True)
+    old_ignore = getattr(frappe.flags, "ignore_permissions", False)
+    frappe.flags.ignore_permissions = True
+    try:
+        # Safe because destructive replacement is blocked once daily reports exist.
+        for plan_name in existing_names:
+            frappe.delete_doc("WAFD Iftar Supervisor Plan", plan_name, ignore_permissions=True, force=True)
 
-    created = []
-    manager_name = frappe.utils.get_fullname(frappe.session.user) or frappe.session.user
-    for item in normalized:
-        plan = frappe.get_doc({
-            "doctype": "WAFD Iftar Supervisor Plan",
+        created = []
+        manager_name = frappe.utils.get_fullname(frappe.session.user) or frappe.session.user
+        for item in normalized:
+            plan = frappe.get_doc({
+                "doctype": "WAFD Iftar Supervisor Plan",
+                "project": project.name,
+                "manager_name": manager_name,
+                "supervisor_user": item["supervisor_user"],
+                "supervisor_name": item["supervisor_name"],
+                "supervisor_mobile": item["supervisor_mobile"],
+            })
+            for owner in item["table_owners"]:
+                plan.append("table_owners", owner)
+            for assistant in item["assistants"]:
+                plan.append("assistants", assistant)
+            plan.flags.ignore_permissions = True
+            plan.insert(ignore_permissions=True)
+            created.append(plan.name)
+            frappe.clear_cache(user=item["supervisor_user"])
+
+        # Create today's task immediately once the site inspection is approved.
+        generated = []
+        operation = _current_site_operation(project)
+        if operation and cint(operation.get("authority_inspection_approved")):
+            from wafd_one.wafd_one.iftar_team import ensure_supervisor_reports
+            result = ensure_supervisor_reports(operation.get("name")) or {}
+            generated = result.get("created") or []
+
+        return {
             "project": project.name,
-            "manager_name": manager_name,
-            "supervisor_user": item["supervisor_user"],
-            "supervisor_name": item["supervisor_name"],
-            "supervisor_mobile": item["supervisor_mobile"],
-        })
-        for owner in item["table_owners"]:
-            plan.append("table_owners", owner)
-        for assistant in item["assistants"]:
-            plan.append("assistants", assistant)
-        plan.insert(ignore_permissions=True)
-        created.append(plan.name)
-        frappe.clear_cache(user=item["supervisor_user"])
-
-    return {
-        "project": project.name,
-        "created": created,
-        "supervisors": len(created),
-        "allocated_meals": total_meals,
-        "plans": _supervisor_plans_payload(project.name),
-    }
+            "created": created,
+            "supervisors": len(created),
+            "allocated_meals": total_meals,
+            "generated_reports": generated,
+            "plans": _supervisor_plans_payload(project.name),
+        }
+    finally:
+        frappe.flags.ignore_permissions = old_ignore
 
 
 @frappe.whitelist()

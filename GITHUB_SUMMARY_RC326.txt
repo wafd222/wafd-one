@@ -1,0 +1,11 @@
+Fix Iftar supervisor setup child-table permission and create supervisor tasks atomically
+
+- Fix the Frappe v16 permission error raised when Site Manager saves Iftar supervisors and table owners.
+- Keep WAFD Iftar Distribution Recipient as a child table of WAFD Iftar Project instead of permission-checking it as a standalone document.
+- Perform the already-authorized project-scoped Supervisor Plan write with safe internal permission bypass only after validating the logged-in project duty.
+- Preserve automatic assignment of the WAFD Iftar Supervisor role without removing any existing roles.
+- Generate the current day's supervisor reports server-side immediately after saving the plan when authority inspection is already approved.
+- Remove the duplicate client-side report-generation request to avoid partial saves and inconsistent task state.
+- Ensure the Supervisor portal receives either the generated daily task or the saved pending plan instead of a blank screen.
+- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver capture without modification.
+- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

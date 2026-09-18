@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import json
 
 import frappe
 from frappe import _
@@ -743,6 +744,171 @@ def _site_reports(operation_name):
     return [dict(row) for row in rows]
 
 
+def _supervisor_plans_payload(project_name):
+    names = frappe.get_all(
+        "WAFD Iftar Supervisor Plan",
+        filters={"project": project_name},
+        pluck="name",
+        order_by="creation asc",
+        limit_page_length=200,
+    )
+    rows = []
+    for name in names:
+        plan = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
+        rows.append({
+            "name": plan.name,
+            "supervisor_user": plan.supervisor_user or "",
+            "supervisor_name": plan.supervisor_name or "",
+            "supervisor_mobile": plan.supervisor_mobile or "",
+            "assigned_meals": cint(plan.assigned_meals),
+            "table_owners": [
+                {
+                    "table_owner_name": r.table_owner_name or "",
+                    "mobile_no": r.mobile_no or "",
+                    "distribution_point": r.distribution_point or "",
+                    "delivery_location": r.delivery_location or "",
+                    "meal_quantity": cint(r.meal_quantity),
+                    "notes": r.notes or "",
+                }
+                for r in (plan.table_owners or [])
+            ],
+            "assistants": [
+                {
+                    "assistant_name": r.assistant_name or "",
+                    "mobile_no": r.mobile_no or "",
+                    "active": cint(r.active),
+                    "notes": r.notes or "",
+                }
+                for r in (plan.assistants or [])
+            ],
+        })
+    return rows
+
+
+@frappe.whitelist()
+def get_supervisor_user_options():
+    if frappe.session.user in ("Guest", ""):
+        frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
+    rows = frappe.get_all(
+        "User",
+        filters={"enabled": 1, "user_type": "System User"},
+        fields=["name", "full_name", "mobile_no"],
+        order_by="full_name asc, name asc",
+        limit_page_length=500,
+    )
+    return [{"value": r.name, "label": r.full_name or r.name, "mobile_no": r.mobile_no or ""} for r in rows]
+
+
+@frappe.whitelist()
+def save_quick_supervisor_setup(project_name, plans_json):
+    """Mobile-first one-screen setup for supervisors and table owners.
+
+    This deliberately keeps the approved RC144 Supervisor Plan documents as
+    the source of truth; the portal is only a simpler editor for them.
+    """
+    if frappe.session.user in ("Guest", ""):
+        frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    duties = _project_access(project)
+    if "management" not in duties and not ({"site", "project_manager"} & duties):
+        frappe.throw(_("لا تملك صلاحية إعداد المشرفين لهذا المشروع / Not allowed to configure this project"), frappe.PermissionError)
+
+    try:
+        plans = json.loads(plans_json) if isinstance(plans_json, str) else (plans_json or [])
+    except Exception:
+        frappe.throw(_("بيانات المشرفين غير صالحة / Invalid supervisor setup data"))
+    if not isinstance(plans, list) or not plans:
+        frappe.throw(_("أضف مشرفاً واحداً على الأقل / Add at least one supervisor"))
+
+    existing_reports = frappe.db.exists("WAFD Iftar Supervisor Daily Report", {"project": project.name})
+    existing_names = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name}, pluck="name")
+    if existing_reports and existing_names:
+        frappe.throw(_("بدأ تشغيل تقارير المشرفين لهذا المشروع. عدّل الخطة من سجلها الحالي للحفاظ على السجل التشغيلي / Supervisor reports already started; edit the existing plan record to preserve history"))
+
+    normalized = []
+    total_meals = 0
+    seen_users = set()
+    for idx, raw in enumerate(plans, 1):
+        raw = raw or {}
+        user = _active_user(raw.get("supervisor_user"))
+        if not user:
+            frappe.throw(_("اختر حساب المشرف رقم {0} / Select the supervisor account").format(idx))
+        if user in seen_users:
+            frappe.throw(_("لا تكرر نفس حساب المشرف / Do not duplicate the same supervisor account"))
+        seen_users.add(user)
+        _ensure_team_role(user, SUPERVISOR_ROLE)
+        name = (raw.get("supervisor_name") or frappe.utils.get_fullname(user) or user).strip()
+        mobile = (raw.get("supervisor_mobile") or "").strip()
+        owners = []
+        for oidx, owner in enumerate(raw.get("table_owners") or [], 1):
+            owner = owner or {}
+            owner_name = (owner.get("table_owner_name") or "").strip()
+            qty = cint(owner.get("meal_quantity"))
+            if not owner_name and not qty:
+                continue
+            if not owner_name:
+                frappe.throw(_("أدخل اسم صاحب السفرة للمشرف {0} / Enter the table-owner name").format(name))
+            if qty <= 0:
+                frappe.throw(_("أدخل عدد الوجبات لصاحب السفرة {0} / Enter a positive meal quantity").format(owner_name))
+            owners.append({
+                "table_owner_name": owner_name,
+                "mobile_no": (owner.get("mobile_no") or "").strip(),
+                "distribution_point": (owner.get("distribution_point") or project.distribution_site or "").strip(),
+                "delivery_location": (owner.get("delivery_location") or "").strip(),
+                "meal_quantity": qty,
+                "notes": (owner.get("notes") or "").strip(),
+            })
+            total_meals += qty
+        if not owners:
+            frappe.throw(_("أضف صاحب سفرة واحداً على الأقل للمشرف {0} / Add at least one table owner").format(name))
+        assistants = []
+        for a in raw.get("assistants") or []:
+            a = a or {}
+            aname = (a.get("assistant_name") or "").strip()
+            if aname:
+                assistants.append({
+                    "assistant_name": aname,
+                    "mobile_no": (a.get("mobile_no") or "").strip(),
+                    "active": 1 if cint(a.get("active", 1)) else 0,
+                    "notes": (a.get("notes") or "").strip(),
+                })
+        normalized.append({"supervisor_user": user, "supervisor_name": name, "supervisor_mobile": mobile, "table_owners": owners, "assistants": assistants})
+
+    if total_meals != cint(project.daily_meals):
+        frappe.throw(_("إجمالي وجبات أصحاب السفر ({0}) يجب أن يساوي الوجبات اليومية للمشروع ({1}) / Allocated meals must equal project daily meals").format(total_meals, cint(project.daily_meals)))
+
+    # Safe because we block destructive replacement after daily reports begin.
+    for name in existing_names:
+        frappe.delete_doc("WAFD Iftar Supervisor Plan", name, ignore_permissions=True, force=True)
+
+    created = []
+    manager_name = frappe.utils.get_fullname(frappe.session.user) or frappe.session.user
+    for item in normalized:
+        plan = frappe.get_doc({
+            "doctype": "WAFD Iftar Supervisor Plan",
+            "project": project.name,
+            "manager_name": manager_name,
+            "supervisor_user": item["supervisor_user"],
+            "supervisor_name": item["supervisor_name"],
+            "supervisor_mobile": item["supervisor_mobile"],
+        })
+        for owner in item["table_owners"]:
+            plan.append("table_owners", owner)
+        for assistant in item["assistants"]:
+            plan.append("assistants", assistant)
+        plan.insert(ignore_permissions=True)
+        created.append(plan.name)
+        frappe.clear_cache(user=item["supervisor_user"])
+
+    return {
+        "project": project.name,
+        "created": created,
+        "supervisors": len(created),
+        "allocated_meals": total_meals,
+        "plans": _supervisor_plans_payload(project.name),
+    }
+
+
 @frappe.whitelist()
 def get_site_portal_data():
     if frappe.session.user in ("Guest", ""):
@@ -756,6 +922,8 @@ def get_site_portal_data():
         operation = _current_site_operation(project)
         payload["site_operation"] = operation
         payload["supervisor_reports"] = _site_reports(operation.get("name") if operation else None)
+        payload["supervisor_plans"] = _supervisor_plans_payload(project.name)
+        payload["supervisor_setup_meals"] = sum(cint(x.get("assigned_meals")) for x in payload["supervisor_plans"])
         projects.append(payload)
     return {
         "mode": "site",
@@ -828,9 +996,27 @@ def get_supervisor_portal_data():
         limit_page_length=200,
     )
     reports = [_supervisor_report_payload(name) for name in names]
+    pending_plans = []
+    plan_filters = {"supervisor_user": frappe.session.user}
+    if _is_global_manager(roles):
+        plan_filters = {}
+    for plan_name in frappe.get_all("WAFD Iftar Supervisor Plan", filters=plan_filters, pluck="name", order_by="creation desc", limit_page_length=200):
+        plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
+        project = frappe.get_doc("WAFD Iftar Project", plan.project)
+        pending_plans.append({
+            "name": plan.name,
+            "project": plan.project,
+            "project_title": project.project_title or project.distribution_site or project.name,
+            "distribution_site": project.distribution_site,
+            "contracting_entity": project.contracting_entity,
+            "supervisor_name": plan.supervisor_name,
+            "assigned_meals": cint(plan.assigned_meals),
+            "table_owners_count": cint(plan.table_owners_count),
+        })
     return {
         "mode": "supervisor",
         "user": frappe.session.user,
         "full_name": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
         "reports": reports,
+        "plans": pending_plans,
     }

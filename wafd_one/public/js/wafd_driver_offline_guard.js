@@ -4,14 +4,17 @@
   const NETWORK_TEXT = /connection\s+lost|not\s+connected\s+to\s+(the\s+)?internet|network\s+error|offline/i;
   let observer = null;
 
-  function driverOnly() {
+  function driverContext() {
     const frappe = window.frappe;
     const user = String(frappe?.session?.user || "");
     if (!user || user === "Guest") return false;
+    const route = Array.isArray(frappe?.get_route?.()) ? frappe.get_route().join("/") : "";
+    const path = `${location.pathname || ""} ${location.hash || ""} ${route}`;
+    if (/wafd-driver-trips/i.test(path)) return true;
     const roles = new Set(frappe?.user_roles || []);
-    if (!roles.has("WAFD Driver") || roles.has("System Manager") || roles.has("WAFD Operations Manager")) return false;
-    return ![...roles].some((role) => String(role).startsWith("WAFD ") && !["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"].includes(role));
+    return roles.has("WAFD Driver") && !roles.has("System Manager") && !roles.has("WAFD Operations Manager");
   }
+
 
   function messageText(value) {
     if (typeof value === "string") return value;
@@ -23,7 +26,7 @@
   }
 
   function isConnectionNotice(args) {
-    return driverOnly() && NETWORK_TEXT.test(args.map(messageText).join(" "));
+    return driverContext() && NETWORK_TEXT.test(args.map(messageText).join(" "));
   }
 
   function patch(name) {
@@ -32,6 +35,7 @@
     if (typeof original !== "function" || original.__wafdDriverOfflineGuard) return;
     const wrapped = function (...args) {
       if (isConnectionNotice(args)) {
+        window.__wafdDriverConnectivity = {online:false, source:"frappe-network-notice", at:Date.now()};
         window.dispatchEvent(new CustomEvent("wafd-driver-connectivity", {detail:{online:false, source:"frappe-network-notice"}}));
         return undefined;
       }
@@ -43,7 +47,7 @@
   }
 
   function removeConnectionToasts(root=document) {
-    if (!driverOnly()) return;
+    if (!driverContext()) return;
     const selectors = [
       ".alert", ".toast", ".frappe-toast", ".desk-alert", ".msgprint", ".modal-dialog"
     ];
@@ -54,9 +58,10 @@
 
   function syncState() {
     if (!document.body) return;
-    const active = driverOnly() && !navigator.onLine;
+    const active = driverContext() && !navigator.onLine;
     document.body.classList.toggle("wafd-driver-is-offline", active);
-    window.dispatchEvent(new CustomEvent("wafd-driver-connectivity", {detail:{online:navigator.onLine}}));
+    window.__wafdDriverConnectivity = {online:navigator.onLine, source:"browser-event", at:Date.now()};
+    window.dispatchEvent(new CustomEvent("wafd-driver-connectivity", {detail:{online:navigator.onLine, source:"browser-event"}}));
     if (active) removeConnectionToasts();
   }
 
@@ -65,7 +70,7 @@
     patch("msgprint");
     if (!observer && document.body) {
       observer = new MutationObserver((records) => {
-        if (!driverOnly()) return;
+        if (!driverContext()) return;
         for (const record of records) {
           for (const node of record.addedNodes || []) {
             if (!(node instanceof Element)) continue;

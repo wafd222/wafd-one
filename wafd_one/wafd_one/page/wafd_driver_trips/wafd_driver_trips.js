@@ -82,6 +82,8 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     offline_first_open:{ar:"افتح شاشة السائق مرة واحدة بوجود الإنترنت لتحميل المهام.",en:"Open the driver screen online once to download tasks."},
     sync_problem:{ar:"توجد عملية تحتاج إعادة المزامنة",en:"An action needs to be synced again"},
     offline_storage_error:{ar:"تعذر حفظ العملية في الهاتف. لا تغلق الشاشة وأعد المحاولة.",en:"Could not save the action on this phone. Keep the screen open and retry."},
+    checking_connection:{ar:"جارٍ التحقق من الاتصال…",en:"Checking connection…"},
+    location_checking:{ar:"جارٍ تحديد موقع التسليم…",en:"Capturing delivery location…"},
   };
   const tr = (key) => T[key]?.[lang] || T[key]?.en || key;
   const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
@@ -101,6 +103,10 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   const subscribedTrips = new Set();
   const offlineUser = frappe.session.user || "Guest";
   const OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
+  let serverReachable = navigator.onLine ? null : false;
+  let lastReachabilityCheck = 0;
+  const REACHABILITY_TTL = 8000;
+  const REACHABILITY_TIMEOUT = 2600;
 
   const statusKey = {
     "مخططة / Planned":"planned", "تم التحميل / Loaded":"loaded", "في الطريق / In Transit":"in_transit",
@@ -179,19 +185,46 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
   function isNetworkError(error) {
-    const status = Number(error?.status || error?.xhr?.status || error?.request?.status || 0);
-    return !navigator.onLine || status === 0 || /network|failed to fetch|offline/i.test(String(error?.message || error || ""));
+    const rawStatus = error?.status ?? error?.xhr?.status ?? error?.request?.status;
+    const status = rawStatus == null ? null : Number(rawStatus);
+    const text = String(error?.message || error?.exc || error || "");
+    return !navigator.onLine || serverReachable === false || status === 0 || /network|failed to fetch|offline|connection lost|not connected/i.test(text);
   }
+  function markServerReachable(value) {
+    serverReachable = Boolean(value);
+    lastReachabilityCheck = Date.now();
+  }
+  async function probeServer(force=false) {
+    if (isManager) return navigator.onLine;
+    if (!navigator.onLine) { markServerReachable(false); return false; }
+    if (!force && serverReachable !== null && (Date.now() - lastReachabilityCheck) < REACHABILITY_TTL) return serverReachable;
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), REACHABILITY_TIMEOUT) : null;
+    try {
+      const response = await fetch(`/api/method/frappe.auth.get_logged_user?wafd_driver_probe=${Date.now()}`, {
+        method:"GET", credentials:"same-origin", cache:"no-store", redirect:"follow",
+        headers:{"X-WAFD-Offline-Probe":"1"}, signal:controller?.signal,
+      });
+      // Any HTTP response proves the server is reachable; auth/permission is handled by the real call.
+      markServerReachable(true);
+      return true;
+    } catch (error) {
+      markServerReachable(false);
+      window.dispatchEvent(new CustomEvent("wafd-driver-connectivity", {detail:{online:false, source:"reachability-probe"}}));
+      return false;
+    } finally { if (timer) clearTimeout(timer); }
+  }
+  const effectivelyOffline = () => !navigator.onLine || serverReachable === false;
   async function updateOfflineBanner(mode, detail) {
     const $state = $root.find("#wafd-offline-state");
     if (!$state.length || isManager) return $state.hide();
     let pending = 0;
     try { pending = (await pendingActions()).length; } catch (error) { mode = "error"; }
-    const offline = mode === "offline" || !navigator.onLine;
+    const offline = mode === "offline" || effectivelyOffline();
     const text = detail || (mode === "syncing" ? tr("syncing_now") : mode === "error" ? tr("sync_problem") : offline ? tr("offline_ready") : tr("online_ready"));
     $state.removeClass("is-offline is-syncing is-error").addClass(mode === "syncing" ? "is-syncing" : mode === "error" ? "is-error" : offline ? "is-offline" : "");
     $state.find("span").text(pending ? `${text} — ${pending} ${tr("pending_sync")}` : text);
-    $state.find("button").prop("hidden", !(pending && navigator.onLine && mode !== "syncing"));
+    $state.find("button").prop("hidden", !(pending && navigator.onLine && serverReachable !== false && mode !== "syncing"));
   }
   function refreshLocalSequence() {
     const runKey = trip => [trip.trip_date || "", trip.driver || "", trip.vehicle || "", trip.meal_type || ""].join("|");
@@ -244,6 +277,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   }
   async function syncPendingActions() {
     if (isManager || syncingOffline || !navigator.onLine) return false;
+    if (!(await probeServer(true))) { await updateOfflineBanner("offline"); return false; }
     syncingOffline = true;
     await updateOfflineBanner("syncing");
     try {
@@ -266,6 +300,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
         }
       }
       offlineCacheActive = false;
+      markServerReachable(true);
       await updateOfflineBanner("online");
       return true;
     } finally {
@@ -360,7 +395,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
         }
       }
     }
-    if (!isManager && !navigator.onLine) {
+    if (!isManager && effectivelyOffline()) {
       try {
         const cached = await readOfflineState();
         if (!cached) {
@@ -381,6 +416,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     }
     try {
       const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", freeze: true});
+      markServerReachable(true);
       trips = response.message?.trips || [];
       hiddenUpcomingCount = Number(response.message?.hidden_upcoming_count || 0);
       emptyReason = response.message?.empty_reason || null;
@@ -398,6 +434,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       await updateOfflineBanner("online");
     } catch (error) {
       if (isManager || !isNetworkError(error)) throw error;
+      markServerReachable(false);
       const cached = await readOfflineState();
       if (!cached) throw error;
       trips = cached.trips || [];
@@ -410,19 +447,24 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     }
   }
   async function runStatus(tripName, action) {
-    if (!isManager && !navigator.onLine) {
-      try {
-        await queueOfflineAction(tripName, action);
-        if (action === "arrive") openProof(tripName);
-      } catch (error) { frappe.msgprint(tr("offline_storage_error")); }
-      return;
+    if (!isManager) {
+      const reachable = await probeServer(false);
+      if (!reachable) {
+        try {
+          await queueOfflineAction(tripName, action);
+          if (action === "arrive") openProof(tripName);
+        } catch (error) { frappe.msgprint(tr("offline_storage_error")); }
+        return;
+      }
     }
     try {
       await frappe.call({method: "wafd_one.driver_portal.set_my_trip_status", args: {trip_name: tripName, action}, freeze: true});
-      await loadTrips();
+      markServerReachable(true);
+      await loadTrips({skipSync:true});
       if (action === "arrive") openProof(tripName);
     } catch (error) {
       if (isManager || !isNetworkError(error)) throw error;
+      markServerReachable(false);
       try {
         await queueOfflineAction(tripName, action);
         if (action === "arrive") openProof(tripName);
@@ -449,8 +491,15 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     deliveryLocation = {};
   }
   function captureLocation(){
-    if(!navigator.geolocation){$root.find("#wafd-location-state").text(tr("location_unavailable"));return;}
-    navigator.geolocation.getCurrentPosition(pos=>{deliveryLocation={latitude:pos.coords.latitude,longitude:pos.coords.longitude};$root.find("#wafd-location-state").text(tr("location_ready"));},()=>{$root.find("#wafd-location-state").text(tr("location_unavailable"));},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+    return new Promise((resolve) => {
+      if(!navigator.geolocation){$root.find("#wafd-location-state").text(tr("location_unavailable"));return resolve(false);}
+      $root.find("#wafd-location-state").text(tr("location_checking"));
+      navigator.geolocation.getCurrentPosition(pos=>{deliveryLocation={latitude:pos.coords.latitude,longitude:pos.coords.longitude};$root.find("#wafd-location-state").text(tr("location_ready"));resolve(true);},()=>{$root.find("#wafd-location-state").text(tr("location_unavailable"));resolve(false);},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+    });
+  }
+  async function ensureDeliveryLocation(){
+    if (deliveryLocation.latitude != null && deliveryLocation.longitude != null) return true;
+    return await captureLocation();
   }
   function setupSignature() {
     const canvas = $root.find("#wafd-signature")[0];
@@ -470,7 +519,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     ["pointerup","pointercancel","touchend","touchcancel"].forEach((name)=>canvas.addEventListener(name,end,{passive:false}));
     $root.find("#wafd-clear-signature").on("click",()=>{ctx.clearRect(0,0,canvas.width,canvas.height);signatureTouched=false;});
   }
-  function compressDriverImage(file, maxDimension=1600, quality=.82) {
+  function compressDriverImage(file, maxDimension=1440, quality=.76) {
     return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error("image"));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error("image"));image.onload=()=>{const scale=Math.min(1,maxDimension/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",quality));};image.src=reader.result;};reader.readAsDataURL(file);});
   }
   async function submitProof() {
@@ -480,24 +529,31 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     const canvas = $root.find("#wafd-signature")[0];
     const signatureData = !simple && signatureTouched && canvas ? canvas.toDataURL("image/png") : "";
     const receiverName = String($root.find("#wafd-receiver-name").val() || "").trim();
+    if (simple && (deliveryLocation.latitude == null || deliveryLocation.longitude == null)) await ensureDeliveryLocation();
     if (!deliveryImageData || (simple && (deliveryLocation.latitude == null || deliveryLocation.longitude == null)) || (!simple && (!receiverName || (proofStatus !== "مرفوض / Rejected" && !signatureData)))) {
       frappe.msgprint(tr(simple ? "required_simple" : "required"));
       return;
     }
     const tripName = selectedTrip.name;
     const payload = {receiver_name:receiverName,receiver_mobile:$root.find("#wafd-receiver-mobile").val(),received_quantity:$root.find("#wafd-received-qty").val(),rejected_quantity:$root.find("#wafd-rejected-qty").val(),status:proofStatus,operational_note_code:$root.find("#wafd-quick-note").val(),notes:$root.find("#wafd-proof-notes").val(),notes_language:lang,image_data:deliveryImageData,signature_data:signatureData,latitude:deliveryLocation.latitude,longitude:deliveryLocation.longitude};
-    if (!isManager && !navigator.onLine) {
-      try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (error) {frappe.msgprint(tr("offline_storage_error"));}
-      return;
+    if (!isManager) {
+      const reachable = await probeServer(false);
+      if (!reachable) {
+        try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (error) {frappe.msgprint(tr("offline_storage_error"));}
+        return;
+      }
     }
     try {
       const response = await frappe.call({method:"wafd_one.driver_portal.submit_delivery_proof",args:{trip_name:tripName,...payload},freeze:true,freeze_message:tr("saving")});
-      if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips();}
+      markServerReachable(true);
+      if (response.message?.name) {frappe.show_alert({message:tr("delivered"),indicator:"green"},6);closeProof();await loadTrips({skipSync:true});}
     } catch (error) {
       if (isManager || !isNetworkError(error)) throw error;
+      markServerReachable(false);
       try {await queueOfflineAction(tripName,"proof",payload);closeProof();frappe.show_alert({message:tr("saved_offline"),indicator:"orange"},7);} catch (storageError) {frappe.msgprint(tr("offline_storage_error"));}
     }
   }
+
 
   $root.on("click", "#wafd-driver-back", () => frappe.set_route("wafd-role-home"));
   $root.on("click", "#wafd-driver-refresh", loadTrips);
@@ -507,8 +563,12 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   $root.on("change", "#wafd-delivery-photo", async function(){const file=this.files?.[0];if(!file)return;captureLocation();deliveryImageData=await compressDriverImage(file);$root.find("#wafd-photo-preview").attr("src",deliveryImageData).show();});
   $root.on("change", "#wafd-proof-status", function(){$root.find("#wafd-signature-field").toggle($(this).val()!=="مرفوض / Rejected");});
   $root.on("click", "#wafd-proof-submit", submitProof);
-  window.addEventListener("offline",()=>updateOfflineBanner("offline"));
-  window.addEventListener("online",async()=>{if(await syncPendingActions())await loadTrips({skipSync:true});});
+  window.addEventListener("offline",()=>{markServerReachable(false);updateOfflineBanner("offline");});
+  window.addEventListener("online",async()=>{serverReachable=null;lastReachabilityCheck=0;if(await syncPendingActions())await loadTrips({skipSync:true});else updateOfflineBanner("offline");});
+  window.addEventListener("wafd-driver-connectivity",(event)=>{
+    if (event?.detail?.online === false) {markServerReachable(false);updateOfflineBanner("offline");}
+    else if (event?.detail?.online === true && navigator.onLine) {serverReachable=null;lastReachabilityCheck=0;}
+  });
   if (isManager && typeof frappe.realtime?.on === "function") {
     frappe.realtime.on("doc_update", (event) => {
       if (event?.doctype === "WAFD Delivery Trip" && subscribedTrips.has(event.name)) loadTrips();

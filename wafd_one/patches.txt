@@ -587,3 +587,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc314.execute
 
 # RC315 auto-assign only the required role when management assigns an Iftar team member
 wafd_one.wafd_one.patches.v10_0_0_rc315.execute
+
+# RC317 reliable offline driver capture and reconnect synchronization
+wafd_one.wafd_one.patches.v10_0_0_rc317.execute

@@ -3,7 +3,6 @@ frappe.pages['wafd-iftar-site'].on_page_load=function(wrapper){
   $(wrapper).addClass('wafd-iftar-site-page');
   wrapper.__ifs={$root:$('<div class="ifs-wrap"></div>').appendTo(page.body),loading:false};
 };
-frappe.pages['wafd-iftar-site'].on_page_show=function(wrapper){loadSite(wrapper)};
 (function(){
  const esc=v=>frappe.utils.escape_html(String(v??''));
  const n=v=>Number(v||0).toLocaleString('en-US');
@@ -41,5 +40,6 @@ frappe.pages['wafd-iftar-site'].on_page_show=function(wrapper){loadSite(wrapper)
    $r.on('click.ifs','.ifs-approve-report',function(){const report=$(this).closest('[data-report]').data('report');const d=new frappe.ui.Dialog({title:'اعتماد تقرير المشرف',fields:[{fieldname:'notes',fieldtype:'Small Text',label:'ملاحظات المدير'}],primary_action_label:'اعتماد التقرير',primary_action:async v=>{await team('approve_supervisor_report',{report_name:report,notes:v.notes||''});d.hide();frappe.show_alert({message:'تم اعتماد التقرير',indicator:'green'});loadSite(w)}});d.show()});
    $r.on('click.ifs','.ifs-finalize',async function(){const op=$(this).closest('[data-operation]').data('operation');await team('finalize_daily_report',{operation_name:op});frappe.show_alert({message:'تم اعتماد تقرير الموقع وإرساله للإدارة',indicator:'green'});loadSite(w)});
  }
- async function loadSite(w){if(!w?.__ifs||w.__ifs.loading)return;w.__ifs.loading=true;w.__ifs.$root.html('<div class="ifs-empty">جاري تحميل مهام الموقع…</div>');try{render(w,await api('get_site_portal_data'))}catch(e){w.__ifs.$root.html(`<div class="ifs-empty">${esc(e.message||e)}</div>`)}finally{w.__ifs.loading=false}}
+ async function loadSite(w){if(!w?.__ifs||w.__ifs.loading)return;w.__ifs.loading=true;w.__ifs.$root.html('<div class="ifs-empty">جاري تحميل مهام الموقع…</div>');try{render(w,await api('get_site_portal_data'))}catch(e){console.error('WAFD Iftar Site load failed',e);w.__ifs.$root.html(`<div class="ifs-empty"><b>تعذر تحميل مهام الموقع</b><br>${esc(e.message||e)}<br><button class="ifs-btn ifs-retry" style="margin-top:14px">إعادة المحاولة</button></div>`);w.__ifs.$root.off('click.ifsretry').on('click.ifsretry','.ifs-retry',()=>loadSite(w))}finally{w.__ifs.loading=false}}
+ frappe.pages['wafd-iftar-site'].on_page_show=function(wrapper){loadSite(wrapper)};
 })();

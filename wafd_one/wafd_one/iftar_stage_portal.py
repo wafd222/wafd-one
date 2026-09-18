@@ -237,7 +237,9 @@ def _operations(project):
             "delivery_last_arrival", "production_approved_by", "production_approved_at",
             "packaging_approved_by", "packaging_approved_at", "loading_approved_by",
             "loading_approved_at", "workflow_notes", "notes", "site_receipt_approved",
-            "site_receipt_time", "site_received_meals",
+            "site_receipt_time", "site_received_meals", "site_received_by",
+            "authority_inspection_approved", "authority_inspection_time", "authority_supervisor_name",
+            "site_report_approved", "site_report_approved_at", "daily_report_sent", "authority_report_sent_at",
         ],
         order_by="operation_date asc, creation asc",
         limit_page_length=400,
@@ -706,3 +708,129 @@ def approve_delivery_plan(operation_name, allocations, note=None):
     )
 
     return {"operation": operation.name, "trips": created, "total_meals": total}
+
+
+# ---------------------------------------------------------------------------
+# RC323 dedicated Site Manager / Iftar Supervisor portals
+# ---------------------------------------------------------------------------
+
+def _current_site_operation(project):
+    operations = _operations(project)
+    shaped = [
+        _operation_payload(project, operation, idx + 1, len(operations), include_trips=True)
+        for idx, operation in enumerate(operations)
+    ]
+    # Prefer a day that has reached delivery and still needs site closeout.
+    return next((op for op in shaped if cint(op.get("delivery_plan_approved")) and not cint(op.get("site_report_approved"))), None) \
+        or next((op for op in shaped if not cint(op.get("daily_report_sent"))), None) \
+        or (shaped[-1] if shaped else None)
+
+
+def _site_reports(operation_name):
+    if not operation_name:
+        return []
+    rows = frappe.get_all(
+        "WAFD Iftar Supervisor Daily Report",
+        filters={"daily_operation": operation_name},
+        fields=[
+            "name", "supervisor_name", "supervisor_user", "planned_meals", "received_meals",
+            "received_at", "report_submitted", "submitted_at", "manager_approved", "approved_at",
+            "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals",
+        ],
+        order_by="supervisor_name asc",
+        limit_page_length=500,
+    )
+    return [dict(row) for row in rows]
+
+
+@frappe.whitelist()
+def get_site_portal_data():
+    if frappe.session.user in ("Guest", ""):
+        frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
+    projects = []
+    for project in _visible_projects():
+        duties = set(project.get("portal_duties") or [])
+        if "site" not in duties and "management" not in duties:
+            continue
+        payload = _project_payload(project, include_all_operations=False, include_trips=True)
+        operation = _current_site_operation(project)
+        payload["site_operation"] = operation
+        payload["supervisor_reports"] = _site_reports(operation.get("name") if operation else None)
+        projects.append(payload)
+    return {
+        "mode": "site",
+        "user": frappe.session.user,
+        "full_name": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
+        "projects": projects,
+    }
+
+
+def _supervisor_report_payload(report_name):
+    report = frappe.get_doc("WAFD Iftar Supervisor Daily Report", report_name)
+    project = frappe.get_doc("WAFD Iftar Project", report.project)
+    operation = frappe.get_doc("WAFD Iftar Daily Operation", report.daily_operation)
+    return {
+        "name": report.name,
+        "project": report.project,
+        "project_title": project.project_title or project.distribution_site or project.name,
+        "distribution_site": project.distribution_site,
+        "contracting_entity": project.contracting_entity,
+        "operation_date": report.operation_date,
+        "daily_operation": report.daily_operation,
+        "supervisor_name": report.supervisor_name,
+        "planned_meals": cint(report.planned_meals),
+        "cartons": cint(report.cartons),
+        "received_meals": cint(report.received_meals),
+        "received_at": report.received_at,
+        "report_submitted": cint(report.report_submitted),
+        "manager_approved": cint(report.manager_approved),
+        "site_received": cint(operation.site_receipt_approved),
+        "table_owners": [
+            {
+                "name": row.name,
+                "table_owner_name": row.table_owner_name,
+                "mobile_no": row.mobile_no,
+                "distribution_point": row.distribution_point,
+                "planned_meals": cint(row.planned_meals),
+                "delivered_meals": cint(row.delivered_meals),
+                "owner_confirmed": cint(row.owner_confirmed),
+                "delivery_time": row.delivery_time,
+                "notes": row.notes,
+            }
+            for row in (report.table_owners or [])
+        ],
+        "assistants": [
+            {
+                "name": row.name,
+                "assistant_name": row.assistant_name,
+                "mobile_no": row.mobile_no,
+                "attendance_status": row.attendance_status,
+                "check_in_time": row.check_in_time,
+            }
+            for row in (report.assistants_attendance or [])
+        ],
+    }
+
+
+@frappe.whitelist()
+def get_supervisor_portal_data():
+    if frappe.session.user in ("Guest", ""):
+        frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
+    roles = _roles()
+    filters = {"supervisor_user": frappe.session.user}
+    if _is_global_manager(roles):
+        filters = {}
+    names = frappe.get_all(
+        "WAFD Iftar Supervisor Daily Report",
+        filters=filters,
+        pluck="name",
+        order_by="operation_date desc, creation desc",
+        limit_page_length=200,
+    )
+    reports = [_supervisor_report_payload(name) for name in names]
+    return {
+        "mode": "supervisor",
+        "user": frappe.session.user,
+        "full_name": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
+        "reports": reports,
+    }

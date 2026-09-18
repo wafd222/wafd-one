@@ -1,0 +1,8 @@
+{
+ "doctype": "Page",
+ "name": "wafd-iftar-supervisor",
+ "page_name": "wafd-iftar-supervisor",
+ "module": "Wafd One",
+ "title": "مهام سفر إفطار الصائم",
+ "roles": [{"role":"System Manager"},{"role":"WAFD Operations Manager"},{"role":"WAFD Iftar Supervisor"}]
+}

@@ -247,11 +247,11 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     },
     {
       role: "WAFD Iftar Site Manager", title: "مدير موقع إفطار الصائم", subtitle: "الاستلام والفحص وتسليم المشرفين واعتماد التقارير",
-      items: [{ label: "إدارة موقع إفطار الصائم", desc: "استلام الوجبات ومتابعة المشرفين واعتماد تقارير الموقع", icon: "☾", page: "wafd-iftar-team", primary: true }]
+      items: [{ label: "إدارة موقع إفطار الصائم", desc: "استلام الوجبات ومتابعة المشرفين واعتماد تقارير الموقع", icon: "☾", page: "wafd-iftar-site", primary: true }]
     },
     {
       role: "WAFD Iftar Supervisor", title: "مشرف سفر إفطار الصائم", subtitle: "السفر والمساعدون والتوزيع والتوثيق",
-      items: [{ label: "مهام سفر إفطار الصائم", desc: "استلام الكمية والتوزيع والتوثيق والتقرير اليومي", icon: "☾", page: "wafd-iftar-team", primary: true }]
+      items: [{ label: "مهام سفر إفطار الصائم", desc: "استلام الكمية والتوزيع والتوثيق والتقرير اليومي", icon: "☾", page: "wafd-iftar-supervisor", primary: true }]
     },
     {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",

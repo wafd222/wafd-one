@@ -1,0 +1,14 @@
+Split Iftar Site Manager and Supervisor into dedicated operational screens
+
+- Add a dedicated Iftar Site Manager page instead of routing Site Manager to the generic Iftar tracking screen.
+- Add a dedicated Iftar Supervisor page instead of routing Supervisor tasks to the same generic screen.
+- Allow Site Manager to approve site receipt after verified driver arrival.
+- Add authority food-inspection approval with required checks and photo evidence.
+- Allow Site Manager to generate the daily supervisor assignments from the approved project supervisor plans.
+- Allow Site Manager to hand over meals and operating supplies to each assigned supervisor with photo evidence.
+- Allow Site Manager to review and approve each submitted supervisor report and finalize the consolidated daily site report.
+- Allow each Iftar Supervisor to see only their own assigned daily report.
+- Allow supervisors to confirm handover to each table owner, record assistant attendance, and submit distribution/closeout evidence.
+- Keep multi-role users separated by route so Site Manager and Supervisor cards open different screens and permissions.
+- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver capture without modification.
+- No changes to standard Delivery Management, normal driver trips, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

@@ -256,7 +256,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Driver", title: "السائق", subtitle: "رحلاتك المسندة لك فقط",
       items: [
-        { label: "رحلاتي", desc: "المركبة والوجهة وحالة الرحلة", icon: "➜", page: "wafd-driver-trips", primary: true }
+        { label: "توصيل إفطار الصائم", desc: "مهام إفطار الصائم فقط بشكل مستقل", icon: "☾", page: "wafd-iftar-driver", primary: true },
+        { label: "رحلاتي الأخرى", desc: "مشاريع التوصيل الأخرى غير إفطار الصائم", icon: "➜", page: "wafd-driver-trips" }
       ]
     },
     {

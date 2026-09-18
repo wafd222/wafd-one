@@ -593,3 +593,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc317.execute
 
 # RC319 make explicit Iftar assignment authoritative and remove duplicate supervisor Iftar entry
 wafd_one.wafd_one.patches.v10_0_0_rc319.execute
+
+# RC320 dedicated Iftar-only driver screen; standard driver trips remain separate
+wafd_one.wafd_one.patches.v10_0_0_rc320.execute

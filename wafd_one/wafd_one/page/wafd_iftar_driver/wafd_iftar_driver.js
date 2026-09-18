@@ -1,4 +1,4 @@
-frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
+frappe.pages["wafd-iftar-driver"].on_page_load = function (wrapper) {
   const roles = new Set(frappe.user_roles || []);
   const managerRoles = ["System Manager", "WAFD Operations Manager", "WAFD Delivery Supervisor"];
   const isManager = managerRoles.some((role) => roles.has(role));
@@ -15,12 +15,12 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   };
   let lang = activeLanguage();
   const T = {
-    my_trips:{ar:"رحلاتي",en:"My Trips",id:"Perjalanan Saya",ur:"میری ٹرپس",hi:"मेरी यात्राएँ",bn:"আমার ট্রিপ",fr:"Mes trajets",ha:"Tafiyoyina",sw:"Safari Zangu",uz:"Safarlarim"},
-    field_delivery:{ar:"التسليم الميداني",en:"Field Delivery",id:"Pengiriman Lapangan",ur:"فیلڈ ڈیلیوری",hi:"मैदानी डिलीवरी",bn:"মাঠ ডেলিভারি",fr:"Livraison terrain",ha:"Isarwa a fili",sw:"Uwasilishaji wa eneo",uz:"Joydagi yetkazish"},
+    my_trips:{ar:"توصيل إفطار الصائم",en:"Iftar Deliveries",id:"Perjalanan Saya",ur:"میری ٹرپس",hi:"मेरी यात्राएँ",bn:"আমার ট্রিপ",fr:"Mes trajets",ha:"Tafiyoyina",sw:"Safari Zangu",uz:"Safarlarim"},
+    field_delivery:{ar:"مشروع إفطار الصائم",en:"Iftar Saim Project",id:"Pengiriman Lapangan",ur:"فیلڈ ڈیلیوری",hi:"मैदानी डिलीवरी",bn:"মাঠ ডেলিভারি",fr:"Livraison terrain",ha:"Isarwa a fili",sw:"Uwasilishaji wa eneo",uz:"Joydagi yetkazish"},
     back:{ar:"رجوع",en:"Back",id:"Kembali",ur:"واپس",hi:"वापस",bn:"ফিরুন",fr:"Retour",ha:"Baya",sw:"Rudi",uz:"Orqaga"},
     refresh:{ar:"تحديث",en:"Refresh",id:"Muat ulang",ur:"تازہ کریں",hi:"रीफ़्रेश",bn:"রিফ্রেশ",fr:"Actualiser",ha:"Sabunta",sw:"Onyesha upya",uz:"Yangilash"},
-    no_trips:{ar:"لا توجد رحلات مسندة إليك حاليًا.",en:"No trips are currently assigned to you.",id:"Saat ini tidak ada perjalanan yang ditugaskan.",ur:"اس وقت آپ کو کوئی ٹرپ تفویض نہیں کیا گیا۔",hi:"अभी आपको कोई यात्रा नहीं सौंपी गई है।",bn:"বর্তমানে আপনাকে কোনো ট্রিপ দেওয়া হয়নি।",fr:"Aucun trajet ne vous est attribué actuellement.",ha:"Babu tafiya da aka ba ka yanzu.",sw:"Hakuna safari uliyopewa kwa sasa.",uz:"Hozir sizga safar biriktirilmagan."},
-    no_trips_manager:{ar:"لا توجد رحلات توصيل حالية.",en:"There are no current delivery trips.",id:"Tidak ada perjalanan pengiriman saat ini.",ur:"اس وقت کوئی ڈیلیوری ٹرپ نہیں ہے۔",hi:"अभी कोई डिलीवरी यात्रा नहीं है।",bn:"বর্তমানে কোনো ডেলিভারি ট্রিপ নেই।",fr:"Aucun trajet de livraison en cours.",ha:"Babu tafiyar isarwa a yanzu.",sw:"Hakuna safari ya uwasilishaji kwa sasa.",uz:"Hozir yetkazib berish safari yo‘q."},
+    no_trips:{ar:"لا توجد مهمة إفطار صائم مسندة إليك حاليًا.",en:"No Iftar delivery task is currently assigned to you.",id:"Saat ini tidak ada perjalanan yang ditugaskan.",ur:"اس وقت آپ کو کوئی ٹرپ تفویض نہیں کیا گیا۔",hi:"अभी आपको कोई यात्रा नहीं सौंपी गई है।",bn:"বর্তমানে আপনাকে কোনো ট্রিপ দেওয়া হয়নি।",fr:"Aucun trajet ne vous est attribué actuellement.",ha:"Babu tafiya da aka ba ka yanzu.",sw:"Hakuna safari uliyopewa kwa sasa.",uz:"Hozir sizga safar biriktirilmagan."},
+    no_trips_manager:{ar:"لا توجد رحلات إفطار صائم حالية.",en:"There are no current Iftar delivery trips.",id:"Tidak ada perjalanan pengiriman saat ini.",ur:"اس وقت کوئی ڈیلیوری ٹرپ نہیں ہے۔",hi:"अभी कोई डिलीवरी यात्रा नहीं है।",bn:"বর্তমানে কোনো ডেলিভারি ট্রিপ নেই।",fr:"Aucun trajet de livraison en cours.",ha:"Babu tafiyar isarwa a yanzu.",sw:"Hakuna safari ya uwasilishaji kwa sasa.",uz:"Hozir yetkazib berish safari yo‘q."},
     no_approved_loading:{ar:"لا يوجد تحميل معتمد ومسند إلى حسابك. على المدير اعتماد التحميل واختيارك كسائق.",en:"No approved loading is assigned to your account. The manager must approve loading and select you as driver.",id:"Tidak ada pemuatan yang disetujui untuk akun Anda. Manajer harus menyetujui pemuatan dan memilih Anda sebagai pengemudi.",ur:"آپ کے اکاؤنٹ کو کوئی منظور شدہ لوڈنگ تفویض نہیں۔ مینیجر لوڈنگ منظور کرکے آپ کو ڈرائیور منتخب کرے۔",hi:"आपके खाते को कोई स्वीकृत लोडिंग नहीं सौंपी गई है। प्रबंधक लोडिंग स्वीकृत करके आपको चालक चुने।",bn:"আপনার অ্যাকাউন্টে অনুমোদিত কোনো লোডিং নেই। ম্যানেজারকে লোডিং অনুমোদন করে আপনাকে চালক নির্বাচন করতে হবে।",fr:"Aucun chargement approuvé n’est attribué à votre compte. Le responsable doit approuver le chargement et vous choisir comme chauffeur.",ha:"Babu lodin da aka amince da shi da aka ba asusunka. Manaja ya amince da lodi kuma ya zaɓe ka a matsayin direba.",sw:"Hakuna upakiaji ulioidhinishwa kwa akaunti yako. Meneja lazima aidhinishe upakiaji na akuchague kama dereva.",uz:"Hisobingizga tasdiqlangan yuklash biriktirilmagan. Menejer yuklashni tasdiqlab, sizni haydovchi sifatida tanlashi kerak."},
     trip_creation_blocked:{ar:"يوجد تحميل معتمد، لكن تعذر إنشاء رحلة التوصيل. ظهرت المشكلة الفعلية أدناه ليتحقق منها المدير.",en:"An approved loading exists, but its delivery trip could not be created. The actual validation issue is shown below for the manager.",id:"Pemuatan telah disetujui, tetapi perjalanan pengiriman tidak dapat dibuat. Masalah validasi ditampilkan di bawah.",ur:"منظور شدہ لوڈنگ موجود ہے، مگر ڈیلیوری ٹرپ نہیں بن سکا۔ اصل توثیقی مسئلہ نیچے ہے۔",hi:"स्वीकृत लोडिंग मौजूद है, लेकिन डिलीवरी यात्रा नहीं बन सकी। वास्तविक सत्यापन समस्या नीचे है।",bn:"অনুমোদিত লোডিং আছে, কিন্তু ডেলিভারি ট্রিপ তৈরি হয়নি। প্রকৃত যাচাই সমস্যা নিচে দেখানো হয়েছে।",fr:"Un chargement approuvé existe, mais le trajet n’a pas pu être créé. Le problème de validation est indiqué ci-dessous.",ha:"Akwai lodin da aka amince da shi, amma ba a iya ƙirƙirar tafiyar isarwa ba. An nuna matsalar a ƙasa.",sw:"Upakiaji ulioidhinishwa upo, lakini safari ya uwasilishaji haikuweza kuundwa. Tatizo halisi limeonyeshwa hapa chini.",uz:"Tasdiqlangan yuklash bor, ammo yetkazish safari yaratilmadi. Tekshiruv muammosi quyida ko‘rsatilgan."},
     assignment_incomplete:{ar:"تم العثور على تحميل معتمد، لكن ربط الرحلة بحساب السائق غير مكتمل. راجع ربط السائق في إدارة الموظفين.",en:"An approved loading was found, but the driver-account assignment is incomplete. Review the driver link in Employee Management.",id:"Pemuatan disetujui ditemukan, tetapi tautan akun pengemudi belum lengkap. Periksa di Manajemen Karyawan.",ur:"منظور شدہ لوڈنگ ملی، مگر ڈرائیور اکاؤنٹ ربط مکمل نہیں۔ ملازمین کے انتظام میں ربط دیکھیں۔",hi:"स्वीकृत लोडिंग मिली, लेकिन चालक-खाता लिंक अधूरा है। कर्मचारी प्रबंधन में लिंक जाँचें।",bn:"অনুমোদিত লোডিং পাওয়া গেছে, কিন্তু চালক-অ্যাকাউন্ট সংযোগ অসম্পূর্ণ। কর্মচারী ব্যবস্থাপনায় পরীক্ষা করুন।",fr:"Un chargement approuvé a été trouvé, mais le lien du compte chauffeur est incomplet. Vérifiez la gestion des employés.",ha:"An sami lodin da aka amince da shi, amma haɗin asusun direba bai cika ba. Duba Gudanar da Ma’aikata.",sw:"Upakiaji ulioidhinishwa umepatikana, lakini kiungo cha akaunti ya dereva hakijakamilika. Kagua Usimamizi wa Wafanyakazi.",uz:"Tasdiqlangan yuklash topildi, ammo haydovchi hisobi bog‘lanishi to‘liq emas. Xodimlar boshqaruvida tekshiring."},
@@ -170,7 +170,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       tx.onerror = () => fail(tx.error || new Error("IndexedDB transaction failed"));
     });
   }
-  const offlineStateKey = () => `driver:${offlineUser}`;
+  const offlineStateKey = () => `iftar-driver:${offlineUser}`;
   const readOfflineState = () => dbRequest("state", "readonly", store => store.get(offlineStateKey()));
   const writeOfflineState = () => isManager ? Promise.resolve() : dbRequest("state", "readwrite", store => store.put({
     key:offlineStateKey(), user:offlineUser, trips, hiddenUpcomingCount, emptyReason, emptyDetail,
@@ -415,7 +415,7 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       }
     }
     try {
-      const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", args: {exclude_iftar: 1}, freeze: true});
+      const response = await frappe.call({method: "wafd_one.driver_portal.list_my_trips", args: {iftar_only: 1}, freeze: true});
       markServerReachable(true);
       trips = response.message?.trips || [];
       hiddenUpcomingCount = Number(response.message?.hidden_upcoming_count || 0);
@@ -588,11 +588,11 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   if (!isManager && navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
   loadTrips();
   wrapper.wafdSequenceTimer = wrapper.wafdSequenceTimer || window.setInterval(() => {
-    if (frappe.get_route()?.[0] === "wafd-driver-trips") loadTrips();
+    if (frappe.get_route()?.[0] === "wafd-iftar-driver") loadTrips();
   }, 60000);
 };
 
-frappe.pages["wafd-driver-trips"].on_page_show = function (wrapper) {
+frappe.pages["wafd-iftar-driver"].on_page_show = function (wrapper) {
   // Frappe caches Page instances. Re-read the language chosen on Role Home,
   // then refresh the data every time the user returns to this page.
   if (typeof wrapper.wafdApplyTripLanguage === "function") wrapper.wafdApplyTripLanguage();

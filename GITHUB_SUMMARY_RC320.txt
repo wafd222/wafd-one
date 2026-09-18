@@ -1,0 +1,12 @@
+Add a dedicated Iftar-only driver screen without mixing normal delivery projects
+
+- Add a separate `توصيل إفطار الصائم` screen for drivers assigned to Iftar Saim deliveries.
+- Keep ordinary delivery projects on the existing `رحلاتي الأخرى` driver screen and exclude Iftar trips from that screen.
+- Filter Iftar trips on the server before driver sequencing so unrelated trips cannot hide or block the Iftar task.
+- Show only Iftar Saim trips created from the Delivery Supervisor vehicle-allocation plan.
+- Preserve driver assignment security and existing trip status transitions.
+- Preserve RC317 offline-first support for start, arrival, GPS, delivery photo, receiver data, quantities, notes, and proof submission.
+- Use a dedicated offline cache namespace for Iftar driver trips while keeping the same safe pending-action synchronization queue.
+- Extend the driver offline connection guard to the new Iftar driver route on both iPhone and Android.
+- Add the new Iftar driver page through an RC320 migration patch and refresh only driver-facing Page metadata.
+- No changes to Delivery Supervisor allocation, standard delivery projects, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

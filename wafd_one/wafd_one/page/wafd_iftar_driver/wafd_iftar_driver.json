@@ -1,0 +1,18 @@
+{
+ "doctype": "Page",
+ "name": "wafd-iftar-driver",
+ "module": "WAFD ONE",
+ "page_name": "wafd-iftar-driver",
+ "title": "توصيل إفطار الصائم",
+ "standard": "Yes",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "WAFD Operations Manager"},
+  {"role": "WAFD Delivery Supervisor"},
+  {"role": "WAFD Driver"}
+ ],
+ "creation": "2026-09-18 09:30:00.000000",
+ "modified": "2026-09-18 09:30:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

@@ -400,16 +400,22 @@ def _hotel_names(hotel_names):
 
 
 @frappe.whitelist()
-def list_my_trips():
+def list_my_trips(iftar_only=0, exclude_iftar=0):
+    iftar_only = cint(iftar_only)
+    exclude_iftar = cint(exclude_iftar)
     is_manager = bool(_roles() & DELIVERY_OPERATOR_ROLES)
     drivers = [] if is_manager else _driver_names()
     filters = {"status": ["!=", "ملغية / Cancelled"], "archived_from_board": 0}
+    if iftar_only:
+        filters["meal_type"] = "إفطار صائم / Iftar Saim"
+    elif exclude_iftar:
+        filters["meal_type"] = ["!=", "إفطار صائم / Iftar Saim"]
     if not is_manager:
         repair_trip_assignments(frappe.session.user)
-    reconciliation = reconcile_missing_delivery_trips(
+    reconciliation = ({"counts": {"blocked": 0}, "results": []} if iftar_only else reconcile_missing_delivery_trips(
         user=None if is_manager else frappe.session.user,
         all_drivers=is_manager,
-    )
+    ))
     trips = frappe.get_all(
         "WAFD Delivery Trip",
         filters=filters,
@@ -420,6 +426,7 @@ def list_my_trips():
             "assigned_driver_user", "trip_source", "delivery_kind", "delivery_location",
             "destination_name", "destination_name_en", "destination_map_url",
             "destination_latitude", "destination_longitude", "meal_type", "delivery_schedule_id",
+            "iftar_project", "iftar_daily_operation", "iftar_dispatch_notes",
         ],
         order_by="trip_date desc, creation desc" if is_manager else "planned_arrival asc, creation asc",
         # Managers see the operational window directly. Drivers are filtered

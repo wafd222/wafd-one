@@ -10,7 +10,7 @@
     if (!user || user === "Guest") return false;
     const route = Array.isArray(frappe?.get_route?.()) ? frappe.get_route().join("/") : "";
     const path = `${location.pathname || ""} ${location.hash || ""} ${route}`;
-    if (/wafd-driver-trips/i.test(path)) return true;
+    if (/wafd-driver-trips|wafd-iftar-driver/i.test(path)) return true;
     const roles = new Set(frappe?.user_roles || []);
     return roles.has("WAFD Driver") && !roles.has("System Manager") && !roles.has("WAFD Operations Manager");
   }

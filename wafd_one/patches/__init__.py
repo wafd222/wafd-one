@@ -1,1 +1,1 @@
-"""Migration patches stored under the WAFD ONE module package."""
+"""WAFD ONE Python package."""

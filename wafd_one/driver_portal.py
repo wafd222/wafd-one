@@ -564,7 +564,18 @@ def set_my_trip_status(trip_name, action):
     if action == "arrive":
         if not trip.actual_departure:
             frappe.throw(_("ابدأ الرحلة أولاً قبل تسجيل الوصول / Start the trip before marking arrival."))
-        trip.actual_arrival = trip.actual_arrival or now_datetime()
+        arrival_time = trip.actual_arrival or now_datetime()
+        # Mobile/offline clients can reconnect while the same trip is also being
+        # refreshed by delivery dashboards.  Updating only the transition fields
+        # avoids Frappe's stale-document modified-timestamp check while preserving
+        # all unrelated trip data.
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            trip.name,
+            {"actual_arrival": arrival_time, "status": target},
+        )
+        frappe.get_doc("WAFD Delivery Trip", trip.name).notify_update()
+        return {"name": trip.name, "status": target, "arrival_time": arrival_time}
     trip.status = target
     trip.save()
     trip.notify_update()
@@ -668,9 +679,14 @@ def submit_delivery_proof(
     display_notes = "\n".join(part for part in (translated_ar, notes_original if notes_language != "ar" else "") if part)
 
     if trip.status in {"في الطريق / In Transit", "متأخرة / Delayed"}:
+        arrival_time = trip.actual_arrival or delivery_time
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            trip.name,
+            {"status": "وصلت / Arrived", "actual_arrival": arrival_time},
+        )
         trip.status = "وصلت / Arrived"
-        trip.actual_arrival = trip.actual_arrival or delivery_time
-        trip.save()
+        trip.actual_arrival = arrival_time
 
     file_url = _save_private_image(
         image_data,
@@ -721,6 +737,14 @@ def sync_offline_driver_action(trip_name, action, captured_at, payload=None):
     if action not in {"start", "arrive", "proof"}:
         frappe.throw(_("نوع عملية المزامنة غير صحيح."))
     trip = _authorized_trip(trip_name, write=True)
+    # Serialize reconnect replays for one trip. This makes the endpoint robust
+    # when iOS/Android fires more than one online/refresh event at nearly the
+    # same time and keeps the existing idempotency checks authoritative.
+    frappe.db.sql(
+        "SELECT name FROM `tabWAFD Delivery Trip` WHERE name=%s FOR UPDATE",
+        (trip.name,),
+    )
+    trip.reload()
     captured = _validated_offline_time(captured_at)
 
     if action == "start":
@@ -739,10 +763,12 @@ def sync_offline_driver_action(trip_name, action, captured_at, payload=None):
         _assert_sequence_actionable(trip)
         if not trip.actual_departure:
             frappe.throw(_("تعذر مزامنة الوصول قبل مزامنة بدء الرحلة."))
-        trip.actual_arrival = captured
-        trip.status = "وصلت / Arrived"
-        trip.save()
-        trip.notify_update()
+        frappe.db.set_value(
+            "WAFD Delivery Trip",
+            trip.name,
+            {"actual_arrival": captured, "status": "وصلت / Arrived"},
+        )
+        frappe.get_doc("WAFD Delivery Trip", trip.name).notify_update()
         return {"name": trip.name, "action": action, "arrival_time": captured}
 
     values = frappe.parse_json(payload) if payload else {}

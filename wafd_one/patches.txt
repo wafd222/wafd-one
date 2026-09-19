@@ -622,3 +622,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc331.execute
 wafd_one.wafd_one.patches.v10_0_0_rc332.execute
 # RC333 supervisor quantity reconciliation and route-scoped mobile stage action
 wafd_one.wafd_one.patches.v10_0_0_rc333.execute
+# RC334 automatically forwards final Site Manager approval to administration and adds the report inbox
+wafd_one.wafd_one.patches.v10_0_0_rc334.execute

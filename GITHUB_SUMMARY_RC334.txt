@@ -1,0 +1,10 @@
+WAFD ONE 10.0.0 RC334 — Administration Report Inbox Fix
+
+- Fixed approved supervisor reports not appearing for management or administration.
+- The final Site Manager approval now automatically consolidates and forwards the daily report to administration.
+- Added a persistent management report inbox that includes previous operation dates.
+- Added clear Pending Administration and Administration Approved statuses.
+- Added direct access to the official Presidency PDF from each report card.
+- Added final administration approval with signature, stamp, notes, and Presidency recipient.
+- Migrates previously approved supervisor reports that were waiting for the missing second Site Manager action.
+- Preserved all RC332 and RC333 field evidence, reconciliation, approval, and Presidency report rules.

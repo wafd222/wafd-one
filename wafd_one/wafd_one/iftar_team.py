@@ -931,7 +931,17 @@ def approve_supervisor_report(report_name, notes=None):
         frappe.throw(_("يجب أن يرسل المشرف تقريره أولاً / Supervisor must submit the report first"))
     report.db_set({"manager_approved": 1, "approved_by": frappe.session.user, "approved_at": now_datetime(), "manager_notes": (notes or "").strip()}, update_modified=True)
     pending = frappe.db.count("WAFD Iftar Supervisor Daily Report", {"daily_operation": report.daily_operation, "manager_approved": 0})
-    return {"name": report.name, "pending_reports": pending}
+    finalized = False
+    # One approval action is enough: when the last supervisor report is
+    # approved, consolidate the operation immediately and place it in the
+    # administration inbox.  Previously a second, easy-to-miss button was
+    # required, so the supervisor saw "approved" while management saw nothing.
+    if not pending:
+        operation = frappe.get_doc("WAFD Iftar Daily Operation", report.daily_operation)
+        if not cint(operation.site_report_approved):
+            finalize_daily_report(report.daily_operation)
+            finalized = True
+    return {"name": report.name, "pending_reports": pending, "site_report_finalized": finalized}
 
 
 @frappe.whitelist()

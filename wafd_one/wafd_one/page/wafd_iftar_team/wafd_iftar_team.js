@@ -130,6 +130,18 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     </div>`;
   }
 
+  function reportInbox(data) {
+    const rows = data.report_inbox || [];
+    if (!rows.length) return `<div class="ift-section-title"><h2>التقارير اليومية</h2><span>0</span></div>${emptyState("لا توجد تقارير معتمدة من مدير الموقع حتى الآن")}`;
+    return `<div class="ift-section-title"><h2>التقارير اليومية للإدارة</h2><span>${rows.length}</span></div><div class="ift-report-inbox">${rows.map(r => `<div class="ift-report-inbox-card" data-operation="${esc(r.name)}">
+      <div class="ift-card-top"><span class="ift-state ${r.administration_report_approved ? 'done' : 'working'}">${r.administration_report_approved ? 'معتمد من الإدارة' : 'بانتظار اعتماد الإدارة'}</span><small>${esc(fmtDate(r.operation_date))}</small></div>
+      <h3>${esc(r.project_title || r.project)}</h3><p>${esc(r.distribution_site || '')} · ${esc(r.contracting_entity || '')}</p>
+      <div class="ift-numbers four"><div><b>${num(r.planned_meals)}</b><span>المخطط</span></div><div><b>${num(r.received_meals)}</b><span>المستلم</span></div><div><b>${num(r.supervisor_count)}</b><span>المشرفون</span></div><div><b>${num(Number(r.surplus_meals||0)+Number(r.preservation_society_quantity||0)+Number(r.waste_meals||0))}</b><span>الفائض والمعالجة</span></div></div>
+      <div class="ift-report-status">${r.administration_report_approved ? `✓ اعتمدته الإدارة ${esc(fmtTime(r.administration_report_approved_at))}` : `✓ اعتمده مدير الموقع ${esc(fmtTime(r.site_report_approved_at))}`}</div>
+      <div class="ift-actions"><button class="btn btn-default ift-open-official-report">فتح التقرير وPDF</button>${data.mode === 'management' && !r.administration_report_approved ? '<button class="btn btn-dark ift-admin-approve-report">اعتماد الإدارة وإرساله للرئاسة</button>' : ''}</div>
+    </div>`).join('')}</div>`;
+  }
+
   function render(wrapper, data) {
     const state = wrapper.__iftar_rc314;
     state.data = data;
@@ -150,6 +162,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       const title = readOnly ? "متابعة المشروع" : "متابعة مراحل المشاريع";
       content = `<div class="ift-section-title"><h2>${title}</h2><span>${(data.projects || []).length}</span></div><div class="ift-project-list">${(data.projects || []).map(p => monitorCard(p, data.can_manage_team, readOnly)).join('')}</div>`;
       if (!(data.projects || []).length) content += emptyState(readOnly ? "لا يوجد مشروع مسند لحساب المتابعة" : "لا توجد مشاريع ظاهرة لهذا الحساب");
+      if (data.mode === "management" || data.mode === "project_manager") content += reportInbox(data);
     }
     state.$root.html(header(data) + `<div class="ift-content">${content}</div>`);
     bindEvents(wrapper);
@@ -180,6 +193,26 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       openTeamDialog(wrapper, projectName);
     });
     $root.on("click.rc314", ".ift-open-legacy", function () { frappe.set_route("wafd-iftar-operations"); });
+    $root.on("click.rc314", ".ift-open-official-report", function () {
+      const operation = String($(this).closest("[data-operation]").data("operation"));
+      const q = new URLSearchParams({doctype:"WAFD Iftar Daily Operation",name:operation,format:"WAFD Iftar Official Daily Report",no_letterhead:"0"});
+      window.open('/api/method/frappe.utils.print_format.download_pdf?' + q.toString(), '_blank', 'noopener');
+    });
+    $root.on("click.rc314", ".ift-admin-approve-report", function () {
+      const operation = String($(this).closest("[data-operation]").data("operation"));
+      const d = new frappe.ui.Dialog({title:"اعتماد الإدارة والتقرير النهائي",fields:[
+        {fieldname:"recipient",fieldtype:"Data",label:"الجهة المستلمة",default:"رئاسة شؤون الحرمين",reqd:1},
+        {fieldname:"administration_signature",fieldtype:"Signature",label:"توقيع الإدارة",reqd:1},
+        {fieldname:"administration_stamp",fieldtype:"Attach Image",label:"ختم الإدارة",reqd:1},
+        {fieldname:"administration_notes",fieldtype:"Small Text",label:"ملاحظات الإدارة"}
+      ],primary_action_label:"اعتماد وإرسال للرئاسة",primary_action:async values=>{
+        d.get_primary_btn().prop("disabled",true);
+        try{
+          await frappe.call({method:"wafd_one.wafd_one.iftar_team.send_authority_report",args:{operation_name:operation,...values},freeze:true,freeze_message:"جاري اعتماد التقرير النهائي..."});
+          d.hide();frappe.show_alert({message:"تم اعتماد الإدارة وأصبح تقرير PDF جاهزاً للرئاسة",indicator:"green"});await window.wafdIftarStageLoad(wrapper);
+        }catch(e){d.get_primary_btn().prop("disabled",false);throw e;}
+      }});d.show();
+    });
   }
 
   function openTeamDialog(wrapper, projectName) {

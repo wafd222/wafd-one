@@ -439,6 +439,41 @@ def _delivery_options():
     return {"drivers": drivers, "vehicles": vehicles}
 
 
+def _approved_report_inbox(projects):
+    """Reports sent by Site Manager, including older days, for manager/admin."""
+    project_names = [row.name for row in projects]
+    if not project_names:
+        return []
+    rows = frappe.get_all(
+        "WAFD Iftar Daily Operation",
+        filters={
+            "project": ["in", project_names],
+            "site_report_approved": 1,
+            "docstatus": ["<", 2],
+        },
+        fields=[
+            "name", "project", "operation_date", "planned_meals", "received_meals",
+            "surplus_meals", "preservation_society_quantity", "waste_meals",
+            "site_report_approved", "site_report_approved_by", "site_report_approved_at",
+            "administration_report_approved", "administration_report_approved_by",
+            "administration_report_approved_at", "daily_report_sent",
+            "authority_report_recipient", "authority_report_sent_at",
+        ],
+        order_by="operation_date desc, modified desc",
+        limit_page_length=200,
+    )
+    project_map = {row.name: row for row in projects}
+    for row in rows:
+        project = project_map.get(row.project) or {}
+        row["project_title"] = project.get("project_title") or row.project
+        row["distribution_site"] = project.get("distribution_site") or ""
+        row["contracting_entity"] = project.get("contracting_entity") or ""
+        row["supervisor_count"] = frappe.db.count(
+            "WAFD Iftar Supervisor Daily Report", {"daily_operation": row.name}
+        )
+    return [dict(row) for row in rows]
+
+
 @frappe.whitelist()
 def get_portal_data():
     if frappe.session.user in ("Guest", ""):
@@ -465,6 +500,8 @@ def get_portal_data():
         "projects": project_rows,
         "can_manage_team": mode == "management",
     }
+    if mode in {"management", "project_manager"}:
+        response["report_inbox"] = _approved_report_inbox(projects)
     if mode == "management":
         response["team_options"] = _team_options()
     if mode == "delivery":

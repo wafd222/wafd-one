@@ -620,3 +620,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc331.execute
 
 # RC332 complete Iftar field evidence, permanent team setup, approvals and official Presidency report
 wafd_one.wafd_one.patches.v10_0_0_rc332.execute
+# RC333 supervisor quantity reconciliation and route-scoped mobile stage action
+wafd_one.wafd_one.patches.v10_0_0_rc333.execute

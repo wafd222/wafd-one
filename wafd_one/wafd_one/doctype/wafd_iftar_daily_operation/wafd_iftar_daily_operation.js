@@ -115,7 +115,9 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
           const mobile = $(`<button type="button" class="btn btn-primary wafd-mobile-stage-action" id="${key}">${label}</button>`);
           mobile.css({position:"fixed",left:"12px",right:"12px",bottom:"calc(12px + env(safe-area-inset-bottom))",zIndex:1050,width:"auto",margin:"0",height:"50px",fontSize:"16px",fontWeight:700,borderRadius:"12px",boxShadow:"0 10px 28px rgba(0,0,0,.26)"});
           mobile.on("click", async (e) => { e.preventDefault(); e.stopPropagation(); await action(); });
-          $(document.body).append(mobile);
+          // Keep the mobile action inside this form. Appending it to document.body
+          // made it survive route changes and cover unrelated forms.
+          frm.$wrapper.append(mobile);
         }
         return btn;
       };

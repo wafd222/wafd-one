@@ -55,8 +55,8 @@ class WAFDIftarSupervisorDailyReport(Document):
             if closed != cint(self.received_meals):
                 frappe.throw("يجب تسوية كامل الكمية المستلمة قبل إرسال التقرير / Reconcile all received meals before submitting")
             owner_delivered = sum(cint(row.delivered_meals) for row in (self.table_owners or []))
-            if owner_delivered != cint(self.distributed_meals):
-                frappe.throw("إجمالي تسليم أصحاب السفر يجب أن يساوي الكمية الموزعة / Table-owner deliveries must equal distributed meals")
+            if owner_delivered != cint(self.received_meals):
+                frappe.throw("إجمالي تسليم أصحاب السفر يجب أن يساوي الكمية المستلمة من الموقع / Table-owner handovers must equal received meals")
             incomplete_owner_evidence = [row.table_owner_name for row in (self.table_owners or []) if not row.owner_confirmed or not row.delivery_photo or not row.recipient_signature]
             if incomplete_owner_evidence:
                 frappe.throw("أكمل صورة وتوقيع تسليم أصحاب السفر / Complete every table-owner photo and signature")

@@ -896,6 +896,9 @@ def submit_supervisor_report(report_name, distributed_meals, surplus_meals=0, pr
     pending_owners = [row.table_owner_name for row in report.table_owners if not cint(row.owner_confirmed)]
     if pending_owners:
         frappe.throw(_("اعتمد التسليم لأصحاب السفر أولاً: {0} / Confirm every table-owner handover first").format("، ".join(pending_owners)))
+    owner_delivered = sum(cint(row.delivered_meals) for row in report.table_owners)
+    if owner_delivered != cint(report.received_meals):
+        frappe.throw(_("إجمالي تسليم أصحاب السفر يجب أن يساوي الكمية المستلمة من الموقع ({0}) / Table-owner handovers must equal received meals").format(cint(report.received_meals)))
     values = [cint(distributed_meals), cint(surplus_meals), cint(preservation_meals), cint(waste_meals)]
     if any(value < 0 for value in values) or sum(values) != cint(report.received_meals):
         frappe.throw(_("الموزع والفائض وحفظ النعمة والتالف يجب أن يساوي المستلم ({0}) / Closeout quantities must equal received meals").format(cint(report.received_meals)))

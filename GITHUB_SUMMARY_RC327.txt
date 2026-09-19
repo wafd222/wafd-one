@@ -1,0 +1,10 @@
+Fix the remaining Iftar Distribution Recipient child-table permission error
+
+- Correct the Supervisor Plan synchronization path that was still re-saving the full Iftar Project and triggering a standalone child-table permission check in Frappe v16.
+- Treat WAFD Iftar Distribution Recipient strictly as an istable child of WAFD Iftar Project.
+- Rebuild only the distribution_recipients child rows with the correct parent, parenttype, parentfield and idx values using direct child DB inserts.
+- Do not grant standalone permissions to WAFD Iftar Distribution Recipient.
+- Preserve the existing project distribution/carton data feed without invoking unrelated Iftar Project validation or save hooks.
+- Preserve RC326 quick supervisor/table-owner setup and server-side daily supervisor task creation.
+- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver capture without modification.
+- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

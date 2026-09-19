@@ -602,3 +602,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc321.execute
 
 # RC323 split Iftar Site Manager and Supervisor into dedicated operational screens
 wafd_one.wafd_one.patches.v10_0_0_rc323.execute
+
+# RC327 fix Iftar Distribution Recipient child-table sync without standalone permission checks
+wafd_one.wafd_one.patches.v10_0_0_rc327.execute

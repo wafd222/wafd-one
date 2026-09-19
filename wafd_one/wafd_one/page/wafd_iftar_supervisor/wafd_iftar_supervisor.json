@@ -1,8 +1,8 @@
 {
  "doctype": "Page",
- "name": "wafd_iftar_supervisor",
+ "name": "wafd-iftar-supervisor",
  "module": "WAFD ONE",
- "page_name": "wafd_iftar_supervisor",
+ "page_name": "wafd-iftar-supervisor",
  "title": "مهام سفر إفطار الصائم",
  "standard": "Yes",
  "roles": [

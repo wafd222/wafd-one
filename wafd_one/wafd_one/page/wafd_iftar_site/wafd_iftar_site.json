@@ -1,8 +1,8 @@
 {
  "doctype": "Page",
- "name": "wafd_iftar_site",
+ "name": "wafd-iftar-site",
  "module": "WAFD ONE",
- "page_name": "wafd_iftar_site",
+ "page_name": "wafd-iftar-site",
  "title": "إدارة موقع إفطار الصائم",
  "standard": "Yes",
  "roles": [

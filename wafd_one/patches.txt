@@ -608,3 +608,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc327.execute
 
 # RC328 camera-only Iftar evidence, Site Manager handover save fix, and supervisor page asset fix
 wafd_one.wafd_one.patches.v10_0_0_rc328.execute
+
+# RC329 sync canonical Iftar site/supervisor Desk Page route names
+wafd_one.wafd_one.patches.v10_0_0_rc329.execute

@@ -809,13 +809,21 @@ def receive_for_supervisor(report_name, received_meals, tablecloths=0, bread_bag
     ))
     if other_received + quantity > cint(operation.site_received_meals):
         frappe.throw(_("إجمالي التسليم للمشرفين يتجاوز الوصول المثبت من السائقين / Supervisor handovers exceed verified driver arrivals"))
-    report.received_meals = quantity
-    report.received_at = now_datetime()
-    report.handover_photo = handover_photo
-    for field in ("tablecloths", "bread_bags", "waste_bags", "gloves", "shoe_covers"):
-        report.set(field, cint(locals()[field]))
-    report.save(ignore_permissions=True)
-    return {"name": report.name, "received_meals": report.received_meals, "received_at": report.received_at}
+    received_at = now_datetime()
+    # These fields belong to the Site Manager handover step.  Update only them
+    # directly so the Site Manager never re-saves supervisor-owned child rows
+    # or report evidence, which is intentionally protected by the report
+    # controller.
+    values = {
+        "received_meals": quantity, "received_at": received_at,
+        "handover_photo": handover_photo, "site_manager_user": frappe.session.user,
+        "tablecloths": cint(tablecloths), "bread_bags": cint(bread_bags),
+        "waste_bags": cint(waste_bags), "gloves": cint(gloves),
+        "shoe_covers": cint(shoe_covers),
+    }
+    frappe.db.set_value("WAFD Iftar Supervisor Daily Report", report.name, values, update_modified=True)
+    frappe.clear_cache(user=report.supervisor_user)
+    return {"name": report.name, "received_meals": quantity, "received_at": received_at}
 
 
 def _supervisor_report(report_name):

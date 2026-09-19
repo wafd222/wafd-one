@@ -605,3 +605,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc323.execute
 
 # RC327 fix Iftar Distribution Recipient child-table sync without standalone permission checks
 wafd_one.wafd_one.patches.v10_0_0_rc327.execute
+
+# RC328 camera-only Iftar evidence, Site Manager handover save fix, and supervisor page asset fix
+wafd_one.wafd_one.patches.v10_0_0_rc328.execute

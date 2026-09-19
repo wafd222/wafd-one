@@ -1,8 +1,23 @@
 {
  "doctype": "Page",
- "name": "wafd-iftar-site",
- "page_name": "wafd-iftar-site",
- "module": "Wafd One",
+ "name": "wafd_iftar_site",
+ "module": "WAFD ONE",
+ "page_name": "wafd_iftar_site",
  "title": "إدارة موقع إفطار الصائم",
- "roles": [{"role":"System Manager"},{"role":"WAFD Operations Manager"},{"role":"WAFD Iftar Site Manager"}]
+ "standard": "Yes",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Iftar Site Manager"
+  }
+ ],
+ "creation": "2026-09-19 09:35:00.000000",
+ "modified": "2026-09-19 09:35:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
 }

@@ -1,0 +1,11 @@
+Fix Iftar camera capture, Site Manager handover save, and Supervisor task screen
+
+- Replace Frappe file/library image pickers on Iftar field evidence with direct mobile camera capture inputs.
+- Require camera capture for authority inspection, supervisor handover, distribution evidence, and closeout evidence.
+- Add a restricted Iftar camera-upload API that stores captured evidence privately and returns the saved File URL.
+- Fix the Site Manager handover error "Site manager cannot alter supervisor details or photos" by updating only the Site Manager-owned handover fields directly instead of re-saving supervisor-owned report child rows/photos.
+- Clear the assigned supervisor cache immediately after a successful handover so the task is visible right away.
+- Correct the dedicated Iftar Site Manager and Iftar Supervisor Page module metadata to the canonical WAFD ONE module so their JS/CSS assets load correctly after navigation.
+- Reload only the two dedicated Iftar field pages during migration and clear Page cache.
+- Preserve RC327 Distribution Recipient child-table fix, RC320 dedicated Iftar driver screen, and RC317 offline-first driver capture.
+- No changes to standard Delivery Management, normal driver trips, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

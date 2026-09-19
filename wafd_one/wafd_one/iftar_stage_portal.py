@@ -711,6 +711,47 @@ def approve_delivery_plan(operation_name, allocations, note=None):
     return {"operation": operation.name, "trips": created, "total_meals": total}
 
 
+
+@frappe.whitelist()
+def save_iftar_camera_photo(image_data, filename=None):
+    """Save camera-captured image evidence for the Iftar field workflow.
+
+    The client sends only a fresh camera data URL.  The endpoint is restricted
+    to Iftar operational roles and stores the image privately; callers receive
+    only the resulting File URL.
+    """
+    roles = _roles()
+    allowed = {
+        "System Manager", "WAFD Operations Manager", "WAFD Project Manager",
+        "WAFD Iftar Site Manager", "WAFD Iftar Supervisor",
+    }
+    if not (roles & allowed):
+        frappe.throw(_("لا تملك صلاحية رفع صور إفطار الصائم / Not permitted to upload Iftar evidence"), frappe.PermissionError)
+    import base64
+    import binascii
+    import re
+    from frappe.utils.file_manager import save_file
+
+    value = (image_data or "").strip()
+    match = re.match(r"^data:(image/(?:jpeg|jpg|png|webp));base64,(.+)$", value, re.I | re.S)
+    if not match:
+        frappe.throw(_("الصورة يجب أن تكون ملتقطة من الكاميرا / Camera image is required"))
+    mime = match.group(1).lower().replace("image/jpg", "image/jpeg")
+    try:
+        content = base64.b64decode(match.group(2), validate=True)
+    except (binascii.Error, ValueError):
+        frappe.throw(_("تعذر قراءة صورة الكاميرا / Could not read camera image"))
+    if not content:
+        frappe.throw(_("صورة الكاميرا فارغة / Empty camera image"))
+    if len(content) > 10 * 1024 * 1024:
+        frappe.throw(_("حجم الصورة كبير جداً. التقط صورة بدقة أقل / Camera image is too large"))
+    ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[mime]
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "-", (filename or "iftar-camera").strip())[:80].strip("-.") or "iftar-camera"
+    if not safe.lower().endswith("." + ext):
+        safe += "." + ext
+    file_doc = save_file(safe, content, None, None, is_private=1)
+    return {"name": file_doc.name, "file_url": file_doc.file_url}
+
 # ---------------------------------------------------------------------------
 # RC323 dedicated Site Manager / Iftar Supervisor portals
 # ---------------------------------------------------------------------------

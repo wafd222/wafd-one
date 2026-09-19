@@ -728,18 +728,19 @@ def approve_site_receipt(operation_name, received_meals):
 
 
 @frappe.whitelist()
-def approve_authority_inspection(operation_name, supervisor_name, photo, notes=None, yogurt_checked=0, bread_checked=0, dates_checked=0, expiry_checked=0):
+def approve_authority_inspection(operation_name, supervisor_name, photo, signature, notes=None, yogurt_checked=0, bread_checked=0, dates_checked=0, expiry_checked=0):
     _require("System Manager", "WAFD Operations Manager", "WAFD Iftar Site Manager")
     operation, project = _submitted_operation(operation_name)
     _assigned(project, "site_manager_user")
     if not cint(operation.site_receipt_approved):
         frappe.throw(_("يجب اعتماد استلام مدير الموقع أولاً / Site receipt must be approved first"))
-    if not (supervisor_name or "").strip() or not photo:
-        frappe.throw(_("اسم مفتش التغذية وصورة الفحص مطلوبان / Inspector name and inspection photo are required"))
+    if not (supervisor_name or "").strip() or not photo or not signature:
+        frappe.throw(_("اسم مفتش التغذية وصورة الفحص والتوقيع مطلوبة / Inspector name, photo and signature are required"))
     if not all(cint(x) for x in (yogurt_checked, bread_checked, dates_checked, expiry_checked)):
         frappe.throw(_("أكمل فحص الزبادي والخبز والتمر وتواريخ الصلاحية / Complete all food checks"))
     values = {
         "authority_supervisor_name": supervisor_name.strip(), "authority_inspection_photo": photo,
+        "authority_inspector_signature": signature,
         "authority_inspection_notes": (notes or "").strip(), "yogurt_checked": 1, "bread_checked": 1,
         "dates_checked": 1, "expiry_checked": 1, "authority_inspection_approved": 1,
         "authority_inspection_approved_by": frappe.session.user, "authority_inspection_time": now_datetime(),
@@ -756,7 +757,7 @@ def ensure_supervisor_reports(operation_name):
     if not cint(operation.authority_inspection_approved):
         frappe.throw(_("يجب اعتماد فحص الجهة قبل تجهيز تكليفات المشرفين / Authority inspection is required before supervisor assignments"))
     created, skipped = [], []
-    plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name}, pluck="name", order_by="creation asc", limit_page_length=500)
+    plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name, "active": 1}, pluck="name", order_by="creation asc", limit_page_length=500)
     if not plans:
         frappe.throw(_("لم تُسجل خطة المشرفين لهذا المشروع. تطلب الإدارة إضافة المشرفين وأصحاب السفر أولاً / Add the project supervisor plan first"))
     for name in plans:
@@ -775,7 +776,7 @@ def ensure_supervisor_reports(operation_name):
             "site_manager_user": project.site_manager_user, "planned_meals": plan.assigned_meals,
         })
         for owner in plan.table_owners or []:
-            report.append("table_owners", {"table_owner_name": owner.table_owner_name, "mobile_no": owner.mobile_no, "distribution_point": owner.distribution_point or owner.delivery_location, "planned_meals": owner.meal_quantity})
+            report.append("table_owners", {"table_owner_name": owner.table_owner_name, "mobile_no": owner.mobile_no, "distribution_point": owner.distribution_point or owner.delivery_location, "planned_meals": owner.meal_quantity, "planned_bread": owner.bread_quantity, "planned_tablecloths": owner.tablecloths_quantity})
         for assistant in plan.assistants or []:
             if cint(assistant.active):
                 report.append("assistants_attendance", {"assistant_name": assistant.assistant_name, "mobile_no": assistant.mobile_no, "attendance_status": "لم يسجل / Not Marked"})
@@ -835,7 +836,7 @@ def _supervisor_report(report_name):
 
 
 @frappe.whitelist()
-def confirm_owner_handover(report_name, owner_row_name, delivered_meals, notes=None):
+def confirm_owner_handover(report_name, owner_row_name, delivered_meals, delivered_bread=0, delivered_tablecloths=0, delivery_photo=None, recipient_signature=None, notes=None):
     _require("System Manager", "WAFD Operations Manager", "WAFD Iftar Supervisor")
     report, project = _supervisor_report(report_name)
     if not cint(report.received_meals):
@@ -846,16 +847,27 @@ def confirm_owner_handover(report_name, owner_row_name, delivered_meals, notes=N
     quantity = cint(delivered_meals)
     if quantity < 0 or quantity > cint(row.planned_meals):
         frappe.throw(_("كمية التسليم لا تتجاوز الكمية المخططة لصاحب السفرة / Delivered quantity exceeds owner allocation"))
+    bread = cint(delivered_bread)
+    tablecloths = cint(delivered_tablecloths)
+    if bread < 0 or bread > cint(row.planned_bread) or tablecloths < 0 or tablecloths > cint(row.planned_tablecloths):
+        frappe.throw(_("الخبز والسفر المسلمة لا تتجاوز الكمية المخططة / Bread and tablecloths must not exceed the allocation"))
+    if not delivery_photo or not recipient_signature:
+        frappe.throw(_("صورة التسليم وتوقيع صاحب السفرة مطلوبان / Delivery photo and table-owner signature are required"))
     row.delivered_meals = quantity
+    row.delivered_bread = bread
+    row.delivered_tablecloths = tablecloths
+    row.delivery_photo = delivery_photo
+    row.recipient_signature = recipient_signature
     row.owner_confirmed = 1
     row.delivery_time = now_datetime().time()
+    row.delivered_at = now_datetime()
     row.notes = (notes or "").strip()
     report.save(ignore_permissions=True)
     return {"report": report.name, "owner": row.table_owner_name, "delivered_meals": quantity, "delivery_time": row.delivery_time}
 
 
 @frappe.whitelist()
-def mark_assistant_attendance(report_name, assistant_row_name, status):
+def mark_assistant_attendance(report_name, assistant_row_name, status, absence_reason=None):
     _require("System Manager", "WAFD Operations Manager", "WAFD Iftar Supervisor")
     report, project = _supervisor_report(report_name)
     allowed = {"حاضر / Present", "غائب / Absent"}
@@ -865,6 +877,10 @@ def mark_assistant_attendance(report_name, assistant_row_name, status):
     if not row:
         frappe.throw(_("المساعد غير موجود في هذا التكليف / Assistant is not assigned to this report"))
     row.attendance_status = status
+    row.marked_at = now_datetime()
+    row.absence_reason = (absence_reason or "").strip()
+    if status == "غائب / Absent" and not row.absence_reason:
+        frappe.throw(_("أدخل سبب الغياب / Enter the absence reason"))
     if status == "حاضر / Present" and not row.check_in_time:
         row.check_in_time = now_datetime().time()
     report.save(ignore_permissions=True)
@@ -872,7 +888,7 @@ def mark_assistant_attendance(report_name, assistant_row_name, status):
 
 
 @frappe.whitelist()
-def submit_supervisor_report(report_name, distributed_meals, surplus_meals=0, preservation_meals=0, waste_meals=0, tables_spread_completed=0, distribution_completed=0, cleanup_completed=0, distribution_photo=None, closeout_photo=None, media_links=None):
+def submit_supervisor_report(report_name, distributed_meals, surplus_meals=0, preservation_meals=0, waste_meals=0, tables_spread_completed=0, distribution_completed=0, cleanup_completed=0, distribution_photo=None, closeout_photo=None, preservation_receipt_photo=None, preservation_receiver_signature=None, supervisor_notes=None, media_links=None):
     _require("System Manager", "WAFD Operations Manager", "WAFD Iftar Supervisor")
     report, project = _supervisor_report(report_name)
     if not cint(report.received_meals):
@@ -887,10 +903,14 @@ def submit_supervisor_report(report_name, distributed_meals, surplus_meals=0, pr
         frappe.throw(_("أكمل فرش السفر والتوزيع ورفع السفر قبل إرسال التقرير / Complete all field closeout steps"))
     if not distribution_photo or not closeout_photo:
         frappe.throw(_("صورتا التوزيع ورفع السفر مطلوبتان / Distribution and closeout photos are required"))
+    if values[2] and (not preservation_receipt_photo or not preservation_receiver_signature):
+        frappe.throw(_("صورة وتوقيع استلام جمعية حفظ النعمة مطلوبان عند تسجيل كمية / Preservation receipt photo and signature are required"))
     report.update({
         "distributed_meals": values[0], "surplus_meals": values[1], "preservation_meals": values[2], "waste_meals": values[3],
         "tables_spread_completed": 1, "distribution_completed": 1, "cleanup_completed": 1,
         "distribution_photo": distribution_photo, "closeout_photo": closeout_photo,
+        "closeout_at": now_datetime(), "preservation_receipt_photo": preservation_receipt_photo,
+        "preservation_receiver_signature": preservation_receiver_signature, "supervisor_notes": (supervisor_notes or "").strip(),
         "media_links": (media_links or "").strip(), "report_submitted": 1,
         "submitted_by": frappe.session.user, "submitted_at": now_datetime(),
     })
@@ -980,7 +1000,7 @@ def finalize_daily_report(operation_name):
 
 
 @frappe.whitelist()
-def send_authority_report(operation_name, recipient):
+def send_authority_report(operation_name, recipient, administration_signature=None, administration_stamp=None, administration_notes=None):
     """Final administration approval and recorded dispatch to the contracting authority."""
     _require("System Manager", "WAFD Operations Manager")
     operation, project = _submitted_operation(operation_name)
@@ -988,11 +1008,15 @@ def send_authority_report(operation_name, recipient):
         frappe.throw(_("بانتظار اعتماد مدير الموقع للتقرير المجمع / Site manager report approval is required"))
     if not (recipient or "").strip():
         frappe.throw(_("حدد رئاسة شؤون الحرمين أو الجهة المتعاقدة المستلمة / Select the report recipient"))
+    if not administration_signature or not administration_stamp:
+        frappe.throw(_("توقيع الإدارة وختمها مطلوبان قبل إرسال التقرير / Administration signature and stamp are required"))
     timestamp = now_datetime()
     values = {
         "administration_report_approved": 1, "administration_report_approved_by": frappe.session.user,
         "administration_report_approved_at": timestamp, "authority_report_recipient": recipient.strip(),
         "authority_report_sent_at": timestamp, "daily_report_sent": 1, "status": "مغلق / Closed",
+        "administration_signature": administration_signature, "administration_stamp": administration_stamp,
+        "administration_notes": (administration_notes or "").strip(),
         "completion_percent": 100 if cint(operation.planned_meals) and cint(operation.received_meals) >= cint(operation.planned_meals) else operation.completion_percent,
     }
     frappe.db.set_value("WAFD Iftar Daily Operation", operation.name, values, update_modified=True)

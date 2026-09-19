@@ -20,7 +20,7 @@ class WAFDIftarSupervisorPlan(Document):
             cint(x.assigned_meals)
             for x in frappe.get_all(
                 "WAFD Iftar Supervisor Plan",
-                filters={"project": self.project, "name": ["!=", self.name or ""]},
+                filters={"project": self.project, "active": 1, "name": ["!=", self.name or ""]},
                 fields=["assigned_meals"],
             )
         )
@@ -39,7 +39,7 @@ class WAFDIftarSupervisorPlan(Document):
         self._sync_project_distribution(exclude_self=True)
 
     def _sync_project_counters(self, exclude_self=False):
-        filters = {"project": self.project}
+        filters = {"project": self.project, "active": 1}
         if exclude_self and self.name:
             filters["name"] = ["!=", self.name]
         rows = frappe.get_all(
@@ -71,7 +71,7 @@ class WAFDIftarSupervisorPlan(Document):
         carton/distribution workflows fed while never treating the child table as a standalone
         user-editable document.
         """
-        filters = {"project": self.project}
+        filters = {"project": self.project, "active": 1}
         if exclude_self and self.name:
             filters["name"] = ["!=", self.name]
         plan_names = frappe.get_all(

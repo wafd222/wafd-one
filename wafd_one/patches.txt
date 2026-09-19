@@ -617,3 +617,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc330.execute
 
 # RC331 remove orphan Iftar supervisor assignments and keep valid tasks visible
 wafd_one.wafd_one.patches.v10_0_0_rc331.execute
+
+# RC332 complete Iftar field evidence, permanent team setup, approvals and official Presidency report
+wafd_one.wafd_one.patches.v10_0_0_rc332.execute

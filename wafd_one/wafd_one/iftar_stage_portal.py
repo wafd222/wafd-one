@@ -109,7 +109,11 @@ def _project_access(project, roles=None):
         duties.add("delivery")
     if (project.get("site_manager_user") or "").strip() == user:
         duties.add("site")
-    if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": project.name, "supervisor_user": user}):
+    elif frappe.db.exists("WAFD Iftar Supervisor Daily Report", {"project": project.name, "site_manager_user": user}):
+        # Keep the Site Manager's operational queue visible when an older
+        # project row was changed after today's supervisor reports were issued.
+        duties.add("site")
+    if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": project.name, "supervisor_user": user, "active": 1}):
         duties.add("supervisor")
     if (project.get("external_viewer_user") or "").strip() == user:
         duties.add("viewer")
@@ -798,6 +802,7 @@ def _supervisor_plans_payload(project_name):
         plan = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
         rows.append({
             "name": plan.name,
+            "active": cint(plan.active),
             "supervisor_user": plan.supervisor_user or "",
             "supervisor_name": plan.supervisor_name or "",
             "supervisor_mobile": plan.supervisor_mobile or "",
@@ -809,6 +814,8 @@ def _supervisor_plans_payload(project_name):
                     "distribution_point": r.distribution_point or "",
                     "delivery_location": r.delivery_location or "",
                     "meal_quantity": cint(r.meal_quantity),
+                    "bread_quantity": cint(r.bread_quantity),
+                    "tablecloths_quantity": cint(r.tablecloths_quantity),
                     "notes": r.notes or "",
                 }
                 for r in (plan.table_owners or [])
@@ -864,10 +871,7 @@ def save_quick_supervisor_setup(project_name, plans_json):
     if not isinstance(plans, list) or not plans:
         frappe.throw(_("أضف مشرفاً واحداً على الأقل / Add at least one supervisor"))
 
-    existing_reports = frappe.db.exists("WAFD Iftar Supervisor Daily Report", {"project": project.name})
     existing_names = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name}, pluck="name")
-    if existing_reports and existing_names:
-        frappe.throw(_("بدأ تشغيل تقارير المشرفين لهذا المشروع. عدّل الخطة من سجلها الحالي للحفاظ على السجل التشغيلي / Supervisor reports already started; edit the existing plan record to preserve history"))
 
     normalized = []
     total_meals = 0
@@ -900,6 +904,8 @@ def save_quick_supervisor_setup(project_name, plans_json):
                 "distribution_point": (owner.get("distribution_point") or project.distribution_site or "").strip(),
                 "delivery_location": (owner.get("delivery_location") or "").strip(),
                 "meal_quantity": qty,
+                "bread_quantity": max(cint(owner.get("bread_quantity")), 0),
+                "tablecloths_quantity": max(cint(owner.get("tablecloths_quantity")), 0),
                 "notes": (owner.get("notes") or "").strip(),
             })
             total_meals += qty
@@ -916,7 +922,7 @@ def save_quick_supervisor_setup(project_name, plans_json):
                     "active": 1 if cint(a.get("active", 1)) else 0,
                     "notes": (a.get("notes") or "").strip(),
                 })
-        normalized.append({"supervisor_user": user, "supervisor_name": name, "supervisor_mobile": mobile, "table_owners": owners, "assistants": assistants})
+        normalized.append({"plan_name": (raw.get("name") or "").strip(), "supervisor_user": user, "supervisor_name": name, "supervisor_mobile": mobile, "table_owners": owners, "assistants": assistants})
 
     if total_meals != cint(project.daily_meals):
         frappe.throw(_("إجمالي وجبات أصحاب السفر ({0}) يجب أن يساوي الوجبات اليومية للمشروع ({1}) / Allocated meals must equal project daily meals").format(total_meals, cint(project.daily_meals)))
@@ -924,29 +930,34 @@ def save_quick_supervisor_setup(project_name, plans_json):
     old_ignore = getattr(frappe.flags, "ignore_permissions", False)
     frappe.flags.ignore_permissions = True
     try:
-        # Safe because destructive replacement is blocked once daily reports exist.
-        for plan_name in existing_names:
-            frappe.delete_doc("WAFD Iftar Supervisor Plan", plan_name, ignore_permissions=True, force=True)
-
         created = []
+        retained = set()
         manager_name = frappe.utils.get_fullname(frappe.session.user) or frappe.session.user
         for item in normalized:
-            plan = frappe.get_doc({
-                "doctype": "WAFD Iftar Supervisor Plan",
-                "project": project.name,
-                "manager_name": manager_name,
-                "supervisor_user": item["supervisor_user"],
-                "supervisor_name": item["supervisor_name"],
-                "supervisor_mobile": item["supervisor_mobile"],
-            })
+            plan_name = item.get("plan_name") if item.get("plan_name") in existing_names else frappe.db.get_value(
+                "WAFD Iftar Supervisor Plan", {"project": project.name, "supervisor_user": item["supervisor_user"]}, "name"
+            )
+            if plan_name:
+                plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
+                plan.set("table_owners", [])
+                plan.set("assistants", [])
+            else:
+                plan = frappe.new_doc("WAFD Iftar Supervisor Plan")
+                plan.project = project.name
+            plan.update({"manager_name": manager_name, "supervisor_user": item["supervisor_user"],
+                         "supervisor_name": item["supervisor_name"], "supervisor_mobile": item["supervisor_mobile"], "active": 1})
             for owner in item["table_owners"]:
                 plan.append("table_owners", owner)
             for assistant in item["assistants"]:
                 plan.append("assistants", assistant)
             plan.flags.ignore_permissions = True
-            plan.insert(ignore_permissions=True)
+            plan.save(ignore_permissions=True)
             created.append(plan.name)
+            retained.add(plan.name)
             frappe.clear_cache(user=item["supervisor_user"])
+
+        for plan_name in set(existing_names) - retained:
+            frappe.db.set_value("WAFD Iftar Supervisor Plan", plan_name, "active", 0, update_modified=True)
 
         # Create today's task immediately once the site inspection is approved.
         generated = []
@@ -1019,9 +1030,16 @@ def _supervisor_report_payload(report_name):
                 "mobile_no": row.mobile_no,
                 "distribution_point": row.distribution_point,
                 "planned_meals": cint(row.planned_meals),
+                "planned_bread": cint(row.planned_bread),
+                "planned_tablecloths": cint(row.planned_tablecloths),
                 "delivered_meals": cint(row.delivered_meals),
+                "delivered_bread": cint(row.delivered_bread),
+                "delivered_tablecloths": cint(row.delivered_tablecloths),
                 "owner_confirmed": cint(row.owner_confirmed),
                 "delivery_time": row.delivery_time,
+                "delivered_at": row.delivered_at,
+                "delivery_photo": row.delivery_photo,
+                "recipient_signature": row.recipient_signature,
                 "notes": row.notes,
             }
             for row in (report.table_owners or [])
@@ -1033,6 +1051,8 @@ def _supervisor_report_payload(report_name):
                 "mobile_no": row.mobile_no,
                 "attendance_status": row.attendance_status,
                 "check_in_time": row.check_in_time,
+                "marked_at": row.marked_at,
+                "absence_reason": row.absence_reason,
             }
             for row in (report.assistants_attendance or [])
         ],
@@ -1075,9 +1095,9 @@ def get_supervisor_portal_data():
             # supervisor's remaining valid tasks.
             skipped_stale += 1
     pending_plans = []
-    plan_filters = {"supervisor_user": frappe.session.user}
+    plan_filters = {"supervisor_user": frappe.session.user, "active": 1}
     if _is_global_manager(roles):
-        plan_filters = {}
+        plan_filters = {"active": 1}
     for plan_name in frappe.get_all("WAFD Iftar Supervisor Plan", filters=plan_filters, pluck="name", order_by="creation desc", limit_page_length=200):
         plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
         if not plan.project or not frappe.db.exists("WAFD Iftar Project", plan.project):

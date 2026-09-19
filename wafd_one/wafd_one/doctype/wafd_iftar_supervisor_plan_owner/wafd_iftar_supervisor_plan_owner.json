@@ -9,6 +9,8 @@
   "distribution_point",
   "delivery_location",
   "meal_quantity",
+  "bread_quantity",
+  "tablecloths_quantity",
   "notes"
  ],
  "fields": [
@@ -43,6 +45,8 @@
    "reqd": 1,
    "in_list_view": 1
   },
+  {"fieldname":"bread_quantity","fieldtype":"Int","label":"عدد الخبز / Bread","default":"0"},
+  {"fieldname":"tablecloths_quantity","fieldtype":"Int","label":"عدد السفر / Tablecloths","default":"0"},
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",

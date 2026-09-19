@@ -47,6 +47,9 @@ class WAFDIftarSupervisorDailyReport(Document):
             unmarked = [row.assistant_name for row in (self.assistants_attendance or []) if row.attendance_status == "لم يسجل / Not Marked"]
             if unmarked:
                 frappe.throw("سجل حضور أو غياب جميع المساعدين قبل إرسال التقرير / Mark every assistant present or absent")
+            absent_without_reason = [row.assistant_name for row in (self.assistants_attendance or []) if row.attendance_status == "غائب / Absent" and not (row.absence_reason or "").strip()]
+            if absent_without_reason:
+                frappe.throw("أدخل سبب غياب كل مساعد / Enter the absence reason for every absent assistant")
             if not all(cint(value) for value in (self.tables_spread_completed, self.distribution_completed, self.cleanup_completed)):
                 frappe.throw("أكمل فرش السفر والتوزيع ورفع السفر قبل إرسال التقرير / Complete field work before submitting the report")
             if closed != cint(self.received_meals):
@@ -54,6 +57,11 @@ class WAFDIftarSupervisorDailyReport(Document):
             owner_delivered = sum(cint(row.delivered_meals) for row in (self.table_owners or []))
             if owner_delivered != cint(self.distributed_meals):
                 frappe.throw("إجمالي تسليم أصحاب السفر يجب أن يساوي الكمية الموزعة / Table-owner deliveries must equal distributed meals")
+            incomplete_owner_evidence = [row.table_owner_name for row in (self.table_owners or []) if not row.owner_confirmed or not row.delivery_photo or not row.recipient_signature]
+            if incomplete_owner_evidence:
+                frappe.throw("أكمل صورة وتوقيع تسليم أصحاب السفر / Complete every table-owner photo and signature")
+            if cint(self.preservation_meals) and (not self.preservation_receipt_photo or not self.preservation_receiver_signature):
+                frappe.throw("أرفق صورة وتوقيع استلام جمعية حفظ النعمة / Attach preservation receipt photo and signature")
             if not self.distribution_photo or not self.closeout_photo:
                 frappe.throw("صورتا التوزيع ورفع السفر مطلوبتان / Distribution and closeout photos are required")
             if not any(row.photo for row in (self.daily_photos or [])) and not self.distribution_photo and not (self.media_links or "").strip():
@@ -88,6 +96,7 @@ class WAFDIftarSupervisorDailyReport(Document):
                     "tables_spread_completed", "distribution_completed", "cleanup_completed",
                     "report_submitted", "submitted_at", "media_links",
                     "submitted_by", "distribution_photo", "closeout_photo",
+                    "closeout_at", "preservation_receipt_photo", "preservation_receiver_signature", "supervisor_notes",
                 )
                 if any(self.get(field) != old.get(field) for field in protected):
                     frappe.throw("مدير الموقع يعتمد التقرير ولا يغير بيانات المشرف / Site manager cannot alter supervisor report data")

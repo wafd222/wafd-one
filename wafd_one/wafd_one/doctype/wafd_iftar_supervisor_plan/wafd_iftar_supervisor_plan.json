@@ -11,6 +11,7 @@
   "supervisor_name",
   "supervisor_mobile",
   "supervisor_user",
+  "active",
   "summary_section",
   "assigned_meals",
   "table_owners_count",
@@ -68,6 +69,7 @@
    "options": "User",
    "description": "يحدد المشرف الذي تظهر له هذه الخطة وتقاريره اليومية فقط / Limits the plan and daily reports to this supervisor"
   },
+  {"fieldname":"active","fieldtype":"Check","label":"فعال للأيام القادمة / Active for Future Days","default":"1"},
   {
    "fieldname": "summary_section",
    "fieldtype": "Section Break",

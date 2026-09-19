@@ -37,6 +37,8 @@
    "fieldtype": "Time",
    "label": "وقت الانصراف / Check-out"
   },
+  {"fieldname":"marked_at","fieldtype":"Datetime","label":"وقت تسجيل الحالة / Marked At","read_only":1},
+  {"fieldname":"absence_reason","fieldtype":"Small Text","label":"سبب الغياب / Absence Reason"},
   {
    "fieldname": "signature",
    "fieldtype": "Attach Image",

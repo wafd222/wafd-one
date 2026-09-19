@@ -55,6 +55,7 @@
   "expiry_checked",
   "authority_inspection_notes",
   "authority_inspection_photo",
+  "authority_inspector_signature",
   "authority_inspection_approved",
   "authority_inspection_approved_by",
   "field_close_section",
@@ -67,6 +68,9 @@
   "administration_report_approved",
   "administration_report_approved_by",
   "administration_report_approved_at",
+  "administration_signature",
+  "administration_stamp",
+  "administration_notes",
   "authority_report_recipient",
   "authority_report_sent_at",
   "daily_photos_section",
@@ -287,6 +291,7 @@
    "fieldtype": "Attach Image",
    "label": "صورة الفحص / Inspection Photo"
   },
+  {"fieldname":"authority_inspector_signature","fieldtype":"Signature","label":"توقيع مفتش التغذية / Food Inspector Signature"},
   {
    "fieldname": "authority_inspection_approved",
    "fieldtype": "Check",
@@ -471,6 +476,9 @@
    "label": "وقت اعتماد الإدارة / Administration Approval Time",
    "read_only": 1
   },
+  {"fieldname":"administration_signature","fieldtype":"Signature","label":"توقيع الإدارة / Administration Signature"},
+  {"fieldname":"administration_stamp","fieldtype":"Attach Image","label":"ختم الإدارة / Administration Stamp"},
+  {"fieldname":"administration_notes","fieldtype":"Small Text","label":"ملاحظات الإدارة / Administration Notes"},
   {
    "fieldname": "authority_report_recipient",
    "fieldtype": "Data",

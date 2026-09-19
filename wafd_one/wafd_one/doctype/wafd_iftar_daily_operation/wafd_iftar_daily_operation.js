@@ -48,6 +48,21 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
       window.open('/api/method/frappe.utils.print_format.download_pdf?' + q.toString(), '_blank', 'noopener');
     }, __("الطباعة / Print"));
 
+    if (frm.doc.site_report_approved && !frm.doc.administration_report_approved &&
+        (frappe.user.has_role('System Manager') || frappe.user.has_role('WAFD Operations Manager'))) {
+      frm.add_custom_button(__("اعتماد الإدارة وإرسال التقرير"), () => {
+        const d=new frappe.ui.Dialog({title:__('اعتماد الإدارة والتقرير النهائي'),fields:[
+          {fieldname:'recipient',fieldtype:'Data',label:__('الجهة المستلمة'),default:'رئاسة شؤون الحرمين',reqd:1},
+          {fieldname:'administration_signature',fieldtype:'Signature',label:__('توقيع الإدارة'),reqd:1},
+          {fieldname:'administration_stamp',fieldtype:'Attach Image',label:__('ختم الإدارة'),reqd:1},
+          {fieldname:'administration_notes',fieldtype:'Small Text',label:__('ملاحظات الإدارة')}
+        ],primary_action_label:__('اعتماد وإغلاق اليوم'),primary_action:async v=>{
+          await frappe.call({method:'wafd_one.wafd_one.iftar_team.send_authority_report',args:{operation_name:frm.doc.name,...v},freeze:true});
+          d.hide();await frm.reload_doc();frappe.show_alert({message:__('تم اعتماد الإدارة وأصبح التقرير الرسمي جاهزاً'),indicator:'green'});
+        }});d.show();
+      }, __("الاعتماد / Approval"));
+    }
+
     frm.add_custom_button(__("نموذج التسليم والاستلام"), () => {
       frappe.route_options = { print_format: "إفطار صائم — تسليم واستلام يومي" };
       frappe.set_route("print", frm.doctype, frm.doc.name);

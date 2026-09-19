@@ -1,0 +1,9 @@
+Fix orphan Iftar Supervisor assignments after deleted projects
+
+- Prevent a stale Supervisor Plan or Daily Report linked to a deleted Iftar Project from blocking the entire Supervisor task portal.
+- Skip only missing project/daily-operation references while continuing to display every valid assignment for the signed-in supervisor.
+- Add a migration cleanup that removes only orphan Supervisor Plans and Daily Reports whose parent Iftar Project no longer exists, including their child rows.
+- Update permanent Iftar project deletion to remove Supervisor Daily Reports and Supervisor Plans before deleting daily operations and the project.
+- Preserve all valid projects, assignments, table owners, assistants, quantities, evidence photos, reports, and approvals.
+- Preserve RC330 page initialization, RC328 camera-only evidence, RC320 Iftar driver screen, and RC317 offline driver capture.
+- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

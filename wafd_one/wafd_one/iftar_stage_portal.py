@@ -1054,13 +1054,35 @@ def get_supervisor_portal_data():
         order_by="operation_date desc, creation desc",
         limit_page_length=200,
     )
-    reports = [_supervisor_report_payload(name) for name in names]
+    reports = []
+    skipped_stale = 0
+    for name in names:
+        reference = frappe.db.get_value(
+            "WAFD Iftar Supervisor Daily Report",
+            name,
+            ["project", "daily_operation"],
+            as_dict=True,
+        )
+        if not reference or not frappe.db.exists("WAFD Iftar Project", reference.project) \
+                or not frappe.db.exists("WAFD Iftar Daily Operation", reference.daily_operation):
+            skipped_stale += 1
+            continue
+        try:
+            reports.append(_supervisor_report_payload(name))
+        except frappe.DoesNotExistError:
+            # A manager may delete a test project while this mobile request is
+            # already running.  One stale assignment must never hide the
+            # supervisor's remaining valid tasks.
+            skipped_stale += 1
     pending_plans = []
     plan_filters = {"supervisor_user": frappe.session.user}
     if _is_global_manager(roles):
         plan_filters = {}
     for plan_name in frappe.get_all("WAFD Iftar Supervisor Plan", filters=plan_filters, pluck="name", order_by="creation desc", limit_page_length=200):
         plan = frappe.get_doc("WAFD Iftar Supervisor Plan", plan_name)
+        if not plan.project or not frappe.db.exists("WAFD Iftar Project", plan.project):
+            skipped_stale += 1
+            continue
         project = frappe.get_doc("WAFD Iftar Project", plan.project)
         pending_plans.append({
             "name": plan.name,
@@ -1078,4 +1100,5 @@ def get_supervisor_portal_data():
         "full_name": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
         "reports": reports,
         "plans": pending_plans,
+        "stale_assignments_skipped": skipped_stale,
     }

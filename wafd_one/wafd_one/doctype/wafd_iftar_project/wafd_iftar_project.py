@@ -454,6 +454,8 @@ def delete_iftar_project_permanently(project_name: str):
 
     reversed_movements = 0
     deleted_operations = 0
+    deleted_supervisor_reports = 0
+    deleted_supervisor_plans = 0
 
     # Reverse app-native stock movements linked to this project, when present.
     if frappe.db.table_exists("WAFD Stock Movement"):
@@ -470,6 +472,18 @@ def delete_iftar_project_permanently(project_name: str):
                 reversed_movements += 1
             frappe.delete_doc("WAFD Stock Movement", movement_name, ignore_permissions=True, force=True)
 
+    # Remove supervisor reports before their daily operations and plans.  This
+    # prevents orphan mobile assignments from pointing to a deleted project.
+    report_names = frappe.get_all(
+        "WAFD Iftar Supervisor Daily Report", filters={"project": project.name}, pluck="name"
+    )
+    for report_name in report_names:
+        frappe.delete_doc(
+            "WAFD Iftar Supervisor Daily Report", report_name,
+            ignore_permissions=True, force=True,
+        )
+        deleted_supervisor_reports += 1
+
     # Remove all generated daily operations before deleting the parent.
     operations = frappe.get_all(
         "WAFD Iftar Daily Operation", filters={"project": project.name}, pluck="name"
@@ -483,6 +497,18 @@ def delete_iftar_project_permanently(project_name: str):
             "WAFD Iftar Daily Operation", operation_name, ignore_permissions=True, force=True
         )
         deleted_operations += 1
+
+    # Plans are deleted after their reports so their normal cleanup hooks can
+    # safely synchronize the still-existing project one final time.
+    plan_names = frappe.get_all(
+        "WAFD Iftar Supervisor Plan", filters={"project": project.name}, pluck="name"
+    )
+    for plan_name in plan_names:
+        frappe.delete_doc(
+            "WAFD Iftar Supervisor Plan", plan_name,
+            ignore_permissions=True, force=True,
+        )
+        deleted_supervisor_plans += 1
 
     # Clean non-accounting references created by the app.
     for doctype in ("WAFD Operations Alert", "WAFD Approval Request", "WAFD Audit Event"):
@@ -502,6 +528,8 @@ def delete_iftar_project_permanently(project_name: str):
     return {
         "deleted": project_name,
         "deleted_operations": deleted_operations,
+        "deleted_supervisor_reports": deleted_supervisor_reports,
+        "deleted_supervisor_plans": deleted_supervisor_plans,
         "reversed_stock_movements": reversed_movements,
     }
 

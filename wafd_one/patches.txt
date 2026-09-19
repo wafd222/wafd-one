@@ -614,3 +614,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc329.execute
 
 # RC330 initialize Iftar Supervisor page safely and block duplicate mobile navigation
 wafd_one.wafd_one.patches.v10_0_0_rc330.execute
+
+# RC331 remove orphan Iftar supervisor assignments and keep valid tasks visible
+wafd_one.wafd_one.patches.v10_0_0_rc331.execute

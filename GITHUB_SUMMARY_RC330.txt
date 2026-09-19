@@ -1,0 +1,9 @@
+Fix Iftar Supervisor task page initialization and repeated mobile navigation
+
+- Fix the hidden JavaScript execution error in the dedicated `wafd-iftar-supervisor` page by terminating the Page load-handler assignment correctly before the supervisor portal module starts.
+- Add an idempotent page initializer so the Supervisor task container is always created before portal data loads, including cached or repeated Desk route openings.
+- Prevent rapid repeated taps on Role Home task cards from launching overlapping mobile route transitions.
+- Keep the supervisor assignment source unchanged: Site Manager handover data continues to load from the assigned Supervisor Plan and Daily Report for the signed-in account.
+- Preserve all existing supervisor plans, owners, assistants, quantities, photos, Daily Reports, and approval status.
+- Preserve RC328 camera-only evidence capture, RC329 canonical routes, RC320 dedicated Iftar driver screen, and RC317 offline driver capture.
+- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

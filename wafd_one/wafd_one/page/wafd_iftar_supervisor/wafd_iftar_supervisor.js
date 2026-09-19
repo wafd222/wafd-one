@@ -1,4 +1,10 @@
-frappe.pages['wafd-iftar-supervisor'].on_page_load=function(wrapper){const page=frappe.ui.make_app_page({parent:wrapper,title:__('مهام سفر إفطار الصائم'),single_column:true});$(wrapper).addClass('wafd-iftar-supervisor-page');wrapper.__ifsup={$root:$('<div class="ifs-wrap"></div>').appendTo(page.body),loading:false}}
+function setupIftarSupervisorPage(wrapper){
+ if(!wrapper||wrapper.__ifsup)return;
+ const page=frappe.ui.make_app_page({parent:wrapper,title:__('مهام سفر إفطار الصائم'),single_column:true});
+ $(wrapper).addClass('wafd-iftar-supervisor-page');
+ wrapper.__ifsup={$root:$('<div class="ifs-wrap"></div>').appendTo(page.body),loading:false};
+}
+frappe.pages['wafd-iftar-supervisor'].on_page_load=function(wrapper){setupIftarSupervisorPage(wrapper);};
 (function(){
  const esc=v=>frappe.utils.escape_html(String(v??'')),n=v=>Number(v||0).toLocaleString('en-US');
  const api=(m,args={})=>frappe.call({method:'wafd_one.wafd_one.iftar_stage_portal.'+m,args,freeze:false}).then(r=>r.message);
@@ -18,5 +24,5 @@ frappe.pages['wafd-iftar-supervisor'].on_page_load=function(wrapper){const page=
   $r.on('click.ifsup','.ifs-submit-report',function(){const report=$(this).closest('[data-report]').data('report');const rr=w.__ifsup.data.reports.find(x=>x.name===report);const received=Number(rr.received_meals||0);const d=new frappe.ui.Dialog({title:'التقرير اليومي للمشرف',fields:[{fieldname:'distributed_meals',fieldtype:'Int',label:'الموزع',default:received,reqd:1},{fieldname:'surplus_meals',fieldtype:'Int',label:'الفائض المرتجع',default:0},{fieldname:'preservation_meals',fieldtype:'Int',label:'حفظ النعمة',default:0},{fieldname:'waste_meals',fieldtype:'Int',label:'التالف',default:0},{fieldname:'tables_spread_completed',fieldtype:'Check',label:'تم فرش السفر',default:1},{fieldname:'distribution_completed',fieldtype:'Check',label:'تم توزيع الوجبات',default:1},{fieldname:'cleanup_completed',fieldtype:'Check',label:'تم رفع السفر والنفايات',default:1},cameraField('distribution_photo','صورة التوزيع'),cameraField('closeout_photo','صورة رفع السفر'),{fieldname:'media_links',fieldtype:'Long Text',label:'ملاحظات أو روابط إضافية'}],primary_action_label:'إرسال التقرير',primary_action:async v=>{const distribution_photo=await uploadCamera(d,'distribution_photo');const closeout_photo=await uploadCamera(d,'closeout_photo');await team('submit_supervisor_report',{report_name:report,...v,distribution_photo,closeout_photo});d.hide();frappe.show_alert({message:'تم إرسال التقرير لمدير الموقع',indicator:'green'});loadSup(w)}});d.show();bindCamera(d,'distribution_photo');bindCamera(d,'closeout_photo')});
  }
  async function loadSup(w){if(!w?.__ifsup||w.__ifsup.loading)return;w.__ifsup.loading=true;w.__ifsup.$root.html('<div class="ifs-empty">جاري تحميل مهام المشرف…</div>');try{render(w,await api('get_supervisor_portal_data'))}catch(e){console.error('WAFD Iftar Supervisor load failed',e);w.__ifsup.$root.html(`<div class="ifs-empty"><b>تعذر تحميل مهام المشرف</b><br>${esc(e.message||e)}<br><button class="ifs-btn ifs-retry" style="margin-top:14px">إعادة المحاولة</button></div>`);w.__ifsup.$root.off('click.ifsretry').on('click.ifsretry','.ifs-retry',()=>loadSup(w))}finally{w.__ifsup.loading=false}}
- frappe.pages['wafd-iftar-supervisor'].on_page_show=function(wrapper){loadSup(wrapper)};
+ frappe.pages['wafd-iftar-supervisor'].on_page_show=function(wrapper){setupIftarSupervisorPage(wrapper);loadSup(wrapper)};
 })();

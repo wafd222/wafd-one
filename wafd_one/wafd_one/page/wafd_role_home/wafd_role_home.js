@@ -558,7 +558,16 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         frappe.set_route("wafd-delivery-supervisor");
         return;
       }
-      if (item.page) { frappe.set_route(item.page); return; }
+      if (item.page) {
+        // Prevent repeated mobile taps from starting overlapping Desk route
+        // transitions while the target page assets are still loading.
+        const card = this;
+        if (card.dataset.wafdNavigating === "1") return;
+        card.dataset.wafdNavigating = "1";
+        window.setTimeout(() => { delete card.dataset.wafdNavigating; }, 1200);
+        frappe.set_route(item.page);
+        return;
+      }
       if (item.action === "new_hotel") { openNewHotelDialog(); return; }
       if (item.new_doctype) {
         // RC210: open the full unsaved form directly. Quick Entry saves in a

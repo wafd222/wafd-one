@@ -611,3 +611,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc328.execute
 
 # RC329 sync canonical Iftar site/supervisor Desk Page route names
 wafd_one.wafd_one.patches.v10_0_0_rc329.execute
+
+# RC330 initialize Iftar Supervisor page safely and block duplicate mobile navigation
+wafd_one.wafd_one.patches.v10_0_0_rc330.execute

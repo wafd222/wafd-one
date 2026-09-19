@@ -138,8 +138,30 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       <h3>${esc(r.project_title || r.project)}</h3><p>${esc(r.distribution_site || '')} · ${esc(r.contracting_entity || '')}</p>
       <div class="ift-numbers four"><div><b>${num(r.planned_meals)}</b><span>المخطط</span></div><div><b>${num(r.received_meals)}</b><span>المستلم</span></div><div><b>${num(r.supervisor_count)}</b><span>المشرفون</span></div><div><b>${num(Number(r.surplus_meals||0)+Number(r.preservation_society_quantity||0)+Number(r.waste_meals||0))}</b><span>الفائض والمعالجة</span></div></div>
       <div class="ift-report-status">${r.administration_report_approved ? `✓ اعتمدته الإدارة ${esc(fmtTime(r.administration_report_approved_at))}` : `✓ اعتمده مدير الموقع ${esc(fmtTime(r.site_report_approved_at))}`}</div>
-      <div class="ift-actions"><button class="btn btn-default ift-open-official-report">فتح التقرير وPDF</button>${data.mode === 'management' && !r.administration_report_approved ? '<button class="btn btn-dark ift-admin-approve-report">اعتماد الإدارة وإرساله للرئاسة</button>' : ''}</div>
+      <div class="ift-actions"><button class="btn btn-default ift-open-official-report">معاينة التقرير الرسمي</button>${data.mode === 'management' && !r.administration_report_approved ? '<button class="btn btn-dark ift-admin-approve-report">اعتماد الإدارة وإرساله للرئاسة</button>' : ''}</div>
     </div>`).join('')}</div>`;
+  }
+
+  function officialReportUrls(operation) {
+    const params = new URLSearchParams({doctype:"WAFD Iftar Daily Operation",name:operation,format:"WAFD Iftar Official Daily Report",no_letterhead:"1"});
+    return {preview:`/printview?${params.toString()}`,pdf:`/api/method/frappe.utils.print_format.download_pdf?${params.toString()}`};
+  }
+
+  function downloadReportBlob(blob, filename) {
+    const href=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=href;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1200);
+  }
+
+  function openOfficialReportPreview(operation) {
+    const urls=officialReportUrls(operation),filename=`${operation}-official-report.pdf`;
+    $(".ift-official-preview").remove();
+    const $screen=$(`<div class="ift-official-preview" dir="rtl"><div class="ift-official-toolbar"><button type="button" class="back" data-report-back>‹ <span>رجوع</span></button><div class="identity"><b>التقرير اليومي الرسمي</b><small>شركة وفد المدينة لخدمات الإعاشة</small></div><button type="button" data-report-share>⇧ <span>مشاركة</span></button><button type="button" data-report-print>⌑ <span>طباعة</span></button><button type="button" data-report-download>↓ <span>تنزيل PDF</span></button></div><div class="ift-official-frame-wrap"><iframe title="معاينة التقرير الرسمي" src="${esc(urls.preview)}"></iframe></div></div>`).appendTo(document.body);
+    const frame=$screen.find("iframe")[0];
+    const fetchPdf=async()=>{const response=await fetch(urls.pdf,{credentials:"same-origin"});if(!response.ok)throw new Error("تعذر إنشاء ملف PDF");return response.blob()};
+    $screen.on("click","[data-report-back]",()=>$screen.remove());
+    $screen.on("click","[data-report-download]",async()=>{try{downloadReportBlob(await fetchPdf(),filename)}catch(e){frappe.msgprint(e.message||"تعذر تنزيل التقرير")}});
+    $screen.on("click","[data-report-print]",()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(_e){window.open(urls.pdf,"_blank","noopener")}});
+    $screen.on("click","[data-report-share]",async()=>{try{const blob=await fetchPdf(),file=new File([blob],filename,{type:"application/pdf"});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:"التقرير اليومي الرسمي لمشروع إفطار الصائم",text:operation,files:[file]});return}downloadReportBlob(blob,filename);frappe.show_alert({message:"تم تنزيل التقرير للمشاركة",indicator:"green"})}catch(e){if(e?.name!=="AbortError")frappe.msgprint(e.message||"تعذرت مشاركة التقرير")}});
   }
 
   function render(wrapper, data) {
@@ -195,8 +217,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     $root.on("click.rc314", ".ift-open-legacy", function () { frappe.set_route("wafd-iftar-operations"); });
     $root.on("click.rc314", ".ift-open-official-report", function () {
       const operation = String($(this).closest("[data-operation]").data("operation"));
-      const q = new URLSearchParams({doctype:"WAFD Iftar Daily Operation",name:operation,format:"WAFD Iftar Official Daily Report",no_letterhead:"0"});
-      window.open('/api/method/frappe.utils.print_format.download_pdf?' + q.toString(), '_blank', 'noopener');
+      openOfficialReportPreview(operation);
     });
     $root.on("click.rc314", ".ift-admin-approve-report", function () {
       const operation = String($(this).closest("[data-operation]").data("operation"));

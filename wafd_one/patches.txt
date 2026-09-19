@@ -624,3 +624,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc332.execute
 wafd_one.wafd_one.patches.v10_0_0_rc333.execute
 # RC334 automatically forwards final Site Manager approval to administration and adds the report inbox
 wafd_one.wafd_one.patches.v10_0_0_rc334.execute
+# RC335 professional Undertaking-style official report and share/print preview
+wafd_one.wafd_one.patches.v10_0_0_rc335.execute

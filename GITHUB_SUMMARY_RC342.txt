@@ -1,0 +1,11 @@
+WAFD ONE 10.0.0 RC342 — Complete Iftar role model
+
+- Administration owns project registration, location, dates, pricing and finance.
+- Project Manager owns supervisors, assistants, table owners, meal allocation and locations.
+- Kitchen Supervisor owns production, packaging, loading and vehicle allocation.
+- Driver sees meals, cartons, bread, carts, tablecloths, gloves, masks, shoe covers and waste bags.
+- Site Manager sees inbound vehicle custody and distributes it to supervisors according to the Project Manager plan.
+- Quality inspector approval, photo and signature are recorded by the Site Manager and do not block field work while pending.
+- Supervisor sees custody, owners and locations, records signed/photo handovers, cleanup, surplus and food-preservation delivery.
+- Final approval chain is Supervisor -> Site Manager -> assigned Project Manager -> Presidency.
+- Added supply over-allocation safeguards and fixed driver recognition of trips created from the Iftar loading plan.

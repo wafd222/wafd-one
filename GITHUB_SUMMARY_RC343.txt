@@ -1,0 +1,8 @@
+WAFD ONE 10.0.0 RC343 — Restore stable undertaking experience
+
+- Restored company signature recovery for new and historical undertakings.
+- Kept saved undertakings visible under My Undertakings using owner or prepared-by identity.
+- Preserved the Save -> current undertaking -> preview workflow.
+- Restored the compact WAFD mobile menu on undertaking Form and List screens.
+- Returned Home, Language, Account and Logout to the compact menu.
+- Preserved all RC342 Iftar workflow enhancements unchanged.

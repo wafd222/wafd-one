@@ -137,7 +137,7 @@ def _visible_projects():
             "status": ["not in", ["ملغي / Cancelled"]],
         },
         fields=[
-            "name", "project_title", "distribution_site", "contracting_entity", "contract",
+            "name", "docstatus", "project_title", "distribution_site", "contracting_entity", "contract",
             "catering_project", "start_date", "end_date", "daily_meals", "number_of_days",
             "total_meals", "meal_template", "include_zamzam", "max_carton_capacity", "status",
             "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user",
@@ -149,7 +149,9 @@ def _visible_projects():
     visible = []
     for row in rows:
         duties = _project_access(row, roles)
-        if duties:
+        # الإدارة تراجع المسودة، أما الموظفون فلا تظهر لهم المهمة إلا بعد
+        # اعتماد المشروع (Submit) حتى لا يعملوا على خطة لم تعتمد بعد.
+        if duties and ("management" in duties or cint(row.docstatus) == 1):
             row["portal_duties"] = sorted(duties)
             visible.append(row)
     return visible
@@ -258,6 +260,8 @@ def _delivery_rows(operation_name):
         fields=[
             "name", "vehicle", "driver", "quantity", "status", "planned_arrival",
             "actual_departure", "actual_arrival", "destination_name", "notes",
+            "iftar_cartons", "iftar_bread_quantity", "iftar_carts", "iftar_tablecloths",
+            "iftar_waste_bags", "iftar_gloves", "iftar_masks", "iftar_shoe_covers",
         ],
         order_by="creation asc",
         limit_page_length=100,
@@ -372,7 +376,9 @@ def _kitchen_payload(project):
     task = next(
         (
             op for op in payload["operations"]
-            if cint(op.get("loaded_meals")) < cint(op.get("planned_meals"))
+            # مسؤولية المطبخ تنتهي بعد توزيع الكمية المحملة على السيارات،
+            # وليس بمجرد اعتماد التحميل.
+            if not cint(op.get("delivery_plan_approved"))
         ),
         None,
     )
@@ -502,9 +508,13 @@ def get_portal_data():
     }
     if mode in {"management", "project_manager"}:
         response["report_inbox"] = _approved_report_inbox(projects)
+    if mode == "project_manager":
+        for row in project_rows:
+            row["supervisor_plans"] = _supervisor_plans_payload(row["name"])
+        response["supervisor_options"] = get_supervisor_user_options()
     if mode == "management":
         response["team_options"] = _team_options()
-    if mode == "delivery":
+    if mode in {"kitchen", "delivery"}:
         response.update(_delivery_options())
     return response
 
@@ -645,7 +655,9 @@ def approve_kitchen_stage(operation_name, stage, note=None):
 def approve_delivery_plan(operation_name, allocations, note=None):
     operation = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
     project = frappe.get_doc("WAFD Iftar Project", operation.project)
-    _require_project_duty(project, "delivery")
+    duties = _project_access(project)
+    if "management" not in duties and not ({"kitchen", "delivery"} & duties):
+        frappe.throw(_("هذه المهمة غير مسندة لهذا الحساب / This task is not assigned to this account"), frappe.PermissionError)
 
     if cint(operation.delivery_plan_approved):
         frappe.throw(_("تم اعتماد خطة التوصيل مسبقاً / Delivery plan is already approved"))
@@ -667,6 +679,15 @@ def approve_delivery_plan(operation_name, allocations, note=None):
         vehicle = (row.get("vehicle") or "").strip()
         driver = (row.get("driver") or "").strip()
         quantity = cint(row.get("quantity"))
+        supplies = {
+            "iftar_bread_quantity": max(cint(row.get("bread_quantity")), 0),
+            "iftar_carts": max(cint(row.get("carts")), 0),
+            "iftar_tablecloths": max(cint(row.get("tablecloths")), 0),
+            "iftar_waste_bags": max(cint(row.get("waste_bags")), 0),
+            "iftar_gloves": max(cint(row.get("gloves")), 0),
+            "iftar_masks": max(cint(row.get("masks")), 0),
+            "iftar_shoe_covers": max(cint(row.get("shoe_covers")), 0),
+        }
         row_note = " ".join((row.get("note") or "").split()).strip()
         if not vehicle or not driver or quantity <= 0:
             frappe.throw(_("أكمل السيارة والسائق والكمية في الصف {0} / Complete row {0}").format(index))
@@ -681,7 +702,7 @@ def approve_delivery_plan(operation_name, allocations, note=None):
             plate = frappe.db.get_value("WAFD Vehicle", vehicle, "plate_number") or vehicle
             frappe.throw(_("كمية السيارة {0} تتجاوز سعتها ({1}) / Vehicle capacity exceeded").format(plate, capacity))
         total += quantity
-        normalized.append({"vehicle": vehicle, "driver": driver, "quantity": quantity, "note": row_note})
+        normalized.append({"vehicle": vehicle, "driver": driver, "quantity": quantity, "note": row_note, **supplies})
 
     expected = cint(operation.loaded_meals)
     if total != expected:
@@ -707,13 +728,21 @@ def approve_delivery_plan(operation_name, allocations, note=None):
         trip_note_parts = [part for part in [combined_notes, row["note"]] if part]
         trip = frappe.get_doc({
             "doctype": "WAFD Delivery Trip",
-            "trip_source": "خطة مشرف التوصيل / Delivery Supervisor Plan",
+            "trip_source": "خطة تحميل إفطار الصائم / Iftar Loading Plan",
             "trip_date": operation.operation_date,
             "meal_type": "إفطار صائم / Iftar Saim",
             "planned_arrival": planned_arrival,
             "driver": row["driver"],
             "vehicle": row["vehicle"],
             "quantity": row["quantity"],
+            "iftar_cartons": _cartons(row["quantity"], capacity),
+            "iftar_bread_quantity": row["iftar_bread_quantity"],
+            "iftar_carts": row["iftar_carts"],
+            "iftar_tablecloths": row["iftar_tablecloths"],
+            "iftar_waste_bags": row["iftar_waste_bags"],
+            "iftar_gloves": row["iftar_gloves"],
+            "iftar_masks": row["iftar_masks"],
+            "iftar_shoe_covers": row["iftar_shoe_covers"],
             "status": "تم التحميل / Loaded",
             "delivery_kind": "موقع إفطار صائم / Iftar Site",
             "delivery_location": delivery_location,
@@ -819,14 +848,21 @@ def _site_reports(operation_name):
             "name", "supervisor_name", "supervisor_user", "planned_meals", "received_meals",
             "received_at", "report_submitted", "submitted_at", "manager_approved", "approved_at",
             "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals",
+            "cartons", "tablecloths", "bread_bags", "carts", "waste_bags", "gloves", "masks", "shoe_covers",
         ],
         order_by="supervisor_name asc",
         limit_page_length=500,
     )
+    for row in rows:
+        row["assistants_count"] = frappe.db.count(
+            "WAFD Iftar Assistant Attendance",
+            {"parent": row.name, "parenttype": "WAFD Iftar Supervisor Daily Report"},
+        )
     return [dict(row) for row in rows]
 
 
 def _supervisor_plans_payload(project_name):
+    carton_capacity = cint(frappe.db.get_value("WAFD Iftar Project", project_name, "max_carton_capacity") or 25)
     names = frappe.get_all(
         "WAFD Iftar Supervisor Plan",
         filters={"project": project_name},
@@ -851,6 +887,7 @@ def _supervisor_plans_payload(project_name):
                     "distribution_point": r.distribution_point or "",
                     "delivery_location": r.delivery_location or "",
                     "meal_quantity": cint(r.meal_quantity),
+                    "carton_count": _cartons(r.meal_quantity, carton_capacity),
                     "bread_quantity": cint(r.bread_quantity),
                     "tablecloths_quantity": cint(r.tablecloths_quantity),
                     "notes": r.notes or "",
@@ -898,7 +935,7 @@ def save_quick_supervisor_setup(project_name, plans_json):
         frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
     project = frappe.get_doc("WAFD Iftar Project", project_name)
     duties = _project_access(project)
-    if "management" not in duties and not ({"site", "project_manager"} & duties):
+    if "management" not in duties and "project_manager" not in duties:
         frappe.throw(_("لا تملك صلاحية إعداد المشرفين لهذا المشروع / Not allowed to configure this project"), frappe.PermissionError)
 
     try:
@@ -1058,6 +1095,13 @@ def _supervisor_report_payload(report_name):
         "cartons": cint(report.cartons),
         "received_meals": cint(report.received_meals),
         "received_at": report.received_at,
+        "tablecloths": cint(getattr(report, "tablecloths", 0)),
+        "bread_bags": cint(getattr(report, "bread_bags", 0)),
+        "carts": cint(getattr(report, "carts", 0)),
+        "waste_bags": cint(getattr(report, "waste_bags", 0)),
+        "gloves": cint(getattr(report, "gloves", 0)),
+        "masks": cint(getattr(report, "masks", 0)),
+        "shoe_covers": cint(getattr(report, "shoe_covers", 0)),
         "report_submitted": cint(report.report_submitted),
         "manager_approved": cint(report.manager_approved),
         "site_received": cint(operation.site_receipt_approved),
@@ -1068,6 +1112,7 @@ def _supervisor_report_payload(report_name):
                 "mobile_no": row.mobile_no,
                 "distribution_point": row.distribution_point,
                 "planned_meals": cint(row.planned_meals),
+                "planned_cartons": _cartons(row.planned_meals, project.max_carton_capacity or 25),
                 "planned_bread": cint(row.planned_bread),
                 "planned_tablecloths": cint(row.planned_tablecloths),
                 "delivered_meals": cint(row.delivered_meals),

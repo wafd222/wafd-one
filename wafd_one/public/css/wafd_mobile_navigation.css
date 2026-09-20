@@ -60,6 +60,43 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
 
 .wafd-pwa-appbar { display:none; }
 
+/* RC343 — restore the compact WAFD menu on undertaking Form/List screens
+   without hiding Frappe's Save/document action header. */
+@media (max-width: 900px), (pointer: coarse) {
+  body.wafd-mobile-document-shell .navbar,
+  body.wafd-mobile-document-shell header.navbar,
+  body.wafd-mobile-document-shell .desk-navbar,
+  body.wafd-mobile-document-shell .layout-side-section,
+  body.wafd-mobile-document-shell .standard-sidebar,
+  body.wafd-mobile-document-shell .desk-sidebar,
+  body.wafd-mobile-document-shell .body-sidebar,
+  body.wafd-mobile-document-shell .body-sidebar-container,
+  body.wafd-mobile-document-shell .sidebar-overlay,
+  body.wafd-mobile-document-shell .sidebar-backdrop { display:none !important; }
+
+  body.wafd-mobile-document-shell .wafd-pwa-appbar {
+    position:sticky;top:0;z-index:1100;display:flex;align-items:center;
+    justify-content:space-between;box-sizing:border-box;width:100%;max-width:100%;
+    min-height:56px;padding:7px max(12px,env(safe-area-inset-left)) 7px max(12px,env(safe-area-inset-right));
+    background:#fff;border-bottom:1px solid #ece7dc;direction:ltr;
+  }
+  body.wafd-mobile-document-shell .wafd-pwa-brand-home {border:0;padding:6px 4px;background:transparent;color:#1b1c20;font-size:18px;font-weight:700;letter-spacing:.2px}
+  body.wafd-mobile-document-shell .wafd-pwa-menu-btn {width:42px;height:42px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 10px;border:0;border-radius:12px;background:#f7f5ef}
+  body.wafd-mobile-document-shell .wafd-pwa-menu-btn span {display:block;height:2px;width:100%;border-radius:3px;background:#25262a}
+  body.wafd-mobile-document-shell .wafd-pwa-menu {position:absolute;top:52px;left:max(10px,env(safe-area-inset-left));width:min(300px,calc(100vw - 28px));padding:8px;border:1px solid #e6e0d3;border-radius:16px;background:#fff;box-shadow:0 18px 48px rgba(0,0,0,.16);direction:rtl}
+  body.wafd-mobile-document-shell .wafd-pwa-menu[hidden] {display:none !important}
+  body.wafd-mobile-document-shell .wafd-pwa-menu button {width:100%;display:flex;gap:10px;align-items:center;padding:12px 13px;border:0;border-radius:11px;background:transparent;color:#202126;font-size:15px;text-align:right}
+  body.wafd-mobile-document-shell .wafd-pwa-menu button.is-danger {color:#9a2d2d;border-top:1px solid #eee8dc;border-radius:0 0 11px 11px;margin-top:4px}
+  body.wafd-mobile-document-shell .wafd-pwa-language-row,
+  body.wafd-mobile-document-shell .wafd-pwa-account {margin:5px 4px;padding:10px 12px;border-radius:11px;background:#f7f5ef}
+  body.wafd-mobile-document-shell .wafd-pwa-language-row {display:flex;align-items:center;justify-content:space-between;gap:10px;color:#202126;font-size:14px}
+  body.wafd-mobile-document-shell .wafd-pwa-language-row select {max-width:160px;min-height:36px;padding:5px 8px;border:1px solid #ded7c8;border-radius:9px;background:#fff;color:#202126;font-size:13px}
+  body.wafd-mobile-document-shell .wafd-pwa-account small,
+  body.wafd-mobile-document-shell .wafd-pwa-account b {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.wafd-mobile-document-shell .wafd-pwa-account small {color:#777;font-size:11px}
+  body.wafd-mobile-document-shell .wafd-pwa-account b {margin-top:3px;color:#222;font-size:13px}
+}
+
 /* RC272 — unified WAFD ONE mobile shell for iPhone and Android.
    Hide Frappe chrome only on the role-home route, including normal Android
    browser tabs, and replace it with a compact

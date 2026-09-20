@@ -426,7 +426,9 @@ def list_my_trips(iftar_only=0, exclude_iftar=0):
             "assigned_driver_user", "trip_source", "delivery_kind", "delivery_location",
             "destination_name", "destination_name_en", "destination_map_url",
             "destination_latitude", "destination_longitude", "meal_type", "delivery_schedule_id",
-            "iftar_project", "iftar_daily_operation", "iftar_dispatch_notes",
+            "iftar_project", "iftar_daily_operation", "iftar_dispatch_notes", "iftar_cartons",
+            "iftar_bread_quantity", "iftar_carts", "iftar_tablecloths", "iftar_waste_bags",
+            "iftar_gloves", "iftar_masks", "iftar_shoe_covers",
         ],
         order_by="trip_date desc, creation desc" if is_manager else "planned_arrival asc, creation asc",
         # Managers see the operational window directly. Drivers are filtered
@@ -505,7 +507,7 @@ def list_my_trips(iftar_only=0, exclude_iftar=0):
                 "hotel_name_ar": hotel.get("hotel_name_ar") or trip.hotel,
                 "hotel_name_en": hotel.get("hotel_name_en") or trip.hotel,
                 "map_url": trip.destination_map_url or hotel.get("map_url") or fallback_map_url,
-                "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
+                "simple_delivery": trip.trip_source in {"خطة مشرف التوصيل / Delivery Supervisor Plan", "خطة تحميل إفطار الصائم / Iftar Loading Plan"},
                 "loading": loading,
                 "proof": proof,
                 "sequence_visible": is_manager or trip.name in rendered,
@@ -655,7 +657,7 @@ def submit_delivery_proof(
     }
     if status not in valid_statuses:
         frappe.throw(_("نتيجة الاستلام غير صحيحة."))
-    simple_delivery = trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
+    simple_delivery = trip.trip_source in {"خطة مشرف التوصيل / Delivery Supervisor Plan", "خطة تحميل إفطار الصائم / Iftar Loading Plan"}
     receiver_name = (receiver_name or "").strip()
     if simple_delivery and not receiver_name:
         receiver_name = trip.destination_name or "تسليم مصور / Photo Delivery"

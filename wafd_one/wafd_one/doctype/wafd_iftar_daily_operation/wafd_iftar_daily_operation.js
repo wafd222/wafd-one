@@ -49,16 +49,16 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
     }, __("الطباعة / Print"));
 
     if (frm.doc.site_report_approved && !frm.doc.administration_report_approved &&
-        (frappe.user.has_role('System Manager') || frappe.user.has_role('WAFD Operations Manager'))) {
-      frm.add_custom_button(__("اعتماد الإدارة وإرسال التقرير"), () => {
-        const d=new frappe.ui.Dialog({title:__('اعتماد الإدارة والتقرير النهائي'),fields:[
+        (frappe.user.has_role('System Manager') || frappe.user.has_role('WAFD Operations Manager') || frappe.user.has_role('WAFD Project Manager'))) {
+      frm.add_custom_button(__("اعتماد مدير المشروع وإرسال التقرير"), () => {
+        const d=new frappe.ui.Dialog({title:__('اعتماد مدير المشروع والتقرير النهائي'),fields:[
           {fieldname:'recipient',fieldtype:'Data',label:__('الجهة المستلمة'),default:'رئاسة شؤون الحرمين',reqd:1},
-          {fieldname:'administration_signature',fieldtype:'Signature',label:__('توقيع الإدارة'),reqd:1},
-          {fieldname:'administration_stamp',fieldtype:'Attach Image',label:__('ختم الإدارة'),reqd:1},
-          {fieldname:'administration_notes',fieldtype:'Small Text',label:__('ملاحظات الإدارة')}
+          {fieldname:'administration_signature',fieldtype:'Signature',label:__('توقيع مدير المشروع'),reqd:1},
+          {fieldname:'administration_stamp',fieldtype:'Attach Image',label:__('ختم الشركة'),reqd:1},
+          {fieldname:'administration_notes',fieldtype:'Small Text',label:__('ملاحظات مدير المشروع')}
         ],primary_action_label:__('اعتماد وإغلاق اليوم'),primary_action:async v=>{
           await frappe.call({method:'wafd_one.wafd_one.iftar_team.send_authority_report',args:{operation_name:frm.doc.name,...v},freeze:true});
-          d.hide();await frm.reload_doc();frappe.show_alert({message:__('تم اعتماد الإدارة وأصبح التقرير الرسمي جاهزاً'),indicator:'green'});
+          d.hide();await frm.reload_doc();frappe.show_alert({message:__('تم اعتماد مدير المشروع وإرسال التقرير للرئاسة'),indicator:'green'});
         }});d.show();
       }, __("الاعتماد / Approval"));
     }

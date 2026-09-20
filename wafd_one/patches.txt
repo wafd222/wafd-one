@@ -634,3 +634,6 @@ wafd_one.wafd_one.patches.v10_0_0_rc337.execute
 wafd_one.wafd_one.patches.v10_0_0_rc338.execute
 wafd_one.wafd_one.patches.v10_0_0_rc339.execute
 wafd_one.wafd_one.patches.v10_0_0_rc340.execute
+
+# RC343 restore undertaking signature/list visibility and compact mobile menu
+wafd_one.wafd_one.patches.v10_0_0_rc343.execute

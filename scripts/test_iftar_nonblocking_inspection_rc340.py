@@ -13,13 +13,13 @@ template = (ROOT / "wafd_one/templates/print_formats/wafd_iftar_official_daily_r
 assert "if not cint(operation.site_receipt_approved):" in team
 assert "Authority inspection is required before supervisor assignments" not in team
 assert "Authority inspection is required before supervisor handover" not in team
-assert "Record the food inspector approval and signature before final dispatch" in team
+assert "quality inspector approval and signature before final dispatch" in team
 assert 'operation.get("site_receipt_approved")' in portal
 assert 'operation.get("authority_inspection_approved")' not in portal
 assert "stage == \"delivered\" and not cint(doc.authority_inspection_approved)" not in pro
 assert "if delivered and not cint(self.authority_inspection_approved)" not in operation
 assert 'addStageAction(__("فحص مشرف التغذية")' not in form_js
-assert "تسجيل موافقة وتوقيع مفتش التغذية" in site_js
+assert "تسجيل موافقة وتوقيع مفتش الجودة والتغذية" in site_js
 assert "متاح لاحقاً ولا يوقف التشغيل" in site_js
 assert "o.site_receipt_approved&&(p.supervisor_plans||[]).length" in site_js
 assert '<div class="footer">' not in template

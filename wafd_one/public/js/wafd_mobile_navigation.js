@@ -19,6 +19,7 @@
   const DELIVERY_SUPERVISOR_ROUTE = "wafd-delivery-supervisor";
   const DELIVERY_SUPERVISOR_CLASS = "wafd-at-delivery-supervisor";
   const LOADING_CLASS = "wafd-at-loading-record";
+  const DOCUMENT_SHELL_CLASS = "wafd-mobile-document-shell";
   const FIELD_APPBAR_ID = "wafd-field-appbar-rc278";
   const FIELD_ROLES = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
   const FIELD_ROUTES = new Set([HOME_ROUTE, DRIVER_ROUTE, CLEANING_ROUTE, VIEWER_ROUTE]);
@@ -172,6 +173,11 @@
     return route[0] === "Form" && route[1] === "WAFD Loading Record";
   }
 
+  function isUndertakingRoute() {
+    const route = currentRoute();
+    return (route[0] === "Form" || route[0] === "List") && route[1] === "WAFD Hotel Undertaking";
+  }
+
 
   function isStandalonePwa() {
     return !!(
@@ -181,16 +187,18 @@
     );
   }
 
-  function syncPwaChrome(home) {
+  function syncPwaChrome(home, documentShell = false) {
     if (!document.body) return;
     // The WAFD shell must be identical in an installed iPhone/Android PWA and
     // in a normal Android browser tab.  Restricting this to standalone mode
     // exposed Frappe's sidebar, extra workspaces and removed the language menu.
     const hide = !!(home && isMobile());
+    const compactDocument = !!(documentShell && isMobile());
     // This runtime class is the single source of truth for the RC234 shell.
     // Do not make the CSS depend on a second class populated by another asset:
     // on iOS those assets can finish in a different order after a cold launch.
     document.body.classList.toggle(PWA_SHELL_CLASS, hide);
+    document.body.classList.toggle(DOCUMENT_SHELL_CLASS, compactDocument);
     // Frappe can mount its navbar after our stylesheet/route callback. Direct
     // inline display is therefore used as a deterministic fallback, but only
     // on the mobile role home. Remove it immediately on every other route.
@@ -214,7 +222,9 @@
         ".sidebar-backdrop",
       ].join(", ")
     ).forEach((node) => {
-      if (hide) {
+      const isDocumentHeader = node.matches?.(".page-head, .desk-header, .app-header, .mobile-header, .mobile-navbar");
+      const shouldHide = hide || (compactDocument && !isDocumentHeader);
+      if (shouldHide) {
         if (!node.hasAttribute("data-wafd-prev-display")) {
           node.setAttribute("data-wafd-prev-display", node.style.display || "");
         }
@@ -240,7 +250,8 @@
     bar.id = FIELD_APPBAR_ID;
     bar.className = "wafd-pwa-appbar wafd-field-appbar";
     bar.setAttribute("aria-label", "WAFD ONE");
-    bar.innerHTML = `<button type="button" class="wafd-pwa-menu-btn" aria-label="${labels.menu}" aria-expanded="false"><span></span><span></span><span></span></button><button type="button" class="wafd-pwa-brand-home" aria-label="${labels.home}">WAFD ONE</button><div class="wafd-pwa-menu" role="menu" hidden><label class="wafd-pwa-language-row" for="wafd-field-language"><span>文 ${labels.language}</span><select id="wafd-field-language">${Object.entries(LANGUAGES).map(([code,name])=>`<option value="${code}" ${code===lang?"selected":""}>${name}</option>`).join("")}</select></label><button type="button" class="is-danger" data-wafd-field-logout>↪ <span>${labels.logout}</span></button></div>`;
+    const user = String(window.frappe?.session?.user || "");
+    bar.innerHTML = `<button type="button" class="wafd-pwa-menu-btn" aria-label="${labels.menu}" aria-expanded="false"><span></span><span></span><span></span></button><button type="button" class="wafd-pwa-brand-home" aria-label="${labels.home}">WAFD ONE</button><div class="wafd-pwa-menu" role="menu" hidden><button type="button" data-wafd-field-home>⌂ <span>${labels.home}</span></button><label class="wafd-pwa-language-row" for="wafd-field-language"><span>文 ${labels.language}</span><select id="wafd-field-language">${Object.entries(LANGUAGES).map(([code,name])=>`<option value="${code}" ${code===lang?"selected":""}>${name}</option>`).join("")}</select></label><div class="wafd-pwa-account"><small>${labels.menu}</small><b>${user}</b></div><button type="button" class="is-danger" data-wafd-field-logout>↪ <span>${labels.logout}</span></button></div>`;
     const menu = bar.querySelector(".wafd-pwa-menu");
     const menuButton = bar.querySelector(".wafd-pwa-menu-btn");
     const close = () => { menu.hidden = true; menuButton.setAttribute("aria-expanded", "false"); };
@@ -250,6 +261,7 @@
       menuButton.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
     });
     bar.querySelector(".wafd-pwa-brand-home").addEventListener("click", () => frappe.set_route(HOME_ROUTE));
+    bar.querySelector("[data-wafd-field-home]").addEventListener("click", () => { close(); frappe.set_route(HOME_ROUTE); });
     bar.querySelector("#wafd-field-language").addEventListener("change", async function () {
       localStorage.setItem("wafd_lang", this.value);
       await frappe.call({method:"wafd_one.language.set_user_language", args:{language:this.value}, freeze:true});
@@ -337,6 +349,7 @@
     const deliverySupervisorPage = isDeliverySupervisorPage();
     const deliverySupervisorShell = (deliveryReport || deliverySupervisorPage) && isDeliverySupervisorShell();
     const loadingRecord = isLoadingRecordForm();
+    const undertakingRoute = isUndertakingRoute();
     syncHomeState(home);
     document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
     document.body.classList.toggle(DRIVER_CLASS, driverTrips);
@@ -345,8 +358,8 @@
     document.body.classList.toggle(DELIVERY_REPORT_CLASS, deliveryReport && deliverySupervisorShell);
     document.body.classList.toggle(DELIVERY_SUPERVISOR_CLASS, deliverySupervisorPage && deliverySupervisorShell);
     document.body.classList.toggle(LOADING_CLASS, loadingRecord);
-    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer || deliverySupervisorShell);
-    syncFieldAppbar(driverTrips || cleaningHome || deliverySupervisorShell);
+    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer || deliverySupervisorShell, undertakingRoute);
+    syncFieldAppbar(driverTrips || cleaningHome || deliverySupervisorShell || undertakingRoute);
 
     let btn = document.getElementById(ID);
     if (!isMobile() || home || employeeTeam || driverTrips || cleaningHome || deliveryViewer || loadingRecord || hasOpenModal()) {

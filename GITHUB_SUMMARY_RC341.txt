@@ -1,0 +1,9 @@
+Separate Iftar responsibilities and add project-manager field-team entry cards
+
+- Show employee projects only after administration approval.
+- Keep the kitchen task active through production, packaging, loading, and vehicle allocation.
+- Let administration approve the project before the detailed supervisor plan is entered.
+- Add clear Project Manager cards for supervisors/assistants and table-owner meal allocation.
+- Nest assistants and table owners under their assigned supervisor with phone and quantity details.
+- Derive and display carton counts from the project's carton capacity.
+- Keep site receipt, authority inspection, supervisor handover, and report approval in the Site Manager screen.

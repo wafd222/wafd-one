@@ -216,11 +216,9 @@ class WAFDHotelUndertaking(Document):
         return ""
 
     def _fill_company_approval_assets(self):
-        if not frappe.db.exists("DocType", "WAFD Print Settings"):
-            return
-        settings = frappe.get_single("WAFD Print Settings")
-        default_signature = settings.default_signature or ""
-        default_stamp = settings.default_stamp or ""
+        settings = frappe.get_single("WAFD Print Settings") if frappe.db.exists("DocType", "WAFD Print Settings") else None
+        default_signature = (settings.default_signature or "") if settings else ""
+        default_stamp = (settings.default_stamp or "") if settings else ""
         # Older installations may have the uploaded assets stored on the
         # Document Studio template rather than Print Settings. Preserve them.
         if (not default_signature or not default_stamp) and frappe.db.exists("DocType", "WAFD Document Template"):
@@ -249,6 +247,19 @@ class WAFDHotelUndertaking(Document):
                     {"reference_doctype": self.doctype, "stamp": ["!=", ""]},
                     "stamp",
                     order_by="modified desc",
+                ) or ""
+        # Preserve the established company assets if a settings/template
+        # migration leaves one of them blank.
+        if frappe.db.exists("DocType", self.doctype):
+            if not default_signature:
+                default_signature = frappe.db.get_value(
+                    self.doctype, {"signature_image": ["!=", ""]},
+                    "signature_image", order_by="modified desc",
+                ) or ""
+            if not default_stamp:
+                default_stamp = frappe.db.get_value(
+                    self.doctype, {"company_stamp": ["!=", ""]},
+                    "company_stamp", order_by="modified desc",
                 ) or ""
         if not default_signature:
             default_signature = self._discover_uploaded_company_asset("signature")

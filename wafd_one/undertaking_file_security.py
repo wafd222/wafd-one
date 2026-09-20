@@ -48,10 +48,8 @@ def _owns_undertaking(user: str, name: str | None) -> bool:
     if not name:
         return False
     return bool(
-        frappe.db.exists(
-            UNDERTAKING_DOCTYPE,
-            {"name": name, "owner": user},
-        )
+        frappe.db.exists(UNDERTAKING_DOCTYPE, {"name": name, "owner": user})
+        or frappe.db.exists(UNDERTAKING_DOCTYPE, {"name": name, "prepared_by_user": user})
     )
 
 

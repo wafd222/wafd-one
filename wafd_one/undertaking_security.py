@@ -20,7 +20,13 @@ def undertaking_query(user=None):
         # immediately, including from a browser session that was already open.
         if not _officer_is_enabled(user):
             return "1=0"
-        return f"`tabWAFD Hotel Undertaking`.`owner` = {frappe.db.escape(user)}"
+        escaped = frappe.db.escape(user)
+        # Mobile/API creation can retain a technical owner while correctly
+        # recording the employee in prepared_by_user. Both identify the author.
+        return (
+            f"(`tabWAFD Hotel Undertaking`.`owner` = {escaped} "
+            f"or `tabWAFD Hotel Undertaking`.`prepared_by_user` = {escaped})"
+        )
     return ""
 
 def undertaking_has_permission(doc, user=None, permission_type=None):
@@ -38,4 +44,4 @@ def undertaking_has_permission(doc, user=None, permission_type=None):
         return False
     if permission_type == "create" or getattr(doc, "__islocal", False):
         return True
-    return getattr(doc, "owner", None) == user
+    return getattr(doc, "owner", None) == user or getattr(doc, "prepared_by_user", None) == user

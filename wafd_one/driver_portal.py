@@ -549,6 +549,16 @@ def list_my_trips(iftar_only=0, exclude_iftar=0):
 @frappe.whitelist()
 def set_my_trip_status(trip_name, action):
     trip = _authorized_trip(trip_name, write=True)
+    existing_proof = frappe.db.get_value(
+        "WAFD Delivery Proof", {"delivery_trip": trip.name}, "name"
+    )
+    if existing_proof:
+        return {
+            "name": trip.name,
+            "status": "تم التسليم / Delivered",
+            "already_synced": True,
+            "proof": existing_proof,
+        }
     _assert_sequence_actionable(trip)
     transitions = {
         "start": ({"مخططة / Planned", "تم التحميل / Loaded", "متأخرة / Delayed"}, "في الطريق / In Transit"),
@@ -753,6 +763,17 @@ def sync_offline_driver_action(trip_name, action, captured_at, payload=None):
     )
     trip.reload()
     captured = _validated_offline_time(captured_at)
+
+    existing_proof = frappe.db.get_value(
+        "WAFD Delivery Proof", {"delivery_trip": trip.name}, "name"
+    )
+    if existing_proof:
+        return {
+            "name": trip.name,
+            "action": action,
+            "already_synced": True,
+            "proof": existing_proof,
+        }
 
     if action == "start":
         if trip.actual_departure:

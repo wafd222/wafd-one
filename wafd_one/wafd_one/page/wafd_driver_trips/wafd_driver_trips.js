@@ -190,6 +190,14 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     const text = String(error?.message || error?.exc || error || "");
     return !navigator.onLine || serverReachable === false || status === 0 || /network|failed to fetch|offline|connection lost|not connected/i.test(text);
   }
+  function errorText(error) {
+    const parts = [error?.message, error?.exc, error?.responseJSON?.exception, error?.responseJSON?._server_messages];
+    try { parts.push(JSON.stringify(error)); } catch (ignored) {}
+    return parts.filter(Boolean).join(" ");
+  }
+  function isAlreadySyncedError(error) {
+    return /تم توثيق هذه الرحلة مسبق|تم حفظ إثبات التسليم بالفعل|already (documented|synced|saved)|delivery proof.*already/i.test(errorText(error));
+  }
   function markServerReachable(value) {
     serverReachable = Boolean(value);
     lastReachabilityCheck = Date.now();
@@ -270,6 +278,15 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
   }
   async function queueOfflineAction(tripName, action, payload={}) {
     const capturedAt = clientTimestamp();
+    const duplicate = (await pendingActions()).find(row => row.trip_name === tripName && row.action === action);
+    if (duplicate) {
+      duplicate.payload = payload;
+      duplicate.last_error = "";
+      await putPendingAction(duplicate);
+      await applyLocalAction(tripName, action, duplicate.captured_at || capturedAt);
+      await updateOfflineBanner("offline", tr("saved_offline"));
+      return;
+    }
     const id = `${offlineUser}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     await putPendingAction({id,user:offlineUser,trip_name:tripName,action,captured_at:capturedAt,payload,created_at:new Date().toISOString(),last_error:""});
     await applyLocalAction(tripName, action, capturedAt);
@@ -282,7 +299,10 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
     await updateOfflineBanner("syncing");
     try {
       const rows = await pendingActions();
+      const blockedTrips = new Set();
+      let hadValidationError = false;
       for (const row of rows) {
+        if (blockedTrips.has(row.trip_name)) continue;
         try {
           await frappe.call({
             method:"wafd_one.driver_portal.sync_offline_driver_action",
@@ -291,17 +311,23 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
           });
           await deletePendingAction(row.id);
         } catch (error) {
+          if (isAlreadySyncedError(error)) {
+            await deletePendingAction(row.id);
+            continue;
+          }
           if (!isNetworkError(error)) {
             row.last_error = String(error?.message || error || "sync failed").slice(0,500);
             await putPendingAction(row);
-            await updateOfflineBanner("error");
+            blockedTrips.add(row.trip_name);
+            hadValidationError = true;
+            continue;
           }
           return false;
         }
       }
-      offlineCacheActive = false;
+      offlineCacheActive = hadValidationError;
       markServerReachable(true);
-      await updateOfflineBanner("online");
+      await updateOfflineBanner(hadValidationError ? "error" : "online");
       return true;
     } finally {
       syncingOffline = false;
@@ -463,6 +489,10 @@ frappe.pages["wafd-driver-trips"].on_page_load = function (wrapper) {
       await loadTrips({skipSync:true});
       if (action === "arrive") openProof(tripName);
     } catch (error) {
+      if (!isManager && isAlreadySyncedError(error)) {
+        await loadTrips({skipSync:true});
+        return;
+      }
       if (isManager || !isNetworkError(error)) throw error;
       markServerReachable(false);
       try {

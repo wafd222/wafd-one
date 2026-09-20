@@ -27,7 +27,7 @@ assert '$share.prop("disabled",false)' in page
 assert 'navigator.canShare({files:[file]})' in page
 
 assert 'height:40mm' in template
-assert 'height:27mm' in template
+assert 'height:22mm' in template
 assert 'reload_doc("wafd_one", "print_format", "wafd_iftar_official_daily_report"' in patch
 
 print("RC338 official PDF generation and native sharing checks passed")

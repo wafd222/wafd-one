@@ -21,7 +21,8 @@ for forbidden in (
     assert forbidden not in template, forbidden
 
 assert "التوثيق الميداني" in template
-assert "format_datetime(o.delivery_time" in template
+assert "format_datetime(o.delivery_time" not in template
+assert "o.get_formatted('delivery_time')" in template
 assert "new-page" in template and "keep-block" in template
 assert "p.photo not in used_photos" in template
 assert "data-report-share disabled" in page

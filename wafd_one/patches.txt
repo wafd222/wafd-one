@@ -633,3 +633,4 @@ wafd_one.wafd_one.patches.v10_0_0_rc337.execute
 # RC338 fix legacy owner delivery times, PDF generation, and native report sharing
 wafd_one.wafd_one.patches.v10_0_0_rc338.execute
 wafd_one.wafd_one.patches.v10_0_0_rc339.execute
+wafd_one.wafd_one.patches.v10_0_0_rc340.execute

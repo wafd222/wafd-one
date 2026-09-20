@@ -996,10 +996,11 @@ def save_quick_supervisor_setup(project_name, plans_json):
         for plan_name in set(existing_names) - retained:
             frappe.db.set_value("WAFD Iftar Supervisor Plan", plan_name, "active", 0, update_modified=True)
 
-        # Create today's task immediately once the site inspection is approved.
+        # Create today's task after the Site Manager records site receipt.
+        # The authority inspector may sign later without stopping field work.
         generated = []
         operation = _current_site_operation(project)
-        if operation and cint(operation.get("authority_inspection_approved")):
+        if operation and cint(operation.get("site_receipt_approved")):
             from wafd_one.wafd_one.iftar_team import ensure_supervisor_reports
             result = ensure_supervisor_reports(operation.get("name")) or {}
             generated = result.get("created") or []

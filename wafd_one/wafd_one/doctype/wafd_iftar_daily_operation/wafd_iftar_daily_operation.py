@@ -82,9 +82,6 @@ class WAFDIftarDailyOperation(Document):
                 frappe.throw("أكمل فحص الزبادي والخبز والتمر وتواريخ الصلاحية / Complete all authority food inspection checks")
             if not self.authority_inspection_time:
                 self.authority_inspection_time = now_datetime()
-        if delivered and not cint(self.authority_inspection_approved):
-            frappe.throw("يجب اعتماد فحص مشرف التغذية قبل التسليم والتوزيع / Authority food inspection must be approved before distribution")
-
         self.completion_percent = min(100, flt(received) / flt(self.planned_meals) * 100) if self.planned_meals else 0
         if received >= self.planned_meals and self.planned_meals:
             # Keep the day visibly pending until cleanup and the daily authority

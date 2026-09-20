@@ -128,31 +128,6 @@ frappe.ui.form.on("WAFD Iftar Daily Operation", {
         addStageAction(__("اعتماد التغليف"), () => advance("packaged", __("تم اعتماد التغليف")));
       } else if (!frm.doc.loaded_meals) {
         addStageAction(__("اعتماد التحميل"), () => advance("loaded", __("تم اعتماد التحميل")));
-      } else if (!frm.doc.authority_inspection_approved) {
-        addStageAction(__("فحص مشرف التغذية"), () => {
-          const q = new frappe.ui.Dialog({
-            title: __("فحص مشرف التغذية من الجهة"),
-            fields: [
-              {fieldname:'authority_supervisor_name',fieldtype:'Data',label:__('اسم مشرف التغذية'),reqd:1,default:frm.doc.authority_supervisor_name},
-              {fieldtype:'Section Break',label:__('العينة العشوائية')},
-              {fieldname:'yogurt_checked',fieldtype:'Check',label:__('تم فحص الزبادي'),default:1},
-              {fieldname:'bread_checked',fieldtype:'Check',label:__('تم فحص الخبز'),default:1},
-              {fieldname:'dates_checked',fieldtype:'Check',label:__('تم فحص التمر'),default:1},
-              {fieldname:'expiry_checked',fieldtype:'Check',label:__('تم فحص تواريخ الصلاحية'),default:1},
-              {fieldname:'authority_inspection_notes',fieldtype:'Small Text',label:__('ملاحظات الفحص')}
-            ],
-            primary_action_label: __('اعتماد الفحص'),
-            async primary_action(v){
-              if(!v.yogurt_checked||!v.bread_checked||!v.dates_checked||!v.expiry_checked) return frappe.msgprint(__('يجب إكمال جميع عناصر الفحص قبل الاعتماد'));
-              q.hide();
-              await frm.set_value(v);
-              await frm.set_value('authority_inspection_approved',1);
-              await frm.save();
-              frappe.show_alert({message:__('تم اعتماد فحص مشرف التغذية'),indicator:'green'},4);
-              await frm.reload_doc();
-            }
-          }); q.show();
-        });
       } else if (!frm.doc.delivered_meals) {
         addStageAction(__("اعتماد التسليم"), () => advance("delivered", __("تم اعتماد التسليم")));
       } else if (!frm.doc.received_meals) {

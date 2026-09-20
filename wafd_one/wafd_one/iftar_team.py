@@ -754,8 +754,8 @@ def ensure_supervisor_reports(operation_name):
     _require("System Manager", "WAFD Operations Manager", "WAFD Project Manager", "WAFD Iftar Site Manager")
     operation, project = _submitted_operation(operation_name)
     _assigned(project, "site_manager_user")
-    if not cint(operation.authority_inspection_approved):
-        frappe.throw(_("يجب اعتماد فحص الجهة قبل تجهيز تكليفات المشرفين / Authority inspection is required before supervisor assignments"))
+    if not cint(operation.site_receipt_approved):
+        frappe.throw(_("يجب اعتماد استلام مدير الموقع قبل تجهيز تكليفات المشرفين / Site receipt is required before supervisor assignments"))
     created, skipped = [], []
     plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name, "active": 1}, pluck="name", order_by="creation asc", limit_page_length=500)
     if not plans:
@@ -796,8 +796,6 @@ def receive_for_supervisor(report_name, received_meals, tablecloths=0, bread_bag
     operation = frappe.get_doc("WAFD Iftar Daily Operation", report.daily_operation)
     if not cint(operation.site_receipt_approved):
         frappe.throw(_("يجب اعتماد استلام مدير الموقع أولاً / Site manager receipt must be approved first"))
-    if not cint(operation.authority_inspection_approved):
-        frappe.throw(_("يجب اعتماد فحص الجهة قبل تسليم الوجبات للمشرفين / Authority inspection is required before supervisor handover"))
     if not handover_photo:
         frappe.throw(_("صورة تسليم الوجبات والعهدة للمشرف مطلوبة / Supervisor handover photo is required"))
     quantity = cint(received_meals)
@@ -1019,6 +1017,8 @@ def send_authority_report(operation_name, recipient, administration_signature=No
     operation, project = _submitted_operation(operation_name)
     if not cint(operation.site_report_approved):
         frappe.throw(_("بانتظار اعتماد مدير الموقع للتقرير المجمع / Site manager report approval is required"))
+    if not cint(operation.authority_inspection_approved):
+        frappe.throw(_("سجّل موافقة مفتش التغذية وتوقيعه قبل الإرسال النهائي للجهة / Record the food inspector approval and signature before final dispatch"))
     if not (recipient or "").strip():
         frappe.throw(_("حدد رئاسة شؤون الحرمين أو الجهة المتعاقدة المستلمة / Select the report recipient"))
     if not administration_signature or not administration_stamp:

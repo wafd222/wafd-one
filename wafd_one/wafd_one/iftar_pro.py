@@ -586,9 +586,6 @@ def update_daily_stage(operation_name, stage, recipient_name=None, recipient_id=
     }[stage]
     if stage != "produced" and source <= 0:
         frappe.throw(_("يجب اعتماد المرحلة السابقة أولاً / Complete the previous stage first"))
-    if stage == "delivered" and not cint(doc.authority_inspection_approved):
-        frappe.throw(_("يجب اعتماد فحص مشرف التغذية قبل التسليم والتوزيع / Authority food inspection must be approved before distribution"))
-
     updates = {_STAGE_FIELDS[stage]: source}
     if stage == "received":
         final_recipient = (recipient_name or doc.recipient_name or "").strip()

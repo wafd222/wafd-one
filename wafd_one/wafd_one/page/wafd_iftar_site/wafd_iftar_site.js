@@ -14,7 +14,7 @@ frappe.pages['wafd-iftar-site'].on_page_load=function(wrapper){
  function header(d){return `<div class="ifs-head"><small>WAFD ONE · IFTAR SAIM</small><h1>إدارة موقع إفطار الصائم</h1><p>الاستلام · الفحص · تسليم المشرفين · اعتماد التقارير</p><p style="margin-top:10px"><b>${esc(d.full_name||d.user)}</b></p></div>`}
  function steps(o){return `<div class="ifs-steps">
    <div class="ifs-step ${o?.site_receipt_approved?'done':''}"><b>${o?.site_receipt_approved?'✓ ':''}استلام الموقع</b><span>${o?.site_receipt_approved?n(o.site_received_meals)+' وجبة':'بانتظار وصول السائق'}</span></div>
-   <div class="ifs-step ${o?.authority_inspection_approved?'done':''}"><b>${o?.authority_inspection_approved?'✓ ':''}فحص الجهة</b><span>${o?.authority_inspection_approved?'تم الفحص':'بعد الاستلام'}</span></div>
+   <div class="ifs-step ${o?.authority_inspection_approved?'done':''}"><b>${o?.authority_inspection_approved?'✓ ':''}فحص الجهة</b><span>${o?.authority_inspection_approved?'تم تسجيل الموافقة والتوقيع':'متاح لاحقاً ولا يوقف التشغيل'}</span></div>
    <div class="ifs-step ${(o?.site_report_approved)?'done':''}"><b>${o?.site_report_approved?'✓ ':''}تقارير المشرفين</b><span>${o?.site_report_approved?'تم اعتماد التقرير':'متابعة وتقفيل اليوم'}</span></div>
  </div>`}
  function reports(p){
@@ -34,9 +34,9 @@ frappe.pages['wafd-iftar-site'].on_page_load=function(wrapper){
    const arrived=Math.max(Number(o.delivery_verified_meals||0),Number(o.delivered_meals||0));
    return `<div class="ifs-card" data-operation="${esc(o.name)}" data-project="${esc(p.name)}"><div class="ifs-muted">${esc(p.name)} · ${esc(o.operation_date||'')}</div><h3>${esc(p.project_title||p.distribution_site||p.name)}</h3><div class="ifs-muted">${esc(p.contracting_entity||'')} · ${esc(p.distribution_site||'')}</div><div class="ifs-grid"><div class="ifs-stat"><b>${n(o.planned_meals)}</b><span>المخطط</span></div><div class="ifs-stat"><b>${n(arrived)}</b><span>وصل ومثبت</span></div><div class="ifs-stat"><b>${n(o.site_received_meals)}</b><span>استلام الموقع</span></div><div class="ifs-stat"><b>${n((p.supervisor_reports||[]).length)}</b><span>المشرفون</span></div></div>${steps(o)}
    ${!o.site_receipt_approved&&arrived>0?`<button class="ifs-btn ifs-receive" data-max="${arrived}">اعتماد استلام الموقع</button>`:''}
-   ${o.site_receipt_approved&&!o.authority_inspection_approved?`<button class="ifs-btn ifs-inspect">فحص الجهة واعتماد الجاهزية</button>`:''}
+   ${o.site_receipt_approved&&!o.authority_inspection_approved?`<button class="ifs-btn ifs-inspect">تسجيل موافقة وتوقيع مفتش التغذية</button>`:''}
    <button class="ifs-btn secondary ifs-setup-supervisors">إعداد فريق الموقع وأصحاب السفر</button>
-   ${o.authority_inspection_approved&&(p.supervisor_plans||[]).length&&!(p.supervisor_reports||[]).length?`<button class="ifs-btn secondary ifs-create-reports">إنشاء مهام المشرفين لهذا اليوم</button>`:''}
+   ${o.site_receipt_approved&&(p.supervisor_plans||[]).length&&!(p.supervisor_reports||[]).length?`<button class="ifs-btn secondary ifs-create-reports">إنشاء مهام المشرفين لهذا اليوم</button>`:''}
    ${reports(p)}
    ${(p.supervisor_reports||[]).length&&p.supervisor_reports.every(r=>r.manager_approved)&&!o.site_report_approved?`<button class="ifs-btn ifs-finalize">اعتماد التقرير المجمع وإرسال المرحلة للإدارة</button>`:''}
    </div>`}

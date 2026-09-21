@@ -19,6 +19,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
   const $root = $(page.body).attr("dir", arabic ? "rtl" : "ltr");
   let employees = [];
   let roleOptions = [];
+  let iftarAssignments = {projects: [], options: {}};
 
   const roleLabel = (role) => {
     const option = roleOptions.find((item) => item.role === role);
@@ -57,7 +58,8 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       .wafd-employee-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(180px,.8fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-employee-row:last-child{border-bottom:0}
       .wafd-employee-identity b,.wafd-employee-identity small{display:block}.wafd-employee-identity small{color:#777b82;margin-top:3px}.wafd-employee-role{display:flex;flex-wrap:wrap;gap:6px}.wafd-role-badge,.wafd-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:750}.wafd-role-badge{background:#f4eddd;color:#765b23}.wafd-status-badge.is-on{background:#e8f4ea;color:#2e6a38}.wafd-status-badge.is-off{background:#f3e8e8;color:#8b3030}
       .wafd-row-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.wafd-row-actions button{border:1px solid #ddd6c8;border-radius:10px;background:#fff;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap}.wafd-row-actions button.is-stop,.wafd-row-actions button.is-delete{color:#963434}.wafd-row-actions button.is-delete{border-color:#e1bcbc;background:#fff8f8}.wafd-empty{padding:30px 10px;text-align:center;color:#7b7e83}.wafd-driver-note{display:none;margin-top:6px;color:#916d25;font-size:11px}
-      @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-task-picker{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button{flex:1}.wafd-employee-role{justify-content:flex-start}}
+      .wafd-iftar-project{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(240px,1fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-iftar-project:last-child{border-bottom:0}.wafd-iftar-project b,.wafd-iftar-project small{display:block}.wafd-iftar-project small{color:#777b82;margin-top:4px}.wafd-iftar-team-names{display:flex;flex-wrap:wrap;gap:5px}.wafd-iftar-team-names span{background:#f6f2e8;border-radius:999px;padding:5px 8px;font-size:11px;color:#765b23}.wafd-iftar-assign{border:1px solid #a98232;border-radius:10px;background:#fffaf0;color:#6f531a;padding:9px 12px;font-weight:800}
+      @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-task-picker{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row,.wafd-iftar-project{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button,.wafd-iftar-assign{width:100%;flex:1}.wafd-employee-role{justify-content:flex-start}}
     </style>
     <div class="wafd-employee-shell">
       <div class="wafd-employee-inline-nav"><button type="button" class="wafd-employee-inline-back" aria-label="${tr("رجوع", "Back")}" title="${tr("رجوع", "Back")}"><span class="wafd-employee-inline-back-arrow" aria-hidden="true"></span></button></div>
@@ -80,6 +82,10 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
           <select id="wafd-employee-filter"><option value="">${tr("جميع المهمات", "All tasks")}</option></select>
         </div>
         <div id="wafd-employee-list"><div class="wafd-empty">${tr("جاري التحميل...", "Loading...")}</div></div>
+      </section>
+      <section class="wafd-employee-card">
+        <h2>${tr("فريق مشاريع إفطار الصائم", "Iftar project teams")}</h2>
+        <div id="wafd-iftar-project-list"><div class="wafd-empty">${tr("جاري التحميل...", "Loading...")}</div></div>
       </section>
     </div>
   `);
@@ -124,6 +130,62 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     }).join(""));
   }
 
+  function renderIftarAssignments() {
+    const projects = iftarAssignments.projects || [];
+    if (!projects.length) {
+      $root.find("#wafd-iftar-project-list").html(`<div class="wafd-empty">${tr("لا توجد مشاريع إفطار صائم نشطة.", "No active Iftar projects.")}</div>`);
+      return;
+    }
+    const fields = ["project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user", "site_manager_user", "external_viewer_user"];
+    $root.find("#wafd-iftar-project-list").html(projects.map((project) => {
+      const team = fields.filter((field) => project[field]).map((field) => `<span dir="ltr">${esc(project[field])}</span>`).join("");
+      return `<div class="wafd-iftar-project">
+        <div><b>${esc(project.project_title || project.name)}</b><small>${esc(project.name)} · ${esc(project.distribution_site || "")} · ${esc(project.start_date || "")}</small></div>
+        <div class="wafd-iftar-team-names">${team || `<span>${tr("غير مسند", "Not assigned")}</span>`}</div>
+        <button type="button" class="wafd-iftar-assign" data-project="${esc(project.name)}">${tr("إسناد الفريق", "Assign team")}</button>
+      </div>`;
+    }).join(""));
+  }
+
+  function assignmentSelect(field, label, project) {
+    const options = [...((iftarAssignments.options || {})[field] || [])];
+    const current = project[field] || "";
+    if (current && !options.some((item) => item.value === current)) options.unshift({value: current, label: current});
+    return `<div class="wafd-employee-field" style="margin-bottom:12px"><label>${esc(label)}</label><select class="wafd-iftar-team-select" data-field="${esc(field)}"><option value="">${tr("غير مسند", "Not assigned")}</option>${options.map((item) => `<option value="${esc(item.value)}" ${item.value === current ? "selected" : ""}>${esc(item.label || item.value)}</option>`).join("")}</select></div>`;
+  }
+
+  function openIftarAssignment(project) {
+    const html = `<div dir="${arabic ? "rtl" : "ltr"}">
+      ${assignmentSelect("project_manager_user", tr("مدير المشروع", "Project Manager"), project)}
+      ${assignmentSelect("kitchen_supervisor_user", tr("مشرف المطبخ", "Kitchen Supervisor"), project)}
+      ${assignmentSelect("delivery_supervisor_user", tr("مشرف التوصيل", "Delivery Supervisor"), project)}
+      ${assignmentSelect("site_manager_user", tr("مدير الموقع", "Site Manager"), project)}
+      ${assignmentSelect("external_viewer_user", tr("المتابع الخارجي", "External Viewer"), project)}
+    </div>`;
+    const dialog = new frappe.ui.Dialog({
+      title: `${tr("فريق إفطار الصائم", "Iftar team")} — ${project.project_title || project.name}`,
+      fields: [{fieldname: "team", fieldtype: "HTML", options: html}],
+      primary_action_label: tr("حفظ الإسناد", "Save assignment"),
+      primary_action: () => {
+        const args = {project_name: project.name};
+        $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-team-select").each(function () { args[$(this).attr("data-field")] = $(this).val() || ""; });
+        frappe.call({
+          method: "wafd_one.wafd_one.iftar_stage_portal.save_project_team",
+          args,
+          freeze: true,
+          callback: (response) => {
+            if (!response.exc) {
+              dialog.hide();
+              frappe.show_alert({message: tr("تم حفظ فريق المشروع", "Project team saved"), indicator: "green"});
+              loadIftarAssignments();
+            }
+          },
+        });
+      },
+    });
+    dialog.show();
+  }
+
   function load() {
     frappe.call({
       method: "wafd_one.employee_team.list_employees",
@@ -133,6 +195,16 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         roleOptions = message.roles || [];
         fillRoleSelectors();
         renderList();
+      },
+    });
+  }
+
+  function loadIftarAssignments() {
+    frappe.call({
+      method: "wafd_one.wafd_one.iftar_stage_portal.get_employee_project_assignments",
+      callback: (response) => {
+        iftarAssignments = response.message || {projects: [], options: {}};
+        renderIftarAssignments();
       },
     });
   }
@@ -216,6 +288,10 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     const employee = employees.find((item) => item.name === $(this).attr("data-user"));
     if (employee) changeRole(employee);
   });
+  $root.on("click", ".wafd-iftar-assign", function () {
+    const project = (iftarAssignments.projects || []).find((item) => item.name === $(this).attr("data-project"));
+    if (project) openIftarAssignment(project);
+  });
   $root.on("click", ".wafd-edit-account", function () {
     const employee = employees.find((item) => item.name === $(this).attr("data-user"));
     if (employee) editAccount(employee);
@@ -281,4 +357,5 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
   });
 
   load();
+  loadIftarAssignments();
 };

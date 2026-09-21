@@ -1,7 +1,0 @@
-Make authority inspection non-blocking and remove the orphan PDF page
-
-- Keep food inspector approval and signature in the Site Manager screen.
-- Allow supervisor task creation, handover, distribution, and closeout after site receipt without waiting for inspector signature.
-- Let the Site Manager record inspector approval later with the automatic timestamp.
-- Require completed inspector approval only before the administration sends the final official report.
-- Remove the report footer that could overflow alone onto an extra PDF page.

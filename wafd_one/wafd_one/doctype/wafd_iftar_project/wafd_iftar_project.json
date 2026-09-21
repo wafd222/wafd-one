@@ -189,46 +189,53 @@
    "fieldname": "team_section",
    "fieldtype": "Section Break",
    "label": "فريق إفطار الصائم الثابت / Permanent Iftar Team",
-   "description": "يسجل مرة واحدة للمشروع ويستخدم طوال رمضان أو أيام الصيام المحددة"
+   "description": "يسجل مرة واحدة للمشروع ويستخدم طوال رمضان أو أيام الصيام المحددة",
+   "hidden": 1
   },
   {
    "fieldname": "project_manager_user",
    "fieldtype": "Link",
    "label": "مدير المشروع / Project Manager",
    "options": "User",
-   "allow_on_submit": 1
+   "allow_on_submit": 1,
+   "hidden": 1
   },
   {
    "fieldname": "kitchen_supervisor_user",
    "fieldtype": "Link",
    "label": "مشرف المطبخ / Kitchen Supervisor",
    "options": "User",
-   "allow_on_submit": 1
+   "allow_on_submit": 1,
+   "hidden": 1
   },
   {
    "fieldname": "column_break_team",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1
   },
   {
    "fieldname": "delivery_supervisor_user",
    "fieldtype": "Link",
    "label": "مشرف التوصيل / Delivery Supervisor",
    "options": "User",
-   "allow_on_submit": 1
+   "allow_on_submit": 1,
+   "hidden": 1
   },
   {
    "fieldname": "site_manager_user",
    "fieldtype": "Link",
    "label": "مدير الموقع / Site Manager",
    "options": "User",
-   "allow_on_submit": 1
+   "allow_on_submit": 1,
+   "hidden": 1
   },
   {
    "fieldname": "external_viewer_user",
    "fieldtype": "Link",
    "label": "متابعة الطرف الخارجي / External Viewer",
    "options": "User",
-   "description": "قراءة مراحل المشروع فقط / Read-only project stage tracking"
+   "description": "قراءة مراحل المشروع فقط / Read-only project stage tracking",
+   "hidden": 1
   },
   {
    "fieldname": "start_date",

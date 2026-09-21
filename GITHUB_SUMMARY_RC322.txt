@@ -1,8 +1,0 @@
-Fix RC321 Frappe Cloud deployment packaging
-
-- Restore the root pyproject.toml required by Frappe Cloud dependency validation.
-- Restore standard package metadata files omitted from the RC321 archive.
-- Keep the RC321 application code and Iftar Site Manager / Field Supervisor access changes intact.
-- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver support.
-- Align package and app version metadata to 10.0.0rc322.
-- No business-logic changes to Delivery Management, standard driver trips, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

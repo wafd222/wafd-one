@@ -1,6 +1,0 @@
-Refine official Iftar report pagination after PDF review
-
-- Preserve the RC338 legacy delivery-time and native PDF sharing fixes.
-- Compact the final approval block while keeping signatures and stamps legible.
-- Allow final approvals to remain on the preceding page when space is available.
-- Keep the site manager, administration signature, and stamp together as one block.

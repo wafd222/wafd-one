@@ -127,8 +127,8 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       ${o ? `<div class="ift-monitor-day"><span>اليوم ${num(o.day_index)} من ${num(o.day_total)}</span><b>${fmtDate(o.operation_date)}</b></div>` : ''}
       <div class="ift-stage-strip">${stages.map(s => `<span class="${s.done ? 'done' : ''}">${s.done ? '✓ ' : ''}${esc(s.label)}</span>`).join('')}</div>
       ${(!externalView && o) ? tripRows(o.trips) + workflowNotes(o.display_notes) : ''}
-      ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مشرف التوصيل</b>${esc(p.delivery_supervisor_user || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
-      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-assign-team">إسناد شاشات المشروع</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
+      ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مشرف التوصيل</b>${esc(p.delivery_supervisor_user || 'غير مسند')}</span><span><b>مدير الموقع</b>${esc(p.site_manager_user || 'غير مسند')}</span><span><b>مشرفو السفر</b>${esc((p.supervisor_plans || []).filter(x => Number(x.active) !== 0).map(x => x.supervisor_name || x.supervisor_user).filter(Boolean).join('، ') || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
+      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إدارة الموظفين والمهمات</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
     </div>`;
   }
 
@@ -282,10 +282,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       openProjectSetupDialog(wrapper, String($(this).closest("[data-project]").data("project")));
     });
 
-    $root.on("click.rc314", ".ift-assign-team", function () {
-      const projectName = String($(this).closest("[data-project]").data("project"));
-      openTeamDialog(wrapper, projectName);
-    });
+    $root.on("click.rc314", ".ift-open-employees", function () { frappe.set_route("wafd-employee-team"); });
     $root.on("click.rc314", ".ift-open-legacy", function () { frappe.set_route("wafd-iftar-operations"); });
     $root.on("click.rc314", ".ift-open-official-report", function () {
       const operation = String($(this).closest("[data-operation]").data("operation"));
@@ -306,22 +303,6 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
         }catch(e){d.get_primary_btn().prop("disabled",false);throw e;}
       }});d.show();
     });
-  }
-
-  function openTeamDialog(wrapper, projectName) {
-    const data = wrapper.__iftar_rc314.data;
-    const p = (data.projects || []).find(x => x.name === projectName);
-    const d = new frappe.ui.Dialog({ title:"إسناد شاشات مشروع إفطار الصائم", fields:[
-      {fieldname:"project_manager_user",fieldtype:"Link",options:"User",label:"مدير المشروع",default:p.project_manager_user || ""},
-      {fieldname:"kitchen_supervisor_user",fieldtype:"Link",options:"User",label:"مشرف المطبخ",default:p.kitchen_supervisor_user || ""},
-      {fieldname:"delivery_supervisor_user",fieldtype:"Link",options:"User",label:"مشرف التوصيل",default:p.delivery_supervisor_user || ""},
-      {fieldname:"site_manager_user",fieldtype:"Link",options:"User",label:"مدير موقع إفطار الصائم",default:p.site_manager_user || ""},
-      {fieldname:"external_viewer_user",fieldtype:"Link",options:"User",label:"الطرف الخارجي (قراءة فقط)",default:p.external_viewer_user || ""}
-    ], primary_action_label:"حفظ الإسناد", primary_action: async values => {
-      d.get_primary_btn().prop("disabled", true);
-      try { await call("save_project_team", {project_name:projectName, ...values}); d.hide(); frappe.show_alert({message:"تم حفظ الإسناد",indicator:"green"}); await window.wafdIftarStageLoad(wrapper); }
-      catch(e){ d.get_primary_btn().prop("disabled", false); throw e; }
-    }}); d.show();
   }
 
   function openAllocationDialog(wrapper, operationName) {
@@ -354,7 +335,10 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     if (!state || state.loading) return;
     state.loading = true;
     state.$root.html('<div class="ift-loading">جاري تحميل مهام إفطار الصائم…</div>');
-    try { render(wrapper, await call("get_portal_data")); }
+    try {
+      const requested_mode = sessionStorage.getItem("wafd_iftar_requested_mode") || "";
+      render(wrapper, await call("get_portal_data", {requested_mode}));
+    }
     catch (e) { state.$root.html(`<div class="ift-empty"><span>!</span><h2>تعذر تحميل الشاشة</h2><p>${esc(e.message || e)}</p></div>`); }
     finally { state.loading = false; }
   };

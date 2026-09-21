@@ -51,56 +51,6 @@ def _validate_team_user(fieldname, user):
     return user
 
 
-def assign_project_team_roles(assignments):
-    """Assign the selected project duty to each active WAFD employee.
-
-    The administration chooses employees first in the Iftar project wizard; the
-    selected field is the requested duty.  Role assignment therefore happens as
-    part of the same transaction instead of forcing administrators to leave the
-    wizard and preconfigure every employee beforehand.
-    """
-    if not (_roles() & MANAGEMENT_ROLES):
-        frappe.throw(_("غير مصرح بإسناد مهمات فريق المشروع / Not permitted to assign project team duties"), frappe.PermissionError)
-
-    from wafd_one.employee_team import MANAGED_ROLES
-
-    managed_roles = set(MANAGED_ROLES)
-    requested_by_user = {}
-    for fieldname, raw_user in (assignments or {}).items():
-        if fieldname not in PROJECT_TEAM_ROLE_MAP:
-            frappe.throw(_("مهمة فريق المشروع غير صحيحة / Invalid project team duty"))
-        user = (raw_user or "").strip()
-        if not user or not frappe.db.exists(
-            "User", {"name": user, "enabled": 1, "user_type": "System User"}
-        ):
-            frappe.throw(_("اختر حساب موظف نشط / Select an active employee account"))
-
-        existing_roles = set(frappe.get_roles(user))
-        if existing_roles & GLOBAL_MANAGEMENT_ROLES:
-            continue
-        if not (existing_roles & managed_roles):
-            frappe.throw(_("الحساب {0} ليس ضمن موظفي وفد المفعّلين / Account is not an active WAFD employee").format(user))
-
-        # The first role is the dedicated Iftar duty.  Alternative roles in the
-        # map remain accepted for legacy projects, but new assignments receive
-        # the clearest role for their selected task.
-        requested_by_user.setdefault(user, set()).add(PROJECT_TEAM_ROLE_MAP[fieldname][0])
-
-    assigned = {}
-    for user, requested_roles in requested_by_user.items():
-        employee = frappe.get_doc("User", user)
-        current_roles = {row.role for row in employee.roles}
-        additions = sorted(requested_roles - current_roles)
-        if additions:
-            for role in additions:
-                employee.append("roles", {"role": role})
-            employee.flags.ignore_permissions = True
-            employee.save()
-            frappe.clear_cache(user=user)
-        assigned[user] = additions
-    return assigned
-
-
 def backfill_unambiguous_project_team():
     """Fill legacy blank assignments only when one active user owns the role.
 
@@ -200,19 +150,15 @@ def normalize_legacy_iftar_sequence():
 @frappe.whitelist()
 def assign_project_team(project_name, project_manager_user=None, kitchen_supervisor_user=None,
                         delivery_supervisor_user=None, site_manager_user=None):
-    """Assign the permanent core team, including on an already-submitted project."""
-    _require("System Manager", "WAFD Operations Manager", "WAFD Project Manager")
+    """Compatibility API for the management-only Employee Management board."""
+    _require("System Manager", "WAFD Operations Manager")
     project = frappe.get_doc("WAFD Iftar Project", project_name)
-    if not (_roles() & GLOBAL_MANAGEMENT_ROLES):
-        if project.project_manager_user and project.project_manager_user != frappe.session.user:
-            frappe.throw(_("هذا المشروع مسند لمدير مشروع آخر / Project is assigned to another manager"), frappe.PermissionError)
     supplied = {
         "project_manager_user": project_manager_user,
         "kitchen_supervisor_user": kitchen_supervisor_user,
         "delivery_supervisor_user": delivery_supervisor_user,
         "site_manager_user": site_manager_user,
     }
-    assign_project_team_roles(supplied)
     values = {fieldname: _validate_team_user(fieldname, user) for fieldname, user in supplied.items()}
     frappe.db.set_value("WAFD Iftar Project", project.name, values, update_modified=True)
     for user in set(values.values()) - {""}:

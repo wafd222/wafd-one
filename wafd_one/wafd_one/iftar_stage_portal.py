@@ -57,36 +57,16 @@ def _active_user(user):
     return user
 
 
-def _ensure_team_role(user, required_role):
-    """Grant only the Iftar assignment role needed by the selected user.
-
-    Team assignment is a management-only action.  We deliberately do not
-    remove or replace any existing roles, and global management accounts are
-    left untouched because they already have full Iftar access.
-    """
-    roles = _roles(user)
-    if required_role in roles or (roles & GLOBAL_MANAGEMENT_ROLES):
-        return
-    if not frappe.db.exists("Role", required_role):
-        frappe.throw(
-            _("الدور المطلوب غير موجود في النظام: {0} / Required role does not exist").format(required_role)
-        )
-
-    user_doc = frappe.get_doc("User", user)
-    existing = {row.role for row in (user_doc.roles or []) if row.role}
-    if required_role not in existing:
-        user_doc.append("roles", {"role": required_role})
-        user_doc.flags.ignore_permissions = True
-        user_doc.save(ignore_permissions=True)
-    frappe.clear_cache(user=user)
-
-
 def _validate_team_user(fieldname, user):
     user = _active_user(user)
     if not user:
         return ""
     required_role = TEAM_ROLE_BY_FIELD[fieldname]
-    _ensure_team_role(user, required_role)
+    roles = _roles(user)
+    if required_role not in roles and not (roles & GLOBAL_MANAGEMENT_ROLES):
+        frappe.throw(
+            _("عيّن مهمة الموظف أولاً من إدارة الموظفين: {0} / Assign the employee task first in Employee Management").format(required_role)
+        )
     return user
 
 
@@ -157,13 +137,16 @@ def _visible_projects():
     return visible
 
 
-def _mode_from_projects(projects):
+def _mode_from_projects(projects, requested_mode=None):
     roles = _roles()
     if _is_global_manager(roles):
         return "management"
     duties = set()
     for project in projects:
         duties.update(project.get("portal_duties") or [])
+    requested_mode = (requested_mode or "").strip()
+    if requested_mode in {"project_manager", "kitchen", "delivery", "viewer"} and requested_mode in duties:
+        return requested_mode
     # Project-manager monitoring intentionally wins over field execution when a
     # user has both roles, because that account is expected to supervise rather
     # than accidentally approve a field stage from the monitoring view.
@@ -427,6 +410,25 @@ def _team_options():
     return result
 
 
+@frappe.whitelist()
+def get_employee_project_assignments():
+    """Return the Iftar-only assignment board used inside Employee Management."""
+    if not _is_global_manager():
+        frappe.throw(_("الإدارة فقط / Management only"), frappe.PermissionError)
+    projects = frappe.get_all(
+        "WAFD Iftar Project",
+        filters={"docstatus": ["<", 2], "status": ["not in", ["ملغي / Cancelled"]]},
+        fields=[
+            "name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals",
+            "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user",
+            "site_manager_user", "external_viewer_user",
+        ],
+        order_by="start_date desc, modified desc",
+        limit_page_length=250,
+    )
+    return {"projects": projects, "options": _team_options()}
+
+
 def _delivery_options():
     drivers = frappe.get_all(
         "WAFD Driver",
@@ -481,23 +483,26 @@ def _approved_report_inbox(projects):
 
 
 @frappe.whitelist()
-def get_portal_data():
+def get_portal_data(requested_mode=None):
     if frappe.session.user in ("Guest", ""):
         frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
 
     projects = _visible_projects()
-    mode = _mode_from_projects(projects)
+    mode = _mode_from_projects(projects, requested_mode=requested_mode)
     if mode == "none":
         allowed = GLOBAL_MANAGEMENT_ROLES | {PROJECT_MANAGER_ROLE, KITCHEN_ROLE, DELIVERY_ROLE, SITE_MANAGER_ROLE, SUPERVISOR_ROLE, EXTERNAL_VIEWER_ROLE}
         if not (_roles() & allowed):
             frappe.throw(_("غير مصرح بمتابعة إفطار الصائم / Not permitted"), frappe.PermissionError)
 
+    mode_projects = projects if mode == "management" else [
+        project for project in projects if mode in (project.get("portal_duties") or [])
+    ]
     if mode == "kitchen":
-        project_rows = [_kitchen_payload(project) for project in projects if "kitchen" in (project.get("portal_duties") or [])]
+        project_rows = [_kitchen_payload(project) for project in mode_projects]
     elif mode == "delivery":
-        project_rows = [_delivery_payload(project) for project in projects if "delivery" in (project.get("portal_duties") or [])]
+        project_rows = [_delivery_payload(project) for project in mode_projects]
     else:
-        project_rows = [_project_payload(project, include_all_operations=False, include_trips=True) for project in projects]
+        project_rows = [_project_payload(project, include_all_operations=False, include_trips=True) for project in mode_projects]
 
     response = {
         "mode": mode,
@@ -507,13 +512,17 @@ def get_portal_data():
         "can_manage_team": mode == "management",
     }
     if mode in {"management", "project_manager"}:
-        response["report_inbox"] = _approved_report_inbox(projects)
+        if mode == "management":
+            response["report_inbox"] = _approved_report_inbox(projects)
+        else:
+            response["report_inbox"] = _approved_report_inbox(mode_projects)
     if mode == "project_manager":
         for row in project_rows:
             row["supervisor_plans"] = _supervisor_plans_payload(row["name"])
         response["supervisor_options"] = get_supervisor_user_options()
     if mode == "management":
-        response["team_options"] = _team_options()
+        for row in project_rows:
+            row["supervisor_plans"] = _supervisor_plans_payload(row["name"])
     if mode in {"kitchen", "delivery"}:
         response.update(_delivery_options())
     return response
@@ -911,13 +920,19 @@ def _supervisor_plans_payload(project_name):
 def get_supervisor_user_options():
     if frappe.session.user in ("Guest", ""):
         frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
+    users = frappe.get_all(
+        "Has Role",
+        filters={"role": SUPERVISOR_ROLE, "parenttype": "User"},
+        pluck="parent",
+        limit_page_length=1000,
+    )
     rows = frappe.get_all(
         "User",
-        filters={"enabled": 1, "user_type": "System User"},
+        filters={"name": ["in", sorted(set(users))], "enabled": 1, "user_type": "System User"},
         fields=["name", "full_name", "mobile_no"],
         order_by="full_name asc, name asc",
         limit_page_length=500,
-    )
+    ) if users else []
     return [{"value": r.name, "label": r.full_name or r.name, "mobile_no": r.mobile_no or ""} for r in rows]
 
 
@@ -958,7 +973,10 @@ def save_quick_supervisor_setup(project_name, plans_json):
         if user in seen_users:
             frappe.throw(_("لا تكرر نفس حساب المشرف / Do not duplicate the same supervisor account"))
         seen_users.add(user)
-        _ensure_team_role(user, SUPERVISOR_ROLE)
+        if SUPERVISOR_ROLE not in _roles(user) and not (_roles(user) & GLOBAL_MANAGEMENT_ROLES):
+            frappe.throw(
+                _("عيّن مهمة مشرف سفر إفطار الصائم للحساب من إدارة الموظفين أولاً / Assign the Iftar Travel Supervisor task in Employee Management first")
+            )
         name = (raw.get("supervisor_name") or frappe.utils.get_fullname(user) or user).strip()
         mobile = (raw.get("supervisor_mobile") or "").strip()
         owners = []

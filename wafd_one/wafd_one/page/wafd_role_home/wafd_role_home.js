@@ -195,7 +195,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إنشاء عرض سعر", desc: "إعداد عرض جديد للعميل", icon: "💼", new_doctype: "WAFD Quotation" },
         { label: "العروض المرسلة", desc: "فقط العروض التي تمت مشاركتها وتسجيل إرسالها", icon: "✓", doctype: "WAFD Quotation", filters: { sent_on: ["is", "set"] } },
         { label: "إفطار صائم", desc: "المشروع والفريق والتقارير اليومية", icon: "☾", page: "wafd-iftar-operations", special: true },
-        { label: "متابعة إفطار الصائم", desc: "متابعة مراحل المشروع لحظة بلحظة", icon: "◉", page: "wafd-iftar-team" }
+        { label: "متابعة إفطار الصائم", desc: "إعداد فريق الموقع وتوزيع الوجبات والتقارير", icon: "◉", page: "wafd-iftar-team", iftar_mode: "project_manager" }
       ]
     },
     {
@@ -236,13 +236,13 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         { label: "إدارة التوصيل", desc: "إنشاء الرحلات والجداول ومتابعة التسليم", icon: "➜", page: "wafd-delivery-supervisor", primary: true },
         { label: "المواقع والفنادق", desc: "إضافة فندق أو مسجد أو موقع إفطار صائم", icon: "⌖", action: "delivery_locations", page: "wafd-delivery-supervisor" },
         { label: "تقارير التوصيل", desc: "معاينة ومشاركة وطباعة تقرير الشركة أو الفندق", icon: "▤", page: "wafd-delivery-report" },
-        { label: "مهام إفطار الصائم", desc: "استلام الكمية وتوزيعها على السيارات", icon: "☾", page: "wafd-iftar-team" }
+        { label: "مهام إفطار الصائم", desc: "استلام الكمية وتوزيعها على السيارات", icon: "☾", page: "wafd-iftar-team", iftar_mode: "delivery" }
       ]
     },
     {
       role: "WAFD Iftar Kitchen Supervisor", title: "مشرف مطبخ إفطار الصائم", subtitle: "الإنتاج والتغليف والتحميل اليومي",
       items: [
-        { label: "مهمة إفطار الصائم", desc: "اعتماد الإنتاج ثم التغليف ثم التحميل", icon: "☾", page: "wafd-iftar-team", primary: true }
+        { label: "مهمة إفطار الصائم", desc: "اعتماد الإنتاج ثم التغليف ثم التحميل وتوزيع السيارات", icon: "☾", page: "wafd-iftar-team", iftar_mode: "kitchen", primary: true }
       ]
     },
     {
@@ -264,7 +264,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       role: "WAFD Delivery Viewer", title: "متابعة التسليم", subtitle: "بيانات الرحلات المسندة لحسابك",
       items: [
         { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true },
-        { label: "متابعة إفطار الصائم", desc: "متابعة مراحل المشروع للقراءة فقط", icon: "☾", page: "wafd-iftar-team" }
+        { label: "متابعة إفطار الصائم", desc: "متابعة مراحل المشروع للقراءة فقط", icon: "☾", page: "wafd-iftar-team", iftar_mode: "viewer" }
       ]
     },
     {
@@ -565,6 +565,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         if (card.dataset.wafdNavigating === "1") return;
         card.dataset.wafdNavigating = "1";
         window.setTimeout(() => { delete card.dataset.wafdNavigating; }, 1200);
+        if (item.page === "wafd-iftar-team" && item.iftar_mode) {
+          sessionStorage.setItem("wafd_iftar_requested_mode", item.iftar_mode);
+        }
         frappe.set_route(item.page);
         return;
       }

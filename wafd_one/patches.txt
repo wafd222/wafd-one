@@ -637,3 +637,7 @@ wafd_one.wafd_one.patches.v10_0_0_rc340.execute
 
 # RC343 restore undertaking signature/list visibility and compact mobile menu
 wafd_one.wafd_one.patches.v10_0_0_rc343.execute
+# RC344 isolate Iftar role entry and remove duplicate project-team selector
+wafd_one.wafd_one.patches.v10_0_0_rc344.execute
+# RC345 centralize Iftar employee/project assignment and restrict travel-supervisor selection
+wafd_one.wafd_one.patches.v10_0_0_rc345.execute

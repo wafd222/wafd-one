@@ -1,9 +1,0 @@
-WAFD ONE 10.0.0 RC333 — Supervisor Reconciliation & Mobile Action Fix
-
-- Corrected supervisor closeout reconciliation for table-owner handovers.
-- Table-owner handovers now reconcile against meals received from the site.
-- Final distributed meals can differ from handover totals when meals are returned, preserved, or recorded as waste.
-- Closeout remains strictly balanced: distributed + returned surplus + food preservation + waste = received meals.
-- Supports the field example: 400 distributed + 30 returned + 70 preserved = 500 received, while 500 were handed to table owners.
-- Fixed the floating food-inspection button leaking into unrelated forms after mobile navigation.
-- Preserved the existing Iftar workflow, approvals, evidence, and official Presidency report rules.

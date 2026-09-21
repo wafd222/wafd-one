@@ -1,9 +1,0 @@
-Fix blank Iftar Supervisor task page by correcting Frappe Desk Page route metadata
-
-- Correct the dedicated Iftar Supervisor Page document name and page_name to the canonical `wafd-iftar-supervisor` route used by Role Home.
-- Correct the Iftar Site Manager Page metadata to the matching canonical `wafd-iftar-site` route for consistency.
-- Reload only the two Iftar field Page documents during migration and clear Page cache.
-- Keep all existing supervisor plans, Daily Reports, owner assignments, received quantities, handover photos, and task state unchanged.
-- Preserve RC328 camera-only evidence capture and Site Manager handover-save fix.
-- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver capture.
-- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

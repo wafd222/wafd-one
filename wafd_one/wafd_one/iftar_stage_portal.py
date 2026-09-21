@@ -395,6 +395,18 @@ def _team_options():
             pluck="parent",
             limit_page_length=1000,
         )
+        # Global management accounts are valid temporary assignees according
+        # to _validate_team_user(). Keep the selector consistent with that
+        # server-side rule, especially when no separate Project Manager exists.
+        for management_role in GLOBAL_MANAGEMENT_ROLES:
+            users.extend(frappe.get_all(
+                "Has Role",
+                filters={"role": management_role, "parenttype": "User"},
+                pluck="parent",
+                limit_page_length=1000,
+            ))
+        if _is_global_manager():
+            users.append(frappe.session.user)
         users = sorted(set(users))
         rows = frappe.get_all(
             "User",

@@ -17,7 +17,7 @@ assert "def get_portal_data(requested_mode=None):" in portal
 assert 'requested_mode in {"project_manager", "kitchen", "delivery", "viewer"}' in portal
 assert 'إسناد شاشات مشروع إفطار الصائم' not in team
 assert 'ift-assign-team' not in team
-assert 'إدارة الموظفين والمهمات' in team
+assert 'إسناد موظفي هذا المشروع' in team
 assert '<b>مشرفو السفر</b>' in team
 
 # This release must remain isolated from undertaking and generic delivery code.

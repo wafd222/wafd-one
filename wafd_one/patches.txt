@@ -643,3 +643,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc344.execute
 wafd_one.wafd_one.patches.v10_0_0_rc345.execute
 # RC346 publish Iftar tasks only after employee assignment and management approval
 wafd_one.wafd_one.patches.v10_0_0_rc346.execute
+# RC347 open the exact Iftar project assignment and refresh employee-role options immediately
+wafd_one.wafd_one.patches.v10_0_0_rc347.execute

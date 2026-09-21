@@ -128,7 +128,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       <div class="ift-stage-strip">${stages.map(s => `<span class="${s.done ? 'done' : ''}">${s.done ? '✓ ' : ''}${esc(s.label)}</span>`).join('')}</div>
       ${(!externalView && o) ? tripRows(o.trips) + workflowNotes(o.display_notes) : ''}
       ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مشرف التوصيل</b>${esc(p.delivery_supervisor_user || 'غير مسند')}</span><span><b>مدير الموقع</b>${esc(p.site_manager_user || 'غير مسند')}</span><span><b>مشرفو السفر</b>${esc((p.supervisor_plans || []).filter(x => Number(x.active) !== 0).map(x => x.supervisor_name || x.supervisor_user).filter(Boolean).join('، ') || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
-      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إدارة الموظفين والمهمات</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
+      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إسناد موظفي هذا المشروع</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
     </div>`;
   }
 
@@ -282,7 +282,11 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       openProjectSetupDialog(wrapper, String($(this).closest("[data-project]").data("project")));
     });
 
-    $root.on("click.rc314", ".ift-open-employees", function () { frappe.set_route("wafd-employee-team"); });
+    $root.on("click.rc314", ".ift-open-employees", function () {
+      const project = String($(this).closest("[data-project]").data("project") || "");
+      if (project) sessionStorage.setItem("wafd_iftar_assignment_project", project);
+      frappe.set_route("wafd-employee-team");
+    });
     $root.on("click.rc314", ".ift-open-legacy", function () { frappe.set_route("wafd-iftar-operations"); });
     $root.on("click.rc314", ".ift-open-official-report", function () {
       const operation = String($(this).closest("[data-operation]").data("operation"));

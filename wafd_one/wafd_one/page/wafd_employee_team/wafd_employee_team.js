@@ -58,7 +58,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       .wafd-employee-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(180px,.8fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-employee-row:last-child{border-bottom:0}
       .wafd-employee-identity b,.wafd-employee-identity small{display:block}.wafd-employee-identity small{color:#777b82;margin-top:3px}.wafd-employee-role{display:flex;flex-wrap:wrap;gap:6px}.wafd-role-badge,.wafd-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:750}.wafd-role-badge{background:#f4eddd;color:#765b23}.wafd-status-badge.is-on{background:#e8f4ea;color:#2e6a38}.wafd-status-badge.is-off{background:#f3e8e8;color:#8b3030}
       .wafd-row-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.wafd-row-actions button{border:1px solid #ddd6c8;border-radius:10px;background:#fff;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap}.wafd-row-actions button.is-stop,.wafd-row-actions button.is-delete{color:#963434}.wafd-row-actions button.is-delete{border-color:#e1bcbc;background:#fff8f8}.wafd-empty{padding:30px 10px;text-align:center;color:#7b7e83}.wafd-driver-note{display:none;margin-top:6px;color:#916d25;font-size:11px}
-      .wafd-iftar-project{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(240px,1fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-iftar-project:last-child{border-bottom:0}.wafd-iftar-project b,.wafd-iftar-project small{display:block}.wafd-iftar-project small{color:#777b82;margin-top:4px}.wafd-iftar-team-names{display:flex;flex-wrap:wrap;gap:5px}.wafd-iftar-team-names span{background:#f6f2e8;border-radius:999px;padding:5px 8px;font-size:11px;color:#765b23}.wafd-iftar-assign{border:1px solid #a98232;border-radius:10px;background:#fffaf0;color:#6f531a;padding:9px 12px;font-weight:800}
+      .wafd-iftar-project{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(240px,1fr) auto;gap:14px;align-items:center;padding:15px 4px;border-bottom:1px solid #eee9df}.wafd-iftar-project:last-child{border-bottom:0}.wafd-iftar-project b,.wafd-iftar-project small{display:block}.wafd-iftar-project small{color:#777b82;margin-top:4px}.wafd-iftar-team-names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.wafd-iftar-team-names span{background:#f6f2e8;border-radius:10px;padding:7px 9px;font-size:11px;color:#765b23;overflow-wrap:anywhere}.wafd-iftar-team-names span b{font-size:10px;margin-bottom:2px}.wafd-iftar-team-names span.is-missing{background:#fff1f0;color:#9b302b}.wafd-iftar-assign{border:1px solid #a98232;border-radius:10px;background:#fffaf0;color:#6f531a;padding:9px 12px;font-weight:800}
       @media(max-width:700px){.wafd-employee-shell{padding:0 9px;margin-top:10px}.wafd-employee-inline-nav{display:flex;justify-content:flex-end;margin:0 0 10px}.wafd-employee-inline-back{display:flex}.wafd-employee-card{padding:17px;border-radius:18px}.wafd-employee-card h2{font-size:21px}.wafd-employee-form{grid-template-columns:1fr}.wafd-task-picker{grid-template-columns:1fr}.wafd-employee-toolbar{grid-template-columns:1fr}.wafd-employee-row,.wafd-iftar-project{grid-template-columns:1fr;gap:9px}.wafd-row-actions{justify-content:flex-start;flex-wrap:wrap}.wafd-row-actions button,.wafd-iftar-assign{width:100%;flex:1}.wafd-employee-role{justify-content:flex-start}}
     </style>
     <div class="wafd-employee-shell">
@@ -76,16 +76,16 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         <div class="wafd-employee-actions"><button type="button" class="wafd-employee-primary" id="wafd-add-employee">${tr("إنشاء حساب الموظف", "Create employee account")}</button></div>
       </section>
       <section class="wafd-employee-card">
+        <h2>${tr("فريق مشاريع إفطار الصائم", "Iftar project teams")}</h2>
+        <div id="wafd-iftar-project-list"><div class="wafd-empty">${tr("جاري التحميل...", "Loading...")}</div></div>
+      </section>
+      <section class="wafd-employee-card">
         <h2>${tr("الموظفون والمهمات", "Employees and tasks")}</h2>
         <div class="wafd-employee-toolbar">
           <input id="wafd-employee-search" placeholder="${tr("بحث بالاسم أو البريد", "Search by name or email")}">
           <select id="wafd-employee-filter"><option value="">${tr("جميع المهمات", "All tasks")}</option></select>
         </div>
         <div id="wafd-employee-list"><div class="wafd-empty">${tr("جاري التحميل...", "Loading...")}</div></div>
-      </section>
-      <section class="wafd-employee-card">
-        <h2>${tr("فريق مشاريع إفطار الصائم", "Iftar project teams")}</h2>
-        <div id="wafd-iftar-project-list"><div class="wafd-empty">${tr("جاري التحميل...", "Loading...")}</div></div>
       </section>
     </div>
   `);
@@ -136,13 +136,28 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       $root.find("#wafd-iftar-project-list").html(`<div class="wafd-empty">${tr("لا توجد مشاريع إفطار صائم نشطة.", "No active Iftar projects.")}</div>`);
       return;
     }
-    const fields = ["project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user", "site_manager_user", "external_viewer_user"];
+    const fields = [
+      ["project_manager_user", tr("مدير المشروع", "Project Manager")],
+      ["kitchen_supervisor_user", tr("مشرف المطبخ", "Kitchen Supervisor")],
+      ["delivery_supervisor_user", tr("مشرف التوصيل", "Delivery Supervisor")],
+      ["site_manager_user", tr("مدير الموقع", "Site Manager")],
+      ["external_viewer_user", tr("المتابع الخارجي", "External Viewer")],
+    ];
     $root.find("#wafd-iftar-project-list").html(projects.map((project) => {
-      const team = fields.filter((field) => project[field]).map((field) => `<span dir="ltr">${esc(project[field])}</span>`).join("");
+      const assignedLabel = (field) => {
+        const value = project[field] || "";
+        const option = ((iftarAssignments.options || {})[field] || []).find((item) => item.value === value);
+        return option ? option.label : value;
+      };
+      const team = fields.map(([field, label]) => `<span class="${project[field] ? "is-assigned" : "is-missing"}"><b>${esc(label)}</b>${project[field] ? esc(assignedLabel(field)) : tr("غير مسند", "Not assigned")}</span>`).join("");
+      const missingCore = !project.project_manager_user || !project.kitchen_supervisor_user;
+      const buttonLabel = Number(project.docstatus) === 0
+        ? tr("إسناد واعتماد المشروع", "Assign and approve")
+        : (missingCore ? tr("إكمال إسناد المشروع", "Complete assignment") : tr("تعديل إسناد المشروع", "Edit assignment"));
       return `<div class="wafd-iftar-project">
         <div><b>${esc(project.project_title || project.name)}</b><small>${esc(project.name)} · ${esc(project.distribution_site || "")} · ${esc(project.start_date || "")}</small></div>
-        <div class="wafd-iftar-team-names">${team || `<span>${tr("غير مسند", "Not assigned")}</span>`}</div>
-        <button type="button" class="wafd-iftar-assign" data-project="${esc(project.name)}">${Number(project.docstatus) === 0 ? tr("إسناد واعتماد المشروع", "Assign and approve") : tr("تعديل الفريق", "Edit team")}</button>
+        <div class="wafd-iftar-team-names">${team}</div>
+        <button type="button" class="wafd-iftar-assign" data-project="${esc(project.name)}">${buttonLabel}</button>
       </div>`;
     }).join(""));
   }
@@ -163,13 +178,13 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       ${assignmentSelect("external_viewer_user", tr("المتابع الخارجي", "External Viewer"), project)}
     </div>`;
     const dialog = new frappe.ui.Dialog({
-      title: `${tr("فريق إفطار الصائم", "Iftar team")} — ${project.project_title || project.name}`,
+      title: `${tr("إسناد موظفي المشروع", "Assign project employees")} — ${project.project_title || project.name}`,
       fields: [{fieldname: "team", fieldtype: "HTML", options: html}],
       primary_action_label: Number(project.docstatus) === 0 ? tr("حفظ واعتماد المشروع", "Save and approve project") : tr("حفظ الإسناد", "Save assignment"),
       primary_action: async () => {
         const args = {project_name: project.name};
         $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-team-select").each(function () { args[$(this).attr("data-field")] = $(this).val() || ""; });
-        if (Number(project.docstatus) === 0 && (!args.project_manager_user || !args.kitchen_supervisor_user)) {
+        if (!args.project_manager_user || !args.kitchen_supervisor_user) {
           frappe.msgprint(tr("اختر مدير المشروع ومشرف المطبخ قبل اعتماد المشروع.", "Select the Project Manager and Kitchen Supervisor before approval."));
           return;
         }
@@ -246,6 +261,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
               dialog.hide();
               frappe.show_alert({message: tr("تم تحديث مهمات الموظف", "Employee tasks updated"), indicator: "green"});
               load();
+              loadIftarAssignments();
             }
           },
         });
@@ -279,6 +295,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
               dialog.hide();
               frappe.show_alert({message: tr("تم تحديث حساب الموظف", "Employee account updated"), indicator: "green"});
               load();
+              loadIftarAssignments();
             }
           },
         });
@@ -318,6 +335,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
         if (!response.exc) {
           frappe.show_alert({message: enabled ? tr("تم تفعيل الموظف", "Employee enabled") : tr("تم إيقاف الموظف", "Employee disabled"), indicator: enabled ? "green" : "orange"});
           load();
+          loadIftarAssignments();
         }
       },
     });
@@ -338,6 +356,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
             const archived = Boolean(response.message && response.message.archived);
             frappe.show_alert({message: archived ? tr("تمت أرشفة الحساب وإيقافه لارتباطه بسجلات سابقة", "Account archived and disabled because it has historical records") : tr("تم حذف الحساب نهائياً", "Account permanently deleted"), indicator: archived ? "orange" : "green"}, 6);
             load();
+            loadIftarAssignments();
           }
         },
       })
@@ -362,6 +381,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
           $root.find("#wafd-employee-name, #wafd-employee-email, #wafd-employee-mobile, #wafd-employee-password").val("");
           $root.find("#wafd-employee-roles input").prop("checked", false).trigger("change");
           load();
+          loadIftarAssignments();
         }
       },
     });

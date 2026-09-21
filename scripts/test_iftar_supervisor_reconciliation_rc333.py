@@ -16,8 +16,9 @@ assert "owner_delivered != cint(self.received_meals)" in report_controller
 assert "owner_delivered != cint(self.distributed_meals)" not in report_controller
 assert "owner_delivered != cint(report.received_meals)" in team_api
 assert "sum(values) != cint(report.received_meals)" in team_api
-assert "frm.$wrapper.append(mobile)" in operation_js
+assert "wafd-mobile-stage-action" in operation_js
 assert "$(document.body).append(mobile)" not in operation_js
+assert "اعتماد الإنتاج" not in operation_js
 
 # Business example reported from the field screenshots.
 received = 500

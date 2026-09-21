@@ -276,9 +276,14 @@ def create_project(data):
                 doc.save(ignore_permissions=True)
             _copy_supervisor_plans(previous_doc.name, doc.name)
 
-    generate_daily_operations(doc.name, ignore_permissions=True)
-    first_operation = frappe.db.get_value("WAFD Iftar Daily Operation", {"project": doc.name}, "name", order_by="operation_date asc")
-    return {"name": doc.name, "route": f"/app/wafd-iftar-project/{doc.name}", "first_operation": first_operation}
+    # RC346: project creation remains an administration step. Daily operations
+    # are generated only after Employee Management assigns the core team and
+    # explicitly approves the project through approve_project_plan().
+    return {
+        "name": doc.name,
+        "route": f"/app/wafd-employee-team",
+        "requires_team_assignment": 1,
+    }
 
 
 def _copy_supervisor_plans(source_project, target_project):
@@ -378,6 +383,11 @@ def generate_daily_operations(project_name, ignore_permissions=False):
     project = frappe.get_doc("WAFD Iftar Project", project_name)
     if not ignore_permissions:
         project.check_permission("write")
+
+    # A draft is not an employee task. Publishing operational days is allowed
+    # only after management assigns the core team and submits the project.
+    if cint(project.docstatus) != 1:
+        return {"created": 0, "updated": 0, "removed": 0, "pending_approval": 1}
 
     if not project.start_date or not project.end_date or cint(project.daily_meals) <= 0:
         return {"created": 0, "updated": 0, "removed": 0}

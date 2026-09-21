@@ -641,3 +641,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc343.execute
 wafd_one.wafd_one.patches.v10_0_0_rc344.execute
 # RC345 centralize Iftar employee/project assignment and restrict travel-supervisor selection
 wafd_one.wafd_one.patches.v10_0_0_rc345.execute
+# RC346 publish Iftar tasks only after employee assignment and management approval
+wafd_one.wafd_one.patches.v10_0_0_rc346.execute

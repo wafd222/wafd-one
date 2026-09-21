@@ -141,13 +141,6 @@ frappe.ui.form.on("WAFD Iftar Project", {
             }, __("إفطار الصائم / Iftar"));
         }
         if (!frm.is_new()) {
-            frm.add_custom_button(__("خطط المشرفين والفرق"), () => {
-                frappe.route_options = { project: frm.doc.name };
-                frappe.set_route("List", "WAFD Iftar Supervisor Plan");
-            }, __("إفطار الصائم / Iftar"));
-            frm.add_custom_button(__("إضافة خطة مشرف"), () => {
-                frappe.new_doc("WAFD Iftar Supervisor Plan", {project: frm.doc.name});
-            }, __("إفطار الصائم / Iftar"));
             frm.add_custom_button(__("حذف التجربة وإرجاع المواد"), () => {
                 frappe.confirm(
                     __("سيتم حذف المشروع وكل السجلات اليومية المرتبطة به، وإلغاء أي حركة مخزون مرتبطة لإرجاع المواد. هل أنت متأكد؟"),
@@ -246,10 +239,13 @@ frappe.ui.form.on("WAFD Iftar Project", {
     if (frm.fields_dict.daily_operations_html) {
       const w=frm.fields_dict.daily_operations_html.$wrapper;
       if (frm.is_new()) { w.html('<div class="alert alert-info">احفظ المشروع أولاً ليتم إنشاء الخطة اليومية.</div>'); }
-      else {
+      else if (frm.doc.docstatus === 0) {
+        w.html('<div class="alert alert-warning">المشروع مسودة — أسند مدير المشروع ومشرف المطبخ من إدارة الموظفين ثم اعتمد المشروع.</div><button type="button" class="btn btn-primary open-employee-assignment">إسناد واعتماد المشروع</button>');
+        w.off('click').on('click','.open-employee-assignment',function(){sessionStorage.setItem('wafd_iftar_assignment_project',frm.doc.name);frappe.set_route('wafd-employee-team')});
+      } else {
         const x=(await frappe.call({method:'wafd_one.wafd_one.iftar_pro.get_project_operations',args:{project_name:frm.doc.name}})).message||[];
-        w.html(`<div class="iftar-inline-head"><b>الخطة اليومية</b><button class="btn btn-sm btn-primary generate-days">توليد الأيام الناقصة</button></div>${x.length?`<table class="table table-bordered"><thead><tr><th>التاريخ</th><th>الحالة</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.map(r=>`<tr data-day="${r.name}" style="cursor:pointer"><td>${frappe.datetime.str_to_user(r.operation_date)}</td><td>${r.status}</td><td>${r.planned_meals||0}</td><td>${r.produced_meals||0}</td><td>${r.packaged_meals||0}</td><td>${r.loaded_meals||0}</td><td>${r.delivered_meals||0}</td><td>${r.received_meals||0}</td><td>${r.completion_percent||0}%</td></tr>`).join('')}</tbody></table>`:'<div class="alert alert-warning">لم تُنشأ الخطة اليومية بعد.</div>'}`);
-        w.off('click').on('click','[data-day]',function(){frappe.set_route('Form','WAFD Iftar Daily Operation',$(this).data('day'))}).on('click','.generate-days',async()=>{await frappe.call({method:'wafd_one.wafd_one.iftar_pro.generate_daily_operations',args:{project_name:frm.doc.name},freeze:true});frm.reload_doc()});
+        w.html(`<div class="iftar-inline-head"><b>الخطة اليومية</b></div>${x.length?`<table class="table table-bordered"><thead><tr><th>التاريخ</th><th>الحالة</th><th>المخطط</th><th>الإنتاج</th><th>التغليف</th><th>التحميل</th><th>التسليم</th><th>الاستلام</th><th>الإنجاز</th></tr></thead><tbody>${x.map(r=>`<tr><td>${frappe.datetime.str_to_user(r.operation_date)}</td><td>${r.status}</td><td>${r.planned_meals||0}</td><td>${r.produced_meals||0}</td><td>${r.packaged_meals||0}</td><td>${r.loaded_meals||0}</td><td>${r.delivered_meals||0}</td><td>${r.received_meals||0}</td><td>${r.completion_percent||0}%</td></tr>`).join('')}</tbody></table>`:'<div class="alert alert-warning">لم تُنشأ الخطة اليومية بعد.</div>'}`);
+        w.off('click');
       }
     }
     if (frm.fields_dict.reports_html) {

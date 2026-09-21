@@ -415,15 +415,13 @@ class WAFDIftarProject(Document):
             frappe.throw("تعذر إنشاء خطة الكراتين تلقائياً / Automatic carton plan generation failed")
 
     def after_insert(self):
-        # Create the daily plan immediately after the project is first saved so
-        # the operations screen is useful even before formal submission.
-        self._sync_daily_operations()
+        # RC346: a draft is administration data only. Operational days are not
+        # published until the core team is assigned and the project is approved.
+        pass
 
     def on_update(self):
-        # Keep the operational calendar synchronized when dates or quantities
-        # are edited while the project is still in Draft.
-        if self.docstatus == 0:
-            self._sync_daily_operations()
+        # Draft edits must never create employee tasks before approval.
+        pass
 
     def on_submit(self):
         self._sync_daily_operations()

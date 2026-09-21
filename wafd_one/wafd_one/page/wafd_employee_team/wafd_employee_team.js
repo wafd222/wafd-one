@@ -142,7 +142,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       return `<div class="wafd-iftar-project">
         <div><b>${esc(project.project_title || project.name)}</b><small>${esc(project.name)} · ${esc(project.distribution_site || "")} · ${esc(project.start_date || "")}</small></div>
         <div class="wafd-iftar-team-names">${team || `<span>${tr("غير مسند", "Not assigned")}</span>`}</div>
-        <button type="button" class="wafd-iftar-assign" data-project="${esc(project.name)}">${tr("إسناد الفريق", "Assign team")}</button>
+        <button type="button" class="wafd-iftar-assign" data-project="${esc(project.name)}">${Number(project.docstatus) === 0 ? tr("إسناد واعتماد المشروع", "Assign and approve") : tr("تعديل الفريق", "Edit team")}</button>
       </div>`;
     }).join(""));
   }
@@ -165,22 +165,27 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     const dialog = new frappe.ui.Dialog({
       title: `${tr("فريق إفطار الصائم", "Iftar team")} — ${project.project_title || project.name}`,
       fields: [{fieldname: "team", fieldtype: "HTML", options: html}],
-      primary_action_label: tr("حفظ الإسناد", "Save assignment"),
-      primary_action: () => {
+      primary_action_label: Number(project.docstatus) === 0 ? tr("حفظ واعتماد المشروع", "Save and approve project") : tr("حفظ الإسناد", "Save assignment"),
+      primary_action: async () => {
         const args = {project_name: project.name};
         $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-team-select").each(function () { args[$(this).attr("data-field")] = $(this).val() || ""; });
-        frappe.call({
-          method: "wafd_one.wafd_one.iftar_stage_portal.save_project_team",
-          args,
-          freeze: true,
-          callback: (response) => {
-            if (!response.exc) {
-              dialog.hide();
-              frappe.show_alert({message: tr("تم حفظ فريق المشروع", "Project team saved"), indicator: "green"});
-              loadIftarAssignments();
-            }
-          },
-        });
+        if (Number(project.docstatus) === 0 && (!args.project_manager_user || !args.kitchen_supervisor_user)) {
+          frappe.msgprint(tr("اختر مدير المشروع ومشرف المطبخ قبل اعتماد المشروع.", "Select the Project Manager and Kitchen Supervisor before approval."));
+          return;
+        }
+        dialog.get_primary_btn().prop("disabled", true);
+        try {
+          await frappe.call({method: "wafd_one.wafd_one.iftar_stage_portal.save_project_team", args, freeze: true});
+          if (Number(project.docstatus) === 0) {
+            await frappe.call({method: "wafd_one.wafd_one.iftar_team.approve_project_plan", args: {project_name: project.name}, freeze: true});
+          }
+          dialog.hide();
+          frappe.show_alert({message: Number(project.docstatus) === 0 ? tr("تم اعتماد المشروع وإرساله للموظفين", "Project approved and published to employees") : tr("تم حفظ فريق المشروع", "Project team saved"), indicator: "green"}, 6);
+          loadIftarAssignments();
+        } catch (error) {
+          dialog.get_primary_btn().prop("disabled", false);
+          throw error;
+        }
       },
     });
     dialog.show();
@@ -205,6 +210,12 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       callback: (response) => {
         iftarAssignments = response.message || {projects: [], options: {}};
         renderIftarAssignments();
+        const pendingProject = sessionStorage.getItem("wafd_iftar_assignment_project");
+        const pending = (iftarAssignments.projects || []).find((item) => item.name === pendingProject);
+        if (pending) {
+          sessionStorage.removeItem("wafd_iftar_assignment_project");
+          setTimeout(() => openIftarAssignment(pending), 80);
+        }
       },
     });
   }

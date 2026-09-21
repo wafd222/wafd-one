@@ -419,7 +419,7 @@ def get_employee_project_assignments():
         "WAFD Iftar Project",
         filters={"docstatus": ["<", 2], "status": ["not in", ["ملغي / Cancelled"]]},
         fields=[
-            "name", "project_title", "distribution_site", "start_date", "end_date", "daily_meals",
+            "name", "docstatus", "project_title", "distribution_site", "start_date", "end_date", "daily_meals",
             "project_manager_user", "kitchen_supervisor_user", "delivery_supervisor_user",
             "site_manager_user", "external_viewer_user",
         ],

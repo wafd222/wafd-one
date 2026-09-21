@@ -214,11 +214,10 @@ function build_wizard(wrapper) {
       if(data.meal_template==='وجبة مع زمزم / Iftar + Zamzam') data.include_zamzam=1;
       const response=await frappe.call({method:'wafd_one.wafd_one.iftar_pro.create_project',args:{data},freeze:true,freeze_message:'جارٍ إنشاء المشروع والخطة اليومية...'});
       sessionStorage.removeItem('wafd_iftar_wizard_draft');
-      frappe.show_alert({message:'تم إنشاء المشروع بنجاح — فتح أول يوم تشغيل',indicator:'green'},5);
+      frappe.show_alert({message:'تم إنشاء المشروع — أسند مدير المشروع ومشرف المطبخ لاعتماده',indicator:'green'},6);
       const msg=response.message||{};
-      if(msg.first_operation) frappe.set_route('Form','WAFD Iftar Daily Operation',msg.first_operation);
-      else if(msg.name) frappe.set_route('Form','WAFD Iftar Project',msg.name);
-      else frappe.set_route('wafd-iftar-operations');
+      if(msg.name) sessionStorage.setItem('wafd_iftar_assignment_project',msg.name);
+      frappe.set_route('wafd-employee-team');
     } catch(err) {
       console.error(err);
       frappe.msgprint({title:'تعذر إنشاء المشروع',message:(err?.message||'لم يتم إنشاء المشروع. راجع الرسالة الظاهرة ثم حاول مرة أخرى.'),indicator:'red'});

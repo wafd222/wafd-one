@@ -5,6 +5,7 @@ from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime,
 from wafd_one.driver_security import resolve_linked_driver
 
 ACTIVE = ("مخططة / Planned", "تم التحميل / Loaded", "في الطريق / In Transit", "وصلت / Arrived", "متأخرة / Delayed")
+IFTAR_LOADING_PLAN = "خطة تحميل إفطار الصائم / Iftar Loading Plan"
 
 
 class WAFDDeliveryTrip(Document):
@@ -13,8 +14,13 @@ class WAFDDeliveryTrip(Document):
             "سجل تحميل / Loading Record" if self.loading_record
             else "خطة مشرف التوصيل / Delivery Supervisor Plan"
         )
+        iftar_plan = self.trip_source == IFTAR_LOADING_PLAN or bool(self.iftar_daily_operation)
         supervisor_plan = self.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
-        if supervisor_plan:
+        if iftar_plan:
+            self.trip_source = IFTAR_LOADING_PLAN
+            loading = None
+            self._validate_iftar_plan()
+        elif supervisor_plan:
             loading = None
             self._validate_supervisor_plan()
         else:
@@ -148,6 +154,32 @@ class WAFDDeliveryTrip(Document):
             vehicle = frappe.db.get_value("WAFD Vehicle", self.vehicle, ["status", "registration_expiry", "insurance_expiry"], as_dict=True)
             if not vehicle or vehicle.status in ("صيانة / Maintenance", "غير نشطة / Inactive"):
                 frappe.throw("المركبة غير متاحة / Vehicle is unavailable")
+
+    def _validate_iftar_plan(self):
+        """Validate an isolated Iftar trip without a generic loading record."""
+        self.loading_record = None
+        if not self.iftar_project or not self.iftar_daily_operation:
+            frappe.throw("اربط رحلة إفطار الصائم بالمشروع ويوم التشغيل / Link the Iftar trip to its project and operation")
+        operation = frappe.db.get_value(
+            "WAFD Iftar Daily Operation",
+            self.iftar_daily_operation,
+            ["project", "operation_date", "loaded_meals", "docstatus"],
+            as_dict=True,
+        )
+        if not operation or operation.project != self.iftar_project or cint(operation.docstatus) == 2:
+            frappe.throw("يوم تشغيل إفطار الصائم غير صحيح / Invalid Iftar operation")
+        if cint(operation.loaded_meals) <= 0:
+            frappe.throw("يجب اعتماد تحميل إفطار الصائم أولاً / Iftar loading approval is required")
+        self.trip_date = operation.operation_date
+        self.meal_type = "إفطار صائم / Iftar Saim"
+        if cint(self.quantity) <= 0:
+            frappe.throw("كمية الرحلة يجب أن تكون أكبر من صفر / Trip quantity must be greater than zero")
+        if not self.vehicle:
+            frappe.throw("اختر السيارة / Select a vehicle")
+        # Reuse only the resource, destination, time and driver-account checks.
+        # The generic food-safety/loading-record path does not belong to the
+        # isolated Iftar workflow.
+        self._validate_supervisor_plan()
 
 
     def _fill_planned_times(self, loading):

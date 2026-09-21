@@ -134,7 +134,7 @@
    "fieldname": "trip_source",
    "fieldtype": "Select",
    "label": "مصدر الرحلة / Trip Source",
-   "options": "سجل تحميل / Loading Record\nخطة مشرف التوصيل / Delivery Supervisor Plan",
+   "options": "سجل تحميل / Loading Record\nخطة مشرف التوصيل / Delivery Supervisor Plan\nخطة تحميل إفطار الصائم / Iftar Loading Plan",
    "default": "سجل تحميل / Loading Record",
    "reqd": 1
   },

@@ -1,0 +1,9 @@
+Fix official Iftar PDF generation and mobile sharing
+
+- Render legacy table-owner Time values safely without passing timedelta to format_datetime.
+- Include the operation date when only a legacy delivery time is available.
+- Enable Share only after receiving a valid, non-empty application/pdf response.
+- Prevent HTML error pages from being shared as PDF files.
+- Preserve native iPhone file sharing with a safe download fallback.
+- Tighten evidence and approval layout to reduce unnecessary blank pages.
+- Replace the broken missing-stamp placeholder with a clean formal mark.

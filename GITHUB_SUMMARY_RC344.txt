@@ -1,0 +1,9 @@
+WAFD ONE 10.0.0 RC344 — Isolate Iftar role entry and remove duplicate staff selection
+
+- Keep Employee Management as the single visible source for employee accounts and Iftar roles.
+- Remove the duplicate project-screen assignment dialog from Iftar monitoring.
+- Open the exact Kitchen, Delivery, Project Manager, or Viewer workspace selected from the role home, even when one employee has multiple roles.
+- Restore Kitchen Supervisor task visibility for multi-role accounts.
+- Show the Site Manager and active Iftar travel supervisors in the management project summary.
+- Keep travel-supervisor teams, assistants, table owners, and meal allocations inside the dedicated Project Manager workflow.
+- Preserve undertakings, signatures, stamps, quotations, inventory, finance, cleaning, generic delivery, and every non-Iftar module unchanged.

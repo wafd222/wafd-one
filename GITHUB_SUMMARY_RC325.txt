@@ -1,0 +1,13 @@
+Simplify Iftar supervisor and table-owner registration and fix empty supervisor task view
+
+- Add a mobile-first quick setup dialog to the Iftar Site Manager screen for registering supervisors and table owners in one place.
+- Allow multiple supervisors per project and multiple table owners under each supervisor.
+- Select an active system user for each supervisor and auto-add only the required WAFD Iftar Supervisor role without removing existing roles.
+- Capture supervisor name/mobile plus each table owner's name, mobile, distribution point, and meal quantity.
+- Validate that the total table-owner meal allocation exactly matches the project's daily meal quantity before saving.
+- Store the setup in the existing approved RC144 WAFD Iftar Supervisor Plan documents so all existing reports and distribution logic remain compatible.
+- Pre-fill the first table-owner quantity with the full daily meal count for faster single-supervisor setup.
+- After setup, automatically attempt to generate today's supervisor tasks when the site authority inspection is already approved.
+- Show a clear pending project card on the Iftar Supervisor screen when a supervisor is registered but today's daily task has not yet been generated, instead of showing a blank page.
+- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver behavior without modification.
+- No changes to standard Delivery Management, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

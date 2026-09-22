@@ -22,7 +22,8 @@
   const DOCUMENT_SHELL_CLASS = "wafd-mobile-document-shell";
   const FIELD_APPBAR_ID = "wafd-field-appbar-rc278";
   const FIELD_ROLES = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
-  const FIELD_ROUTES = new Set([HOME_ROUTE, DRIVER_ROUTE, CLEANING_ROUTE, VIEWER_ROUTE]);
+  const IFTAR_DRIVER_ROUTE = "wafd-iftar-driver";
+  const FIELD_ROUTES = new Set([HOME_ROUTE, DRIVER_ROUTE, IFTAR_DRIVER_ROUTE, CLEANING_ROUTE, VIEWER_ROUTE]);
   const LANGUAGES = {ar:"العربية",en:"English",id:"Bahasa Indonesia",ur:"اردو",hi:"हिन्दी",bn:"বাংলা",fr:"Français",ha:"Hausa",sw:"Kiswahili",uz:"O‘zbekcha"};
   const FIELD_LABELS = {
     ar:{menu:"القائمة",language:"اللغة",logout:"تسجيل الخروج",home:"الصفحة الرئيسية"},
@@ -176,6 +177,13 @@
   function isUndertakingRoute() {
     const route = currentRoute();
     return (route[0] === "Form" || route[0] === "List") && route[1] === "WAFD Hotel Undertaking";
+  }
+
+  function isIftarAppRoute() {
+    const routeName = currentRouteName();
+    if (routeName) return routeName.startsWith("wafd-iftar-");
+    const path = String(window.location.pathname || "").replace(/\/$/, "");
+    return path.startsWith("/app/wafd-iftar-") || path.startsWith("/desk/wafd-iftar-");
   }
 
 
@@ -350,6 +358,7 @@
     const deliverySupervisorShell = (deliveryReport || deliverySupervisorPage) && isDeliverySupervisorShell();
     const loadingRecord = isLoadingRecordForm();
     const undertakingRoute = isUndertakingRoute();
+    const iftarAppRoute = isIftarAppRoute();
     syncHomeState(home);
     document.body.classList.toggle(EMPLOYEE_CLASS, employeeTeam);
     document.body.classList.toggle(DRIVER_CLASS, driverTrips);
@@ -358,11 +367,15 @@
     document.body.classList.toggle(DELIVERY_REPORT_CLASS, deliveryReport && deliverySupervisorShell);
     document.body.classList.toggle(DELIVERY_SUPERVISOR_CLASS, deliverySupervisorPage && deliverySupervisorShell);
     document.body.classList.toggle(LOADING_CLASS, loadingRecord);
-    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer || deliverySupervisorShell, undertakingRoute);
-    syncFieldAppbar(driverTrips || cleaningHome || deliverySupervisorShell || undertakingRoute);
+    // All dedicated Iftar pages use WAFD's compact mobile menu.  This hides
+    // Frappe's workspace sidebar (the panel shown in the reported screenshots)
+    // and restores Home, language, account and Logout without changing any
+    // non-Iftar module.
+    syncPwaChrome(home || driverTrips || cleaningHome || deliveryViewer || deliverySupervisorShell || iftarAppRoute, undertakingRoute);
+    syncFieldAppbar(driverTrips || cleaningHome || deliverySupervisorShell || undertakingRoute || iftarAppRoute);
 
     let btn = document.getElementById(ID);
-    if (!isMobile() || home || employeeTeam || driverTrips || cleaningHome || deliveryViewer || loadingRecord || hasOpenModal()) {
+    if (!isMobile() || home || employeeTeam || driverTrips || cleaningHome || deliveryViewer || loadingRecord || iftarAppRoute || hasOpenModal()) {
       if (btn) btn.remove();
       return;
     }

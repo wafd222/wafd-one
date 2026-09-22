@@ -647,3 +647,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc346.execute
 wafd_one.wafd_one.patches.v10_0_0_rc347.execute
 # RC348 validate Iftar vehicle allocations without a generic loading record
 wafd_one.wafd_one.patches.v10_0_0_rc348.execute
+# RC349 require receiver signature and restore compact menu on dedicated Iftar pages
+wafd_one.wafd_one.patches.v10_0_0_rc349.execute

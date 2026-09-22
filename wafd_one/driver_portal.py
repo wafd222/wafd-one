@@ -46,6 +46,7 @@ SEQUENCE_GRACE_HOURS = 2
 LOCKED_PREVIEW_COUNT = 2
 OFFLINE_PRELOAD_COUNT = 100
 DRIVER_QUEUE_LIMIT = 10000
+IFTAR_LOADING_PLAN = "خطة تحميل إفطار الصائم / Iftar Loading Plan"
 
 
 def _roles(user=None):
@@ -507,7 +508,11 @@ def list_my_trips(iftar_only=0, exclude_iftar=0):
                 "hotel_name_ar": hotel.get("hotel_name_ar") or trip.hotel,
                 "hotel_name_en": hotel.get("hotel_name_en") or trip.hotel,
                 "map_url": trip.destination_map_url or hotel.get("map_url") or fallback_map_url,
-                "simple_delivery": trip.trip_source in {"خطة مشرف التوصيل / Delivery Supervisor Plan", "خطة تحميل إفطار الصائم / Iftar Loading Plan"},
+                # Iftar delivery is a formal handover: the receiver name and
+                # signature must remain visible and required.  Only the
+                # generic supervisor-plan trip keeps the photo/location-only
+                # shortcut.
+                "simple_delivery": trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan",
                 "loading": loading,
                 "proof": proof,
                 "sequence_visible": is_manager or trip.name in rendered,
@@ -657,7 +662,10 @@ def submit_delivery_proof(
     }
     if status not in valid_statuses:
         frappe.throw(_("نتيجة الاستلام غير صحيحة."))
-    simple_delivery = trip.trip_source in {"خطة مشرف التوصيل / Delivery Supervisor Plan", "خطة تحميل إفطار الصائم / Iftar Loading Plan"}
+    # Keep the server rule identical to the driver screen.  Iftar vehicle
+    # trips are not simplified deliveries: they require a named receiver and
+    # a signature before the proof can be saved.
+    simple_delivery = trip.trip_source == "خطة مشرف التوصيل / Delivery Supervisor Plan"
     receiver_name = (receiver_name or "").strip()
     if simple_delivery and not receiver_name:
         receiver_name = trip.destination_name or "تسليم مصور / Photo Delivery"

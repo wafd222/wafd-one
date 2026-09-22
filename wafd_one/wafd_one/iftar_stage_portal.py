@@ -57,12 +57,46 @@ def _active_user(user):
     return user
 
 
-def _validate_team_user(fieldname, user):
+def _managed_employee_users():
+    """Return active WAFD employees, independent of their current Iftar task.
+
+    Project assignment is performed inside Employee Management.  Showing only
+    employees who already carry the exact Iftar role made valid employees look
+    as if they were missing and forced a second, error-prone setup step.
+    """
+    from wafd_one.employee_team import MANAGED_ROLES
+
+    users = frappe.get_all(
+        "Has Role",
+        filters={"role": ["in", MANAGED_ROLES], "parenttype": "User"},
+        pluck="parent",
+        limit_page_length=5000,
+    )
+    return sorted(set(users) - {"Administrator", "Guest"})
+
+
+def _prepare_employee_for_iftar_task(user, required_role):
+    """Add one operational Iftar role without replacing any employee tasks."""
+    roles = _roles(user)
+    if required_role in roles or roles & GLOBAL_MANAGEMENT_ROLES:
+        return user
+    if user not in _managed_employee_users():
+        frappe.throw(_("اختر موظفاً مسجلاً في إدارة الموظفين / Select an employee from Employee Management"))
+    account = frappe.get_doc("User", user)
+    account.add_roles(required_role)
+    frappe.clear_cache(user=user)
+    return user
+
+
+def _validate_team_user(fieldname, user, prepare_task=False):
     user = _active_user(user)
     if not user:
         return ""
     required_role = TEAM_ROLE_BY_FIELD[fieldname]
     roles = _roles(user)
+    if required_role not in roles and not (roles & GLOBAL_MANAGEMENT_ROLES) and prepare_task:
+        _prepare_employee_for_iftar_task(user, required_role)
+        roles = _roles(user)
     if required_role not in roles and not (roles & GLOBAL_MANAGEMENT_ROLES):
         frappe.throw(
             _("عيّن مهمة الموظف أولاً من إدارة الموظفين: {0} / Assign the employee task first in Employee Management").format(required_role)
@@ -387,6 +421,7 @@ def _delivery_payload(project):
 
 
 def _team_options():
+    all_employees = _managed_employee_users()
     result = {}
     for fieldname, role in TEAM_ROLE_BY_FIELD.items():
         users = frappe.get_all(
@@ -407,6 +442,10 @@ def _team_options():
             ))
         if _is_global_manager():
             users.append(frappe.session.user)
+        # Project assignment lives in Employee Management, so every active
+        # managed employee is selectable here.  Saving prepares only the one
+        # Iftar task chosen for that employee and preserves all other tasks.
+        users.extend(all_employees)
         users = sorted(set(users))
         rows = frappe.get_all(
             "User",
@@ -415,10 +454,15 @@ def _team_options():
             order_by="full_name asc",
             limit_page_length=1000,
         ) if users else []
-        result[fieldname] = [
-            {"value": row.name, "label": f"{row.full_name or row.name} — {row.name}"}
-            for row in rows
-        ]
+        result[fieldname] = []
+        for row in rows:
+            prepared = role in _roles(row.name) or bool(_roles(row.name) & GLOBAL_MANAGEMENT_ROLES)
+            suffix = "" if prepared else " · ستُضاف المهمة تلقائياً"
+            result[fieldname].append({
+                "value": row.name,
+                "label": f"{row.full_name or row.name} — {row.name}{suffix}",
+                "prepared": int(prepared),
+            })
     return result
 
 
@@ -560,7 +604,7 @@ def save_project_team(project_name, project_manager_user=None, kitchen_superviso
         "site_manager_user": site_manager_user,
         "external_viewer_user": external_viewer_user,
     }.items():
-        values[fieldname] = _validate_team_user(fieldname, raw)
+        values[fieldname] = _validate_team_user(fieldname, raw, prepare_task=True)
 
     frappe.db.set_value("WAFD Iftar Project", project_name, values, update_modified=True)
     for user in {value for value in values.values() if value}:
@@ -938,6 +982,7 @@ def get_supervisor_user_options():
         pluck="parent",
         limit_page_length=1000,
     )
+    users.extend(_managed_employee_users())
     rows = frappe.get_all(
         "User",
         filters={"name": ["in", sorted(set(users))], "enabled": 1, "user_type": "System User"},
@@ -945,12 +990,21 @@ def get_supervisor_user_options():
         order_by="full_name asc, name asc",
         limit_page_length=500,
     ) if users else []
-    return [{"value": r.name, "label": r.full_name or r.name, "mobile_no": r.mobile_no or ""} for r in rows]
+    return [{
+        "value": r.name,
+        "label": r.full_name or r.name,
+        "mobile_no": r.mobile_no or "",
+        "prepared": int(SUPERVISOR_ROLE in _roles(r.name) or bool(_roles(r.name) & GLOBAL_MANAGEMENT_ROLES)),
+    } for r in rows]
 
 
 @frappe.whitelist()
 def save_quick_supervisor_setup(project_name, plans_json):
     """Mobile-first one-screen setup for supervisors and table owners.
+
+    Legacy guidance: Assign the Iftar Travel Supervisor task in Employee Management first.
+    RC351 prepares that narrow task here when
+    the Project Manager selects an existing managed employee.
 
     RC326: run the entire supervisor-plan write as a trusted project-scoped
     operation. WAFD Iftar Distribution Recipient is a child table and must
@@ -986,9 +1040,10 @@ def save_quick_supervisor_setup(project_name, plans_json):
             frappe.throw(_("لا تكرر نفس حساب المشرف / Do not duplicate the same supervisor account"))
         seen_users.add(user)
         if SUPERVISOR_ROLE not in _roles(user) and not (_roles(user) & GLOBAL_MANAGEMENT_ROLES):
-            frappe.throw(
-                _("عيّن مهمة مشرف سفر إفطار الصائم للحساب من إدارة الموظفين أولاً / Assign the Iftar Travel Supervisor task in Employee Management first")
-            )
+            # The Project Manager is explicitly responsible for choosing the
+            # field team for this project.  Prepare this narrow operational
+            # role once; daily rows will then be copied from the project plan.
+            _prepare_employee_for_iftar_task(user, SUPERVISOR_ROLE)
         name = (raw.get("supervisor_name") or frappe.utils.get_fullname(user) or user).strip()
         mobile = (raw.get("supervisor_mobile") or "").strip()
         owners = []

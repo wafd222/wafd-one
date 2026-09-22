@@ -649,3 +649,5 @@ wafd_one.wafd_one.patches.v10_0_0_rc347.execute
 wafd_one.wafd_one.patches.v10_0_0_rc348.execute
 # RC349 require receiver signature and restore compact menu on dedicated Iftar pages
 wafd_one.wafd_one.patches.v10_0_0_rc349.execute
+# RC351 keep project staff permanent and turn driver proof into fast site/supervisor work
+wafd_one.wafd_one.patches.v10_0_0_rc351.execute

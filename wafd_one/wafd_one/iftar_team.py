@@ -329,6 +329,17 @@ def sync_delivery_schedule(operation_name):
     if trips:
         values["driver_name"] = "، ".join(dict.fromkeys(row.driver for row in trips if row.driver))
     frappe.db.set_value("WAFD Iftar Daily Operation", operation_name, values, update_modified=True)
+    # Delivery proof must become visible to the assigned Site Manager without
+    # waiting for another employee to recreate a task or for the next login.
+    project_name = frappe.db.get_value("WAFD Iftar Daily Operation", operation_name, "project")
+    site_manager = frappe.db.get_value("WAFD Iftar Project", project_name, "site_manager_user") if project_name else None
+    if site_manager and delivered:
+        frappe.clear_cache(user=site_manager)
+        frappe.publish_realtime(
+            "wafd_iftar_site_delivery_arrived",
+            {"project": project_name, "operation": operation_name, "verified_meals": delivered},
+            user=site_manager,
+        )
     return values
 
 
@@ -676,6 +687,15 @@ def approve_site_receipt(operation_name, received_meals):
         "site_receipt_time": now_datetime(), "site_received_by": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
     }
     frappe.db.set_value("WAFD Iftar Daily Operation", operation.name, values, update_modified=True)
+    # The project plan is permanent for its whole date range.  Every day's
+    # tasks are copied automatically after the Site Manager confirms arrival;
+    # no employee or supervisor is re-assigned day by day.
+    task_result = (
+        ensure_supervisor_reports(operation.name)
+        if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": project.name, "active": 1})
+        else {"created": [], "skipped_without_user": [], "total_plans": 0, "setup_required": True}
+    )
+    values["supervisor_tasks"] = task_result
     return values
 
 
@@ -735,6 +755,12 @@ def ensure_supervisor_reports(operation_name):
                 report.append("assistants_attendance", {"assistant_name": assistant.assistant_name, "mobile_no": assistant.mobile_no, "attendance_status": "لم يسجل / Not Marked"})
         report.insert(ignore_permissions=True)
         created.append(report.name)
+        frappe.clear_cache(user=plan.supervisor_user)
+        frappe.publish_realtime(
+            "wafd_iftar_supervisor_task_ready",
+            {"project": project.name, "operation": operation.name, "report": report.name},
+            user=plan.supervisor_user,
+        )
     if not created and skipped:
         frappe.throw(_("اربط حسابات المستخدمين للمشرفين: {0} / Link supervisor user accounts").format("، ".join(skipped)))
     return {"created": created, "skipped_without_user": skipped, "total_plans": len(plans)}

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DRIVER = (ROOT / "wafd_one" / "driver_portal.py").read_text(encoding="utf-8")
 NAV = (ROOT / "wafd_one" / "public" / "wafd_mobile_navigation.bundle.js").read_text(encoding="utf-8")
 IFTAR_DRIVER = (ROOT / "wafd_one" / "wafd_one" / "page" / "wafd_iftar_driver" / "wafd_iftar_driver.js").read_text(encoding="utf-8")
+PATCH = ROOT / "wafd_one" / "wafd_one" / "patches" / "v10_0_0_rc349" / "execute.py"
 
 
 def require(condition, message):
@@ -33,6 +34,7 @@ require('id="wafd-signature"' in IFTAR_DRIVER and "setupSignature()" in IFTAR_DR
 require('const IFTAR_DRIVER_ROUTE = "wafd-iftar-driver";' in NAV, "Iftar driver route is not allowed for field users")
 require('routeName.startsWith("wafd-iftar-")' in NAV, "dedicated Iftar route detection is missing")
 require("iftarAppRoute" in NAV and "syncFieldAppbar" in NAV, "compact Iftar app menu is not wired")
+require(PATCH.is_file(), "RC349 migration patch is not inside the importable wafd_one.wafd_one.patches package")
 for required in ("data-wafd-field-home", "wafd-field-language", "data-wafd-field-logout"):
     require(required in NAV, f"compact menu item missing: {required}")
 

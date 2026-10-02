@@ -1,7 +1,7 @@
 import frappe
 
 
-FIELD_ROLES = {"WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"}
+FIELD_ROLES = {"WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer", "WAFD Iftar External Viewer"}
 
 
 def boot_session(bootinfo):

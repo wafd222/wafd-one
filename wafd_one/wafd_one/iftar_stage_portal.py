@@ -16,7 +16,7 @@ KITCHEN_ROLE = "WAFD Iftar Kitchen Supervisor"
 DELIVERY_ROLE = "WAFD Delivery Supervisor"
 SITE_MANAGER_ROLE = "WAFD Iftar Site Manager"
 SUPERVISOR_ROLE = "WAFD Iftar Supervisor"
-EXTERNAL_VIEWER_ROLE = "WAFD Delivery Viewer"
+EXTERNAL_VIEWER_ROLE = "WAFD Iftar External Viewer"
 
 TEAM_ROLE_BY_FIELD = {
     "project_manager_user": PROJECT_MANAGER_ROLE,
@@ -483,6 +483,29 @@ def get_employee_project_assignments():
         limit_page_length=250,
     )
     return {"projects": projects, "options": _team_options()}
+
+
+@frappe.whitelist()
+def has_my_external_viewer_assignment():
+    """Return whether this account is explicitly assigned to an active Iftar project.
+
+    The generic Delivery Viewer role is intentionally not sufficient: Iftar is
+    isolated and its read-only entry appears only for the exact User stored on
+    an approved project for the duration of that project.
+    """
+    user = (frappe.session.user or "").strip()
+    if user in {"", "Guest"}:
+        return False
+    return bool(
+        frappe.db.exists(
+            "WAFD Iftar Project",
+            {
+                "external_viewer_user": user,
+                "docstatus": 1,
+                "status": ["not in", ["ملغي / Cancelled"]],
+            },
+        )
+    )
 
 
 def _delivery_options():

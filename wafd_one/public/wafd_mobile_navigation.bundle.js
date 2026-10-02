@@ -21,7 +21,7 @@
   const LOADING_CLASS = "wafd-at-loading-record";
   const DOCUMENT_SHELL_CLASS = "wafd-mobile-document-shell";
   const FIELD_APPBAR_ID = "wafd-field-appbar-rc278";
-  const FIELD_ROLES = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
+  const FIELD_ROLES = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer", "WAFD Iftar External Viewer"]);
   const IFTAR_DRIVER_ROUTE = "wafd-iftar-driver";
   const FIELD_ROUTES = new Set([HOME_ROUTE, DRIVER_ROUTE, IFTAR_DRIVER_ROUTE, CLEANING_ROUTE, VIEWER_ROUTE]);
   const LANGUAGES = {ar:"العربية",en:"English",id:"Bahasa Indonesia",ur:"اردو",hi:"हिन्दी",bn:"বাংলা",fr:"Français",ha:"Hausa",sw:"Kiswahili",uz:"O‘zbekcha"};

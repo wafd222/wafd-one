@@ -1,16 +1,71 @@
 frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
   const lang = localStorage.getItem("wafd_lang") || "ar";
+  const rtl = lang === "ar" || lang === "ur";
   const ar = lang === "ar";
-  const tr = (a, e) => ar ? a : e;
   const esc = (v) => frappe.utils.escape_html(String(v == null ? "" : v));
+  const T = {
+    "القائمة": {en:"Menu",id:"Menu",ur:"مینو",hi:"मेनू",bn:"মেনু",fr:"Menu",ha:"Menu",sw:"Menyu",uz:"Menyu"},
+    "اللغة": {en:"Language",id:"Bahasa",ur:"زبان",hi:"भाषा",bn:"ভাষা",fr:"Langue",ha:"Harshe",sw:"Lugha",uz:"Til"},
+    "تسجيل الخروج": {en:"Logout",id:"Keluar",ur:"لاگ آؤٹ",hi:"लॉग आउट",bn:"লগআউট",fr:"Déconnexion",ha:"Fita",sw:"Ondoka",uz:"Chiqish"},
+    "بيانات التسليم": {en:"Delivery Data",id:"Data Pengiriman",ur:"ڈیلیوری ڈیٹا",hi:"डिलीवरी डेटा",bn:"ডেলিভারি তথ্য",fr:"Données de livraison",ha:"Bayanan Isarwa",sw:"Taarifa za Usafirishaji",uz:"Yetkazib berish ma'lumotlari"},
+    "شاشة للقراءة فقط — لا يمكن الإضافة أو التعديل": {en:"Read-only screen — editing is disabled",id:"Layar hanya-baca — penambahan atau pengeditan dinonaktifkan",ur:"صرف پڑھنے کی اسکرین — اضافہ یا ترمیم ممکن نہیں",hi:"केवल-पठन स्क्रीन — जोड़ना या संपादन अक्षम है",bn:"শুধু-পঠন স্ক্রিন — যোগ বা সম্পাদনা নিষ্ক্রিয়",fr:"Écran en lecture seule — ajout et modification désactivés",ha:"Allon karatu kawai — ba a yarda da ƙara ko gyarawa ba",sw:"Skrini ya kusoma-tu — kuongeza au kuhariri kumezimwa",uz:"Faqat o‘qish ekrani — qo‘shish yoki tahrirlash o‘chirilgan"},
+    "حالات التسليم": {en:"Delivery statuses",id:"Status pengiriman",ur:"ڈیلیوری کی حالتیں",hi:"डिलीवरी स्थिति",bn:"ডেলিভারি স্ট্যাটাস",fr:"Statuts de livraison",ha:"Matsayin isarwa",sw:"Hali za usafirishaji",uz:"Yetkazib berish holatlari"},
+    "في الطريق": {en:"In transit",id:"Dalam perjalanan",ur:"راستے میں",hi:"रास्ते में",bn:"পথে",fr:"En route",ha:"A hanya",sw:"Njiani",uz:"Yo‘lda"},
+    "مخططة": {en:"Planned",id:"Direncanakan",ur:"منصوبہ بند",hi:"नियोजित",bn:"পরিকল্পিত",fr:"Planifié",ha:"An shirya",sw:"Imepangwa",uz:"Rejalashtirilgan"},
+    "متأخرة أو غير موثقة": {en:"Late or undocumented",id:"Terlambat atau belum didokumentasikan",ur:"تاخیر شدہ یا غیر دستاویزی",hi:"देर से या बिना दस्तावेज़",bn:"দেরিতে বা নথিবিহীন",fr:"En retard ou non documenté",ha:"Jinkiri ko ba a rubuta ba",sw:"Imechelewa au haijaandikwa",uz:"Kechikkan yoki hujjatlashtirilmagan"},
+    "تم التسليم": {en:"Delivered",id:"Terkirim",ur:"ڈیلیور شدہ",hi:"डिलीवर किया गया",bn:"ডেলিভার হয়েছে",fr:"Livré",ha:"An isar",sw:"Imewasilishwa",uz:"Yetkazildi"},
+    "العميل": {en:"Customer",id:"Pelanggan",ur:"گاہک",hi:"ग्राहक",bn:"গ্রাহক",fr:"Client",ha:"Abokin ciniki",sw:"Mteja",uz:"Mijoz"},
+    "الجهة أو الفندق": {en:"Destination",id:"Tujuan",ur:"منزل",hi:"गंतव्य",bn:"গন্তব্য",fr:"Destination",ha:"Wurin zuwa",sw:"Mahali pa kwenda",uz:"Manzil"},
+    "نوع الوجبة": {en:"Meal",id:"Jenis makanan",ur:"کھانے کی قسم",hi:"भोजन",bn:"খাবার",fr:"Repas",ha:"Nau'in abinci",sw:"Aina ya chakula",uz:"Taom turi"},
+    "اسم السائق": {en:"Driver",id:"Nama pengemudi",ur:"ڈرائیور",hi:"ड्राइवर",bn:"চালক",fr:"Chauffeur",ha:"Direba",sw:"Dereva",uz:"Haydovchi"},
+    "رقم الجوال": {en:"Mobile",id:"Nomor ponsel",ur:"موبائل",hi:"मोबाइल",bn:"মোবাইল",fr:"Mobile",ha:"Lambar waya",sw:"Simu",uz:"Telefon"},
+    "رقم اللوحة": {en:"Plate number",id:"Nomor plat",ur:"نمبر پلیٹ",hi:"प्लेट नंबर",bn:"প্লেট নম্বর",fr:"Numéro de plaque",ha:"Lambar mota",sw:"Nambari ya gari",uz:"Davlat raqami"},
+    "موعد التوصيل": {en:"Scheduled delivery",id:"Jadwal pengiriman",ur:"مقررہ ڈیلیوری",hi:"निर्धारित डिलीवरी",bn:"নির্ধারিত ডেলিভারি",fr:"Livraison prévue",ha:"Lokacin isarwa",sw:"Muda wa usafirishaji",uz:"Rejalashtirilgan yetkazib berish"},
+    "عدد الوجبات": {en:"Meals",id:"Jumlah makanan",ur:"کھانوں کی تعداد",hi:"भोजन की संख्या",bn:"খাবারের সংখ্যা",fr:"Repas",ha:"Adadin abinci",sw:"Idadi ya milo",uz:"Taomlar soni"},
+    "عدد السفندشات": {en:"Safandash",id:"Safandash",ur:"سفندش",hi:"सफंदश",bn:"সাফান্দাশ",fr:"Safandash",ha:"Safandash",sw:"Safandash",uz:"Safandash"},
+    "عدد السخانات Hot Cabinet": {en:"Hot Cabinets",id:"Hot Cabinet",ur:"ہاٹ کیبنٹ",hi:"हॉट कैबिनेट",bn:"হট ক্যাবিনেট",fr:"Armoires chauffantes",ha:"Hot Cabinet",sw:"Hot Cabinet",uz:"Issiq shkaflar"},
+    "استلام السائق": {en:"Driver accepted",id:"Pengemudi menerima",ur:"ڈرائیور نے قبول کیا",hi:"ड्राइवर ने स्वीकार किया",bn:"চালক গ্রহণ করেছেন",fr:"Accepté par le chauffeur",ha:"Direba ya karɓa",sw:"Dereva amekubali",uz:"Haydovchi qabul qildi"},
+    "وقت الخروج": {en:"Departure",id:"Keberangkatan",ur:"روانگی",hi:"प्रस्थान",bn:"প্রস্থান",fr:"Départ",ha:"Tashi",sw:"Kuondoka",uz:"Jo‘nash"},
+    "وقت الوصول": {en:"Arrival",id:"Kedatangan",ur:"آمد",hi:"आगमन",bn:"আগমন",fr:"Arrivée",ha:"Zuwan",sw:"Kuwasili",uz:"Yetib kelish"},
+    "التسليم": {en:"Delivered",id:"Terkirim",ur:"ڈیلیور شدہ",hi:"डिलीवर किया गया",bn:"ডেলিভার হয়েছে",fr:"Livré",ha:"An isar",sw:"Imewasilishwa",uz:"Yetkazildi"},
+    "اسم المستلم": {en:"Receiver",id:"Nama penerima",ur:"وصول کنندہ",hi:"प्राप्तकर्ता",bn:"গ্রহীতা",fr:"Destinataire",ha:"Sunan mai karɓa",sw:"Mpokeaji",uz:"Qabul qiluvchi"},
+    "بانتظار التسليم": {en:"Pending delivery",id:"Menunggu pengiriman",ur:"ڈیلیوری زیر التوا",hi:"डिलीवरी लंबित",bn:"ডেলিভারি অপেক্ষমাণ",fr:"Livraison en attente",ha:"Ana jiran isarwa",sw:"Inasubiri usafirishaji",uz:"Yetkazib berish kutilmoqda"},
+    "صورة التسليم": {en:"Delivery photo",id:"Foto pengiriman",ur:"ڈیلیوری کی تصویر",hi:"डिलीवरी फोटो",bn:"ডেলিভারি ছবি",fr:"Photo de livraison",ha:"Hoton isarwa",sw:"Picha ya usafirishaji",uz:"Yetkazib berish rasmi"},
+    "لم ترفق صورة التسليم بعد": {en:"Delivery photo is not available yet",id:"Foto pengiriman belum tersedia",ur:"ڈیلیوری کی تصویر ابھی دستیاب نہیں",hi:"डिलीवरी फोटो अभी उपलब्ध नहीं है",bn:"ডেলিভারি ছবি এখনও পাওয়া যায়নি",fr:"La photo de livraison n’est pas encore disponible",ha:"Ba a samu hoton isarwa ba tukuna",sw:"Picha ya usafirishaji bado haipatikani",uz:"Yetkazib berish rasmi hali mavjud emas"},
+    "بانتظار التنفيذ": {en:"Pending",id:"Menunggu",ur:"زیر التوا",hi:"लंबित",bn:"অপেক্ষমাণ",fr:"En attente",ha:"Ana jira",sw:"Inasubiri",uz:"Kutilmoqda"},
+    "جارٍ تحميل بيانات التسليم…": {en:"Loading delivery data…",id:"Memuat data pengiriman…",ur:"ڈیلیوری ڈیٹا لوڈ ہو رہا ہے…",hi:"डिलीवरी डेटा लोड हो रहा है…",bn:"ডেলিভারি তথ্য লোড হচ্ছে…",fr:"Chargement des données de livraison…",ha:"Ana loda bayanan isarwa…",sw:"Inapakia taarifa za usafirishaji…",uz:"Yetkazib berish ma'lumotlari yuklanmoqda…"},
+    "لا توجد عمليات في هذه الحالة حاليًا.": {en:"No deliveries are currently in this status.",id:"Saat ini tidak ada pengiriman dalam status ini.",ur:"اس حالت میں فی الحال کوئی ڈیلیوری نہیں ہے۔",hi:"इस स्थिति में अभी कोई डिलीवरी नहीं है।",bn:"এই অবস্থায় বর্তমানে কোনো ডেলিভারি নেই।",fr:"Aucune livraison n’est actuellement dans ce statut.",ha:"Babu isarwa a wannan matsayi a yanzu.",sw:"Kwa sasa hakuna usafirishaji katika hali hii.",uz:"Hozir bu holatda yetkazib berishlar yo‘q."}
+  };
+  const tr = (a, e) => lang === "ar" ? a : (T[a]?.[lang] || e || a);
   const languages = {ar:"العربية",en:"English",id:"Bahasa Indonesia",ur:"اردو",hi:"हिन्दी",bn:"বাংলা",fr:"Français",ha:"Hausa",sw:"Kiswahili",uz:"O‘zbekcha"};
   const local = (v) => {
-    const parts = String(v || "").split("/").map((x) => x.trim());
-    return parts.length > 1 ? (ar ? parts[0] : parts[parts.length - 1]) : String(v || "—");
+    const raw = String(v || "").trim();
+    const parts = raw.split("/").map((x) => x.trim());
+    const key = parts[0];
+    const valueMap = {
+      "في الطريق": "في الطريق", "مخططة": "مخططة", "متأخرة": "متأخرة", "وصلت": "وصلت", "تم التسليم": "تم التسليم",
+      "إفطار": "إفطار", "فطور": "فطور", "غداء": "غداء", "عشاء": "عشاء", "وجبة إفطار": "وجبة إفطار", "وجبة غداء": "وجبة غداء", "وجبة عشاء": "وجبة عشاء"
+    };
+    const mealT = {
+      "إفطار": {en:"Breakfast",id:"Sarapan",ur:"ناشتہ",hi:"नाश्ता",bn:"নাশতা",fr:"Petit-déjeuner",ha:"Karin kumallo",sw:"Kifungua kinywa",uz:"Nonushta"},
+      "فطور": {en:"Breakfast",id:"Sarapan",ur:"ناشتہ",hi:"नाश्ता",bn:"নাশতা",fr:"Petit-déjeuner",ha:"Karin kumallo",sw:"Kifungua kinywa",uz:"Nonushta"},
+      "غداء": {en:"Lunch",id:"Makan siang",ur:"دوپہر کا کھانا",hi:"दोपहर का भोजन",bn:"দুপুরের খাবার",fr:"Déjeuner",ha:"Abincin rana",sw:"Chakula cha mchana",uz:"Tushlik"},
+      "عشاء": {en:"Dinner",id:"Makan malam",ur:"رات کا کھانا",hi:"रात का भोजन",bn:"রাতের খাবার",fr:"Dîner",ha:"Abincin dare",sw:"Chakula cha jioni",uz:"Kechki ovqat"}
+    };
+    if (ar) return valueMap[key] || parts[0] || "—";
+    if (mealT[key]?.[lang]) return mealT[key][lang];
+    const statusT = {
+      "في الطريق": {en:"In transit",id:"Dalam perjalanan",ur:"راستے میں",hi:"रास्ते में",bn:"পথে",fr:"En route",ha:"A hanya",sw:"Njiani",uz:"Yo‘lda"},
+      "مخططة": {en:"Planned",id:"Direncanakan",ur:"منصوبہ بند",hi:"नियोजित",bn:"পরিকল্পিত",fr:"Planifié",ha:"An shirya",sw:"Imepangwa",uz:"Rejalashtirilgan"},
+      "متأخرة": {en:"Delayed",id:"Terlambat",ur:"تاخیر شدہ",hi:"विलंबित",bn:"বিলম্বিত",fr:"Retardé",ha:"An jinkirta",sw:"Imechelewa",uz:"Kechikkan"},
+      "وصلت": {en:"Arrived",id:"Tiba",ur:"پہنچ گیا",hi:"पहुंचा",bn:"পৌঁছেছে",fr:"Arrivé",ha:"Ya isa",sw:"Imefika",uz:"Yetib keldi"},
+      "تم التسليم": {en:"Delivered",id:"Terkirim",ur:"ڈیلیور شدہ",hi:"डिलीवर किया गया",bn:"ডেলিভার হয়েছে",fr:"Livré",ha:"An isar",sw:"Imewasilishwa",uz:"Yetkazildi"}
+    };
+    return statusT[key]?.[lang] || parts[parts.length - 1] || raw || "—";
   };
   const fmt = (v) => v ? (frappe.datetime.str_to_user(v) || v) : tr("بانتظار التنفيذ", "Pending");
   const page = frappe.ui.make_app_page({parent: wrapper, title: tr("بيانات التسليم", "Delivery Data"), single_column: true});
-  const $root = $(page.body).attr("dir", ar ? "rtl" : "ltr");
+  const $root = $(page.body).attr("dir", rtl ? "rtl" : "ltr");
   let data = {};
   let view = "in_transit";
   const queues = [

@@ -1,0 +1,1 @@
+RC353: restore full Delivery Viewer localization for every supported language while preserving RC352 Iftar project-scoped viewer permissions

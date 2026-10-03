@@ -561,7 +561,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         await updateDriverConnectivity("offline");
         return;
       }
-      await frappe.call({method:"wafd_one.language.set_user_language",args:{language:uiLang},freeze:true,freeze_message:tr("اللغة")+"…"});
+      // Language selection is WAFD client-side. Do not depend on MariaDB/Frappe
+      // just to switch the UI language; localStorage is the source for WAFD screens.
       window.location.reload();
     });
     $root.find(".wafd-mobile-card").on("click", function () {

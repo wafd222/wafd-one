@@ -272,7 +272,7 @@
     bar.querySelector("[data-wafd-field-home]").addEventListener("click", () => { close(); frappe.set_route(HOME_ROUTE); });
     bar.querySelector("#wafd-field-language").addEventListener("change", async function () {
       localStorage.setItem("wafd_lang", this.value);
-      await frappe.call({method:"wafd_one.language.set_user_language", args:{language:this.value}, freeze:true});
+      // Keep language switching independent from MariaDB/Frappe availability.
       window.location.reload();
     });
     bar.querySelector("[data-wafd-field-logout]").addEventListener("click", () => {

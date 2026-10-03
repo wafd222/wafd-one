@@ -84,9 +84,11 @@ frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
       const open = $menu.attr("hidden") !== undefined;
       if (open) {$menu.removeAttr("hidden"); $button.attr("aria-expanded", "true");} else close();
     });
-    $root.find("#wafv-language").on("change", async function () {
+    $root.find("#wafv-language").on("change", function () {
+      // Delivery Viewer localization is client-side. Do not call the database
+      // just to change the viewer language; this keeps language switching
+      // independent from transient Frappe/MariaDB availability.
       localStorage.setItem("wafd_lang", this.value);
-      await frappe.call({method:"wafd_one.language.set_user_language", args:{language:this.value}, freeze:true});
       window.location.reload();
     });
     $root.find("[data-wafv-logout]").on("click", function () {

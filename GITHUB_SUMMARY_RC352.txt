@@ -1,1 +1,9 @@
-RC352: localize Delivery Tracking in every supported language and isolate project-scoped Iftar external-viewer access without changing other workflows
+RC352: hide project-scoped Iftar tracking unless explicitly assigned
+
+- Hide the “Iftar Saim Tracking” card from WAFD Delivery Viewer accounts unless the employee is explicitly assigned as the external viewer on an active, submitted Iftar project.
+- Keep “Delivery Data” access independent from Iftar tracking. A Delivery Viewer role alone no longer exposes the Iftar card.
+- Fail closed if the assignment check cannot be completed, so an unavailable permission check never reveals Iftar tracking.
+- Enforce the same project assignment as the source of truth: external_viewer_user on the submitted Iftar project, within the project start/end period.
+- Block direct Iftar portal access for a Delivery Viewer who has no valid project-scoped Iftar assignment.
+- Keep the existing read-only Iftar portal and project-scoped access model unchanged for assigned employees.
+- Preserve all RC351 work and all other workflows, including Undertaking, drivers, Delivery Supervisor, standard Delivery Management, Quotation, Inventory, Cleaning, Finance, and language localization.

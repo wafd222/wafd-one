@@ -12,7 +12,6 @@ ROLES = (
     "WAFD Delivery Supervisor",
     "WAFD Driver",
     "WAFD Delivery Viewer",
-    "WAFD Iftar External Viewer",
     "WAFD Finance User",
     "WAFD Storekeeper",
     "WAFD Cleaning Supervisor",

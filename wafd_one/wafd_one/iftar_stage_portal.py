@@ -16,7 +16,7 @@ KITCHEN_ROLE = "WAFD Iftar Kitchen Supervisor"
 DELIVERY_ROLE = "WAFD Delivery Supervisor"
 SITE_MANAGER_ROLE = "WAFD Iftar Site Manager"
 SUPERVISOR_ROLE = "WAFD Iftar Supervisor"
-EXTERNAL_VIEWER_ROLE = "WAFD Iftar External Viewer"
+EXTERNAL_VIEWER_ROLE = "WAFD Delivery Viewer"
 
 TEAM_ROLE_BY_FIELD = {
     "project_manager_user": PROJECT_MANAGER_ROLE,
@@ -485,29 +485,6 @@ def get_employee_project_assignments():
     return {"projects": projects, "options": _team_options()}
 
 
-@frappe.whitelist()
-def has_my_external_viewer_assignment():
-    """Return whether this account is explicitly assigned to an active Iftar project.
-
-    The generic Delivery Viewer role is intentionally not sufficient: Iftar is
-    isolated and its read-only entry appears only for the exact User stored on
-    an approved project for the duration of that project.
-    """
-    user = (frappe.session.user or "").strip()
-    if user in {"", "Guest"}:
-        return False
-    return bool(
-        frappe.db.exists(
-            "WAFD Iftar Project",
-            {
-                "external_viewer_user": user,
-                "docstatus": 1,
-                "status": ["not in", ["ملغي / Cancelled"]],
-            },
-        )
-    )
-
-
 def _delivery_options():
     drivers = frappe.get_all(
         "WAFD Driver",
@@ -562,6 +539,41 @@ def _approved_report_inbox(projects):
 
 
 @frappe.whitelist()
+def has_iftar_viewer_access():
+    """Return whether the signed-in employee has an explicit project-scoped Iftar viewer assignment.
+
+    The assignment on WAFD Iftar Project is the source of truth.  This is
+    intentionally separate from the generic WAFD Delivery Viewer role: that
+    role grants Delivery Data tracking, but it must not expose Iftar tracking
+    unless management assigned the employee to an Iftar project.
+    """
+    user = frappe.session.user
+    if user in ("Guest", ""):
+        return {"has_access": False}
+
+    today = getdate()
+    projects = frappe.get_all(
+        "WAFD Iftar Project",
+        filters={
+            "external_viewer_user": user,
+            "docstatus": 1,
+            "status": ["not in", ["ملغي / Cancelled"]],
+        },
+        fields=["name", "start_date", "end_date"],
+        limit_page_length=250,
+    )
+    for project in projects:
+        start_date = getdate(project.start_date) if project.start_date else None
+        end_date = getdate(project.end_date) if project.end_date else None
+        if start_date and today < start_date:
+            continue
+        if end_date and today > end_date:
+            continue
+        return {"has_access": True, "project": project.name}
+    return {"has_access": False}
+
+
+@frappe.whitelist()
 def get_portal_data(requested_mode=None):
     if frappe.session.user in ("Guest", ""):
         frappe.throw(_("يجب تسجيل الدخول / Login required"), frappe.PermissionError)
@@ -569,8 +581,11 @@ def get_portal_data(requested_mode=None):
     projects = _visible_projects()
     mode = _mode_from_projects(projects, requested_mode=requested_mode)
     if mode == "none":
+        roles = _roles()
         allowed = GLOBAL_MANAGEMENT_ROLES | {PROJECT_MANAGER_ROLE, KITCHEN_ROLE, DELIVERY_ROLE, SITE_MANAGER_ROLE, SUPERVISOR_ROLE, EXTERNAL_VIEWER_ROLE}
-        if not (_roles() & allowed):
+        if EXTERNAL_VIEWER_ROLE in roles and not (_is_global_manager(roles) or has_iftar_viewer_access().get("has_access")):
+            frappe.throw(_("لا توجد صلاحية مسندة لمتابعة إفطار الصائم / No project-scoped Iftar tracking assignment"), frappe.PermissionError)
+        if not (roles & allowed):
             frappe.throw(_("غير مصرح بمتابعة إفطار الصائم / Not permitted"), frappe.PermissionError)
 
     mode_projects = projects if mode == "management" else [

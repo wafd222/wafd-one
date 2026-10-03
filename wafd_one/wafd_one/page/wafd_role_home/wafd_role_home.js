@@ -40,8 +40,6 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     "بيانات التسليم":{en:"Delivery Data",id:"Data Pengiriman",ur:"ڈیلیوری ڈیٹا",hi:"डिलीवरी डेटा",bn:"ডেলিভারি তথ্য",fr:"Données de livraison",ha:"Bayanan Isarwa",sw:"Taarifa za Usafirishaji",uz:"Yetkazib berish ma'lumotlari"},
     "بيانات الرحلات المسندة لحسابك":{en:"Deliveries assigned to your account",id:"Pengiriman yang ditugaskan ke akun Anda",ur:"آپ کے اکاؤنٹ کو تفویض کردہ ڈیلیوری",hi:"आपके खाते को सौंपी गई डिलीवरी",bn:"আপনার অ্যাকাউন্টে নির্ধারিত ডেলিভারি",fr:"Livraisons attribuées à votre compte",ha:"Isarwar da aka ba asusunka",sw:"Usafirishaji uliopangiwa akaunti yako",uz:"Hisobingizga biriktirilgan yetkazmalar"},
     "عرض الرحلات المسندة وصور التسليم للقراءة فقط":{en:"View assigned trips and delivery proof as read-only",id:"Lihat perjalanan dan bukti pengiriman hanya-baca",ur:"تفویض کردہ سفر اور ثبوت صرف پڑھنے کے لیے",hi:"सौंपी गई यात्राएँ और प्रमाण केवल पढ़ें",bn:"নির্ধারিত ট্রিপ ও প্রমাণ শুধু দেখুন",fr:"Consulter les trajets et preuves en lecture seule",ha:"Duba tafiye-tafiye da hujjar isarwa kawai",sw:"Tazama safari na uthibitisho bila kuhariri",uz:"Biriktirilgan safarlar va dalillarni faqat ko‘rish"},
-    "متابعة إفطار الصائم":{en:"Iftar Saim Tracking",id:"Pemantauan Iftar Saim",ur:"افطار صائم کی نگرانی",hi:"इफ्तार साइम निगरानी",bn:"ইফতার সায়েম পর্যবেক্ষণ",fr:"Suivi Iftar Saim",ha:"Bibiyar Iftar Saim",sw:"Ufuatiliaji wa Iftar Saim",uz:"Iftar Saim kuzatuvi"},
-    "متابعة مراحل المشروع للقراءة فقط":{en:"Read-only project stage tracking",id:"Pantau tahap proyek hanya-baca",ur:"منصوبے کے مراحل صرف دیکھیں",hi:"परियोजना चरण केवल पढ़ने के लिए देखें",bn:"প্রকল্পের ধাপ শুধু দেখুন",fr:"Suivi des étapes en lecture seule",ha:"Duba matakan aikin kawai",sw:"Fuatilia hatua za mradi bila kuhariri",uz:"Loyiha bosqichlarini faqat ko‘rish"},
     "المالية":{en:"Finance",id:"Keuangan",ur:"مالیات",hi:"वित्त",bn:"অর্থ",fr:"Finance",ha:"Kuɗi",sw:"Fedha",uz:"Moliya"},
     "المعتمد":{en:"Approver",id:"Penyetuju",ur:"منظور کنندہ",hi:"अनुमोदक",bn:"অনুমোদনকারী",fr:"Approbateur",ha:"Mai Amincewa",sw:"Muidhinishaji",uz:"Tasdiqlovchi"},
     "المدقق":{en:"Auditor",id:"Auditor",ur:"آڈیٹر",hi:"ऑडिटर",bn:"নিরীক্ষক",fr:"Auditeur",ha:"Mai Bincike",sw:"Mkaguzi",uz:"Auditor"},
@@ -265,12 +263,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Delivery Viewer", title: "متابعة التسليم", subtitle: "بيانات الرحلات المسندة لحسابك",
       items: [
-        { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true }
+        { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true },
+        { label: "متابعة إفطار الصائم", desc: "متابعة مراحل المشروع للقراءة فقط", icon: "☾", page: "wafd-iftar-team", iftar_mode: "viewer" }
       ]
-    },
-    {
-      role: "WAFD Iftar External Viewer", title: "متابعة إفطار الصائم", subtitle: "متابعة مراحل المشروع للقراءة فقط",
-      items: []
     },
     {
       role: "WAFD Finance User", title: "المالية", subtitle: "الفوترة والتحصيل والعقود المرجعية",
@@ -320,7 +315,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     profile = matchedProfiles[0];
   }
   profile = profile || {role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []};
-  const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer", "WAFD Iftar External Viewer"]);
+  const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
   const isolatedFieldProfile = matchedProfiles.length > 0 && matchedProfiles.every((candidate) => isolatedFieldRoles.has(candidate.role));
   const driverOfflineProfile = roles.has("WAFD Driver") && isolatedFieldProfile;
   const DRIVER_OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
@@ -462,6 +457,24 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
   let items = (profile.items || []).filter(canRead);
 
+  async function prepareIftarViewerAccess() {
+    // RC352: WAFD Delivery Viewer is not sufficient for Iftar tracking.
+    // The Iftar card is visible only when the employee is explicitly assigned
+    // as external viewer on an active, submitted Iftar project. Fail closed.
+    if (!roles.has("WAFD Delivery Viewer")) return;
+    try {
+      const response = await frappe.call({
+        method: "wafd_one.wafd_one.iftar_stage_portal.has_iftar_viewer_access",
+        freeze: false,
+      });
+      if (!response.message?.has_access) {
+        items = items.filter((item) => item.iftar_mode !== "viewer");
+      }
+    } catch (_error) {
+      items = items.filter((item) => item.iftar_mode !== "viewer");
+    }
+  }
+
   function renderRoleHome() {
     $root.attr("dir", rtl() ? "rtl" : "ltr");
     const roleLabel = tr(profile.title);
@@ -593,17 +606,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       if (item.doctype) frappe.set_route("List", item.doctype, item.filters || {});
     });
   }
-  renderRoleHome();
-  if (roles.has("WAFD Delivery Viewer") || roles.has("WAFD Iftar External Viewer")) {
-    frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.has_my_external_viewer_assignment"})
-      .then((response) => {
-        if (!response.message || items.some((item) => item.page === "wafd-iftar-team" && item.iftar_mode === "viewer")) return;
-        items = items.concat([{label:"متابعة إفطار الصائم", desc:"متابعة مراحل المشروع للقراءة فقط", icon:"☾", page:"wafd-iftar-team", iftar_mode:"viewer"}]);
-        renderRoleHome();
-      })
-      .catch(() => {});
-  }
-  if (driverOfflineProfile) {
+  prepareIftarViewerAccess().finally(() => {
+    renderRoleHome();
+    if (!driverOfflineProfile) return;
     window.addEventListener("offline", () => updateDriverConnectivity("offline"));
     window.addEventListener("online", () => preloadDriverOfflineData());
     window.addEventListener("wafd-driver-connectivity", (event) => {
@@ -613,7 +618,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     if (navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
     wrapper.wafdPreloadDriverOffline = preloadDriverOfflineData;
     preloadDriverOfflineData();
-  }
+  });
 
 };
 

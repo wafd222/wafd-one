@@ -1,5 +1,6 @@
 frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
-  const lang = localStorage.getItem("wafd_lang") || "ar";
+  const DELIVERY_LANG_KEY = "wafd_delivery_viewer_lang";
+  const lang = localStorage.getItem(DELIVERY_LANG_KEY) || localStorage.getItem("wafd_lang") || "ar";
   const rtl = lang === "ar" || lang === "ur";
   const ar = lang === "ar";
   const esc = (v) => frappe.utils.escape_html(String(v == null ? "" : v));
@@ -88,7 +89,7 @@ frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
       // Delivery Viewer localization is client-side. Do not call the database
       // just to change the viewer language; this keeps language switching
       // independent from transient Frappe/MariaDB availability.
-      localStorage.setItem("wafd_lang", this.value);
+      localStorage.setItem(DELIVERY_LANG_KEY, this.value);
       window.location.reload();
     });
     $root.find("[data-wafv-logout]").on("click", function () {

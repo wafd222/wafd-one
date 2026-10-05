@@ -1,6 +1,6 @@
 frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
   const DELIVERY_LANG_KEY = "wafd_delivery_viewer_lang";
-  const lang = localStorage.getItem(DELIVERY_LANG_KEY) || localStorage.getItem("wafd_lang") || "ar";
+  let lang = localStorage.getItem(DELIVERY_LANG_KEY) || localStorage.getItem("wafd_lang") || "ar";
   const rtl = lang === "ar" || lang === "ur";
   const ar = lang === "ar";
   const esc = (v) => frappe.utils.escape_html(String(v == null ? "" : v));
@@ -86,11 +86,14 @@ frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
       if (open) {$menu.removeAttr("hidden"); $button.attr("aria-expanded", "true");} else close();
     });
     $root.find("#wafv-language").on("change", function () {
-      // Delivery Viewer localization is client-side. Do not call the database
-      // just to change the viewer language; this keeps language switching
-      // independent from transient Frappe/MariaDB availability.
-      localStorage.setItem(DELIVERY_LANG_KEY, this.value);
-      window.location.reload();
+      // Delivery Viewer localization is strictly client-side. Do not call the
+      // database or reload the Frappe page when changing language. Reloading
+      // would re-run Frappe boot and can fail if an unrelated account language
+      // value is not a registered Frappe Language (for example, "ha").
+      lang = this.value;
+      localStorage.setItem(DELIVERY_LANG_KEY, lang);
+      $root.attr("dir", (lang === "ar" || lang === "ur") ? "rtl" : "ltr");
+      renderPage();
     });
     $root.find("[data-wafv-logout]").on("click", function () {
       close();

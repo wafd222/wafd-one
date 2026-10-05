@@ -1,0 +1,78 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"WAFD ONE — منظومة إدارة وتشغيل الإعاشة\",\"level\":2,\"col\":12},\"id\":\"wafd-home-title\"},{\"type\":\"paragraph\",\"data\":{\"text\":\"واجهة مبسطة: اختر القسم المطلوب للوصول إلى تفاصيله وأدواته حسب صلاحياتك.\",\"col\":12},\"id\":\"wafd-home-desc\"},{\"type\":\"header\",\"data\":{\"text\":\"الوصول السريع\",\"level\":4,\"col\":12},\"id\":\"wafd-home-access\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"التشغيل\",\"col\":4},\"id\":\"wafd-hub-01\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المخزون والمشتريات\",\"col\":4},\"id\":\"wafd-hub-02\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"التوصيل\",\"col\":4},\"id\":\"wafd-hub-03\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المالية\",\"col\":4},\"id\":\"wafd-hub-04\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"البيانات المرجعية\",\"col\":4},\"id\":\"wafd-hub-05\"},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"المستندات والتعهدات\",\"col\":4},\"id\":\"wafd-hub-06\"}]",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "organization",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "WAFD ONE",
+ "links": [],
+ "module": "WAFD ONE",
+ "name": "WAFD ONE",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "التشغيل",
+   "link_to": "wafd-operations-hub",
+   "type": "Page",
+   "icon": "activity",
+   "restrict_to_domain": ""
+  },
+  {
+   "color": "Green",
+   "label": "المخزون والمشتريات",
+   "link_to": "wafd-inventory-hub",
+   "type": "Page",
+   "icon": "package",
+   "restrict_to_domain": ""
+  },
+  {
+   "color": "Cyan",
+   "label": "التوصيل",
+   "link_to": "wafd-delivery-hub",
+   "type": "Page",
+   "icon": "truck",
+   "restrict_to_domain": ""
+  },
+  {
+   "color": "Orange",
+   "label": "المالية",
+   "link_to": "wafd-finance-hub",
+   "type": "Page",
+   "icon": "credit-card",
+   "restrict_to_domain": ""
+  },
+  {
+   "color": "Grey",
+   "label": "البيانات المرجعية",
+   "link_to": "wafd-master-data-hub",
+   "type": "Page",
+   "icon": "database",
+   "restrict_to_domain": ""
+  },
+  {
+   "color": "Purple",
+   "label": "المستندات والتعهدات",
+   "link_to": "wafd-documents-hub",
+   "type": "Page",
+   "icon": "file-text",
+   "restrict_to_domain": ""
+  }
+ ],
+ "title": "WAFD ONE",
+ "app": "wafd_one",
+ "type": "Workspace",
+ "modified": "2026-07-21 16:00:00.000000",
+ "creation": "2026-07-21 16:00:00.000000"
+}

@@ -1,0 +1,33 @@
+{
+ "doctype": "Page",
+ "name": "wafd-inventory-hub",
+ "page_name": "wafd-inventory-hub",
+ "title": "المخزون والمشتريات",
+ "module": "WAFD ONE",
+ "standard": "Yes",
+ "system_page": 0,
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "WAFD Operations Manager"
+  },
+  {
+   "role": "WAFD Storekeeper"
+  },
+  {
+   "role": "WAFD Cleaning Supervisor"
+  },
+  {
+   "role": "WAFD Production Supervisor"
+  },
+  {
+   "role": "WAFD Project Manager"
+  }
+ ],
+ "creation": "2026-08-15 09:00:00.000000",
+ "modified": "2026-08-15 09:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

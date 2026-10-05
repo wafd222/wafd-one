@@ -1,0 +1,18 @@
+{
+ "doctype": "Page",
+ "name": "wafd-storekeeper-home",
+ "module": "WAFD ONE",
+ "page_name": "wafd-storekeeper-home",
+ "title": "شاشة أمين المستودع",
+ "standard": "Yes",
+ "system_page": 0,
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "WAFD Operations Manager"},
+  {"role": "WAFD Storekeeper"}
+ ],
+ "creation": "2026-09-10 12:00:00.000000",
+ "modified": "2026-09-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

@@ -1362,7 +1362,8 @@ def get_authority_monitoring_data(date=None):
                 "delivery_scheduled_meals", "delivery_verified_meals", "delivery_last_arrival",
                 "site_receipt_approved", "site_receipt_time", "site_received_meals", "site_received_by",
                 "authority_inspection_approved", "authority_inspection_time", "site_report_approved",
-                "site_report_approved_at", "administration_report_approved", "daily_report_sent",
+                "site_report_approved_at", "administration_report_approved", "administration_report_approved_by",
+                "administration_report_approved_at", "authority_report_recipient", "daily_report_sent",
                 "authority_report_sent_at", "completion_percent"],
         order_by="operation_date desc, modified desc", limit_page_length=1000,
     )

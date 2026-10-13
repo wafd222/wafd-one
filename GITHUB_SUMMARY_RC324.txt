@@ -1,8 +1,0 @@
-Fix blank Iftar Site Manager and Supervisor pages
-
-- Fix the page-show handler scope on the dedicated Iftar Site Manager screen so its project tasks load after navigation.
-- Fix the same handler scope on the dedicated Iftar Supervisor screen so assigned Safra tasks render correctly.
-- Add a visible error message and retry action if either portal API fails instead of leaving a blank screen.
-- Keep the existing RC323 site receipt, authority inspection, supervisor handover, report approval, attendance, owner handover, and daily closeout workflow unchanged.
-- Preserve RC320 dedicated Iftar driver screen and RC317 offline-first driver capture without modification.
-- No changes to standard Delivery Management, normal driver trips, Undertaking, Quotation, Inventory, Cleaning, Finance, or unrelated WAFD ONE modules.

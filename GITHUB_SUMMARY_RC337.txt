@@ -1,9 +1,0 @@
-Fix driver trip visibility and recover stuck offline sync queue
-
-- Treat replayed actions for an already documented trip as idempotent success.
-- Remove legacy duplicate queue entries instead of stopping at “trip already documented”.
-- Continue syncing other trips when one trip has a validation issue.
-- Refresh the server trip list even when one queued trip still needs review.
-- Prevent duplicate pending actions for the same trip and action type.
-- Repair legacy driver-to-user links during migration.
-- Refresh both standard and Iftar driver pages while preserving their isolation.

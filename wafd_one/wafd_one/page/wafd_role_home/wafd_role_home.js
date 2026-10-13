@@ -460,7 +460,8 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
   async function prepareIftarViewerAccess() {
     // RC352: WAFD Delivery Viewer is not sufficient for Iftar tracking.
     // The Iftar card is visible only when the employee is explicitly assigned
-    // as external viewer on an active, submitted Iftar project. Fail closed.
+    // as external viewer on a submitted, non-cancelled Iftar project. Keep the
+    // card available after the project dates so the authority can view final reports.
     if (!roles.has("WAFD Delivery Viewer")) return;
     try {
       const response = await frappe.call({

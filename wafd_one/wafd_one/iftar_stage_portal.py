@@ -540,36 +540,29 @@ def _approved_report_inbox(projects):
 
 @frappe.whitelist()
 def has_iftar_viewer_access():
-    """Return whether the signed-in employee has an explicit project-scoped Iftar viewer assignment.
+    """Return whether this user has an explicit Iftar viewer assignment.
 
-    The assignment on WAFD Iftar Project is the source of truth.  This is
-    intentionally separate from the generic WAFD Delivery Viewer role: that
-    role grants Delivery Data tracking, but it must not expose Iftar tracking
-    unless management assigned the employee to an Iftar project.
+    Access is tied to the project assignment, not the project's calendar dates.
+    External reviewers must retain read-only access to historical projects and
+    final reports after the distribution period ends. Cancelled or unsubmitted
+    projects remain excluded from the external viewer entry point.
     """
     user = frappe.session.user
     if user in ("Guest", ""):
         return {"has_access": False}
 
-    today = getdate()
-    projects = frappe.get_all(
+    project = frappe.db.get_value(
         "WAFD Iftar Project",
-        filters={
+        {
             "external_viewer_user": user,
             "docstatus": 1,
             "status": ["not in", ["ملغي / Cancelled"]],
         },
-        fields=["name", "start_date", "end_date"],
-        limit_page_length=250,
+        "name",
+        order_by="modified desc",
     )
-    for project in projects:
-        start_date = getdate(project.start_date) if project.start_date else None
-        end_date = getdate(project.end_date) if project.end_date else None
-        if start_date and today < start_date:
-            continue
-        if end_date and today > end_date:
-            continue
-        return {"has_access": True, "project": project.name}
+    if project:
+        return {"has_access": True, "project": project}
     return {"has_access": False}
 
 

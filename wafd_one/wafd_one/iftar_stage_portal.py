@@ -1389,3 +1389,79 @@ def get_authority_monitoring_data(date=None):
                 trip["proof"] = proof_map.get(trip.name)
             op["trips"] = trips
     return {"user": user, "full_name": frappe.utils.get_fullname(user), "projects": projects, "operations": operations, "date": str(date or "")}
+
+
+# ---------------------------------------------------------------------------
+# RC363 — secure official-report preview for assigned external Iftar viewers
+# ---------------------------------------------------------------------------
+def _get_authority_approved_report_doc(operation_name):
+    """Resolve an official report only for an assigned read-only viewer or manager."""
+    user = frappe.session.user
+    if user in ("Guest", ""):
+        frappe.throw(_("يلزم تسجيل الدخول / Login required"), frappe.PermissionError)
+    roles = _roles(user)
+    is_manager = _is_global_manager(roles)
+    if not (is_manager or EXTERNAL_VIEWER_ROLE in roles):
+        frappe.throw(_("غير مصرح بعرض التقرير / Not permitted to view this report"), frappe.PermissionError)
+
+    doc = frappe.get_doc("WAFD Iftar Daily Operation", operation_name)
+    project = frappe.db.get_value(
+        "WAFD Iftar Project", doc.project,
+        ["name", "external_viewer_user", "docstatus", "status"], as_dict=True,
+    )
+    if not project:
+        frappe.throw(_("المشروع غير موجود / Project not found"), frappe.DoesNotExistError)
+    if cint(project.docstatus) != 1 or "cancel" in str(project.status or "").lower() or "ملغي" in str(project.status or ""):
+        frappe.throw(_("المشروع غير منشور للمتابعة / Project is not published for monitoring"), frappe.PermissionError)
+    if not is_manager and (project.external_viewer_user or "") != user:
+        frappe.throw(_("هذا التقرير ليس ضمن المواقع المسندة إلى حسابك / Report is not assigned to this account"), frappe.PermissionError)
+
+    status = str(doc.status or "")
+    approved_and_closed = (
+        cint(doc.administration_report_approved) == 1
+        and cint(doc.daily_report_sent) == 1
+        and ("closed" in status.lower() or "مغلق" in status)
+    )
+    if not approved_and_closed:
+        frappe.throw(_("لا يتاح التقرير الرسمي قبل اعتماده وإغلاق العملية / Report is not approved and closed"), frappe.PermissionError)
+    return doc
+
+
+def _render_authority_official_report(operation_name):
+    """Render the same official daily report used by the project-manager screen."""
+    doc = _get_authority_approved_report_doc(operation_name)
+    return frappe.get_print(
+        doc.doctype,
+        doc.name,
+        print_format="WAFD Iftar Official Daily Report",
+        no_letterhead=1,
+        doc=doc,
+    )
+
+
+@frappe.whitelist()
+def get_authority_official_report_html(operation_name):
+    """Return the official, photo-inclusive report for the assigned authority preview."""
+    return _render_authority_official_report(operation_name)
+
+
+@frappe.whitelist()
+def get_authority_official_report_pdf(operation_name):
+    """Stream the approved official report as PDF after checking assignment server-side."""
+    from frappe.utils.pdf import get_pdf
+
+    html = _render_authority_official_report(operation_name)
+    pdf = get_pdf(html, options={
+        "page-size": "A4",
+        "margin-top": "0mm",
+        "margin-right": "0mm",
+        "margin-bottom": "0mm",
+        "margin-left": "0mm",
+        "encoding": "UTF-8",
+        "print-media-type": None,
+    })
+    frappe.local.response.filename = f"{frappe.form_dict.get('operation_name')}-official-report.pdf"
+    frappe.local.response.filecontent = pdf
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "inline"
+    frappe.local.response.content_type = "application/pdf"

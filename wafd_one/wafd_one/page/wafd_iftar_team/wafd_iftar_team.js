@@ -86,6 +86,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
         ${stageButton("loading", "اعتماد التحميل", load, pack && !load, load ? "تم التحميل" : "يُفتح بعد اعتماد التغليف")}
       </div>
       ${load && !allocated ? '<button type="button" class="btn btn-dark ift-primary ift-open-allocation">توزيع الوجبات المحملة على السيارات</button>' : ''}
+      ${load && allocated ? '<button type="button" class="btn btn-default ift-change-iftar-assignment">تغيير السائق أو السيارة</button>' : ''}
     </div>`;
   }
 
@@ -111,23 +112,23 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
   }
 
   function deliveryTracking(p, o) {
-    return `<div class="ift-project-card"><div class="ift-card-top"><span class="ift-state working">متابعة التوصيل</span><small>${fmtDate(o.operation_date)}</small></div>
+    return `<div class="ift-project-card" data-project="${esc(p.name)}" data-operation="${esc(o.name)}"><div class="ift-card-top"><span class="ift-state working">متابعة التوصيل</span><small>${fmtDate(o.operation_date)}</small></div>
       <h3>${esc(p.project_title || p.distribution_site || p.name)}</h3><p>${esc(p.distribution_site || '')}</p>
       <div class="ift-simple-progress"><i style="width:${Number(o.progress_percent || 0)}%"></i></div>
       <div class="ift-summary-line"><span>المرحلة الحالية</span><b>${esc(stageLabel(o.current_stage))}</b></div>
-      ${tripRows(o.trips)}${workflowNotes(o.display_notes)}</div>`;
+      ${tripRows(o.trips)}${(o.trips||[]).length && (o.trips||[]).some(t=>!t.actual_arrival && !t.proof_received)?'<button type="button" class="btn btn-default ift-change-iftar-assignment">تغيير السائق أو السيارة</button>':''}${workflowNotes(o.display_notes)}</div>`;
   }
 
   function monitorCard(p, canAssign, externalView) {
     const o = p.current_operation;
     const stages = o?.stages || [];
-    return `<div class="ift-project-card admin-project" data-project="${esc(p.name)}">
+    return `<div class="ift-project-card admin-project" data-project="${esc(p.name)}" data-operation="${esc(o?.name || '')}">
       ${projectIdentity(p)}
       <div class="ift-numbers four"><div><b>${num(p.daily_meals)}</b><span>وجبة يومياً</span></div><div><b>${num(p.cartons_per_day)}</b><span>كرتون يومياً</span></div><div><b>${num(p.number_of_days)}</b><span>يوم تشغيل</span></div><div><b>${o ? num(o.progress_percent) + '%' : '—'}</b><span>إنجاز اليوم</span></div></div>
       ${o ? `<div class="ift-monitor-day"><span>اليوم ${num(o.day_index)} من ${num(o.day_total)}</span><b>${fmtDate(o.operation_date)}</b></div>` : ''}
       <div class="ift-stage-strip">${stages.map(s => `<span class="${s.done ? 'done' : ''}">${s.done ? '✓ ' : ''}${esc(s.label)}</span>`).join('')}</div>
       ${(!externalView && o) ? tripRows(o.trips) + workflowNotes(o.display_notes) : ''}
-      ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مشرف التوصيل</b>${esc(p.delivery_supervisor_user || 'غير مسند')}</span><span><b>مدير الموقع</b>${esc(p.site_manager_user || 'غير مسند')}</span><span><b>مشرفو السفر</b>${esc((p.supervisor_plans || []).filter(x => Number(x.active) !== 0).map(x => x.supervisor_name || x.supervisor_user).filter(Boolean).join('، ') || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
+      ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مدير الموقع</b>${esc(p.site_manager_user || 'غير مسند')}</span><span><b>مشرفو السفر</b>${esc((p.supervisor_plans || []).filter(x => Number(x.active) !== 0).map(x => x.supervisor_name || x.supervisor_user).filter(Boolean).join('، ') || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
       ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إسناد موظفي هذا المشروع</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
     </div>`;
   }
@@ -137,7 +138,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     const assistants = plans.reduce((sum, x) => sum + (x.assistants || []).filter(a => Number(a.active) !== 0).length, 0);
     const owners = plans.reduce((sum, x) => sum + (x.table_owners || []).length, 0);
     const allocated = plans.reduce((sum, x) => sum + (x.table_owners || []).reduce((s, o) => s + Number(o.meal_quantity || 0), 0), 0);
-    return `<div class="ift-project-card admin-project" data-project="${esc(p.name)}">
+    return `<div class="ift-project-card admin-project" data-project="${esc(p.name)}" data-operation="${esc(p.current_operation?.name || '')}">
       ${projectIdentity(p)}
       <div class="ift-manager-project-summary"><b>${num(p.daily_meals)} وجبة</b><span>${esc(p.distribution_site || '—')}</span><span>${fmtDate(p.start_date)}${p.end_date && p.end_date !== p.start_date ? ` — ${fmtDate(p.end_date)}` : ''}</span></div>
       <div class="ift-entry-grid">
@@ -145,6 +146,8 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
         <button type="button" class="ift-entry-card ift-setup-owners"><span>أصحاب السفر وتوزيع الوجبات</span><b>${num(owners)} صاحب سفرة · ${num(allocated)} وجبة</b><small>الوجبات والكراتين والخبز والسفر</small></button>
       </div>
       ${p.current_operation ? `<div class="ift-monitor-day"><span>اليوم ${num(p.current_operation.day_index)} من ${num(p.current_operation.day_total)}</span><b>${fmtDate(p.current_operation.operation_date)}</b></div>` : ''}
+      ${p.current_operation ? tripRows(p.current_operation.trips) : ''}
+      ${p.current_operation && (p.current_operation.trips || []).some(t => !t.actual_arrival && !t.proof_received) ? '<button type="button" class="btn btn-default ift-change-iftar-assignment">تغيير السائق أو السيارة</button>' : ''}
     </div>`;
   }
 
@@ -234,7 +237,8 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     let content = "";
     if (data.mode === "kitchen") {
       const cards = (data.projects || []).map(kitchenCard).join("");
-      content = `<div class="ift-section-title"><h2>مهمة المطبخ</h2><span>${(data.projects || []).length}</span></div>${cards || emptyState("لا توجد مهمة مطبخ مسندة الآن")}`;
+      const tracking = (data.projects || []).flatMap(p => (p.tracking || []).map(o => deliveryTracking(p, o))).join("");
+      content = `<div class="ift-section-title"><h2>مهمة المطبخ</h2><span>${(data.projects || []).length}</span></div>${cards || emptyState("لا توجد مهمة مطبخ مسندة الآن")}${tracking ? `<div class="ift-section-title"><h2>التحميل وإسناد السيارات والسائقين</h2></div>${tracking}` : ''}`;
     } else if (data.mode === "delivery") {
       let pending = "", tracking = "";
       (data.projects || []).forEach(p => {
@@ -250,7 +254,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     } else {
       const readOnly = data.mode === "viewer";
       const title = readOnly ? "متابعة المشروع" : "متابعة مراحل المشاريع";
-      content = `<div class="ift-section-title"><h2>${title}</h2><span>${(data.projects || []).length}</span></div><div class="ift-project-list">${(data.projects || []).map(p => monitorCard(p, data.can_manage_team, readOnly)).join('')}</div>`;
+      content = `<div class="ift-section-title"><h2>${title}</h2><span>${(data.projects || []).length}</span></div><div class="ift-project-list">${(data.projects || []).map(p => monitorCard(p, ["management", "project_manager"].includes(data.mode), readOnly)).join('')}</div>`;
       if (!(data.projects || []).length) content += emptyState(readOnly ? "لا يوجد مشروع مسند لحساب المتابعة" : "لا توجد مشاريع ظاهرة لهذا الحساب");
       if (data.mode === "management" || data.mode === "project_manager") content += reportInbox(data);
     }
@@ -276,6 +280,11 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
     $root.on("click.rc314", ".ift-open-allocation", function () {
       const $card = $(this).closest("[data-operation]");
       openAllocationDialog(wrapper, String($card.data("operation")));
+    });
+
+    $root.on("click.rc314", ".ift-change-iftar-assignment", function () {
+      const $card = $(this).closest("[data-operation]");
+      openTripAssignmentDialog(wrapper, String($card.data("operation")));
     });
 
     $root.on("click.rc314", ".ift-setup-staff, .ift-setup-owners", function () {
@@ -307,6 +316,29 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
         }catch(e){d.get_primary_btn().prop("disabled",false);throw e;}
       }});d.show();
     });
+  }
+
+  function openTripAssignmentDialog(wrapper, operationName) {
+    const data = wrapper.__iftar_rc314.data || {};
+    let project = null, operation = null;
+    for (const p of (data.projects || [])) {
+      const found = (p.tracking || []).find(x => x.name === operationName) || (p.task?.name === operationName ? p.task : null) || (p.current_operation?.name === operationName ? p.current_operation : null);
+      if (found) { project = p; operation = found; break; }
+    }
+    if (!project || !operation || !(operation.trips || []).length) return;
+    const drivers = data.drivers || [], vehicles = data.vehicles || [];
+    const driverOptions = drivers.map(x => `<option value="${esc(x.name)}">${esc(x.driver_name || x.name)}</option>`).join("");
+    const vehicleOptions = vehicles.map(x => `<option value="${esc(x.name)}">${esc(x.plate_number || x.name)}</option>`).join("");
+    const d = new frappe.ui.Dialog({title:"تغيير إسناد السائق والسيارة",size:"large",fields:[{fieldname:"rows",fieldtype:"HTML"}],primary_action_label:"حفظ التغييرات",primary_action:async()=>{
+      const assignments=[];
+      d.$wrapper.find(".ift-reassign-row").each(function(){const $r=$(this);assignments.push({trip:$r.data("trip"),driver:$r.find(".driver").val(),vehicle:$r.find(".vehicle").val()});});
+      d.get_primary_btn().prop("disabled",true);
+      try { await call("update_iftar_trip_assignments",{operation_name:operationName,assignments}); d.hide();frappe.show_alert({message:"تم تحديث إسناد السائق والسيارة",indicator:"green"});await window.wafdIftarStageLoad(wrapper); }
+      catch(e){d.get_primary_btn().prop("disabled",false);throw e;}
+    }});
+    d.show();
+    d.fields_dict.rows.$wrapper.html(`<p class="text-muted">يمكن التغيير قبل تسجيل إثبات التسليم فقط. تبقى الكمية وسجلات الرحلة كما هي.</p><div class="ift-reassign-list">${operation.trips.filter(t=>!t.actual_arrival && !t.proof_received).map(t=>`<div class="ift-reassign-row" data-trip="${esc(t.name)}"><b>${esc(t.destination_name || t.name)} · ${num(t.quantity)} وجبة</b><select class="form-control driver">${driverOptions}</select><select class="form-control vehicle">${vehicleOptions}</select></div>`).join("")}</div>`);
+    d.$wrapper.find(".ift-reassign-row").each(function(){const $r=$(this),trip=(operation.trips||[]).find(t=>t.name===$r.data("trip"));$r.find(".driver").val(trip?.driver||"");$r.find(".vehicle").val(trip?.vehicle||"");});
   }
 
   function openAllocationDialog(wrapper, operationName) {

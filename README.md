@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC310
+# WAFD ONE 10.0.0 RC364
 
-**Current release: 10.0.0 RC310 — Iftar Employee Task Publishing & Assignment Visibility Fix**
+**Current release: 10.0.0 RC364 — Focused Iftar Sa’im Workflow Fixes**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 
@@ -49,3 +49,15 @@
 - Preserves the validated RC222 undertaking direct-preview and manager-permission fixes.
 - Synchronizes both Python package version markers with pyproject metadata.
 - Revalidates patch paths, release structure, JavaScript/JSON syntax, assets, finance safeguards, and repository cleanliness.
+
+## RC363 — Iftar pricing and authority-viewer candidate
+- Adds an editable project-level standard meal base price (default SAR 9.00 VAT-inclusive) while retaining the calculated selling price and VAT accounting.
+- Adds per-table-owner handover evidence to the authority monitoring view and an interactive report preview with zoom/scroll/print/share controls.
+- See `wafd_one/RELEASE_NOTES_10.0.0rc363.md` for scope and verification limits. This source candidate requires staging verification before production deployment.
+
+## RC364 — Focused Iftar workflow completion
+- Extends the RC363 candidate with the kitchen vehicle-assignment queue after loading approval, including project-manager access to driver/vehicle reassignment before proof of delivery.
+- Synchronizes the assigned driver login when a WAFD Driver is changed.
+- Removes the separate delivery-supervisor selection from the Iftar employee assignment dialog while retaining any legacy assignment data for rollback/compatibility.
+- Adds delivery photos and table-owner evidence to the authority report preview and print layout.
+- See `wafd_one/RELEASE_NOTES_10.0.0rc364.md`. The unchanged RC362 backup remains separate.

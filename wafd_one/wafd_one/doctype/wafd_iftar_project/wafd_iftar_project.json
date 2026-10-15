@@ -35,6 +35,7 @@
   "total_meals",
   "column_break_b",
   "meal_template",
+  "standard_meal_price",
   "sale_price_per_meal",
   "include_zamzam",
   "zamzam_reference_price",
@@ -217,6 +218,7 @@
    "fieldname": "delivery_supervisor_user",
    "fieldtype": "Link",
    "label": "مشرف التوصيل / Delivery Supervisor",
+   "hidden": 1,
    "options": "User",
    "allow_on_submit": 1,
    "hidden": 1
@@ -287,6 +289,15 @@
    "options": "مسجد أو حرم / Mosque or Haram\nتوزيع خارجي أو جهة / External Distribution or Entity",
    "default": "مسجد أو حرم / Mosque or Haram",
    "reqd": 1
+  },
+  {
+   "fieldname": "standard_meal_price",
+   "fieldtype": "Currency",
+   "label": "السعر الأساسي للوجبة القياسية شامل الضريبة / Standard Meal Base Price (VAT Inclusive)",
+   "default": 9,
+   "reqd": 1,
+   "description": "السعر الأساسي قابل للتعديل للمشاريع الجديدة والتعديلات المصرح بها. شامل ضريبة القيمة المضافة. / Editable VAT-inclusive base price.",
+   "depends_on": "eval:doc.meal_template===\"الوجبة القياسية / Standard Iftar\" || doc.meal_template===\"وجبة مع زمزم / Iftar + Zamzam\""
   },
   {
    "fieldname": "sale_price_per_meal",

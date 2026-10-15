@@ -138,8 +138,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     }
     const fields = [
       ["project_manager_user", tr("مدير المشروع", "Project Manager")],
-      ["kitchen_supervisor_user", tr("مشرف المطبخ", "Kitchen Supervisor")],
-      ["delivery_supervisor_user", tr("مشرف التوصيل", "Delivery Supervisor")],
+      ["kitchen_supervisor_user", tr("مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)", "Kitchen Supervisor (production, packaging, loading and vehicles)")],
       ["site_manager_user", tr("مدير الموقع", "Site Manager")],
       ["external_viewer_user", tr("المتابع الخارجي", "External Viewer")],
     ];
@@ -173,8 +172,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     const html = `<div dir="${arabic ? "rtl" : "ltr"}">
       <div style="margin-bottom:14px;padding:11px 13px;border-radius:12px;background:#f6f2e8;color:#765b23;font-weight:700">${tr("هذا الفريق ثابت طوال مدة المشروع، ويُنسخ تلقائياً لكل يوم تشغيل. يمكنك تعديله لاحقاً عند الحاجة فقط.", "This team stays assigned for the whole project and is copied automatically to each operating day. Edit it only when needed.")}</div>
       ${assignmentSelect("project_manager_user", tr("مدير المشروع", "Project Manager"), project)}
-      ${assignmentSelect("kitchen_supervisor_user", tr("مشرف المطبخ", "Kitchen Supervisor"), project)}
-      ${assignmentSelect("delivery_supervisor_user", tr("مشرف التوصيل", "Delivery Supervisor"), project)}
+      ${assignmentSelect("kitchen_supervisor_user", tr("مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)", "Kitchen Supervisor (production, packaging, loading and vehicles)"), project)}
       ${assignmentSelect("site_manager_user", tr("مدير الموقع", "Site Manager"), project)}
       ${assignmentSelect("external_viewer_user", tr("المتابع الخارجي", "External Viewer"), project)}
     </div>`;

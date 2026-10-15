@@ -96,6 +96,11 @@ frappe.ui.form.on("WAFD Iftar Project", {
             await frm.set_value("distribution_site", z.message.location_name || frm.doc.distribution_site);
         }
     },
+    standard_meal_price(frm) {
+        if (frm.doc.meal_template === "الوجبة القياسية / Standard Iftar" || frm.doc.meal_template === "وجبة مع زمزم / Iftar + Zamzam") {
+            frm.refresh_field("sale_price_per_meal");
+        }
+    },
     async refresh(frm) {
         // Refresh is presentation-only. Do not call set_value here because that
         // makes a saved project appear as "Not Saved" merely by opening it.
@@ -103,6 +108,7 @@ frappe.ui.form.on("WAFD Iftar Project", {
         frm.toggle_display("distribution_site", !isHaram);
         frm.toggle_display("haram_zone", isHaram);
         frm.toggle_display("zamzam_reference_price", !!frm.doc.include_zamzam);
+        frm.set_df_property("standard_meal_price", "read_only", 0);
         frm.set_df_property("sale_price_per_meal", "read_only", 1);
         frm.set_df_property("zamzam_reference_price", "read_only", 1);
         frm.fields_dict.include_zamzam.$wrapper.toggleClass("wafd-zamzam-selected", !!frm.doc.include_zamzam);

@@ -171,17 +171,16 @@ def create_project(data):
             _("لا يمكن إنشاء المشروع لأن الإضافات التالية بلا سعر مرجعي: {0} / "
               "Selected add-ons are missing reference prices: {0}").format(", ".join(unpriced_optional))
         )
-    # Commercial selling price is intentionally independent from project operating costs.
-    # Standard Iftar is always SAR 9.00. Only explicitly selected meal add-ons can
-    # increase the selling price; removing them must return the price to SAR 9.00.
-    calculated_sale_price = WIZARD_BASE_PRICE
-    for item in optional_items_for_price:
-        calculated_sale_price += frappe.utils.flt(optional_costs.get(item))
-    # Zamzam changes COST only; the contracted selling price stays SAR 9.00
-    # (VAT inclusive) unless a paid optional add-on is selected.
-    if not optional_items_for_price:
+    # Keep SAR 9.00 as the default, while honoring the selling price entered
+    # by the user in the wizard. Add-on pricing is still suggested by the UI;
+    # the user may adjust the final VAT-inclusive selling price before creation.
+    entered_sale_price = data.get("sale_price_per_meal")
+    if entered_sale_price in (None, ""):
         calculated_sale_price = WIZARD_BASE_PRICE
-    data["sale_price_per_meal"] = frappe.utils.flt(calculated_sale_price, precision=2)
+        for item in optional_items_for_price:
+            calculated_sale_price += frappe.utils.flt(optional_costs.get(item))
+        entered_sale_price = calculated_sale_price
+    data["sale_price_per_meal"] = frappe.utils.flt(entered_sale_price, precision=2)
     required = [
         "project_title", "contracting_entity", "distribution_site",
         "start_date", "end_date", "daily_meals", "sale_price_per_meal",

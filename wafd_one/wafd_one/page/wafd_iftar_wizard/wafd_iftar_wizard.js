@@ -50,7 +50,7 @@ function build_wizard(wrapper) {
     {step:2, fieldtype:'Date', fieldname:'start_date', label:'تاريخ البداية', reqd:1},
     {step:2, fieldtype:'Date', fieldname:'end_date', label:'تاريخ النهاية', reqd:1},
     {step:2, fieldtype:'Int', fieldname:'daily_meals', label:'الوجبات اليومية', reqd:1},
-    {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'سعر البيع للوجبة', reqd:1, read_only:1},
+    {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'سعر البيع للوجبة', reqd:1, default:9},
     {step:3, fieldtype:'Data', fieldname:'distribution_type', label:'نوع التوزيع', reqd:1, read_only:1},
     {step:3, fieldtype:'Select', fieldname:'meal_template', label:'نوع الوجبة', options:`\nالوجبة القياسية / Standard Iftar\nوجبة مع زمزم / Iftar + Zamzam\nوجبة مخصصة / Custom Package`, reqd:1},
     {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:`استبدال الماء العادي بزمزم 330 مل`},

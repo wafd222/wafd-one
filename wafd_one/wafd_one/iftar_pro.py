@@ -171,29 +171,24 @@ def create_project(data):
             _("لا يمكن إنشاء المشروع لأن الإضافات التالية بلا سعر مرجعي: {0} / "
               "Selected add-ons are missing reference prices: {0}").format(", ".join(unpriced_optional))
         )
-    # Keep SAR 9.00 as the default, while honoring the selling price entered
-    # by the user in the wizard. Add-on pricing is still suggested by the UI;
-    # the user may adjust the final VAT-inclusive selling price before creation.
+    # One source of truth: the editable field is the VAT-inclusive standard
+    # base price. Package extras are added by the project validation hook and
+    # the final sale price is recalculated again after selected components save.
+    base_price = data.get("standard_meal_price")
+    if base_price in (None, ""):
+        # Backward-compatible clients that predate the explicit base-price field.
+        base_price = data.get("sale_price_per_meal") or WIZARD_BASE_PRICE
+    base_price = frappe.utils.flt(base_price, precision=2)
+    if base_price <= 0:
+        frappe.throw(_("السعر الأساسي يجب أن يكون أكبر من صفر / Base meal price must be greater than zero"))
+    data["standard_meal_price"] = base_price
     entered_sale_price = data.get("sale_price_per_meal")
     if entered_sale_price in (None, ""):
-        calculated_sale_price = WIZARD_BASE_PRICE
-        for item in optional_items_for_price:
-            calculated_sale_price += frappe.utils.flt(optional_costs.get(item))
-        entered_sale_price = calculated_sale_price
+        entered_sale_price = base_price
+        if data.get("meal_template") == "وجبة مع زمزم / Iftar + Zamzam" or data.get("include_zamzam"):
+            entered_sale_price += 1.50
+        entered_sale_price += sum(frappe.utils.flt(optional_costs.get(item)) for item in optional_items_for_price)
     data["sale_price_per_meal"] = frappe.utils.flt(entered_sale_price, precision=2)
-    # The wizard's editable selling price is the final VAT-inclusive price.
-    # WAFD Iftar Project recalculates sale_price_per_meal from standard_meal_price,
-    # paid add-ons, and the Iftar + Zamzam package surcharge on every save, so derive the base here to preserve the
-    # exact price entered while keeping add-ons recalculable on later edits.
-    paid_add_on_total = sum(frappe.utils.flt(optional_costs.get(item)) for item in optional_items_for_price)
-    zamzam_surcharge = 1.50 if data.get("meal_template") == "وجبة مع زمزم / Iftar + Zamzam" else 0.0
-    if data.get("meal_template") in ("الوجبة القياسية / Standard Iftar", "وجبة مع زمزم / Iftar + Zamzam"):
-        standard_base = frappe.utils.flt(entered_sale_price, precision=2) - paid_add_on_total - zamzam_surcharge
-        if standard_base < 0:
-            frappe.throw(_("سعر البيع لا يمكن أن يكون أقل من إجمالي الإضافات المدفوعة / Selling price cannot be lower than paid add-ons"))
-        data["standard_meal_price"] = frappe.utils.flt(standard_base, precision=2)
-    else:
-        data["standard_meal_price"] = frappe.utils.flt(entered_sale_price, precision=2)
     required = [
         "project_title", "contracting_entity", "distribution_site",
         "start_date", "end_date", "daily_meals", "sale_price_per_meal",
@@ -299,10 +294,24 @@ def create_project(data):
 
 
 def _copy_supervisor_plans(source_project, target_project):
-    """Copy the stable Ramadan field roster once; users can edit only yearly changes."""
+    """Reuse the stable roster, retaining accounts and only reusing quantities when compatible."""
     if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": target_project}):
         return
-    names = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": source_project}, pluck="name", order_by="creation asc")
+    source = frappe.get_doc("WAFD Iftar Project", source_project)
+    target = frappe.get_doc("WAFD Iftar Project", target_project)
+    names = frappe.get_all(
+        "WAFD Iftar Supervisor Plan", filters={"project": source_project},
+        pluck="name", order_by="creation asc",
+    )
+    source_total = sum(
+        cint(frappe.db.get_value("WAFD Iftar Supervisor Plan", name, "assigned_meals") or 0)
+        for name in names
+        if cint(frappe.db.get_value("WAFD Iftar Supervisor Plan", name, "active"))
+    )
+    # Keep prior allocations only when the new project's daily quantity matches
+    # the old roster exactly. Otherwise retain identities/accounts but require the
+    # manager to set the new daily quantities instead of inheriting stale totals.
+    reuse_quantities = bool(source_total and source_total == cint(target.daily_meals))
     for name in names:
         src = frappe.get_doc("WAFD Iftar Supervisor Plan", name)
         dst = frappe.new_doc("WAFD Iftar Supervisor Plan")
@@ -310,15 +319,27 @@ def _copy_supervisor_plans(source_project, target_project):
         dst.manager_name = src.manager_name
         dst.supervisor_name = src.supervisor_name
         dst.supervisor_mobile = src.supervisor_mobile
+        dst.supervisor_user = src.supervisor_user
+        dst.active = src.active
         dst.notes = src.notes
         for row in src.table_owners or []:
             dst.append("table_owners", {
-                "table_owner_name": row.table_owner_name, "mobile_no": row.mobile_no,
-                "distribution_point": row.distribution_point, "delivery_location": row.delivery_location,
-                "meal_quantity": row.meal_quantity, "notes": row.notes,
+                "table_owner_name": row.table_owner_name,
+                "mobile_no": row.mobile_no,
+                "distribution_point": row.distribution_point,
+                "delivery_location": row.delivery_location,
+                "meal_quantity": cint(row.meal_quantity) if reuse_quantities else 0,
+                "bread_quantity": cint(row.bread_quantity) if reuse_quantities else 0,
+                "tablecloths_quantity": cint(row.tablecloths_quantity) if reuse_quantities else 0,
+                "notes": row.notes,
             })
         for row in src.assistants or []:
-            dst.append("assistants", {"assistant_name": row.assistant_name, "mobile_no": row.mobile_no, "active": row.active, "notes": row.notes})
+            dst.append("assistants", {
+                "assistant_name": row.assistant_name,
+                "mobile_no": row.mobile_no,
+                "active": row.active,
+                "notes": row.notes,
+            })
         dst.insert(ignore_permissions=True)
 
 

@@ -220,8 +220,7 @@
    "label": "مشرف التوصيل / Delivery Supervisor",
    "hidden": 1,
    "options": "User",
-   "allow_on_submit": 1,
-   "hidden": 1
+   "allow_on_submit": 1
   },
   {
    "fieldname": "site_manager_user",
@@ -305,7 +304,7 @@
    "label": "سعر البيع للوجبة / Sale Price per Meal",
    "default": 9,
    "reqd": 1,
-   "description": "السعر شامل ضريبة القيمة المضافة 15%. الوجبة القياسية 9.00 ر.س؛ زمزم يغيّر التكلفة فقط / VAT-inclusive. Standard meal SAR 9.00; Zamzam changes cost only.",
+   "description": "السعر النهائي شامل ضريبة القيمة المضافة 15% بعد إضافة الزيادات المختارة. / Final VAT-inclusive sale price after selected surcharges.",
    "read_only": 1
   },
   {

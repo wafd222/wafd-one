@@ -7,6 +7,8 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import cint, date_diff, flt, now_datetime
 
+from wafd_one.wafd_one.iftar_pricing import calculate_iftar_sale_price, calculate_vat_inclusive_totals
+
 
 DAILY_DISTRIBUTION = "يومي (يتكرر لكل يوم) / Daily (Repeats Each Day)"
 WHOLE_PROJECT_DISTRIBUTION = "كامل المشروع / Whole Project"
@@ -15,6 +17,8 @@ PAID_ADDON_INGREDIENT_NAMES = {
     "معمول", "فواكه مجففة", "مكسرات مشكلة", "لوزين",
     "عصير برتقال 200 مل", "عصير تفاح 200 مل",
 }
+
+
 
 PROJECT_SITE_DEFAULTS = {
     "المسجد النبوي الشريف / Prophet’s Mosque": (
@@ -244,7 +248,10 @@ class WAFDIftarProject(Document):
         base_price = flt(self.standard_meal_price)
         if base_price < 0:
             frappe.throw("سعر الوجبة الأساسية لا يمكن أن يكون سالباً / Standard meal price cannot be negative")
-        if not self.standard_meal_price and self.standard_meal_price != 0:
+        # Existing projects from older releases may have NULL or numeric zero.
+        # New wizard submissions reject non-positive prices; for legacy records,
+        # restore the documented default rather than letting a zero price persist.
+        if base_price == 0:
             base_price = 9.0
             self.standard_meal_price = base_price
         add_on_total = 0.0
@@ -257,8 +264,9 @@ class WAFDIftarProject(Document):
             if name not in PAID_ADDON_INGREDIENT_NAMES:
                 continue
             add_on_total += flt(row.cost_per_meal)
-        zamzam_surcharge = 1.50 if self.meal_template == "وجبة مع زمزم / Iftar + Zamzam" else 0.0
-        self.sale_price_per_meal = flt(base_price + add_on_total + zamzam_surcharge, 2)
+        self.sale_price_per_meal = calculate_iftar_sale_price(
+            base_price, add_on_total, self.meal_template, self.include_zamzam
+        )
 
     def _calculate_operating_costs(self):
         days = max(cint(self.number_of_days), 1)
@@ -369,9 +377,10 @@ class WAFDIftarProject(Document):
         # Selling price is VAT-inclusive. VAT is extracted from gross revenue
         # using 15/115 and excluded from profit.
         self.vat_rate = 15
-        self.total_revenue = flt(self.sale_price_per_meal) * cint(self.total_meals)
-        self.vat_amount = flt(self.total_revenue) * flt(self.vat_rate) / (100 + flt(self.vat_rate)) if self.total_revenue else 0
-        self.net_revenue_excluding_vat = flt(self.total_revenue) - flt(self.vat_amount)
+        revenue = calculate_vat_inclusive_totals(self.sale_price_per_meal, self.total_meals, self.vat_rate)
+        self.total_revenue = revenue["gross_revenue"]
+        self.vat_amount = revenue["vat_amount"]
+        self.net_revenue_excluding_vat = revenue["net_revenue_excluding_vat"]
         self.expected_profit = flt(self.net_revenue_excluding_vat) - flt(self.total_project_cost)
         self.profit_margin = (self.expected_profit / self.net_revenue_excluding_vat * 100) if self.net_revenue_excluding_vat else 0
 

@@ -687,15 +687,14 @@ def approve_site_receipt(operation_name, received_meals):
         "site_receipt_time": now_datetime(), "site_received_by": frappe.utils.get_fullname(frappe.session.user) or frappe.session.user,
     }
     frappe.db.set_value("WAFD Iftar Daily Operation", operation.name, values, update_modified=True)
-    # The project plan is permanent for its whole date range.  Every day's
-    # tasks are copied automatically after the Site Manager confirms arrival;
-    # no employee or supervisor is re-assigned day by day.
-    task_result = (
-        ensure_supervisor_reports(operation.name)
-        if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": project.name, "active": 1})
-        else {"created": [], "skipped_without_user": [], "total_plans": 0, "setup_required": True}
-    )
-    values["supervisor_tasks"] = task_result
+    # Site receipt is recorded first. The contracting authority's inspection,
+    # photo and signature are a mandatory gate before any supervisor handover.
+    # Supervisor tasks are created explicitly after inspection approval so the
+    # UI cannot distribute meals while the required inspection is still pending.
+    values["supervisor_tasks"] = {
+        "created": [], "skipped_without_user": [], "total_plans": 0,
+        "inspection_required": True,
+    }
     return values
 
 
@@ -728,6 +727,8 @@ def ensure_supervisor_reports(operation_name):
     _assigned(project, "site_manager_user")
     if not cint(operation.site_receipt_approved):
         frappe.throw(_("يجب اعتماد استلام مدير الموقع قبل تجهيز تكليفات المشرفين / Site receipt is required before supervisor assignments"))
+    if not cint(operation.authority_inspection_approved):
+        frappe.throw(_("يجب اعتماد فحص الجهة بالصورة والتوقيع قبل توزيع الوجبات على المشرفين / Authority inspection photo and signature approval is required before supervisor distribution"))
     created, skipped = [], []
     plans = frappe.get_all("WAFD Iftar Supervisor Plan", filters={"project": project.name, "active": 1}, pluck="name", order_by="creation asc", limit_page_length=500)
     if not plans:
@@ -775,6 +776,8 @@ def receive_for_supervisor(report_name, received_meals, tablecloths=0, bread_bag
     operation = frappe.get_doc("WAFD Iftar Daily Operation", report.daily_operation)
     if not cint(operation.site_receipt_approved):
         frappe.throw(_("يجب اعتماد استلام مدير الموقع أولاً / Site manager receipt must be approved first"))
+    if not cint(operation.authority_inspection_approved):
+        frappe.throw(_("يجب اعتماد فحص الجهة بالصورة والتوقيع قبل تسليم الوجبات للمشرف / Authority inspection photo and signature approval is required before supervisor handover"))
     if not handover_photo:
         frappe.throw(_("صورة تسليم الوجبات والعهدة للمشرف مطلوبة / Supervisor handover photo is required"))
     quantity = cint(received_meals)

@@ -129,7 +129,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       <div class="ift-stage-strip">${stages.map(s => `<span class="${s.done ? 'done' : ''}">${s.done ? '✓ ' : ''}${esc(s.label)}</span>`).join('')}</div>
       ${(!externalView && o) ? tripRows(o.trips) + workflowNotes(o.display_notes) : ''}
       ${!externalView ? `<div class="ift-team-summary"><span><b>مدير المشروع</b>${esc(p.project_manager_user || 'غير مسند')}</span><span><b>مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)</b>${esc(p.kitchen_supervisor_user || 'غير مسند')}</span><span><b>مدير الموقع</b>${esc(p.site_manager_user || 'غير مسند')}</span><span><b>مشرفو السفر</b>${esc((p.supervisor_plans || []).filter(x => Number(x.active) !== 0).map(x => x.supervisor_name || x.supervisor_user).filter(Boolean).join('، ') || 'غير مسند')}</span><span><b>المتابع الخارجي</b>${esc(p.external_viewer_user || 'غير مسند')}</span></div>` : '<div class="ift-success">متابعة للقراءة فقط — لا يمكن تعديل أو اعتماد أي مرحلة.</div>'}
-      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إسناد موظفي هذا المشروع</button><button class="btn btn-default ift-open-legacy">فتح إدارة إفطار الصائم</button></div>' : ''}
+      ${canAssign ? '<div class="ift-actions"><button class="btn btn-default ift-open-employees">إسناد موظفي هذا المشروع</button></div>' : ''}
     </div>`;
   }
 
@@ -145,9 +145,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
         <button type="button" class="ift-entry-card ift-setup-staff"><span>المشرفون والمساعدون</span><b>${num(plans.length)} مشرف · ${num(assistants)} مساعد</b><small>تسجيل الأسماء وأرقام الجوالات</small></button>
         <button type="button" class="ift-entry-card ift-setup-owners"><span>أصحاب السفر وتوزيع الوجبات</span><b>${num(owners)} صاحب سفرة · ${num(allocated)} وجبة</b><small>الوجبات والكراتين والخبز والسفر</small></button>
       </div>
-      ${p.current_operation ? `<div class="ift-monitor-day"><span>اليوم ${num(p.current_operation.day_index)} من ${num(p.current_operation.day_total)}</span><b>${fmtDate(p.current_operation.operation_date)}</b></div>` : ''}
-      ${p.current_operation ? tripRows(p.current_operation.trips) : ''}
-      ${p.current_operation && (p.current_operation.trips || []).some(t => !t.actual_arrival && !t.proof_received) ? '<button type="button" class="btn btn-default ift-change-iftar-assignment">تغيير السائق أو السيارة</button>' : ''}
+      ${p.current_operation ? `<div class="ift-monitor-day"><span>حالة تشغيل اليوم ${num(p.current_operation.day_index)} من ${num(p.current_operation.day_total)}</span><b>${fmtDate(p.current_operation.operation_date)} · ${esc(stageLabel(p.current_operation.current_stage))}</b></div>` : ''}
     </div>`;
   }
 

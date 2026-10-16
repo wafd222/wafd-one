@@ -20,7 +20,6 @@ frappe.pages["wafd-iftar-wizard"].on_page_show = async function(wrapper) {
 function build_wizard(wrapper) {
   const state = wrapper.wafd_iftar_state || (wrapper.wafd_iftar_state = {step:1, creating:false, build_id:1});
   state.baseSalePrice = Number(wrapper.wafd_iftar_defaults?.base_price || 9);
-  state.updatingSalePrice = false;
   const defaults = wrapper.wafd_iftar_defaults || {base_price:9, locations:{}, optional_prices:{}, zamzam_reference_price:1.50};
   const $section = $(wrapper).find(".layout-main-section").attr("dir", "rtl").empty();
 
@@ -52,7 +51,7 @@ function build_wizard(wrapper) {
     {step:2, fieldtype:'Date', fieldname:'start_date', label:'تاريخ البداية', reqd:1},
     {step:2, fieldtype:'Date', fieldname:'end_date', label:'تاريخ النهاية', reqd:1},
     {step:2, fieldtype:'Int', fieldname:'daily_meals', label:'الوجبات اليومية', reqd:1},
-    {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'سعر البيع للوجبة', reqd:1, default:9},
+    {step:2, fieldtype:'Currency', fieldname:'sale_price_per_meal', label:'السعر الأساسي للوجبة القياسية (شامل الضريبة)', reqd:1, default:9},
     {step:3, fieldtype:'Data', fieldname:'distribution_type', label:'نوع التوزيع', reqd:1, read_only:1},
     {step:3, fieldtype:'Select', fieldname:'meal_template', label:'نوع الوجبة', options:`\nالوجبة القياسية / Standard Iftar\nوجبة مع زمزم / Iftar + Zamzam\nوجبة مخصصة / Custom Package`, reqd:1},
     {step:3, fieldtype:'Check', fieldname:'include_zamzam', label:`استبدال الماء العادي بزمزم 330 مل`},
@@ -132,22 +131,27 @@ function build_wizard(wrapper) {
     return {items, itemTotal, zamzamSurcharge: isZamzamMeal ? Number(defaults.zamzam_reference_price || 1.50) : 0, isZamzamMeal};
   }
 
-  function automaticSalePrice() {
-    const {items, itemTotal, zamzamSurcharge, isZamzamMeal} = selectedPriceAdditions();
+  function currentFinalSalePrice() {
+    const {itemTotal, zamzamSurcharge} = selectedPriceAdditions();
     const base = Math.max(0, Number(state.baseSalePrice ?? defaults.base_price ?? 9));
-    const price = Number((base + itemTotal + zamzamSurcharge).toFixed(2));
-    state.updatingSalePrice = true;
-    set('sale_price_per_meal', price);
-    state.updatingSalePrice = false;
+    return Number((base + itemTotal + zamzamSurcharge).toFixed(2));
+  }
+
+  function automaticSalePrice() {
+    const {items, zamzamSurcharge, isZamzamMeal} = selectedPriceAdditions();
+    // The editable field is the base price, not the running total. Keeping it
+    // independent prevents a package switch from overwriting the manager's price.
+    const base = Math.max(0, Number(state.baseSalePrice ?? defaults.base_price ?? 9));
+    const finalPrice = currentFinalSalePrice();
     const additions = items.map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
     if (isZamzamMeal) additions.push(`زيادة وجبة زمزم: ${format_currency(zamzamSurcharge,'SAR')}`);
     controls.include_zamzam.$wrapper.toggleClass('wafd-zamzam-selected', !!value('include_zamzam'));
-    $root.find('.iw-price-note').html(`<b>السعر الأساسي الذي حددته: ${format_currency(base,'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
+    $root.find('.iw-price-note').html(`<b>السعر النهائي بعد الاختيارات: ${format_currency(finalPrice,'SAR')}</b>${additions.length?`<span> · ${additions.join(' + ')}</span>`:''}`);
     renderSummary();
   }
 
   function totals() {
-    const start=value('start_date'), end=value('end_date'), daily=Number(value('daily_meals')||0), sale=Number(value('sale_price_per_meal')||0);
+    const start=value('start_date'), end=value('end_date'), daily=Number(value('daily_meals')||0), sale=currentFinalSalePrice();
     const days=(start&&end)?Math.max(0,frappe.datetime.get_day_diff(end,start)+1):0;
     const meals=days*daily, cartons=Math.ceil(meals/25);
     return {days, meals, cartons, revenue:meals*sale};
@@ -161,7 +165,7 @@ function build_wizard(wrapper) {
     const multiplier=basis==='لليوم / Per Day'?days:basis==='للوجبة / Per Meal'?t.meals:1;
     const other=Number(value('other_cost_quantity')||0)*Number(value('other_cost_rate')||0)*multiplier;
     const vat=t.revenue*(15/115); const net=t.revenue-vat;
-    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>سعر البيع شامل الضريبة</span><strong>${format_currency(Number(value('sale_price_per_meal')||0),'SAR')}</strong></div><div><span>ضريبة 15% ضمن الإيراد</span><strong>${format_currency(vat,'SAR')}</strong></div><div><span>الإيراد قبل الضريبة</span><strong>${format_currency(net,'SAR')}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد شامل الضريبة</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
+    $root.find('.iw-summary').html(`<div><span>عدد الأيام</span><strong>${t.days}</strong></div><div><span>إجمالي الوجبات</span><strong>${frappe.format(t.meals,{fieldtype:'Int'})}</strong></div><div><span>الكراتين (25 وجبة)</span><strong>${frappe.format(t.cartons,{fieldtype:'Int'})}</strong></div><div><span>سعر البيع شامل الضريبة</span><strong>${format_currency(currentFinalSalePrice(),'SAR')}</strong></div><div><span>ضريبة 15% ضمن الإيراد</span><strong>${format_currency(vat,'SAR')}</strong></div><div><span>الإيراد قبل الضريبة</span><strong>${format_currency(net,'SAR')}</strong></div><div><span>تكاليف تشغيل مدخلة</span><strong>${format_currency(cartonCost+dailyCosts+other,'SAR')}</strong></div><div><span>الإيراد شامل الضريبة</span><strong>${format_currency(t.revenue,'SAR')}</strong></div>`);
   }
   function showStep(step) {
     state.step=Math.max(1,Math.min(4,step));
@@ -186,6 +190,8 @@ function build_wizard(wrapper) {
   function collect() {
     const out={contracting_entity_type:'جهة حكومية / Government Entity'};
     Object.keys(controls).forEach(k=>{ if(k!=='optional_items') out[k]=controls[k].get_value(); });
+    out.standard_meal_price = Number(state.baseSalePrice ?? defaults.base_price ?? 9);
+    out.sale_price_per_meal = currentFinalSalePrice();
     out.optional_items = selectedOptionalItems();
     return out;
   }
@@ -240,10 +246,8 @@ function build_wizard(wrapper) {
   addonHost.on('change', '.iw-addon-option input[type=checkbox]', automaticSalePrice);
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
   controls.sale_price_per_meal.$wrapper.on('change', () => {
-    if (state.updatingSalePrice) return;
     const entered = Number(value('sale_price_per_meal') || 0);
-    const {itemTotal, zamzamSurcharge} = selectedPriceAdditions();
-    state.baseSalePrice = Math.max(0, Number((entered - itemTotal - zamzamSurcharge).toFixed(2)));
+    state.baseSalePrice = Math.max(0, Number(entered.toFixed(2)));
     automaticSalePrice();
   });
   controls.meal_template.$wrapper.on('change', () => {

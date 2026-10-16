@@ -181,6 +181,19 @@ def create_project(data):
             calculated_sale_price += frappe.utils.flt(optional_costs.get(item))
         entered_sale_price = calculated_sale_price
     data["sale_price_per_meal"] = frappe.utils.flt(entered_sale_price, precision=2)
+    # The wizard's editable selling price is the final VAT-inclusive price.
+    # WAFD Iftar Project recalculates sale_price_per_meal from standard_meal_price,
+    # paid add-ons, and the Iftar + Zamzam package surcharge on every save, so derive the base here to preserve the
+    # exact price entered while keeping add-ons recalculable on later edits.
+    paid_add_on_total = sum(frappe.utils.flt(optional_costs.get(item)) for item in optional_items_for_price)
+    zamzam_surcharge = 1.50 if data.get("meal_template") == "وجبة مع زمزم / Iftar + Zamzam" else 0.0
+    if data.get("meal_template") in ("الوجبة القياسية / Standard Iftar", "وجبة مع زمزم / Iftar + Zamzam"):
+        standard_base = frappe.utils.flt(entered_sale_price, precision=2) - paid_add_on_total - zamzam_surcharge
+        if standard_base < 0:
+            frappe.throw(_("سعر البيع لا يمكن أن يكون أقل من إجمالي الإضافات المدفوعة / Selling price cannot be lower than paid add-ons"))
+        data["standard_meal_price"] = frappe.utils.flt(standard_base, precision=2)
+    else:
+        data["standard_meal_price"] = frappe.utils.flt(entered_sale_price, precision=2)
     required = [
         "project_title", "contracting_entity", "distribution_site",
         "start_date", "end_date", "daily_meals", "sale_price_per_meal",
@@ -190,7 +203,7 @@ def create_project(data):
         frappe.throw(_("الحقول المطلوبة غير مكتملة: {0}").format(", ".join(missing)))
     allowed = required + [
         "season_type", "contracting_entity_type", "site_details", "meal_template", "include_zamzam", "distribution_type",
-        "haram_zone"
+        "haram_zone", "standard_meal_price"
     ]
     doc = frappe.get_doc({
         "doctype": "WAFD Iftar Project",

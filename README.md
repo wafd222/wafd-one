@@ -1,6 +1,6 @@
-# WAFD ONE 10.0.0 RC364
+# WAFD ONE 10.0.0 RC367
 
-**Current release: 10.0.0 RC364 — Focused Iftar Sa’im Workflow Fixes**
+**Current release: 10.0.0 RC367 — Restore editable base price when switching meal types**
 
 نظام تشغيل وإدارة متكامل لشركة **وفد المدينة لخدمات الإعاشة**، مبني على Frappe Framework v16 لإدارة دورة الإعاشة من العقد والتخطيط وحتى التسليم والفوترة والتحصيل.
 
@@ -60,4 +60,4 @@
 - Synchronizes the assigned driver login when a WAFD Driver is changed.
 - Removes the separate delivery-supervisor selection from the Iftar employee assignment dialog while retaining any legacy assignment data for rollback/compatibility.
 - Adds delivery photos and table-owner evidence to the authority report preview and print layout.
-- See `wafd_one/RELEASE_NOTES_10.0.0rc364.md`. The unchanged RC362 backup remains separate.
+- See `wafd_one/RELEASE_NOTES_10.0.0rc366.md`. The unchanged RC362 backup remains separate.

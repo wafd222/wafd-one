@@ -231,11 +231,12 @@ class WAFDIftarProject(Document):
                 frappe.throw(f"الكمية مطلوبة للمادة الإلزامية {row.ingredient} / Quantity is required for mandatory component")
 
     def _enforce_commercial_price(self):
-        """Keep contracted selling price independent from Zamzam and operating costs.
+        """Recalculate VAT-inclusive selling price from the saved base and selected extras.
 
-        The standard meal base price is editable per project and VAT-inclusive.
-        Only explicit paid meal add-ons can increase the selling price. Zamzam
-        replaces ordinary water and changes cost only.
+        The standard meal base price is editable per project. Paid add-ons and
+        the selected Iftar + Zamzam package surcharge are added to that base.
+        Zamzam still replaces ordinary water in the recipe and is not double-counted
+        as a separate ingredient charge.
         """
         self.zamzam_reference_price = 1.50
         if self.meal_template not in ("الوجبة القياسية / Standard Iftar", "وجبة مع زمزم / Iftar + Zamzam"):
@@ -256,7 +257,8 @@ class WAFDIftarProject(Document):
             if name not in PAID_ADDON_INGREDIENT_NAMES:
                 continue
             add_on_total += flt(row.cost_per_meal)
-        self.sale_price_per_meal = flt(base_price + add_on_total, 2)
+        zamzam_surcharge = 1.50 if self.meal_template == "وجبة مع زمزم / Iftar + Zamzam" else 0.0
+        self.sale_price_per_meal = flt(base_price + add_on_total + zamzam_surcharge, 2)
 
     def _calculate_operating_costs(self):
         days = max(cint(self.number_of_days), 1)

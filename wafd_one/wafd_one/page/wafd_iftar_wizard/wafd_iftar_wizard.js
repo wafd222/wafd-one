@@ -19,6 +19,8 @@ frappe.pages["wafd-iftar-wizard"].on_page_show = async function(wrapper) {
 
 function build_wizard(wrapper) {
   const state = wrapper.wafd_iftar_state || (wrapper.wafd_iftar_state = {step:1, creating:false, build_id:1});
+  state.baseSalePrice = Number(wrapper.wafd_iftar_defaults?.base_price || 9);
+  state.updatingSalePrice = false;
   const defaults = wrapper.wafd_iftar_defaults || {base_price:9, locations:{}, optional_prices:{}, zamzam_reference_price:1.50};
   const $section = $(wrapper).find(".layout-main-section").attr("dir", "rtl").empty();
 
@@ -123,19 +125,24 @@ function build_wizard(wrapper) {
     controls.contracting_entity.refresh();
   }
 
-  function automaticSalePrice() {
+  function selectedPriceAdditions() {
     const items = selectedOptionalItems();
-    let price = Number(defaults.base_price || 9);
-    items.forEach(item => { price += Number((defaults.optional_prices || {})[item] || 0); });
-    const zamzam = Number(value('include_zamzam') || 0);
-    const waterCost = Number(defaults.water_reference_price || 0);
-    const zamzamCost = 1.50;
-    // Zamzam replaces ordinary water in COST only. Selling price stays unchanged.
-    set('sale_price_per_meal', Number(price.toFixed(2)));
+    const itemTotal = items.reduce((sum, item) => sum + Number((defaults.optional_prices || {})[item] || 0), 0);
+    const isZamzamMeal = value('meal_template') === 'وجبة مع زمزم / Iftar + Zamzam' || Number(value('include_zamzam') || 0) === 1;
+    return {items, itemTotal, zamzamSurcharge: isZamzamMeal ? Number(defaults.zamzam_reference_price || 1.50) : 0, isZamzamMeal};
+  }
+
+  function automaticSalePrice() {
+    const {items, itemTotal, zamzamSurcharge, isZamzamMeal} = selectedPriceAdditions();
+    const base = Math.max(0, Number(state.baseSalePrice ?? defaults.base_price ?? 9));
+    const price = Number((base + itemTotal + zamzamSurcharge).toFixed(2));
+    state.updatingSalePrice = true;
+    set('sale_price_per_meal', price);
+    state.updatingSalePrice = false;
     const additions = items.map(x => `${x}: ${format_currency(Number((defaults.optional_prices||{})[x]||0),'SAR')}`);
-    if (zamzam) additions.push(`زمزم مختار: تكلفة ${format_currency(zamzamCost,'SAR')} بدلاً من الماء ${format_currency(waterCost,'SAR')} — سعر البيع لا يتغير`);
-    controls.include_zamzam.$wrapper.toggleClass('wafd-zamzam-selected', !!zamzam);
-    $root.find('.iw-price-note').html(`<b>السعر الأساسي للوجبة القياسية: ${format_currency(Number(defaults.base_price||9),'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
+    if (isZamzamMeal) additions.push(`زيادة وجبة زمزم: ${format_currency(zamzamSurcharge,'SAR')}`);
+    controls.include_zamzam.$wrapper.toggleClass('wafd-zamzam-selected', !!value('include_zamzam'));
+    $root.find('.iw-price-note').html(`<b>السعر الأساسي الذي حددته: ${format_currency(base,'SAR')}</b>${additions.length?`<span> + ${additions.join(' + ')}</span>`:''}`);
     renderSummary();
   }
 
@@ -232,6 +239,13 @@ function build_wizard(wrapper) {
   controls.haram_zone.$wrapper.on('change', () => { applyLocationDefaults(); renderSummary(); });
   addonHost.on('change', '.iw-addon-option input[type=checkbox]', automaticSalePrice);
   controls.include_zamzam.$wrapper.on('change', automaticSalePrice);
+  controls.sale_price_per_meal.$wrapper.on('change', () => {
+    if (state.updatingSalePrice) return;
+    const entered = Number(value('sale_price_per_meal') || 0);
+    const {itemTotal, zamzamSurcharge} = selectedPriceAdditions();
+    state.baseSalePrice = Math.max(0, Number((entered - itemTotal - zamzamSurcharge).toFixed(2)));
+    automaticSalePrice();
+  });
   controls.meal_template.$wrapper.on('change', () => {
     const meal=value('meal_template');
     if(meal==='وجبة مع زمزم / Iftar + Zamzam') set('include_zamzam',1);

@@ -1590,6 +1590,10 @@ def get_authority_monitoring_data(date=None):
                 "distribution_completed": cint(report.distribution_completed),
                 "cleanup_completed": cint(report.cleanup_completed),
                 "report_submitted": cint(report.report_submitted),
+                # Expose evidence-presence flags only; never send raw image/signature URLs.
+                "closeout_photo": bool(report.closeout_photo),
+                "preservation_receipt_photo": bool(report.preservation_receipt_photo),
+                "preservation_receiver_signature": bool(report.preservation_receiver_signature),
                 "received_at": report.received_at or "",
                 "submitted_at": report.submitted_at or "",
                 "closeout_at": report.closeout_at or "",

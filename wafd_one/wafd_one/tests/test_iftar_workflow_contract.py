@@ -36,9 +36,10 @@ class TestIftarWorkflowContract(unittest.TestCase):
         self.assertIn('filters["docstatus"] = 1', section)
         self.assertIn("EXTERNAL_VIEWER_ROLE", section)
 
-    def test_authority_ui_displays_supervisor_evidence(self):
-        self.assertIn("o.supervisor_evidence", self.viewer_ui)
-        self.assertIn("ev.photo", self.viewer_ui)
+    def test_authority_ui_keeps_supervisor_evidence_inside_report_only(self):
+        self.assertNotIn("o.supervisor_evidence", self.viewer_ui)
+        self.assertNotIn("ev.photo", self.viewer_ui)
+        self.assertIn("get_authority_final_report_html", self.viewer_ui)
 
     def test_manager_card_does_not_offer_duplicate_legacy_portal_shortcut(self):
         self.assertNotIn("فتح إدارة إفطار الصائم", self.team_ui)
@@ -123,13 +124,39 @@ class TestIftarWorkflowContract(unittest.TestCase):
         page = json.loads((base / "page" / "wafd_iftar_authority_viewer" / "wafd_iftar_authority_viewer.json").read_text())
         self.assertIn("WAFD Iftar Authority Viewer", [row["role"] for row in page["roles"]])
 
-    def test_authority_report_has_same_template_fallback_and_scoped_gate(self):
+    def test_authority_report_uses_project_scoped_template_without_doctype_print_permissions(self):
         start = self.portal.index("def _get_authority_final_report_html")
         section = self.portal[start:self.portal.index("@frappe.whitelist()", start)]
-        self.assertIn('print_format="WAFD Iftar Official Daily Report"', section)
         self.assertIn('templates/print_formats/wafd_iftar_official_daily_report.html', section)
         self.assertIn('project.external_viewer_user == user', section)
         self.assertIn('daily_report_sent', section)
+        self.assertNotIn('frappe.get_print(', section)
+        self.assertIn('_embed_iftar_report_images(report_html)', section)
+
+    def test_authority_report_embeds_private_images_for_pdf_and_preview(self):
+        helper = self.portal[self.portal.index("def _embed_iftar_report_images"):self.portal.index("def _get_authority_final_report_html")]
+        self.assertIn('base64.b64encode', helper)
+        self.assertIn('"File"', helper)
+        self.assertIn('data:{mime};base64,', helper)
+
+    def test_authority_viewer_shows_only_summary_and_stage_timeline(self):
+        self.assertNotIn('wafv-auth-owner-details', self.viewer_ui)
+        self.assertNotIn('wafv-auth-evidence-item', self.viewer_ui)
+        self.assertNotIn('wafv-auth-trip-details', self.viewer_ui)
+        self.assertIn('wafv-auth-stages', self.viewer_ui)
+
+    def test_external_viewer_payload_excludes_photo_urls(self):
+        start = self.portal.index("def get_authority_monitoring_data")
+        section = self.portal[start:]
+        self.assertNotIn('"supervisor_evidence"', section)
+        self.assertNotIn('"delivery_photo": owner.delivery_photo', section)
+        self.assertNotIn('"recipient_signature": owner.recipient_signature', section)
+        self.assertIn('Photos and signatures remain inside the separately authorized official report.', section)
+
+    def test_report_toolbar_shares_actual_pdf_file(self):
+        self.assertIn('__wafdGetAuthorityPdf', self.viewer_ui)
+        self.assertIn("files:[file]", self.viewer_ui)
+        self.assertNotIn('navigator.share({title:document.title,text})', self.viewer_ui)
 
     def test_mobile_home_cards_do_not_keep_timer_based_navigation_lock(self):
         home = (ROOT / "page/wafd_role_home/wafd_role_home.js").read_text()

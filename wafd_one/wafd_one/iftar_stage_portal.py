@@ -1395,8 +1395,74 @@ def get_supervisor_portal_data():
     }
 
 
+def _embed_iftar_report_images(html):
+    """Embed report images so private evidence remains visible in previews and generated PDFs.
+
+    This helper is called only after authorization for the exact Iftar project. Embedding
+    bytes avoids requiring the PDF renderer or a report popup to reuse the viewer's session
+    cookie to load private file URLs.
+    """
+    import base64
+    import mimetypes
+    import os
+    import re
+    from urllib.parse import urlparse
+
+    site_url = (frappe.utils.get_url() or "").rstrip("/")
+    site_host = urlparse(site_url).netloc
+
+    def image_src(match):
+        prefix, source, suffix = match.group(1), match.group(2), match.group(3)
+        src = (source or "").strip()
+        if not src or src.startswith(("data:", "blob:")):
+            return match.group(0)
+        parsed = urlparse(src)
+        if parsed.scheme and parsed.scheme not in ("http", "https"):
+            return match.group(0)
+        if parsed.netloc and site_host and parsed.netloc != site_host:
+            return match.group(0)
+        file_url = parsed.path or src
+        full_path = None
+        try:
+            file_rows = frappe.get_all("File", filters={"file_url": file_url}, fields=["name"], limit_page_length=1)
+            if file_rows:
+                file_doc = frappe.get_doc("File", file_rows[0].name)
+                full_path = file_doc.get_full_path() if hasattr(file_doc, "get_full_path") else None
+                if not full_path:
+                    if file_url.startswith("/private/files/"):
+                        full_path = frappe.get_site_path(file_url.lstrip("/"))
+                    elif file_url.startswith("/files/"):
+                        full_path = frappe.get_site_path("public", file_url.lstrip("/"))
+        except Exception:
+            full_path = None
+        # The company logo is an app asset, not a File DocType record.
+        if not full_path and file_url.startswith("/assets/wafd_one/"):
+            asset_relative = file_url[len("/assets/wafd_one/"):]
+            full_path = frappe.get_app_path("wafd_one", "public", *asset_relative.split("/"))
+        if not full_path and file_url.startswith("/assets/"):
+            full_path = frappe.get_site_path("public", file_url.lstrip("/"))
+        if full_path and not os.path.isfile(full_path) and file_url.startswith("/private/files/"):
+            full_path = frappe.get_site_path(file_url.lstrip("/"))
+        if full_path and not os.path.isfile(full_path) and file_url.startswith("/files/"):
+            full_path = frappe.get_site_path("public", file_url.lstrip("/"))
+        if not full_path or not os.path.isfile(full_path):
+            return match.group(0)
+        mime = mimetypes.guess_type(full_path)[0] or "application/octet-stream"
+        if not mime.startswith("image/"):
+            return match.group(0)
+        try:
+            with open(full_path, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode("ascii")
+            return f'{prefix}data:{mime};base64,{encoded}{suffix}'
+        except Exception:
+            return match.group(0)
+
+    pattern = r"""(<img\b[^>]*?\bsrc=["'])([^"']+)(["'][^>]*>)"""
+    return re.sub(pattern, image_src, html, flags=re.IGNORECASE)
+
+
 def _get_authority_final_report_html(operation_name):
-    """Render the exact approved official Iftar report for an explicitly assigned viewer."""
+    """Render the approved official report for an explicitly assigned viewer."""
     user = frappe.session.user
     if user in ("Guest", ""):
         frappe.throw(_("يلزم تسجيل الدخول / Login required"), frappe.PermissionError)
@@ -1414,26 +1480,18 @@ def _get_authority_final_report_html(operation_name):
         frappe.throw(_("التقرير متاح بعد الاعتماد النهائي والإرسال والإغلاق فقط / Report is available only after final approval, dispatch and closure"), frappe.PermissionError)
     if not _is_global_manager(roles) and project.docstatus != 1:
         frappe.throw(_("المشروع غير معتمد / Project is not approved"), frappe.PermissionError)
+    # Avoid frappe.get_print: it applies ordinary DocType/Print permissions to linked
+    # operational records that the external read-only viewer intentionally does not have.
+    # The explicit project-scoped authorization above is the access gate for this report.
     try:
-        return frappe.get_print(
-            "WAFD Iftar Daily Operation",
-            operation.name,
-            print_format="WAFD Iftar Official Daily Report",
-            no_letterhead=1,
+        report_html = frappe.render_template(
+            "templates/print_formats/wafd_iftar_official_daily_report.html",
+            {"doc": operation, "frappe": frappe},
         )
+        return _embed_iftar_report_images(report_html)
     except Exception:
-        # Some upgraded sites may not yet have synchronized the standard Print
-        # Format record. Render the exact same bundled official report template
-        # as a safe fallback, without weakening the project/report permissions.
-        frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority report print-format fallback")
-        try:
-            return frappe.render_template(
-                "templates/print_formats/wafd_iftar_official_daily_report.html",
-                {"doc": operation, "frappe": frappe},
-            )
-        except Exception:
-            frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority report fallback failed")
-            frappe.throw(_("تعذر إنشاء التقرير الرسمي. راجع سجل أخطاء النظام / Could not render the official report; check Error Log."))
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority report render failed")
+        frappe.throw(_("تعذر إنشاء التقرير الرسمي. راجع سجل أخطاء النظام / Could not render the official report; check Error Log."))
 
 
 @frappe.whitelist()
@@ -1512,17 +1570,16 @@ def get_authority_monitoring_data(date=None):
         if trips:
             proofs = frappe.get_all(
                 "WAFD Delivery Proof", filters={"delivery_trip": ["in", [t.name for t in trips]]},
-                fields=["delivery_trip", "received_quantity", "receiver_name", "delivery_time", "delivery_photo"],
+                fields=["delivery_trip", "received_quantity", "receiver_name", "delivery_time"],
                 limit_page_length=200,
             )
             proof_map = {x.delivery_trip: x for x in proofs}
             for trip in trips:
                 trip["proof"] = proof_map.get(trip.name)
             op["trips"] = trips
-        # Include per-owner handover records and evidence for the authority's read-only view.
-        # These are sourced only from reports linked to this already-authorized operation.
+        # Return only the compact owner summary and stage timestamps to the external viewer.
+        # Photos and signatures remain inside the separately authorized official report.
         op["table_owner_deliveries"] = []
-        op["supervisor_evidence"] = []
         report_names = frappe.get_all(
             "WAFD Iftar Supervisor Daily Report",
             filters={"daily_operation": op.name, "docstatus": ["<", 2]},
@@ -1544,25 +1601,7 @@ def get_authority_monitoring_data(date=None):
                 "received_at": report.received_at or "",
                 "submitted_at": report.submitted_at or "",
                 "closeout_at": report.closeout_at or "",
-                "closeout_photo": report.closeout_photo or "",
-                "distribution_photo": report.distribution_photo or "",
-                "preservation_receipt_photo": report.preservation_receipt_photo or "",
-                "preservation_receiver_signature": report.preservation_receiver_signature or "",
             })
-            for evidence_field, evidence_label in (
-                ("handover_photo", "صورة استلام المشرف / Supervisor handover"),
-                ("distribution_photo", "صورة توزيع الوجبات / Meal distribution"),
-                ("closeout_photo", "صورة رفع السفر / Tablecloth raising"),
-                ("preservation_receipt_photo", "تسليم حفظ النعمة / Food preservation receipt"),
-            ):
-                evidence_url = getattr(report, evidence_field, None)
-                if evidence_url:
-                    op["supervisor_evidence"].append({
-                        "supervisor_name": report.supervisor_name or "",
-                        "label": evidence_label,
-                        "photo": evidence_url,
-                        "time": report.submitted_at or report.received_at or "",
-                    })
             for owner in (report.table_owners or []):
                 op["table_owner_deliveries"].append({
                     "table_owner_name": owner.table_owner_name or "",
@@ -1573,8 +1612,6 @@ def get_authority_monitoring_data(date=None):
                     "delivered_bread": cint(owner.delivered_bread),
                     "delivered_tablecloths": cint(owner.delivered_tablecloths),
                     "delivered_at": owner.delivered_at or report.received_at or "",
-                    "delivery_photo": owner.delivery_photo or "",
-                    "recipient_signature": owner.recipient_signature or "",
                     "owner_confirmed": cint(owner.owner_confirmed),
                     "supervisor_name": report.supervisor_name or "",
                 })

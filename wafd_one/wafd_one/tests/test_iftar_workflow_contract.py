@@ -140,6 +140,14 @@ class TestIftarWorkflowContract(unittest.TestCase):
         self.assertIn('e?._server_messages', self.viewer_ui)
         self.assertIn('الرجوع للمتابعة', self.viewer_ui)
 
+    def test_iftar_viewer_page_roles_have_targeted_migration_repair(self):
+        setup = (ROOT.parent / "setup.py").read_text()
+        self.assertIn("def ensure_iftar_authority_page_roles()", setup)
+        self.assertIn('"wafd-role-home": tuple(ROLES)', setup)
+        self.assertIn('"wafd-iftar-authority-viewer"', setup)
+        self.assertIn('ensure_iftar_authority_page_roles()', setup)
+        self.assertIn('frappe.clear_cache(doctype="Page")', setup)
+
 
 if __name__ == "__main__":
     unittest.main()

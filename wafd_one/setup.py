@@ -954,6 +954,41 @@ def ensure_iftar_authority_viewer_assignments():
         frappe.clear_cache(user=user)
 
 
+def ensure_iftar_authority_page_roles():
+    """Repair only the two WAFD pages needed by the isolated Iftar viewer.
+
+    Some upgraded sites retain stale Page role rows even though the source JSON
+    contains the correct roles.  Frappe rejects the route before its JavaScript
+    can run in that case, producing the generic "Not permitted" dialog.  Add
+    only missing role rows; preserve all existing page roles and other pages.
+    """
+    page_roles = {
+        "wafd-role-home": tuple(ROLES),
+        "wafd-iftar-authority-viewer": (
+            "WAFD Iftar Authority Viewer",
+            "System Manager",
+            "WAFD Operations Manager",
+        ),
+    }
+    changed = False
+    for page_name, required_roles in page_roles.items():
+        if not frappe.db.exists("Page", page_name):
+            continue
+        page = frappe.get_doc("Page", page_name)
+        existing = {row.role for row in (page.get("roles") or []) if row.role}
+        missing = [role for role in required_roles if role not in existing]
+        for role in missing:
+            if not frappe.db.exists("Role", role):
+                continue
+            page.append("roles", {"role": role})
+            changed = True
+        if missing:
+            page.save(ignore_permissions=True)
+    if changed:
+        frappe.clear_cache(doctype="Page")
+        frappe.clear_cache()
+
+
 def after_migrate():
     """Keep normal upgrades lightweight.
 
@@ -971,6 +1006,10 @@ def after_migrate():
         ensure_iftar_authority_viewer_assignments()
     except Exception:
         frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority viewer role migration")
+    try:
+        ensure_iftar_authority_page_roles()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority page permission repair")
     ensure_default_app()
 
     # RC161: recover from the RC160 nested-patch import failure using the

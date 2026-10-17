@@ -111,7 +111,7 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   }
   function load(date) {
     root.html(`<div class="wafv-auth-loading">${esc(t("loading"))}</div>`);
-    frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.get_authority_monitoring_data",args:{date:date||null}}).then(r=>render(r.message||{})).catch(()=>root.html(`<div class="wafv-auth-empty">${esc(t("error"))}</div>`));
+    frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.get_authority_monitoring_data",args:{date:date||null}}).then(r=>render(r.message||{})).catch(error=>{const detail=error?.message||error?._server_messages||"";root.html(`<div class="wafv-auth-empty"><b>${esc(t("error"))}</b>${detail?`<p dir="auto">${esc(typeof detail === "string" ? detail : JSON.stringify(detail))}</p>`:""}<button type="button" class="btn btn-default" id="wafv-auth-retry">${esc(t("refresh"))}</button></div>`);root.find("#wafv-auth-retry").on("click",()=>load(date));});
   }
   load("");
 };

@@ -106,5 +106,23 @@ class TestIftarWorkflowContract(unittest.TestCase):
         self.assertNotIn("tripRows(p.current_operation.trips)", manager_block)
 
 
+    def test_iftar_external_viewer_role_is_separate_from_delivery_viewer(self):
+        from pathlib import Path
+        base = Path(__file__).resolve().parents[1]
+        portal = (base / "iftar_stage_portal.py").read_text()
+        role_home = (base / "page" / "wafd_role_home" / "wafd_role_home.js").read_text()
+        delivery_viewer = role_home.split('role: "WAFD Delivery Viewer"', 1)[1].split('role: "WAFD Iftar Authority Viewer"', 1)[0]
+        self.assertIn('EXTERNAL_VIEWER_ROLE = "WAFD Iftar Authority Viewer"', portal)
+        self.assertNotIn('wafd-iftar-authority-viewer', delivery_viewer)
+        self.assertIn('role: "WAFD Iftar Authority Viewer"', role_home)
+
+    def test_iftar_authority_page_has_dedicated_role(self):
+        from pathlib import Path
+        import json
+        base = Path(__file__).resolve().parents[1]
+        page = json.loads((base / "page" / "wafd_iftar_authority_viewer" / "wafd_iftar_authority_viewer.json").read_text())
+        self.assertIn("WAFD Iftar Authority Viewer", [row["role"] for row in page["roles"]])
+
+
 if __name__ == "__main__":
     unittest.main()

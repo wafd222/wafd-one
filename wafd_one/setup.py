@@ -12,6 +12,7 @@ ROLES = (
     "WAFD Delivery Supervisor",
     "WAFD Driver",
     "WAFD Delivery Viewer",
+    "WAFD Iftar Authority Viewer",
     "WAFD Finance User",
     "WAFD Storekeeper",
     "WAFD Cleaning Supervisor",
@@ -921,6 +922,38 @@ def ensure_rc168_mobile_role_navigation():
     frappe.clear_cache()
 
 
+def ensure_iftar_authority_viewer_assignments():
+    """Migrate explicitly assigned Iftar viewers to their isolated role.
+
+    Remove the legacy delivery-viewer role only when the account has no active
+    delivery-tracking shares. Delivery assignments and records are never edited.
+    """
+    if not frappe.db.exists("DocType", "WAFD Iftar Project"):
+        return
+    users = set(frappe.get_all(
+        "WAFD Iftar Project",
+        filters={"external_viewer_user": ["is", "set"], "docstatus": 1,
+                         "status": ["not in", ["ملغي / Cancelled"]]},
+        pluck="external_viewer_user", limit_page_length=5000,
+    ))
+    for user in users:
+        if not user or not frappe.db.exists("User", {"name": user, "enabled": 1, "user_type": "System User"}):
+            continue
+        account = frappe.get_doc("User", user)
+        roles = set(frappe.get_roles(user))
+        if "WAFD Iftar Authority Viewer" not in roles:
+            account.add_roles("WAFD Iftar Authority Viewer")
+            roles.add("WAFD Iftar Authority Viewer")
+        has_active_delivery_share = False
+        if frappe.db.exists("DocType", "WAFD Delivery Tracking Share"):
+            has_active_delivery_share = bool(frappe.db.exists(
+                "WAFD Delivery Tracking Share", {"viewer_user": user, "enabled": 1}
+            ))
+        if "WAFD Delivery Viewer" in roles and not has_active_delivery_share:
+            account.remove_roles("WAFD Delivery Viewer")
+        frappe.clear_cache(user=user)
+
+
 def after_migrate():
     """Keep normal upgrades lightweight.
 
@@ -934,6 +967,10 @@ def after_migrate():
     site needs the legacy recovery routine for one deployment.
     """
     ensure_roles()
+    try:
+        ensure_iftar_authority_viewer_assignments()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority viewer role migration")
     ensure_default_app()
 
     # RC161: recover from the RC160 nested-patch import failure using the

@@ -263,8 +263,13 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     {
       role: "WAFD Delivery Viewer", title: "متابعة التسليم", subtitle: "بيانات الرحلات المسندة لحسابك",
       items: [
-        { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true },
-        { label: "متابعة إفطار الصائم", desc: "متابعة مراحل المشروع المسندة للقراءة فقط", icon: "☾", page: "wafd-iftar-authority-viewer", iftar_mode: "viewer" }
+        { label: "بيانات التسليم", desc: "عرض الرحلات المسندة وصور التسليم للقراءة فقط", icon: "▤", page: "wafd-delivery-viewer", primary: true }
+      ]
+    },
+    {
+      role: "WAFD Iftar Authority Viewer", title: "متابعة إفطار الصائم", subtitle: "متابعة مشاريع إفطار الصائم المسندة لهذا الحساب فقط",
+      items: [
+        { label: "متابعة إفطار الصائم", desc: "مراحل التشغيل وأصحاب السفر والتقرير المعتمد — قراءة فقط", icon: "☾", page: "wafd-iftar-authority-viewer", iftar_mode: "viewer", primary: true }
       ]
     },
     {
@@ -315,7 +320,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     profile = matchedProfiles[0];
   }
   profile = profile || {role: "Desk User", title: "WAFD ONE", subtitle: "لا توجد أدوات تشغيلية مخصصة لهذا الحساب", items: []};
-  const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer"]);
+  const isolatedFieldRoles = new Set(["WAFD Driver", "WAFD Cleaning Supervisor", "WAFD Delivery Viewer", "WAFD Iftar Authority Viewer"]);
   const isolatedFieldProfile = matchedProfiles.length > 0 && matchedProfiles.every((candidate) => isolatedFieldRoles.has(candidate.role));
   const driverOfflineProfile = roles.has("WAFD Driver") && isolatedFieldProfile;
   const DRIVER_OFFLINE_DB_NAME = "wafd_driver_offline_rc293";
@@ -462,7 +467,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
     // The Iftar card is visible only when the employee is explicitly assigned
     // as external viewer on a submitted, non-cancelled Iftar project. Keep the
     // card available after the project dates so the authority can view final reports.
-    if (!roles.has("WAFD Delivery Viewer")) return;
+    if (!roles.has("WAFD Delivery Viewer") && !roles.has("WAFD Iftar Authority Viewer")) return;
     try {
       const response = await frappe.call({
         method: "wafd_one.wafd_one.iftar_stage_portal.has_iftar_viewer_access",

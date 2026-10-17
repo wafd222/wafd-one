@@ -16,7 +16,7 @@ KITCHEN_ROLE = "WAFD Iftar Kitchen Supervisor"
 DELIVERY_ROLE = "WAFD Delivery Supervisor"
 SITE_MANAGER_ROLE = "WAFD Iftar Site Manager"
 SUPERVISOR_ROLE = "WAFD Iftar Supervisor"
-EXTERNAL_VIEWER_ROLE = "WAFD Delivery Viewer"
+EXTERNAL_VIEWER_ROLE = "WAFD Iftar Authority Viewer"
 
 TEAM_ROLE_BY_FIELD = {
     "project_manager_user": PROJECT_MANAGER_ROLE,
@@ -1404,7 +1404,7 @@ def _get_authority_final_report_html(operation_name):
     project = frappe.get_doc("WAFD Iftar Project", operation.project)
     roles = _roles(user)
     allowed = _is_global_manager(roles) or project.project_manager_user == user or (
-        EXTERNAL_VIEWER_ROLE in roles and project.external_viewer_user == user
+        (EXTERNAL_VIEWER_ROLE in roles or "WAFD Delivery Viewer" in roles) and project.external_viewer_user == user
     )
     if not allowed:
         frappe.throw(_("لا توجد صلاحية لمعاينة التقرير لهذا المشروع / No permission to preview this project's report"), frappe.PermissionError)
@@ -1447,7 +1447,7 @@ def get_authority_monitoring_data(date=None):
     if user in ("Guest", ""):
         frappe.throw(_("يلزم تسجيل الدخول / Login required"), frappe.PermissionError)
     roles = _roles(user)
-    if not (_is_global_manager(roles) or EXTERNAL_VIEWER_ROLE in roles):
+    if not (_is_global_manager(roles) or EXTERNAL_VIEWER_ROLE in roles or "WAFD Delivery Viewer" in roles):
         frappe.throw(_("هذه الشاشة مخصصة للجهة المسند إليها المشروع / Not permitted to view authority monitoring"), frappe.PermissionError)
 
     # External users never inherit visibility from their role alone: exact project

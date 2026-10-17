@@ -570,7 +570,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       await frappe.call({method:"wafd_one.language.set_user_language",args:{language:uiLang},freeze:true,freeze_message:tr("اللغة")+"…"});
       window.location.reload();
     });
-    $root.find(".wafd-mobile-card").on("click", function () {
+    // RC380: delegate card clicks from the persistent root. Frappe/iOS can restore
+    // the page shell with refreshed card nodes after returning from an external PDF view.
+    $root.off("click.wafdMobileCard", ".wafd-mobile-card").on("click.wafdMobileCard", ".wafd-mobile-card", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (["storekeeper_receive", "storekeeper_handover", "storekeeper_inventory"].includes(item.action)) {
         localStorage.setItem("wafd_storekeeper_action", item.action.replace("storekeeper_", ""));
@@ -627,12 +629,33 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
 
 // RC217: Frappe can revisit an already-loaded Page without re-running on_page_load.
+// RC380: Recover interactivity when returning from iOS PDF/share viewers. The
+// visibility/page-show events are not reliable on every in-app browser, so also
+// recover on Frappe's own route-show lifecycle.
+function wafdRestoreRoleHomeInteractivity() {
+  try { if (frappe.dom && typeof frappe.dom.unfreeze === "function") frappe.dom.unfreeze(); } catch (_) {}
+  document.querySelectorAll(".freeze, .freeze-message").forEach((node) => node.remove());
+  document.querySelectorAll(".wafd-role-home-page, .wafd-role-home-page .page-body").forEach((node) => {
+    node.style.pointerEvents = "";
+    node.removeAttribute("aria-busy");
+  });
+}
+window.addEventListener("pageshow", () => setTimeout(wafdRestoreRoleHomeInteractivity, 100));
+window.addEventListener("focus", () => setTimeout(wafdRestoreRoleHomeInteractivity, 100));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") setTimeout(wafdRestoreRoleHomeInteractivity, 100);
+});
 frappe.pages["wafd-role-home"].on_page_show = function (wrapper) {
   document.body.classList.add("wafd-at-role-home");
   document.getElementById("wafd-global-mobile-back")?.remove();
   document.getElementById("wafd-mobile-back-v218")?.remove();
   document.getElementById("wafd-mobile-back-v219")?.remove();
-  setTimeout(() => { document.getElementById("wafd-global-mobile-back")?.remove(); document.getElementById("wafd-mobile-back-v218")?.remove();
-  document.getElementById("wafd-mobile-back-v219")?.remove(); }, 120);
+  wafdRestoreRoleHomeInteractivity();
+  [120, 350, 800].forEach((delay) => setTimeout(() => {
+    document.getElementById("wafd-global-mobile-back")?.remove();
+    document.getElementById("wafd-mobile-back-v218")?.remove();
+    document.getElementById("wafd-mobile-back-v219")?.remove();
+    wafdRestoreRoleHomeInteractivity();
+  }, delay));
   if (typeof wrapper?.wafdPreloadDriverOffline === "function") wrapper.wafdPreloadDriverOffline();
 };

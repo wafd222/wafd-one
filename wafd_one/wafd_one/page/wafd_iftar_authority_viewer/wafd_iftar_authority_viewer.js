@@ -1,20 +1,24 @@
+let wafdAuthorityViewerRefresh = null;
 frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({parent: wrapper, title: "متابعة إفطار الصائم", single_column: true});
   $(wrapper).addClass("wafd-authority-viewer-page");
-  const root = $('<div class="wafv-auth"></div>').appendTo(page.body);
+  let root = $('<div class="wafv-auth"></div>').appendTo(page.body);
   const key = "wafd_iftar_authority_lang";
   let reportFlowActive = false;
-  const restoreAfterReport = () => {
-    if (!reportFlowActive) return;
+  let lastLoadedDate = "";
+  const restoreAfterReport = (force = false) => {
+    if (!reportFlowActive && !force) return;
     reportFlowActive = false;
-    // iOS in-app browsers can return from the PDF/share viewer with Frappe's
-    // freeze layer still visible, which makes the monitoring card unclickable.
+    // Clear Frappe's stale freeze only when returning from the report or when
+    // Frappe explicitly shows this cached Page again.
     try { if (frappe.dom && typeof frappe.dom.unfreeze === "function") frappe.dom.unfreeze(); } catch (_) {}
-    root.css("pointer-events", "");
+    root.css({"pointer-events":"", "opacity":""}).removeAttr("aria-busy");
+    root.find(".wafv-stage-report").css("pointer-events", "");
   };
-  window.addEventListener("pageshow", () => setTimeout(restoreAfterReport, 150));
+  window.addEventListener("pageshow", () => setTimeout(() => restoreAfterReport(false), 150));
+  window.addEventListener("focus", () => setTimeout(() => restoreAfterReport(false), 150));
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") setTimeout(restoreAfterReport, 150);
+    if (document.visibilityState === "visible") setTimeout(() => restoreAfterReport(false), 150);
   });
   let lang = localStorage.getItem(key) || localStorage.getItem("wafd_lang") || "ar";
   const L = {
@@ -50,9 +54,13 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
     root.find("#wafv-auth-lang").on("change",function(){lang=this.value;localStorage.setItem(key,lang);load(root.find("#wafv-auth-date").val());});
     root.find("#wafv-auth-refresh").on("click",()=>load(root.find("#wafv-auth-date").val()));
     root.find("#wafv-auth-date").on("change",function(){load(this.value);});
-    root.find(".wafv-auth-share").on("click",async function(){const op=ops.find(x=>x.name===this.dataset.operation);const project=projects.find(x=>x.name===op?.project);if(op&&project)await shareReport(project,op);});
+    // RC381: bind from the persistent viewer root with delegation. The stages
+    // are re-rendered after route restoration; direct handlers on the old stage
+    // nodes can be lost in mobile Safari/Frappe's cached page lifecycle.
+    root.off("click.wafvReport", ".wafv-auth-share").on("click.wafvReport", ".wafv-auth-share", async function(){const op=ops.find(x=>x.name===this.dataset.operation);const project=projects.find(x=>x.name===op?.project);if(op&&project)await shareReport(project,op);});
     const openStageReport = function(){const op=ops.find(x=>x.name===this.dataset.operation);const project=projects.find(x=>x.name===op?.project);if(!op||!project)return;if(Number(op.administration_report_approved||0)!==1||Number(op.daily_report_sent||0)!==1||!/closed|مغلق/i.test(String(op.status||""))){frappe.show_alert({message:t("reportNotReady"),indicator:"orange"});return;}openOfficialReportPreview(project,op);};
-    root.find(".wafv-stage-report").on("click",openStageReport).on("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openStageReport.call(this);}});
+    root.off("click.wafvReport", ".wafv-stage-report").on("click.wafvReport", ".wafv-stage-report", function(e){e.preventDefault();openStageReport.call(this);});
+    root.off("keydown.wafvReport", ".wafv-stage-report").on("keydown.wafvReport", ".wafv-stage-report", function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openStageReport.call(this);}});
   }
   function reportText(project, op) {
     const lines = [
@@ -154,9 +162,31 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
     }
   }
   function load(date) {
-    root.css("pointer-events", "");
+    lastLoadedDate = date || "";
+    root.css({"pointer-events":"", "opacity":""}).removeAttr("aria-busy");
     root.html(`<div class="wafv-auth-loading">${esc(t("loading"))}</div>`);
     frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.get_authority_monitoring_data",args:{date:date||null}}).then(r=>render(r.message||{})).catch(error=>{const detail=error?.message||error?._server_messages||"";root.html(`<div class="wafv-auth-empty"><b>${esc(t("error"))}</b>${detail?`<p dir="auto">${esc(typeof detail === "string" ? detail : JSON.stringify(detail))}</p>`:""}<button type="button" class="btn btn-default" id="wafv-auth-retry">${esc(t("refresh"))}</button></div>`);root.find("#wafv-auth-retry").on("click",()=>load(date));});
   }
   load("");
+  // Frappe caches Page instances. This callback reattaches the closure to the
+  // current live page body before reloading/rebinding controls on later visits.
+  wafdAuthorityViewerRefresh = function (shownWrapper, shouldReload) {
+    const $body = $(shownWrapper || wrapper).find(".layout-main-section").first();
+    let $liveRoot = $body.find(".wafv-auth").first();
+    if (!$liveRoot.length) $liveRoot = $('<div class="wafv-auth"></div>').appendTo($body);
+    root = $liveRoot;
+    restoreAfterReport(true);
+    if (shouldReload) load(root.find("#wafv-auth-date").val() || lastLoadedDate || "");
+  };
+  wrapper.wafvAuthorityInitialShowHandled = false;
+};
+
+// Frappe keeps custom Page instances cached. On the first show, the initial
+// on_page_load request is already running; on every subsequent show, reload the
+// current date and recreate all delegated controls on the live DOM.
+frappe.pages["wafd-iftar-authority-viewer"].on_page_show = function (wrapper) {
+  if (typeof wafdAuthorityViewerRefresh !== "function") return;
+  const firstShow = !wrapper.wafvAuthorityInitialShowHandled;
+  wrapper.wafvAuthorityInitialShowHandled = true;
+  wafdAuthorityViewerRefresh(wrapper, !firstShow);
 };

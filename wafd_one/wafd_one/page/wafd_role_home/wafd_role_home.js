@@ -570,9 +570,10 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
       await frappe.call({method:"wafd_one.language.set_user_language",args:{language:uiLang},freeze:true,freeze_message:tr("اللغة")+"…"});
       window.location.reload();
     });
-    // RC380: delegate card clicks from the persistent root. Frappe/iOS can restore
-    // the page shell with refreshed card nodes after returning from an external PDF view.
-    $root.off("click.wafdMobileCard", ".wafd-mobile-card").on("click.wafdMobileCard", ".wafd-mobile-card", function () {
+    // RC381: delegate from document, not a possibly detached page-body node.
+    // Frappe caches Page wrappers; iOS can restore/rebuild descendants after a PDF
+    // tab switch, while handlers attached to an old root no longer receive clicks.
+    $(document).off("click.wafdMobileCard", ".wafd-role-home-page .wafd-mobile-card").on("click.wafdMobileCard", ".wafd-role-home-page .wafd-mobile-card", function () {
       const item = items[Number($(this).attr("data-idx"))]; if (!item) return;
       if (["storekeeper_receive", "storekeeper_handover", "storekeeper_inventory"].includes(item.action)) {
         localStorage.setItem("wafd_storekeeper_action", item.action.replace("storekeeper_", ""));
@@ -629,7 +630,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 
 
 // RC217: Frappe can revisit an already-loaded Page without re-running on_page_load.
-// RC380: Recover interactivity when returning from iOS PDF/share viewers. The
+// RC381: Recover interactivity when returning from iOS PDF/share viewers. The
 // visibility/page-show events are not reliable on every in-app browser, so also
 // recover on Frappe's own route-show lifecycle.
 function wafdRestoreRoleHomeInteractivity() {

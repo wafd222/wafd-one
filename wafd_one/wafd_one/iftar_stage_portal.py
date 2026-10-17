@@ -837,11 +837,9 @@ def approve_delivery_plan(operation_name, allocations, note=None):
     if not rows:
         frappe.throw(_("أضف سيارة واحدة على الأقل / Add at least one vehicle allocation"))
     if len(rows) > 30:
-        frappe.throw(_("الحد الأقصى 30 سيارة في خطة اليوم / Maximum 30 vehicles per day"))
+        frappe.throw(_("الحد الأقصى 30 رحلة في خطة اليوم / Maximum 30 trip allocations per day"))
 
     total = 0
-    seen_vehicles = set()
-    seen_drivers = set()
     normalized = []
     for index, row in enumerate(rows, 1):
         vehicle = (row.get("vehicle") or "").strip()
@@ -859,12 +857,6 @@ def approve_delivery_plan(operation_name, allocations, note=None):
         row_note = " ".join((row.get("note") or "").split()).strip()
         if not vehicle or not driver or quantity <= 0:
             frappe.throw(_("أكمل السيارة والسائق والكمية في الصف {0} / Complete row {0}").format(index))
-        if vehicle in seen_vehicles:
-            frappe.throw(_("لا يمكن تكرار نفس السيارة في خطة اليوم / A vehicle can appear only once"))
-        if driver in seen_drivers:
-            frappe.throw(_("لا يمكن تكرار نفس السائق في خطة اليوم / A driver can appear only once"))
-        seen_vehicles.add(vehicle)
-        seen_drivers.add(driver)
         capacity = cint(frappe.db.get_value("WAFD Vehicle", vehicle, "capacity_meals") or 0)
         if capacity and quantity > capacity:
             plate = frappe.db.get_value("WAFD Vehicle", vehicle, "plate_number") or vehicle

@@ -14,6 +14,14 @@ class TestIftarWorkflowContract(unittest.TestCase):
         cls.viewer_ui = (ROOT / "page/wafd_iftar_authority_viewer/wafd_iftar_authority_viewer.js").read_text()
         cls.wizard_ui = (ROOT / "page/wafd_iftar_wizard/wafd_iftar_wizard.js").read_text()
 
+    def test_vehicle_and_driver_can_be_reused_for_multiple_iftar_trips(self):
+        start = self.portal.index("def approve_delivery_plan") if "def approve_delivery_plan" in self.portal else self.portal.index("def approve_vehicle_distribution")
+        section = self.portal[start:start + 9000]
+        self.assertNotIn("A vehicle can appear only once", section)
+        self.assertNotIn("A driver can appear only once", section)
+        self.assertIn("Vehicle capacity exceeded", section)
+        self.assertIn("Allocation total must equal loaded meals", section)
+
     def test_kitchen_stages_are_ordered(self):
         start = self.portal.index("def approve_kitchen_stage")
         section = self.portal[start:start + 7000]
@@ -22,6 +30,20 @@ class TestIftarWorkflowContract(unittest.TestCase):
         self.assertIn('elif stage == "packaging"', section)
         self.assertIn('if stage == "loading":', section)
         self.assertIn('اعتمد التغليف أولاً', section)
+
+    def test_site_manager_guard_does_not_block_assigned_supervisor_with_multiple_roles(self):
+        from pathlib import Path
+        controller = (
+            Path(__file__).resolve().parents[1]
+            / "doctype"
+            / "wafd_iftar_supervisor_daily_report"
+            / "wafd_iftar_supervisor_daily_report.py"
+        ).read_text()
+        start = controller.index("def before_save")
+        section = controller[start:]
+        self.assertIn('"WAFD Iftar Site Manager" in roles', section)
+        self.assertIn("old.supervisor_user != frappe.session.user", section)
+        self.assertIn("Site manager cannot alter supervisor details or photos", section)
 
     def test_supervisor_report_requires_quantity_reconciliation(self):
         start = self.team_backend.index("def submit_supervisor_report")

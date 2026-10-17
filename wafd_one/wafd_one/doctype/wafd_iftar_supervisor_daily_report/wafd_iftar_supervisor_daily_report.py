@@ -88,8 +88,13 @@ class WAFDIftarSupervisorDailyReport(Document):
             if old and cint(old.manager_approved) and "System Manager" not in frappe.get_roles():
                 frappe.throw("التقرير معتمد ولا يمكن للمشرف تعديله / Approved report cannot be edited")
             roles = set(frappe.get_roles(frappe.session.user))
-            if old and "WAFD Iftar Site Manager" in roles and not roles.intersection(
-                {"System Manager", "WAFD Operations Manager", "WAFD Project Manager"}
+            if (
+                old
+                and "WAFD Iftar Site Manager" in roles
+                and old.supervisor_user != frappe.session.user
+                and not roles.intersection(
+                    {"System Manager", "WAFD Operations Manager", "WAFD Project Manager"}
+                )
             ):
                 protected = (
                     "distributed_meals", "surplus_meals", "preservation_meals", "waste_meals",

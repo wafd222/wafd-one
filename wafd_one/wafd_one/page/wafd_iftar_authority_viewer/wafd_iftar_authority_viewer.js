@@ -84,8 +84,19 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
       const html=`<!doctype html><html lang="${esc(lang)}" dir="${rtl?"rtl":"ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5"><title>${esc(project.project_title||project.name)} — ${esc(t("title"))}</title>${styles}${wrapperStyle}</head><body>${toolbar}<main class="wafv-report-viewport"><article class="wafv-report-paper">${body}</article></main><script>(function(){let z=1;const p=document.querySelector('.wafv-report-paper');const set=v=>{z=Math.max(.5,Math.min(2.5,v));p.style.zoom=z;document.getElementById('zoomvalue').textContent=Math.round(z*100)+'%'};document.getElementById('back').onclick=()=>window.close();document.getElementById('zoomin').onclick=()=>set(z+.1);document.getElementById('zoomout').onclick=()=>set(z-.1);document.getElementById('zoomreset').onclick=()=>set(1);document.getElementById('print').onclick=()=>window.print();document.getElementById('share').onclick=async()=>{const text=${JSON.stringify("WAFD ONE — "+(project.project_title||project.name)+"\n"+(op.operation_date||"" )+"\n"+(lang==="ar"?"التقرير الرسمي المعتمد لمشروع إفطار الصائم":"Approved official Iftar Sa’im report"))};try{if(navigator.share)await navigator.share({title:document.title,text});else{await navigator.clipboard.writeText(text);alert(${JSON.stringify(lang==="ar"?"تم نسخ ملخص التقرير للمشاركة":"Report summary copied for sharing")})}}catch(e){}}})();</script></body></html>`;
       w.document.open();w.document.write(html);w.document.close();
     }).catch(e=>{
-      try{w.document.open();w.document.write(`<p style="font-family:Tahoma;padding:24px;color:#a22">${esc(e.message||t("error"))}</p>`);w.document.close();}catch(_){}
-      frappe.show_alert({message:e.message||t("error"),indicator:"red"});
+      let detail = e?.message || "";
+      if (!detail && Array.isArray(e?._server_messages)) detail = e._server_messages.join("\n");
+      if (!detail && typeof e?._server_messages === "string") {
+        try { detail = JSON.parse(e._server_messages).map(x => { try { return JSON.parse(x).message || x; } catch (_) { return x; } }).join("\n"); }
+        catch (_) { detail = e._server_messages; }
+      }
+      if (!detail) detail = lang === "ar" ? "تعذر فتح التقرير الرسمي. استخدم زر الرجوع ثم حدّث البيانات، أو تواصل مع مدير النظام." : "Could not open the official report. Return and refresh, or contact the system administrator.";
+      try {
+        w.document.open();
+        w.document.write(`<!doctype html><html lang="${esc(lang)}" dir="${["ar","ur"].includes(lang)?"rtl":"ltr"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WAFD ONE — Report</title><body style="font-family:Tahoma,Arial,sans-serif;padding:24px;line-height:1.8;color:#333"><p style="color:#a22">${esc(detail)}</p><button onclick="window.close();setTimeout(()=>{if(!window.closed)history.back()},100)" style="padding:12px 20px;border:0;border-radius:8px;background:#222;color:white">${esc(lang === "ar" ? "الرجوع للمتابعة" : "Back to monitoring")}</button></body></html>`);
+        w.document.close();
+      } catch (_) {}
+      frappe.show_alert({message:detail,indicator:"red"});
     });
   }
   async function shareReport(project, op) {

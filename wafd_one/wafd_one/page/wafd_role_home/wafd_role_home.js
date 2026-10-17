@@ -583,12 +583,9 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         return;
       }
       if (item.page) {
-        // Prevent repeated mobile taps from starting overlapping Desk route
-        // transitions while the target page assets are still loading.
-        const card = this;
-        if (card.dataset.wafdNavigating === "1") return;
-        card.dataset.wafdNavigating = "1";
-        window.setTimeout(() => { delete card.dataset.wafdNavigating; }, 1200);
+        // RC372: Do not keep a per-card navigation lock across background-tab
+        // suspension. iOS may pause timers while a report tab is open, leaving
+        // the card permanently disabled when the user returns to the app.
         if (item.page === "wafd-iftar-team" && item.iftar_mode) {
           sessionStorage.setItem("wafd_iftar_requested_mode", item.iftar_mode);
         }

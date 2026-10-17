@@ -123,6 +123,23 @@ class TestIftarWorkflowContract(unittest.TestCase):
         page = json.loads((base / "page" / "wafd_iftar_authority_viewer" / "wafd_iftar_authority_viewer.json").read_text())
         self.assertIn("WAFD Iftar Authority Viewer", [row["role"] for row in page["roles"]])
 
+    def test_authority_report_has_same_template_fallback_and_scoped_gate(self):
+        start = self.portal.index("def _get_authority_final_report_html")
+        section = self.portal[start:self.portal.index("@frappe.whitelist()", start)]
+        self.assertIn('print_format="WAFD Iftar Official Daily Report"', section)
+        self.assertIn('templates/print_formats/wafd_iftar_official_daily_report.html', section)
+        self.assertIn('project.external_viewer_user == user', section)
+        self.assertIn('daily_report_sent', section)
+
+    def test_mobile_home_cards_do_not_keep_timer_based_navigation_lock(self):
+        home = (ROOT / "page/wafd_role_home/wafd_role_home.js").read_text()
+        self.assertNotIn('card.dataset.wafdNavigating = "1"', home)
+        self.assertIn('iOS may pause timers while a report tab is open', home)
+
+    def test_report_failure_surfaces_server_details(self):
+        self.assertIn('e?._server_messages', self.viewer_ui)
+        self.assertIn('الرجوع للمتابعة', self.viewer_ui)
+
 
 if __name__ == "__main__":
     unittest.main()

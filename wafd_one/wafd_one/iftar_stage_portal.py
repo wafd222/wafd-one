@@ -1414,12 +1414,26 @@ def _get_authority_final_report_html(operation_name):
         frappe.throw(_("التقرير متاح بعد الاعتماد النهائي والإرسال والإغلاق فقط / Report is available only after final approval, dispatch and closure"), frappe.PermissionError)
     if not _is_global_manager(roles) and project.docstatus != 1:
         frappe.throw(_("المشروع غير معتمد / Project is not approved"), frappe.PermissionError)
-    return frappe.get_print(
-        "WAFD Iftar Daily Operation",
-        operation.name,
-        print_format="WAFD Iftar Official Daily Report",
-        no_letterhead=1,
-    )
+    try:
+        return frappe.get_print(
+            "WAFD Iftar Daily Operation",
+            operation.name,
+            print_format="WAFD Iftar Official Daily Report",
+            no_letterhead=1,
+        )
+    except Exception:
+        # Some upgraded sites may not yet have synchronized the standard Print
+        # Format record. Render the exact same bundled official report template
+        # as a safe fallback, without weakening the project/report permissions.
+        frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority report print-format fallback")
+        try:
+            return frappe.render_template(
+                "templates/print_formats/wafd_iftar_official_daily_report.html",
+                {"doc": operation, "frappe": frappe},
+            )
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "WAFD ONE Iftar authority report fallback failed")
+            frappe.throw(_("تعذر إنشاء التقرير الرسمي. راجع سجل أخطاء النظام / Could not render the official report; check Error Log."))
 
 
 @frappe.whitelist()

@@ -1398,10 +1398,7 @@ def _embed_iftar_report_images(html):
     import mimetypes
     import os
     import re
-    from urllib.parse import urlparse
-
-    site_url = (frappe.utils.get_url() or "").rstrip("/")
-    site_host = urlparse(site_url).netloc
+    from urllib.parse import unquote, urlparse
 
     def image_src(match):
         prefix, source, suffix = match.group(1), match.group(2), match.group(3)
@@ -1411,12 +1408,18 @@ def _embed_iftar_report_images(html):
         parsed = urlparse(src)
         if parsed.scheme and parsed.scheme not in ("http", "https"):
             return match.group(0)
-        if parsed.netloc and site_host and parsed.netloc != site_host:
-            return match.group(0)
-        file_url = parsed.path or src
+        # Resolve the URL path locally rather than fetching arbitrary external URLs.
+        # Frappe Cloud may expose the same file through a different canonical host;
+        # percent-encoded filenames and query strings must not prevent File lookup.
+        file_url = unquote(parsed.path or src).split("?", 1)[0]
+        file_doc = None
         full_path = None
+        image_bytes = None
         try:
             file_rows = frappe.get_all("File", filters={"file_url": file_url}, fields=["name"], limit_page_length=1)
+            if not file_rows and file_url:
+                # Some older uploads store a decoded URL while templates emit an encoded one.
+                file_rows = frappe.get_all("File", filters={"file_url": unquote(file_url)}, fields=["name"], limit_page_length=1)
             if file_rows:
                 file_doc = frappe.get_doc("File", file_rows[0].name)
                 full_path = file_doc.get_full_path() if hasattr(file_doc, "get_full_path") else None
@@ -1425,8 +1428,16 @@ def _embed_iftar_report_images(html):
                         full_path = frappe.get_site_path(file_url.lstrip("/"))
                     elif file_url.startswith("/files/"):
                         full_path = frappe.get_site_path("public", file_url.lstrip("/"))
+                # get_content supports storage backends where the file is not present
+                # at a directly accessible local filesystem path.
+                if not full_path or not os.path.isfile(full_path):
+                    try:
+                        image_bytes = file_doc.get_content()
+                    except Exception:
+                        image_bytes = None
         except Exception:
             full_path = None
+            image_bytes = None
         # The company logo is an app asset, not a File DocType record.
         if not full_path and file_url.startswith("/assets/wafd_one/"):
             asset_relative = file_url[len("/assets/wafd_one/"):]
@@ -1437,14 +1448,20 @@ def _embed_iftar_report_images(html):
             full_path = frappe.get_site_path(file_url.lstrip("/"))
         if full_path and not os.path.isfile(full_path) and file_url.startswith("/files/"):
             full_path = frappe.get_site_path("public", file_url.lstrip("/"))
-        if not full_path or not os.path.isfile(full_path):
-            return match.group(0)
-        mime = mimetypes.guess_type(full_path)[0] or "application/octet-stream"
-        if not mime.startswith("image/"):
+        if full_path and os.path.isfile(full_path):
+            mime = mimetypes.guess_type(full_path)[0] or "application/octet-stream"
+            try:
+                with open(full_path, "rb") as image_file:
+                    image_bytes = image_file.read()
+            except Exception:
+                image_bytes = None
+        else:
+            filename = (file_doc.get("file_name") if file_doc else "") or file_url.rsplit("/", 1)[-1]
+            mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        if not mime.startswith("image/") or not image_bytes:
             return match.group(0)
         try:
-            with open(full_path, "rb") as image_file:
-                encoded = base64.b64encode(image_file.read()).decode("ascii")
+            encoded = base64.b64encode(image_bytes).decode("ascii")
             return f'{prefix}data:{mime};base64,{encoded}{suffix}'
         except Exception:
             return match.group(0)

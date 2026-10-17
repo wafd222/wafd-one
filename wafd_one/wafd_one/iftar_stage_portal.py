@@ -1475,7 +1475,7 @@ def get_authority_monitoring_data(date=None):
         fields=["name", "project", "operation_date", "status", "planned_meals", "produced_meals",
                 "packaged_meals", "loaded_meals", "delivered_meals", "received_meals",
                 "kitchen_started", "kitchen_started_at", "kitchen_ready_approved", "kitchen_ready_time",
-                "delivery_plan_approved", "delivery_plan_approved_at", "delivery_trip_count",
+                "delivery_plan_approved", "delivery_plan_approved_at", "loading_approved_at", "delivery_trip_count",
                 "delivery_scheduled_meals", "delivery_verified_meals", "delivery_last_arrival",
                 "site_receipt_approved", "site_receipt_time", "site_received_meals", "site_received_by",
                 "authority_inspection_approved", "authority_inspection_time", "site_report_approved",
@@ -1516,6 +1516,25 @@ def get_authority_monitoring_data(date=None):
         )
         for report_name in report_names:
             report = frappe.get_doc("WAFD Iftar Supervisor Daily Report", report_name)
+            op.setdefault("supervisor_reports", []).append({
+                "supervisor_name": report.supervisor_name or "",
+                "supervisor_mobile": report.supervisor_mobile or "",
+                "planned_meals": cint(report.planned_meals),
+                "received_meals": cint(report.received_meals),
+                "distributed_meals": cint(report.distributed_meals),
+                "preservation_meals": cint(report.preservation_meals),
+                "waste_meals": cint(report.waste_meals),
+                "distribution_completed": cint(report.distribution_completed),
+                "cleanup_completed": cint(report.cleanup_completed),
+                "report_submitted": cint(report.report_submitted),
+                "received_at": report.received_at or "",
+                "submitted_at": report.submitted_at or "",
+                "closeout_at": report.closeout_at or "",
+                "closeout_photo": report.closeout_photo or "",
+                "distribution_photo": report.distribution_photo or "",
+                "preservation_receipt_photo": report.preservation_receipt_photo or "",
+                "preservation_receiver_signature": report.preservation_receiver_signature or "",
+            })
             for evidence_field, evidence_label in (
                 ("handover_photo", "صورة استلام المشرف / Supervisor handover"),
                 ("distribution_photo", "صورة توزيع الوجبات / Meal distribution"),
@@ -1533,7 +1552,9 @@ def get_authority_monitoring_data(date=None):
             for owner in (report.table_owners or []):
                 op["table_owner_deliveries"].append({
                     "table_owner_name": owner.table_owner_name or "",
+                    "mobile_no": owner.mobile_no or "",
                     "distribution_point": owner.distribution_point or "",
+                    "planned_meals": cint(owner.planned_meals),
                     "delivered_meals": cint(owner.delivered_meals),
                     "delivered_bread": cint(owner.delivered_bread),
                     "delivered_tablecloths": cint(owner.delivered_tablecloths),

@@ -13,6 +13,7 @@
   const CLEANING_ROUTE = "wafd-cleaning-home";
   const CLEANING_CLASS = "wafd-at-cleaning-home";
   const VIEWER_ROUTE = "wafd-delivery-viewer";
+  const IFTAR_AUTHORITY_VIEWER_ROUTE = "wafd-iftar-authority-viewer";
   const VIEWER_CLASS = "wafd-at-delivery-viewer";
   const DELIVERY_REPORT_ROUTE = "wafd-delivery-report";
   const DELIVERY_REPORT_CLASS = "wafd-at-delivery-report";
@@ -75,6 +76,15 @@
 
   function fieldRouteIsAllowed() {
     const routeName = currentRouteName();
+    // RC385: The external Iftar monitoring role was classified as field-only,
+    // but its own page was missing from this global route guard. Every route
+    // change could silently send the viewer back home, including after a report.
+    // Restrict this exception to the actual authority-viewer role: adding the
+    // page to FIELD_ROUTES for every field user would broaden client navigation.
+    if (routeName === IFTAR_AUTHORITY_VIEWER_ROUTE ||
+        (!routeName && pathIsRoute(IFTAR_AUTHORITY_VIEWER_ROUTE))) {
+      return (window.frappe?.user_roles || []).includes("WAFD Iftar Authority Viewer");
+    }
     if (routeName) return FIELD_ROUTES.has(routeName);
     return [...FIELD_ROUTES].some(pathIsRoute);
   }

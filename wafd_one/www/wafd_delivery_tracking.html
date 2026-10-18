@@ -1,0 +1,43 @@
+{% extends "templates/web.html" %}
+{% block page_content %}
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<style>
+:root{--gold:#bd8b2b;--gold2:#e2c36d;--ink:#191a1e;--muted:#777b82;--line:#e8e0cf;--bg:#f7f5f0;--ok:#28784b}.navbar,.web-footer{display:none!important}body{background:var(--bg);margin:0}.container{max-width:900px!important}.page_content{padding-top:12px!important}.wdt{direction:rtl;font-family:Tahoma,Arial,sans-serif;color:var(--ink);padding:4px 0 42px}.wdt *{box-sizing:border-box}.wdt-hero{background:linear-gradient(135deg,#17181c,#26252a 65%,#59451e);border-radius:26px;color:#fff;padding:22px;box-shadow:0 18px 44px rgba(20,20,24,.13)}.wdt-brand{display:flex;align-items:center;gap:15px}.wdt-logo{width:76px;height:76px;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);padding:6px}.wdt-logo img{width:100%;height:100%;object-fit:contain}.wdt-brand small{color:var(--gold2);font-weight:800}.wdt-brand h1{margin:3px 0 0;font-size:27px}.wdt-dest{margin-top:18px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.065);padding:14px 16px;border-radius:16px}.wdt-dest small{display:block;color:rgba(255,255,255,.58);margin-bottom:4px}.wdt-dest b{font-size:19px}.wdt-viewer{display:flex;justify-content:space-between;gap:12px;margin-top:12px;color:rgba(255,255,255,.72);font-size:11px}.wdt-panel{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;margin-top:14px;box-shadow:0 8px 24px rgba(30,30,34,.035)}.wdt-panel h2{font-size:20px;margin:0 0 14px}.wdt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.wdt-info{background:#faf9f6;border:1px solid #eee9df;border-radius:14px;padding:12px}.wdt-info small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.wdt-info b{font-size:15px;word-break:break-word}.wdt-info a{color:var(--ink);text-decoration:none}.wdt-progress{display:grid;gap:0}.wdt-step{display:grid;grid-template-columns:34px 1fr;gap:11px;min-height:76px;position:relative}.wdt-step:not(:last-child):before{content:"";position:absolute;right:16px;top:31px;width:2px;height:48px;background:#e3ddd1}.wdt-dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#eeeae1;color:#8a8c90;font-weight:900;z-index:1}.wdt-step.done .wdt-dot{background:var(--ok);color:#fff}.wdt-step.current .wdt-dot{background:var(--gold);color:#fff;box-shadow:0 0 0 5px #f4ead3}.wdt-step div b,.wdt-step div small{display:block}.wdt-step div small{color:var(--muted);margin-top:4px}.wdt-proof{display:none}.wdt-proof.show{display:block}.wdt-photo{width:100%;max-height:520px;object-fit:contain;background:#f1efe9;border-radius:16px;border:1px solid var(--line);margin-top:12px}.wdt-readonly{text-align:center;color:var(--muted);font-size:11px;margin-top:17px}.wdt-error{text-align:center;padding:55px 20px}.wdt-error b{display:block;font-size:20px;margin-bottom:8px}.wdt-loading{opacity:.55}.wdt-status{display:inline-flex;background:#efe6d3;color:#765817;border-radius:999px;padding:6px 11px;font-size:11px;font-weight:800}.wdt-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9a62;margin-left:5px}
+@media(max-width:700px){.container{padding:0!important}.page_content{padding:0!important}.wdt{padding:0 9px 30px}.wdt-hero{margin:0 -9px;border-radius:0 0 24px 24px;padding:18px 16px}.wdt-logo{width:64px;height:64px}.wdt-brand h1{font-size:23px}.wdt-grid{grid-template-columns:1fr 1fr}.wdt-panel{padding:15px}.wdt-viewer{display:block}.wdt-viewer span{display:block;margin-top:4px}}
+</style>
+<main class="wdt wdt-loading" id="wdt-root" aria-live="polite">
+ <section class="wdt-hero">
+  <div class="wdt-brand"><div class="wdt-logo"><img src="/assets/wafd_one/images/wafd-one-logo.svg" alt="WAFD ONE"></div><div><small>شركة وفد المدينة لخدمات الإعاشة</small><h1>متابعة التسليم</h1></div></div>
+  <div class="wdt-dest"><small>الجهة أو موقع التسليم</small><b id="wdt-destination">جارٍ تحميل البيانات…</b></div>
+  <div class="wdt-viewer"><span id="wdt-viewer"></span><span><i class="wdt-live"></i> شاشة للقراءة فقط — تحديث تلقائي</span></div>
+ </section>
+ <section class="wdt-panel"><h2>بيانات تحميل الوجبات</h2><div class="wdt-grid">
+  <div class="wdt-info"><small>نوع الوجبة</small><b id="wdt-meal">—</b></div><div class="wdt-info"><small>عدد الوجبات</small><b id="wdt-quantity">—</b></div>
+  <div class="wdt-info"><small>وقت التحميل</small><b id="wdt-loading-time">—</b></div><div class="wdt-info"><small>حالة الرحلة</small><b><span class="wdt-status" id="wdt-status">—</span></b></div>
+ </div></section>
+ <section class="wdt-panel"><h2>السائق والمركبة</h2><div class="wdt-grid">
+  <div class="wdt-info"><small>اسم السائق</small><b id="wdt-driver">—</b></div><div class="wdt-info"><small>رقم الجوال</small><b id="wdt-mobile">—</b></div><div class="wdt-info"><small>رقم اللوحة</small><b id="wdt-plate">—</b></div>
+ </div></section>
+ <section class="wdt-panel"><h2>مسار التسليم</h2><div class="wdt-progress" id="wdt-progress"></div></section>
+ <section class="wdt-panel wdt-proof" id="wdt-proof"><h2>إثبات التسليم</h2><div class="wdt-grid"><div class="wdt-info"><small>اسم المستلم</small><b id="wdt-receiver">—</b></div><div class="wdt-info"><small>وقت التسليم</small><b id="wdt-delivery-time">—</b></div></div><img class="wdt-photo" id="wdt-photo" alt="صورة إثبات التسليم"></section>
+ <p class="wdt-readonly">هذه الصفحة تعرض بيانات هذه الرحلة فقط، ولا تسمح بالإضافة أو التعديل.</p>
+</main>
+<script>
+(function(){
+ const root=document.getElementById('wdt-root'),token=new URLSearchParams(location.search).get('token')||'';
+ const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ const local=v=>{const parts=String(v||'').split('/').map(x=>x.trim());return parts[0]||'—'};
+ const fmt=v=>{if(!v)return'بانتظار التنفيذ';const d=new Date(String(v).replace(' ','T'));return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat('ar-SA',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Riyadh'}).format(d)};
+ const set=(id,value)=>{$(id).textContent=value??'—'};
+ function fail(){root.classList.remove('wdt-loading');root.innerHTML='<section class="wdt-panel wdt-error"><b>تعذر فتح رابط المتابعة</b><span>الرابط غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً من المشرف.</span></section>'}
+ function render(data){const t=data.trip||{};set('wdt-destination',t.destination_name||'—');set('wdt-viewer',data.viewer_name?`الرابط مخصص لـ: ${data.viewer_name}`:'');set('wdt-meal',local(t.meal_type));set('wdt-quantity',Number(t.quantity)>0?`${t.quantity} وجبة`:'غير محدد');set('wdt-loading-time',fmt(t.loading_time));set('wdt-status',local(t.status));set('wdt-driver',t.driver_name||'—');$('wdt-mobile').innerHTML=t.driver_mobile?`<a href="tel:${esc(t.driver_mobile)}">${esc(t.driver_mobile)}</a>`:'—';set('wdt-plate',t.plate_number||'—');
+  const steps=[['استلام السائق للمهمة',t.driver_accepted_on],['وقت الخروج',t.departure_time],['وقت الوصول',t.arrival_time],['التسليم',t.delivery_time]];let reachedPending=false;$('wdt-progress').innerHTML=steps.map(([label,time])=>{const done=!!time,cur=!done&&!reachedPending;if(cur)reachedPending=true;return `<div class="wdt-step ${done?'done':cur?'current':''}"><span class="wdt-dot">${done?'✓':'•'}</span><div><b>${esc(label)}</b><small>${esc(fmt(time))}</small></div></div>`}).join('');
+  if(t.has_delivery_photo){$('wdt-proof').classList.add('show');set('wdt-receiver',t.receiver_name||'—');set('wdt-delivery-time',fmt(t.delivery_time));$('wdt-photo').src=`/api/method/wafd_one.delivery_tracking.get_shared_delivery_photo?token=${encodeURIComponent(token)}`}
+  root.classList.remove('wdt-loading');
+ }
+ async function load(recordAccess=false){if(!token)return fail();try{const r=await fetch(`/api/method/wafd_one.delivery_tracking.get_shared_tracking?token=${encodeURIComponent(token)}&record_access=${recordAccess?1:0}`,{credentials:'omit',headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();render(p.message||{})}catch(_e){fail()}}
+ load(true);setInterval(()=>{if(document.visibilityState==='visible')load(false)},30000);
+})();
+</script>
+{% endblock %}

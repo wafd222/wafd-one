@@ -302,11 +302,26 @@
       if (bar) bar.remove();
       return;
     }
-    if (!bar) {
-      bar = createFieldAppbar();
-      const activePage = Array.from(document.querySelectorAll(".page-container")).find(elementIsActuallyVisible);
-      (activePage || document.body).prepend(bar);
+    if (!bar) bar = createFieldAppbar();
+
+    // RC388: Frappe v16 can use a flex row for the active .page-container.
+    // Prepending the full-width appbar *inside* that row turns the header and
+    // viewer content into two side-by-side columns (the reported half-screen
+    // Safari layout). Place the authority viewer's appbar directly under body,
+    // outside Frappe's page grid. This branch is intentionally limited to the
+    // authority viewer; other WAFD screens retain their existing placement.
+    const authorityViewer = currentRouteName() === IFTAR_AUTHORITY_VIEWER_ROUTE ||
+      (!currentRouteName() && pathIsRoute(IFTAR_AUTHORITY_VIEWER_ROUTE));
+    if (authorityViewer) {
+      if (bar.parentElement !== document.body) document.body.prepend(bar);
+      return;
     }
+
+    const activePage = Array.from(document.querySelectorAll(".page-container")).find(elementIsActuallyVisible);
+    const target = activePage || document.body;
+    // On leaving the authority viewer, restore the original field-appbar
+    // position for all other roles/routes without creating duplicate headers.
+    if (bar.parentElement !== target || bar !== target.firstElementChild) target.prepend(bar);
   }
 
   function hasOpenModal() {

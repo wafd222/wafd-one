@@ -29,3 +29,90 @@
 .wafd-authority-viewer-page .wafv-auth-owner-details>summary,.wafd-authority-viewer-page .wafv-auth-trip-details>summary{font-weight:800;cursor:pointer;color:#6f5520;padding:4px}
 .wafd-authority-viewer-page .wafv-auth-trip-details{border:1px solid #e7dfcf;border-radius:13px;padding:12px 14px;margin:14px 0;background:#fff}
 @media(max-width:760px){.wafd-authority-viewer-page .wafv-auth-stages{grid-template-columns:1fr}.wafd-authority-viewer-page .wafv-auth-summary{min-width:740px}.wafd-authority-viewer-page .wafv-stage{min-height:62px}.wafd-authority-viewer-page .wafv-auth-stages-title{font-size:17px}}
+
+/* RC386 — fix the Frappe Desk two-column shell on small screens.
+   The external viewer is read-only and has no sidebar. Limit the override to
+   its own Page wrapper; other WAFD roles and Desk pages are untouched. */
+.wafd-authority-viewer-page .wafv-auth {
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin-inline:0;
+  overflow-wrap:anywhere;
+}
+.wafd-authority-viewer-page .wafv-auth-head,
+.wafd-authority-viewer-page .wafv-auth-project,
+.wafd-authority-viewer-page .wafv-auth-operation,
+.wafd-authority-viewer-page .wafv-auth-summary-wrap {
+  max-width:100%;
+  min-width:0;
+}
+@media (max-width: 900px) {
+  .wafd-authority-viewer-page .layout-side-section,
+  .wafd-authority-viewer-page .standard-sidebar,
+  .wafd-authority-viewer-page .desk-sidebar {
+    display:none !important;
+  }
+  .wafd-authority-viewer-page .page-body,
+  .wafd-authority-viewer-page .page-content,
+  .wafd-authority-viewer-page .layout-main,
+  .wafd-authority-viewer-page .layout-main-section-wrapper,
+  .wafd-authority-viewer-page .layout-main-section {
+    display:block;
+    box-sizing:border-box;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    flex:0 0 100% !important;
+    margin-inline:0 !important;
+  }
+  .wafd-authority-viewer-page .layout-main-section-wrapper,
+  .wafd-authority-viewer-page .layout-main-section {
+    float:none !important;
+    padding-inline:0 !important;
+  }
+  .wafd-authority-viewer-page .wafv-auth {
+    padding:8px 12px 24px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-head {
+    padding:18px;
+    border-radius:18px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-head h1 {
+    font-size:clamp(22px,6vw,30px);
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  .wafd-authority-viewer-page .wafv-auth-head p {
+    line-height:1.6;
+  }
+  .wafd-authority-viewer-page .wafv-auth-summary-wrap {
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .wafd-authority-viewer-page .wafv-auth-stats,
+  .wafd-authority-viewer-page .wafv-auth-stages,
+  .wafd-authority-viewer-page .wafv-auth-tools {
+    min-width:0;
+  }
+}
+@media (max-width: 420px) {
+  .wafd-authority-viewer-page .wafv-auth {
+    padding-inline:8px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-head {
+    padding:16px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-tools {
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:8px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-projecthead {
+    padding:14px;
+  }
+  .wafd-authority-viewer-page .wafv-auth-operation {
+    padding:12px;
+  }
+}

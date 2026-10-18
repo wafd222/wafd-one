@@ -647,7 +647,17 @@ if (!window.__wafdIftarViewerNativeNavigation382) {
     // Force a fresh route transition when Frappe thinks the cached viewer is
     // already current, instead of silently ignoring a same-route set_route.
     if (typeof frappe !== "undefined" && typeof frappe.set_route === "function") {
-      frappe.set_route("wafd-iftar-authority-viewer");
+      // iOS can restore the home DOM while Frappe still considers the viewer
+      // route current. Move through the home route first so a second tap always
+      // creates a real route transition and runs the cached page's show hook.
+      let currentRoute = [];
+      try { currentRoute = frappe.get_route ? frappe.get_route() : []; } catch (_) {}
+      if (currentRoute[0] === "wafd-iftar-authority-viewer") {
+        frappe.set_route("wafd-role-home");
+        window.setTimeout(() => frappe.set_route("wafd-iftar-authority-viewer"), 120);
+      } else {
+        frappe.set_route("wafd-iftar-authority-viewer");
+      }
     } else {
       window.location.hash = "#wafd-iftar-authority-viewer";
     }

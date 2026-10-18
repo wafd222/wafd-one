@@ -1,5 +1,0 @@
-{
- "doctype":"Print Format","name":"WAFD Iftar Official Daily Report","doc_type":"WAFD Iftar Daily Operation","module":"WAFD ONE","standard":"Yes","custom_format":1,"print_format_type":"Jinja","disabled":0,
- "html":"{# RC332 compatibility: اسم المشرف · عدد المساعدين · administration_report_approved #}{% include \"templates/print_formats/wafd_iftar_official_daily_report.html\" %}",
- "css":"","align_labels_right":1,"show_section_headings":1,"line_breaks":0,"absolute_value":0,"raw_printing":0,"print_format_builder":0,"font":"Default","owner":"Administrator","modified_by":"Administrator"
-}

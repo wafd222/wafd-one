@@ -1,0 +1,279 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:WAFD-STOCK-MOVEMENT-{#####}",
+ "creation": "2026-07-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "movement_type",
+  "posting_date",
+  "project",
+  "production_batch",
+  "source_warehouse",
+  "issue_purpose",
+  "issued_to_user",
+  "target_warehouse",
+  "reference_type",
+  "reference_name",
+  "material_category",
+  "items",
+  "total_amount",
+  "status",
+  "posted_by",
+  "posted_on",
+  "handover_status",
+  "handover_sent_by",
+  "handover_sent_on",
+  "handover_received_by",
+  "handover_received_on",
+  "handover_rejection_reason",
+  "notes",
+  "is_pre_go_live_test"
+ ],
+ "fields": [
+  {
+   "fieldname": "movement_type",
+   "fieldtype": "Select",
+   "label": "نوع الحركة / Movement Type",
+   "options": "استلام / Receipt\nصرف / Issue\nتحويل / Transfer\nتسوية / Adjustment\nهالك / Waste",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الحركة / Posting Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "المشروع / Project",
+   "options": "WAFD Catering Project"
+  },
+  {
+   "fieldname": "production_batch",
+   "fieldtype": "Link",
+   "label": "دفعة الإنتاج / Production Batch",
+   "options": "WAFD Production Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "المستودع المصدر / Source Warehouse",
+   "options": "WAFD Warehouse"
+  },
+  {
+   "fieldname": "target_warehouse",
+   "fieldtype": "Link",
+   "label": "المستودع المستهدف / Target Warehouse",
+   "options": "WAFD Warehouse"
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Data",
+   "label": "نوع المرجع / Reference Type"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "المرجع / Reference",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "material_category",
+   "fieldtype": "Select",
+   "label": "قسم المواد / Material Category",
+   "options": "\u0627\u062e\u062a\u0631 \u0627\u0644\u0642\u0633\u0645 / Select Category\n\u0644\u062d\u0648\u0645 / Meat\n\u062f\u0648\u0627\u062c\u0646 / Poultry\n\u0623\u0633\u0645\u0627\u0643 \u0648\u0645\u0623\u0643\u0648\u0644\u0627\u062a \u0628\u062d\u0631\u064a\u0629 / Fish & Seafood\n\u0623\u0631\u0632 \u0648\u062d\u0628\u0648\u0628 / Rice & Grains\n\u0628\u0642\u0648\u0644\u064a\u0627\u062a / Legumes\n\u062e\u0636\u0627\u0631 / Vegetables\n\u0641\u0648\u0627\u0643\u0647 / Fruits\n\u0623\u0644\u0628\u0627\u0646 / Dairy\n\u0645\u062e\u0628\u0648\u0632\u0627\u062a / Bakery\n\u0628\u0647\u0627\u0631\u0627\u062a \u0648\u0635\u0644\u0635\u0627\u062a / Spices & Sauces\n\u0632\u064a\u0648\u062a \u0648\u062f\u0647\u0648\u0646 / Oils & Fats\n\u0645\u0634\u0631\u0648\u0628\u0627\u062a / Beverages\n\u062d\u0644\u0648\u064a\u0627\u062a / Desserts\n\u062a\u063a\u0644\u064a\u0641 / Packaging\n\u0645\u0646\u0638\u0641\u0627\u062a / Cleaning\n\u062a\u0639\u0642\u064a\u0645 \u0648\u0633\u0644\u0627\u0645\u0629 / Hygiene & Safety\n\u0623\u062f\u0648\u0627\u062a \u062a\u0634\u063a\u064a\u0644 / Operating Supplies\n\u0623\u062e\u0631\u0649 / Other",
+   "description": "اختر القسم أولاً، ثم ستظهر مواده فقط / Choose the category first to filter items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "الأصناف / Items",
+   "options": "WAFD Stock Movement Item"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "إجمالي القيمة / Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "الحالة / Status",
+   "options": "مسودة / Draft\nمرحلة / Posted\nملغاة / Cancelled",
+   "default": "مسودة / Draft",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "handover_status",
+   "fieldtype": "Select",
+   "label": "حالة تسليم مواد النظافة / Cleaning Handover Status",
+   "options": "غير مرسل / Not Sent\nبانتظار الاستلام / Pending Receipt\nتم الاستلام / Received\nمرفوض / Rejected",
+   "default": "غير مرسل / Not Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_sent_by",
+   "fieldtype": "Link",
+   "label": "أرسل بواسطة / Sent By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_sent_on",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الإرسال / Sent On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_received_by",
+   "fieldtype": "Link",
+   "label": "استلم بواسطة / Received By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_received_on",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الاستلام / Received On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "سبب رفض الاستلام / Rejection Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات / Notes"
+  },
+  {
+   "fieldname": "posted_by",
+   "fieldtype": "Link",
+   "label": "رحّل بواسطة / Posted By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posted_on",
+   "fieldtype": "Datetime",
+   "label": "تاريخ الترحيل / Posted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issue_purpose",
+   "fieldtype": "Select",
+   "label": "غرض الصرف / Issue Purpose",
+   "options": "تشغيل / Operations\nنظافة / Cleaning\nأخرى / Other",
+   "depends_on": "eval:doc.movement_type == 'صرف / Issue'"
+  },
+  {
+   "fieldname": "issued_to_user",
+   "fieldtype": "Link",
+   "label": "المستلم / Issued To",
+   "options": "User",
+   "depends_on": "eval:doc.movement_type == 'صرف / Issue'",
+   "description": "يسجل الشخص المستلم للعهدة أو المواد المصروفة / Records the user receiving issued materials"
+  },
+  {
+   "fieldname": "is_pre_go_live_test",
+   "fieldtype": "Check",
+   "label": "بيانات اختبار قبل التشغيل / Pre-Go-Live Test Data",
+   "default": "0",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-07-16 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "WAFD ONE",
+ "name": "WAFD Stock Movement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Storekeeper",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "report": 1,
+   "share": 0,
+   "select": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "import": 0
+  },
+  {
+   "role": "WAFD Cleaning Supervisor",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "print": 1,
+   "email": 0,
+   "report": 1,
+   "import": 0,
+   "export": 0,
+   "share": 0,
+   "select": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

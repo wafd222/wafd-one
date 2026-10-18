@@ -1,67 +1,57 @@
-/* RC387: repair the Frappe Desk shell, not just the cards inside it.
- * Some mobile Frappe v16 layouts retain an empty layout-side-section column.
- * Apply reversible, viewer-scoped inline sizing because the page's CSS may be
- * loaded before Desk's responsive styles or overridden by a later theme rule.
- * Never touch the role home or any other Desk page. */
-const wafdAuthorityMobileOriginalStyles = new WeakMap();
-function wafdFitExternalIftarViewer(wrapper) {
-  if (!wrapper || !wrapper.querySelectorAll) return;
-  const mobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
-  const all = [wrapper, ...wrapper.querySelectorAll('*')];
-  if (!mobile) {
-    all.forEach(node => {
-      const original = wafdAuthorityMobileOriginalStyles.get(node);
-      if (!original) return;
-      for (const [property, oldValue, priority] of original) {
-        if (oldValue) node.style.setProperty(property, oldValue, priority);
-        else node.style.removeProperty(property);
-      }
-      wafdAuthorityMobileOriginalStyles.delete(node);
-    });
-    return;
-  }
-  function setStyles(node, properties) {
-    if (!node) return;
-    let original = wafdAuthorityMobileOriginalStyles.get(node);
-    if (!original) { original = []; wafdAuthorityMobileOriginalStyles.set(node, original); }
-    for (const [property, value] of Object.entries(properties)) {
-      if (!original.some(entry => entry[0] === property)) {
-        original.push([property, node.style.getPropertyValue(property), node.style.getPropertyPriority(property)]);
-      }
-      node.style.setProperty(property, value, 'important');
-    }
-  }
-  const full = {
-    'box-sizing':'border-box', 'width':'100%', 'max-width':'100%',
-    'min-width':'0', 'flex':'0 0 100%', 'float':'none',
-    'margin-left':'0', 'margin-right':'0', 'grid-column':'1 / -1'
-  };
-  setStyles(wrapper, {...full, 'display':'block'});
-  wrapper.querySelectorAll('.layout-side-section, .standard-sidebar, .desk-sidebar, .body-sidebar, .body-sidebar-container').forEach(node => {
-    setStyles(node, {'display':'none', 'width':'0', 'flex':'0 0 0'});
-  });
-  wrapper.querySelectorAll('.page-body, .page-content, .layout-main, .layout-main-section-wrapper, .layout-main-section, .page-content-wrapper').forEach(node => {
-    setStyles(node, {...full, 'display':'block'});
-  });
-  wrapper.querySelectorAll('.page-body > .row, .page-body > .container, .page-body > .container-fluid').forEach(node => {
-    setStyles(node, {...full, 'display':'block'});
-  });
-  wrapper.querySelectorAll('.layout-main-section-wrapper, .layout-main-section').forEach(node => {
-    setStyles(node, {'padding-left':'0', 'padding-right':'0'});
-  });
-  // A few Frappe themes use a flex/grid parent that still reserves a sidebar
-  // track even after the sidebar has been hidden.
-  wrapper.querySelectorAll('.page-body, .page-content').forEach(node => {
-    setStyles(node, {'gap':'0', 'grid-template-columns':'minmax(0, 1fr)'});
-  });
+/* RC389: The external viewer uses an isolated mobile viewport. Unlike the
+ * RC386-388 approach, it NEVER forces a Frappe .page-container visible or
+ * overrides the Desk page lifecycle. Other role pages keep their normal shell. */
+function wafdIsMobileAuthorityViewport() {
+  return window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
 }
-
+function wafdIsAuthorityRoute() {
+  const route = (window.frappe && frappe.get_route && frappe.get_route()) || [];
+  const name = Array.isArray(route) ? route[0] : '';
+  return name === 'wafd-iftar-authority-viewer' ||
+    /^\/(?:app|desk)\/wafd-iftar-authority-viewer(?:\/|$)/.test(window.location.pathname);
+}
 let wafdAuthorityViewerRefresh = null;
 frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({parent: wrapper, title: "متابعة إفطار الصائم", single_column: true});
   $(wrapper).addClass("wafd-authority-viewer-page");
-  wafdFitExternalIftarViewer(wrapper);
+  // A body-level mobile surface is not a child of Frappe's sidebar/grid.
+  // This matches the single-column content approach used by the kitchen and
+  // site supervisor pages, while retaining the external viewer's own controls.
+  const $overlay = $('<section class="wafv-mobile-surface wafd-authority-viewer-page" hidden aria-label="متابعة إفطار الصائم"></section>')
+    .appendTo(document.body);
+  $overlay.html(`<header class="wafv-mobile-bar"><button type="button" class="wafv-mobile-menu-toggle" aria-label="القائمة" aria-expanded="false">☰</button><strong>WAFD ONE</strong><nav class="wafv-mobile-menu" hidden><button type="button" data-wafv-home>الرئيسية</button><button type="button" data-wafv-logout>تسجيل الخروج</button></nav></header><div class="wafv-mobile-content"></div>`);
   let root = $('<div class="wafv-auth"></div>').appendTo(page.body);
+  const syncMobileSurface = () => {
+    const mobile = wafdIsMobileAuthorityViewport();
+    const active = wafdIsAuthorityRoute();
+    const target = mobile ? $overlay.find('.wafv-mobile-content') : $(page.body);
+    if (!root.parent().is(target)) root.appendTo(target);
+    $overlay.prop('hidden', !(mobile && active));
+    document.body.classList.toggle('wafv-external-active', !!(mobile && active));
+  };
+  $overlay.find('.wafv-mobile-menu-toggle').on('click', function () {
+    const $menu = $overlay.find('.wafv-mobile-menu');
+    const opening = $menu.prop('hidden');
+    $menu.prop('hidden', !opening);
+    $(this).attr('aria-expanded', String(opening));
+  });
+  $overlay.find('[data-wafv-home]').on('click', function () {
+    $overlay.prop('hidden', true);
+    document.body.classList.remove('wafv-external-active');
+    frappe.set_route('wafd-role-home');
+  });
+  $overlay.find('[data-wafv-logout]').on('click', function () {
+    if (frappe.app && typeof frappe.app.logout === 'function') frappe.app.logout();
+    else window.location.assign('/?cmd=web_logout');
+  });
+  const scheduleSurfaceSync = () => setTimeout(syncMobileSurface, 0);
+  if (frappe.router && typeof frappe.router.on === 'function') {
+    frappe.router.on('change', scheduleSurfaceSync);
+  }
+  window.addEventListener('popstate', scheduleSurfaceSync);
+  window.addEventListener('pageshow', scheduleSurfaceSync);
+  window.addEventListener('resize', scheduleSurfaceSync);
+  syncMobileSurface();
   const key = "wafd_iftar_authority_lang";
   let reportFlowActive = false;
   let lastLoadedDate = "";
@@ -230,11 +220,10 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   // Frappe caches Page instances. This callback reattaches the closure to the
   // current live page body before reloading/rebinding controls on later visits.
   wafdAuthorityViewerRefresh = function (shownWrapper, shouldReload) {
-    wafdFitExternalIftarViewer(shownWrapper || wrapper);
-    const $body = $(shownWrapper || wrapper).find(".layout-main-section").first();
-    let $liveRoot = $body.find(".wafv-auth").first();
-    if (!$liveRoot.length) $liveRoot = $('<div class="wafv-auth"></div>').appendTo($body);
-    root = $liveRoot;
+    syncMobileSurface();
+    // Keep the original root and its event handlers; do not create a second
+    // viewer inside a cached Frappe Page after returning from a report.
+    if (!root.length) root = $('<div class="wafv-auth"></div>').appendTo(page.body);
     restoreAfterReport(true);
     if (shouldReload) load(root.find("#wafv-auth-date").val() || lastLoadedDate || "");
   };
@@ -249,10 +238,10 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_show = function (wrapper) {
   const firstShow = !wrapper.wafvAuthorityInitialShowHandled;
   wrapper.wafvAuthorityInitialShowHandled = true;
   wafdAuthorityViewerRefresh(wrapper, !firstShow);
-  // Desk can finish responsive layout after on_page_show; reapply once after
-  // the browser has computed its final column widths.
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => wafdFitExternalIftarViewer(wrapper));
-  }
-  setTimeout(() => wafdFitExternalIftarViewer(wrapper), 120);
+  // The mobile surface is a body child, so no Desk grid overrides are needed.
+};
+
+frappe.pages["wafd-iftar-authority-viewer"].on_page_hide = function () {
+  document.querySelectorAll('.wafv-mobile-surface').forEach(node => node.hidden = true);
+  document.body.classList.remove('wafv-external-active');
 };

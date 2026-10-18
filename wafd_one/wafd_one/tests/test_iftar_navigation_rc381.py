@@ -17,6 +17,6 @@ def test_authority_viewer_rebinds_report_clicks_after_cached_route_show():
 
 def test_report_return_releases_freeze_and_reconnects_live_root():
     source = (ROOT / "page" / "wafd_iftar_authority_viewer" / "wafd_iftar_authority_viewer.js").read_text(encoding="utf-8")
-    assert 'root = $liveRoot;' in source
+    assert 'syncMobileSurface();' in source and 'root = $liveRoot;' not in source
     assert 'restoreAfterReport(true);' in source
     assert 'root.css({"pointer-events":"", "opacity":""}).removeAttr("aria-busy")' in source

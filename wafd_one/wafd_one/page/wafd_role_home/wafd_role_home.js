@@ -516,7 +516,7 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
         </section>
         ${driverOfflineProfile ? `<section class="wafd-driver-connectivity" id="wafd-driver-connectivity" role="status" aria-live="polite"><i></i><span>${navigator.onLine ? (uiLang==='ar'?'متصل — جارٍ تحديث الرحلات':'Online — updating trips') : (uiLang==='ar'?'دون إنترنت — يمكنك العمل من رحلاتي المحفوظة':'Offline — use My Trips saved on this phone')}</span></section>` : ""}
         <section class="wafd-mobile-grid">
-          ${items.map((item, idx) => `<button type="button" class="wafd-mobile-card ${item.primary ? "is-primary" : ""} ${item.special ? "is-special" : ""}" data-idx="${idx}" ${item.page === "wafd-iftar-authority-viewer" && item.iftar_mode === "viewer" ? "data-iftar-viewer=\"1\"" : ""}><b>${item.icon || "•"}</b><span>${frappe.utils.escape_html(tr(item.label || ""))}</span><small>${frappe.utils.escape_html(tr(item.desc || ""))}</small><i>${rtl()?"←":"→"}</i></button>`).join("")}
+          ${items.map((item, idx) => `<button type="button" class="wafd-mobile-card ${item.primary ? "is-primary" : ""} ${item.special ? "is-special" : ""}" data-idx="${idx}" ${item.page === "wafd-iftar-authority-viewer" && item.iftar_mode === "viewer" ? 'data-wafd-iftar-viewer="1"' : ""}><b>${item.icon || "•"}</b><span>${frappe.utils.escape_html(tr(item.label || ""))}</span><small>${frappe.utils.escape_html(tr(item.desc || ""))}</small><i>${rtl()?"←":"→"}</i></button>`).join("")}
         </section>
         ${items.length ? "" : `<div class="wafd-mobile-empty">${uiLang==='ar'?'لا توجد أدوات متاحة لهذا الحساب. راجع الدور والصلاحيات مع مسؤول النظام.':'No tools are available for this account. Please review the assigned role and permissions.'}</div>`}
       </div>`);
@@ -629,24 +629,29 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 };
 
 
-// RC382: A native capture-phase fallback for the external Iftar viewer card.
-// Frappe's cached-page return can leave jQuery bubble handlers inert on iOS.
-// This is deliberately scoped to the already-authorized viewer card only;
-// other roles/cards continue using the existing handler and permissions.
-if (!window.__wafdIftarViewerCardCapture382) {
-  window.__wafdIftarViewerCardCapture382 = function (event) {
-    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-    const card = target?.closest?.(".wafd-role-home-page .wafd-mobile-card[data-iftar-viewer='1']");
-    if (!card || !card.isConnected || !card.getClientRects().length) return;
-    const page = card.closest(".wafd-role-home-page");
-    if (!page || page.getAttribute("aria-hidden") === "true" || page.closest("[aria-hidden='true']")) return;
+// RC382: Independent native capture listener for the read-only external Iftar
+// monitor card. The Frappe cached-page / iOS history restore can leave the
+// role-home jQuery delegated listener disconnected after the first visit.
+// Install only once, outside on_page_load, so returning never depends on a
+// previous page-body, render closure, or jQuery handler. No other card changes.
+if (!window.__wafdIftarViewerNativeNavigation382) {
+  window.__wafdIftarViewerNativeNavigation382 = true;
+  document.addEventListener("click", function (event) {
+    const target = event.target;
+    const card = target && target.closest ? target.closest('.wafd-role-home-page .wafd-mobile-card[data-wafd-iftar-viewer="1"]') : null;
+    if (!card) return;
     event.preventDefault();
-    event.stopPropagation();
     event.stopImmediatePropagation();
-    try { frappe.dom?.unfreeze?.(); } catch (_) {}
-    frappe.set_route("wafd-iftar-authority-viewer");
-  };
-  document.addEventListener("click", window.__wafdIftarViewerCardCapture382, true);
+    try { if (frappe.dom && typeof frappe.dom.unfreeze === "function") frappe.dom.unfreeze(); } catch (_) {}
+    try { sessionStorage.setItem("wafd_iftar_requested_mode", "viewer"); } catch (_) {}
+    // Force a fresh route transition when Frappe thinks the cached viewer is
+    // already current, instead of silently ignoring a same-route set_route.
+    if (typeof frappe !== "undefined" && typeof frappe.set_route === "function") {
+      frappe.set_route("wafd-iftar-authority-viewer");
+    } else {
+      window.location.hash = "#wafd-iftar-authority-viewer";
+    }
+  }, true);
 }
 
 // RC217: Frappe can revisit an already-loaded Page without re-running on_page_load.

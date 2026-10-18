@@ -1,7 +1,66 @@
+/* RC387: repair the Frappe Desk shell, not just the cards inside it.
+ * Some mobile Frappe v16 layouts retain an empty layout-side-section column.
+ * Apply reversible, viewer-scoped inline sizing because the page's CSS may be
+ * loaded before Desk's responsive styles or overridden by a later theme rule.
+ * Never touch the role home or any other Desk page. */
+const wafdAuthorityMobileOriginalStyles = new WeakMap();
+function wafdFitExternalIftarViewer(wrapper) {
+  if (!wrapper || !wrapper.querySelectorAll) return;
+  const mobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  const all = [wrapper, ...wrapper.querySelectorAll('*')];
+  if (!mobile) {
+    all.forEach(node => {
+      const original = wafdAuthorityMobileOriginalStyles.get(node);
+      if (!original) return;
+      for (const [property, oldValue, priority] of original) {
+        if (oldValue) node.style.setProperty(property, oldValue, priority);
+        else node.style.removeProperty(property);
+      }
+      wafdAuthorityMobileOriginalStyles.delete(node);
+    });
+    return;
+  }
+  function setStyles(node, properties) {
+    if (!node) return;
+    let original = wafdAuthorityMobileOriginalStyles.get(node);
+    if (!original) { original = []; wafdAuthorityMobileOriginalStyles.set(node, original); }
+    for (const [property, value] of Object.entries(properties)) {
+      if (!original.some(entry => entry[0] === property)) {
+        original.push([property, node.style.getPropertyValue(property), node.style.getPropertyPriority(property)]);
+      }
+      node.style.setProperty(property, value, 'important');
+    }
+  }
+  const full = {
+    'box-sizing':'border-box', 'width':'100%', 'max-width':'100%',
+    'min-width':'0', 'flex':'0 0 100%', 'float':'none',
+    'margin-left':'0', 'margin-right':'0', 'grid-column':'1 / -1'
+  };
+  setStyles(wrapper, {...full, 'display':'block'});
+  wrapper.querySelectorAll('.layout-side-section, .standard-sidebar, .desk-sidebar, .body-sidebar, .body-sidebar-container').forEach(node => {
+    setStyles(node, {'display':'none', 'width':'0', 'flex':'0 0 0'});
+  });
+  wrapper.querySelectorAll('.page-body, .page-content, .layout-main, .layout-main-section-wrapper, .layout-main-section, .page-content-wrapper').forEach(node => {
+    setStyles(node, {...full, 'display':'block'});
+  });
+  wrapper.querySelectorAll('.page-body > .row, .page-body > .container, .page-body > .container-fluid').forEach(node => {
+    setStyles(node, {...full, 'display':'block'});
+  });
+  wrapper.querySelectorAll('.layout-main-section-wrapper, .layout-main-section').forEach(node => {
+    setStyles(node, {'padding-left':'0', 'padding-right':'0'});
+  });
+  // A few Frappe themes use a flex/grid parent that still reserves a sidebar
+  // track even after the sidebar has been hidden.
+  wrapper.querySelectorAll('.page-body, .page-content').forEach(node => {
+    setStyles(node, {'gap':'0', 'grid-template-columns':'minmax(0, 1fr)'});
+  });
+}
+
 let wafdAuthorityViewerRefresh = null;
 frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({parent: wrapper, title: "متابعة إفطار الصائم", single_column: true});
   $(wrapper).addClass("wafd-authority-viewer-page");
+  wafdFitExternalIftarViewer(wrapper);
   let root = $('<div class="wafv-auth"></div>').appendTo(page.body);
   const key = "wafd_iftar_authority_lang";
   let reportFlowActive = false;
@@ -171,6 +230,7 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   // Frappe caches Page instances. This callback reattaches the closure to the
   // current live page body before reloading/rebinding controls on later visits.
   wafdAuthorityViewerRefresh = function (shownWrapper, shouldReload) {
+    wafdFitExternalIftarViewer(shownWrapper || wrapper);
     const $body = $(shownWrapper || wrapper).find(".layout-main-section").first();
     let $liveRoot = $body.find(".wafv-auth").first();
     if (!$liveRoot.length) $liveRoot = $('<div class="wafv-auth"></div>').appendTo($body);
@@ -189,4 +249,10 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_show = function (wrapper) {
   const firstShow = !wrapper.wafvAuthorityInitialShowHandled;
   wrapper.wafvAuthorityInitialShowHandled = true;
   wafdAuthorityViewerRefresh(wrapper, !firstShow);
+  // Desk can finish responsive layout after on_page_show; reapply once after
+  // the browser has computed its final column widths.
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => wafdFitExternalIftarViewer(wrapper));
+  }
+  setTimeout(() => wafdFitExternalIftarViewer(wrapper), 120);
 };

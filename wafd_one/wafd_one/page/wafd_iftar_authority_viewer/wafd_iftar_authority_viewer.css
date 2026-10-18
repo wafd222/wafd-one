@@ -116,3 +116,27 @@
     padding:12px;
   }
 }
+
+/* RC387: keep Frappe's entire viewer Page single-column on narrow screens.
+   JS also applies these rules inline after the Desk shell finishes mounting. */
+@media (max-width: 900px) {
+  .page-container.wafd-authority-viewer-page,
+  .wafd-authority-viewer-page .page-body,
+  .wafd-authority-viewer-page .page-content,
+  .wafd-authority-viewer-page .layout-main,
+  .wafd-authority-viewer-page .layout-main-section-wrapper,
+  .wafd-authority-viewer-page .layout-main-section {
+    display:block !important;
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    flex:0 0 100% !important;
+    float:none !important;
+    grid-column:1 / -1 !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+  .wafd-authority-viewer-page .layout-side-section {display:none !important}
+  .wafd-authority-viewer-page .page-body {grid-template-columns:minmax(0,1fr) !important}
+}

@@ -176,10 +176,9 @@ class TestIftarWorkflowContract(unittest.TestCase):
         self.assertIn('Photos and signatures remain inside the separately authorized official report.', section)
 
     def test_report_toolbar_shares_actual_pdf_file(self):
+        self.assertIn('__wafdGetAuthorityPdf', self.viewer_ui)
         self.assertIn("files:[file]", self.viewer_ui)
         self.assertNotIn('navigator.share({title:document.title,text})', self.viewer_ui)
-        self.assertIn('get_authority_final_report_pdf', self.viewer_ui)
-        self.assertIn('data-report-share', self.viewer_ui)
 
     def test_mobile_home_cards_do_not_keep_timer_based_navigation_lock(self):
         home = (ROOT / "page/wafd_role_home/wafd_role_home.js").read_text()
@@ -188,7 +187,7 @@ class TestIftarWorkflowContract(unittest.TestCase):
 
     def test_report_failure_surfaces_server_details(self):
         self.assertIn('e?._server_messages', self.viewer_ui)
-        self.assertIn('data-report-back', self.viewer_ui)
+        self.assertIn('الرجوع للمتابعة', self.viewer_ui)
 
     def test_iftar_viewer_page_roles_have_targeted_migration_repair(self):
         setup = (ROOT.parent / "setup.py").read_text()

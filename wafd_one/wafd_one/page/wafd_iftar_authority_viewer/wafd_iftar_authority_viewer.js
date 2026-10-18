@@ -88,44 +88,31 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
   }
   function openOfficialReportPreview(project, op) {
     if (!(Number(op.administration_report_approved||0)===1 && Number(op.daily_report_sent||0)===1 && /closed|مغلق/i.test(String(op.status||"")))) return;
+    // Open synchronously from the click so mobile Safari does not block the preview popup.
+    const w = window.open("", "_blank");
+    if (!w) { frappe.show_alert({message:lang==="ar"?"اسمح بفتح النافذة لمعاينة التقرير":"Allow pop-ups to preview the report",indicator:"orange"}); return; }
     reportFlowActive = true;
-    const overlay = document.createElement("section");
-    overlay.className = "wafv-report-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-label", lang === "ar" ? "التقرير النهائي" : "Final report");
-    overlay.innerHTML = `<style>
-      .wafv-report-overlay{position:fixed;inset:0;z-index:10050;display:flex;flex-direction:column;background:#f2f1ed;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-      .wafv-report-overlay .wafv-report-toolbar{position:relative;z-index:2;display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#fff;border-bottom:1px solid #ddd;font-family:Tahoma,Arial,sans-serif}
-      .wafv-report-overlay .wafv-report-toolbar button{min-height:40px;border:1px solid #c9ad6b;background:#fff;border-radius:9px;padding:8px 12px;font-weight:700;color:#222}
-      .wafv-report-overlay .wafv-report-toolbar .primary{background:#222;color:#fff}
-      .wafv-report-overlay .wafv-report-title{flex:1;min-width:120px;font-size:13px;font-weight:800;color:#392d14}
-      .wafv-report-overlay iframe{display:block;width:100%;height:100%;flex:1;border:0;background:#f2f1ed}
-      @media(max-width:520px){.wafv-report-overlay .wafv-report-toolbar{gap:5px;padding:7px}.wafv-report-overlay .wafv-report-toolbar button{padding:7px 9px;font-size:12px}.wafv-report-overlay .wafv-report-title{flex-basis:100%;order:-1}}
-    </style><nav class="wafv-report-toolbar"><button type="button" data-report-back>${lang==="ar"?"رجوع":"Back"}</button><span class="wafv-report-title">${esc(project.project_title||project.name)} — ${esc(t("report"))}</span><button type="button" data-report-print>${esc(t("printReport"))}</button><button type="button" class="primary" data-report-share>${esc(t("shareReport"))}</button></nav><iframe title="${esc(t("previewReport"))}" loading="eager"></iframe>`;
-    document.body.appendChild(overlay);
-    const frame = overlay.querySelector("iframe");
-    const closePreview = () => {
-      overlay.remove();
-      restoreAfterReport(true);
-      if (root && root.length) root.find(".wafv-stage-report").trigger("focus");
+    // The report popup calls this opener-scoped function to fetch the exact approved PDF.
+    // Keeping the authenticated frappe.call in the original app context avoids lost session/CSRF state on iOS.
+    window.__wafdGetAuthorityPdf = async function(){
+      const result = await frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.get_authority_final_report_pdf",args:{operation_name:op.name},freeze:false});
+      const payload=result.message||{};const raw=atob(payload.content_base64||"");const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+      const blob=new Blob([bytes],{type:"application/pdf"});if(!blob.size)throw new Error(lang==="ar"?"ملف التقرير فارغ":"Report PDF is empty");
+      return {filename:payload.filename||`${op.name}-official-iftar-report.pdf`,blob};
     };
-    overlay.querySelector("[data-report-back]").addEventListener("click", closePreview);
-    overlay.querySelector("[data-report-print]").addEventListener("click", () => {
-      try { frame.contentWindow.focus(); frame.contentWindow.print(); }
-      catch (_) { frappe.show_alert({message:lang==="ar"?"تعذرت طباعة التقرير من هذا المتصفح":"Printing is unavailable in this browser",indicator:"orange"}); }
-    });
-    overlay.querySelector("[data-report-share]").addEventListener("click", () => shareReport(project, op));
-    const reportDoc = (html) => {
-      const styles=(html.match(/<style[^>]*>[\s\S]*?<\/style>/gi)||[]).join("\n");
-      const body=html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi,"");
-      const reportStyles=`<style>html,body{margin:0!important;min-height:100%;background:#f2f1ed!important}body{padding:12px!important;box-sizing:border-box}.report{max-width:210mm;margin:0 auto!important;padding:9mm!important;background:#fff;box-shadow:0 2px 14px #00000012;font-size:10px!important;line-height:1.65!important}.section{break-after:avoid-page}.keep-block{page-break-inside:auto!important;break-inside:auto!important}.new-page{page-break-before:auto!important;break-before:auto!important}@media(max-width:650px){body{padding:7px!important}.report{padding:5mm!important;font-size:9px!important}.lh-brand b{font-size:13px!important}.title h1{font-size:15px!important}.data th,.data td{padding:1.4mm!important}}@media print{html,body{background:#fff!important;padding:0!important}.report{max-width:none;padding:0!important;box-shadow:none!important;font-size:9.2px!important}}</style>`;
-      return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><base href="${esc(window.location.origin)}/"><meta name="viewport" content="width=device-width,initial-scale=1">${styles}${reportStyles}</head><body>${body}</body></html>`;
-    };
+    w.document.open();
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><base href="'+window.location.origin+'/"/><meta name="viewport" content="width=device-width,initial-scale=1"><title>WAFD ONE — Iftar Sa’im Report</title></head><body style="font-family:Tahoma,Arial,sans-serif;padding:24px">جاري تحميل التقرير الرسمي المعتمد…</body></html>');
+    w.document.close();
     frappe.call({method:"wafd_one.wafd_one.iftar_stage_portal.get_authority_final_report_html",args:{operation_name:op.name}}).then(r=>{
       const reportHtml=String(r.message?.html||"");
       if(!reportHtml) throw new Error(lang==="ar"?"التقرير الرسمي فارغ":"Official report is empty");
-      frame.srcdoc = reportDoc(reportHtml);
+      const styles=(reportHtml.match(/<style[^>]*>[\s\S]*?<\/style>/gi)||[]).join("\n");
+      const body=reportHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi,"");
+      const rtl=["ar","ur"].includes(lang);
+      const toolbar=`<nav class="wafv-report-toolbar"><button id="back">${rtl?"رجوع ❯":"❮ Back"}</button><button id="zoomout">−</button><span id="zoomvalue">100%</span><button id="zoomin">+</button><button id="zoomreset">100%</button><button class="primary" id="print">${esc(t("printReport"))}</button><button id="share">${esc(t("shareReport"))}</button></nav>`;
+      const wrapperStyle=`<style>html,body{margin:0!important;padding:0!important;background:#e7e8ea!important}.wafv-report-toolbar{position:sticky;top:0;z-index:9999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#fff;border-bottom:1px solid #d8d8d8;font-family:Tahoma,Arial,sans-serif;direction:${rtl?"rtl":"ltr"}}.wafv-report-toolbar button{border:1px solid #c9ad6b;background:#fff;border-radius:9px;padding:9px 13px;font-weight:700;cursor:pointer}.wafv-report-toolbar .primary{background:#171717;color:#fff}.wafv-report-toolbar #zoomvalue{min-width:52px;text-align:center;font-weight:700}.wafv-report-viewport{height:calc(100dvh - 58px);overflow:auto;padding:16px;box-sizing:border-box}.wafv-report-paper{background:#fff;max-width:1100px;margin:0 auto;padding:14px;box-shadow:0 2px 12px #0001;transform-origin:top center;zoom:1}.wafv-report-paper .print-format{margin:0!important}@media print{html,body{background:#fff!important}.wafv-report-toolbar{display:none!important}.wafv-report-viewport{height:auto;overflow:visible;padding:0}.wafv-report-paper{max-width:none;padding:0;box-shadow:none;zoom:1!important}}</style>`;
+      const html=`<!doctype html><html lang="${esc(lang)}" dir="${rtl?"rtl":"ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5"><title>${esc(project.project_title||project.name)} — ${esc(t("title"))}</title>${styles}${wrapperStyle}</head><body>${toolbar}<main class="wafv-report-viewport"><article class="wafv-report-paper">${body}</article></main><script>(function(){let z=1;const p=document.querySelector('.wafv-report-paper');const set=v=>{z=Math.max(.5,Math.min(2.5,v));p.style.zoom=z;document.getElementById('zoomvalue').textContent=Math.round(z*100)+'%'};const goBack=()=>{let target='';try{if(window.opener&&!window.opener.closed){target=window.opener.location.href;window.opener.focus()}}catch(_){}window.close();setTimeout(()=>{if(!window.closed&&target){try{window.location.replace(target)}catch(_){}}},250)};document.getElementById('back').onclick=goBack;document.getElementById('zoomin').onclick=()=>set(z+.1);document.getElementById('zoomout').onclick=()=>set(z-.1);document.getElementById('zoomreset').onclick=()=>set(1);document.getElementById('print').onclick=()=>window.print();document.getElementById('share').onclick=async()=>{try{if(!window.opener||!window.opener.__wafdGetAuthorityPdf)throw new Error(${JSON.stringify(lang==="ar"?"تعذر الاتصال بنافذة المتابعة. ارجع وافتح التقرير مجددًا.":"Could not reach the monitoring window. Return and reopen the report.")});const payload=await window.opener.__wafdGetAuthorityPdf();const file=new File([payload.blob],payload.filename,{type:'application/pdf'});let shared=false;if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){try{await navigator.share({title:document.title,files:[file]});shared=true}catch(shareError){if(shareError&&shareError.name==='AbortError')return;/* Share API may be blocked by iOS webview or browser context; fall back to PDF download. */}}if(shared)return;const url=URL.createObjectURL(payload.blob);const a=document.createElement('a');a.href=url;a.download=payload.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);alert(${JSON.stringify(lang==="ar"?"تعذرت المشاركة المباشرة من المتصفح؛ تم تنزيل التقرير بصيغة PDF، ويمكنك مشاركته من تطبيق الملفات.":"Direct sharing is blocked in this browser; the PDF was downloaded. Share it from Files.")})}catch(e){if(e&&e.name==='AbortError')return;alert((e&&e.message)||${JSON.stringify(lang==="ar"?"تعذرت مشاركة ملف التقرير.":"Could not share the report file.")})}}})();</script></body></html>`;
+      w.document.open();w.document.write(html);w.document.close();
     }).catch(e=>{
       let detail = e?.message || "";
       if (!detail && Array.isArray(e?._server_messages)) detail = e._server_messages.join("\n");
@@ -134,7 +121,11 @@ frappe.pages["wafd-iftar-authority-viewer"].on_page_load = function (wrapper) {
         catch (_) { detail = e._server_messages; }
       }
       if (!detail) detail = lang === "ar" ? "تعذر فتح التقرير الرسمي. استخدم زر الرجوع ثم حدّث البيانات، أو تواصل مع مدير النظام." : "Could not open the official report. Return and refresh, or contact the system administrator.";
-      frame.srcdoc = `<!doctype html><html lang="${esc(lang)}" dir="${["ar","ur"].includes(lang)?"rtl":"ltr"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:Tahoma,Arial,sans-serif;padding:24px;line-height:1.8;color:#333"><p style="color:#a22">${esc(detail)}</p></body></html>`;
+      try {
+        w.document.open();
+        w.document.write(`<!doctype html><html lang="${esc(lang)}" dir="${["ar","ur"].includes(lang)?"rtl":"ltr"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WAFD ONE — Report</title><body style="font-family:Tahoma,Arial,sans-serif;padding:24px;line-height:1.8;color:#333"><p style="color:#a22">${esc(detail)}</p><button onclick="(function(){var u='';try{if(window.opener&&!window.opener.closed){u=window.opener.location.href;window.opener.focus()}}catch(e){}window.close();setTimeout(function(){if(!window.closed&&u)window.location.replace(u)},250)})()" style="padding:12px 20px;border:0;border-radius:8px;background:#222;color:white">${esc(lang === "ar" ? "الرجوع للمتابعة" : "Back to monitoring")}</button></body></html>`);
+        w.document.close();
+      } catch (_) {}
       frappe.show_alert({message:detail,indicator:"red"});
     });
   }

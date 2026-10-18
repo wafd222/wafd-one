@@ -629,38 +629,21 @@ frappe.pages["wafd-role-home"].on_page_load = function (wrapper) {
 };
 
 
-// RC382: Independent native capture listener for the read-only external Iftar
-// monitor card. The Frappe cached-page / iOS history restore can leave the
-// role-home jQuery delegated listener disconnected after the first visit.
-// Install only once, outside on_page_load, so returning never depends on a
-// previous page-body, render closure, or jQuery handler. No other card changes.
-if (!window.__wafdIftarViewerNativeNavigation382) {
-  window.__wafdIftarViewerNativeNavigation382 = true;
+// RC383: External read-only viewer navigation uses a fresh Desk document.
+// This avoids re-entering a cached SPA page whose lifecycle may be stale after
+// Safari/PWA history navigation. It is deliberately scoped to this one card.
+ // Use native capture before legacy delegated handlers, without a shared lock.
+if (!window.__wafdIftarViewerDocumentNavigation383) {
+  window.__wafdIftarViewerDocumentNavigation383 = true;
   document.addEventListener("click", function (event) {
-    const target = event.target;
-    const card = target && target.closest ? target.closest('.wafd-role-home-page .wafd-mobile-card[data-wafd-iftar-viewer="1"]') : null;
+    const card = event.target?.closest?.('.wafd-role-home-page .wafd-mobile-card[data-wafd-iftar-viewer="1"]');
     if (!card) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    try { if (frappe.dom && typeof frappe.dom.unfreeze === "function") frappe.dom.unfreeze(); } catch (_) {}
     try { sessionStorage.setItem("wafd_iftar_requested_mode", "viewer"); } catch (_) {}
-    // Force a fresh route transition when Frappe thinks the cached viewer is
-    // already current, instead of silently ignoring a same-route set_route.
-    if (typeof frappe !== "undefined" && typeof frappe.set_route === "function") {
-      // iOS can restore the home DOM while Frappe still considers the viewer
-      // route current. Move through the home route first so a second tap always
-      // creates a real route transition and runs the cached page's show hook.
-      let currentRoute = [];
-      try { currentRoute = frappe.get_route ? frappe.get_route() : []; } catch (_) {}
-      if (currentRoute[0] === "wafd-iftar-authority-viewer") {
-        frappe.set_route("wafd-role-home");
-        window.setTimeout(() => frappe.set_route("wafd-iftar-authority-viewer"), 120);
-      } else {
-        frappe.set_route("wafd-iftar-authority-viewer");
-      }
-    } else {
-      window.location.hash = "#wafd-iftar-authority-viewer";
-    }
+    // A full document navigation, not frappe.set_route: do not reuse cached
+    // Frappe Page state on the second and later visits.
+    window.location.assign("/app/wafd-iftar-authority-viewer");
   }, true);
 }
 

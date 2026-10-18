@@ -1,0 +1,1 @@
+RC384: External viewer card uses a native hyperlink; report popup return no longer replaces its document with a second Desk instance. Scope: role home card and authority report return only. Live Safari verification pending.

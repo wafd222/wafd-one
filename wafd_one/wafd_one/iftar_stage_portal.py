@@ -1245,6 +1245,13 @@ def get_site_portal_data():
             continue
         payload = _project_payload(project, include_all_operations=False, include_trips=True)
         operation = _current_site_operation(project)
+        registered_signature, signature_owner = frappe.db.get_value(
+            "WAFD Iftar Project", project.name,
+            ["site_manager_signature", "site_manager_signature_user"],
+        ) or (None, None)
+        payload["site_signature_registered"] = bool(
+            registered_signature and signature_owner == project.get("site_manager_user")
+        )
         payload["site_operation"] = operation
         payload["supervisor_reports"] = _site_reports(operation.get("name") if operation else None)
         payload["supervisor_plans"] = _supervisor_plans_payload(project.name)
@@ -1493,9 +1500,20 @@ def _get_authority_final_report_html(operation_name):
     # operational records that the external read-only viewer intentionally does not have.
     # The explicit project-scoped authorization above is the access gate for this report.
     try:
+        from wafd_one.wafd_one.iftar_team import _company_iftar_approval_assets
+        official_signature, official_stamp = _company_iftar_approval_assets()
+        manager_user = operation.site_report_approved_by or project.site_manager_user
+        manager_name = (operation.get("site_report_approved_name") or "").strip()
+        if not manager_name and manager_user:
+            manager_name = (frappe.db.get_value("User", manager_user, "full_name") or "").strip()
+        if not manager_name or "@" in manager_name:
+            manager_name = "مدير الموقع"
         report_html = frappe.render_template(
             "templates/print_formats/wafd_iftar_official_daily_report.html",
-            {"doc": operation, "frappe": frappe},
+            {"doc": operation, "frappe": frappe,
+             "site_manager_display_name": manager_name,
+             "official_administration_signature": official_signature or operation.administration_signature,
+             "official_administration_stamp": official_stamp or operation.administration_stamp},
         )
         return _embed_iftar_report_images(report_html)
     except Exception:

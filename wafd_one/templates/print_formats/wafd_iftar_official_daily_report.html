@@ -22,7 +22,7 @@ html,body,.print-format{margin:0!important;padding:0!important;background:#fff!i
 .metrics{display:table;width:100%;table-layout:fixed;margin-bottom:2mm}.metric{display:table-cell;border:1px solid #ded8cc;padding:2mm;text-align:center}.metric b{display:block;font-size:14px;color:#111}.metric:first-child{border-radius:0 7px 7px 0}.metric:last-child{border-radius:7px 0 0 7px}
 .data{width:100%;border-collapse:collapse;page-break-inside:avoid}.data th,.data td{border:1px solid #ddd6c9;padding:1.8mm 2mm;vertical-align:top}.data th{background:#f8f6f1;color:#6f5219;font-size:8px}.data td b{font-size:9.6px}.muted{color:#777;font-size:8px}.ok{color:#1f6b38;font-weight:800}.note{padding:2mm 2.5mm;border:1px solid #e5dfd3;background:#fffdf8;margin:2mm 0;page-break-inside:avoid}
 .keep-block{page-break-inside:avoid}.new-page{page-break-before:always}.stage{page-break-inside:avoid;margin:3mm 0}.stage-title{font-size:9.5px;font-weight:900;color:#765516;margin:0 0 1.5mm}.evidence-grid{display:table;width:100%;table-layout:fixed;border-spacing:2mm}.evidence-row{display:table-row}.evidence{display:table-cell;width:50%;border:1px solid #dcd5c8;padding:1.8mm;vertical-align:top;background:#fff;page-break-inside:avoid}.evidence.empty{border:0;background:transparent}.evidence img{display:block;width:100%;height:40mm;object-fit:contain;background:#f7f7f7}.evidence img.signature{height:20mm;background:#fff}.caption{border-top:1px solid #ece7dd;padding-top:1.4mm;margin-top:1.4mm}.caption b,.caption span{display:block}.caption span{color:#777;font-size:7.7px}
-.signature-grid{display:table;width:100%;table-layout:fixed;border-collapse:collapse;page-break-inside:avoid}.signature-cell{display:table-cell;width:33.333%;border:1px solid #d9d2c5;padding:1.5mm;text-align:center;vertical-align:top;height:22mm}.signature-cell b{display:block;color:#765516}.signature-cell img{max-width:42mm;max-height:13mm;object-fit:contain;margin-top:.5mm}.stamp img{max-height:16mm}
+.signature-grid{display:table;width:100%;table-layout:fixed;border-collapse:collapse;page-break-inside:avoid}.signature-cell{display:table-cell;width:33.333%;border:1px solid #d9d2c5;padding:1.5mm;text-align:center;vertical-align:top;height:22mm}.signature-cell b{display:block;color:#765516}.signature-cell div{overflow-wrap:anywhere;word-break:normal}.signature-cell img{display:block;margin:1.5mm auto 0}.signature-cell img{max-width:42mm;max-height:13mm;object-fit:contain;margin-top:.5mm}.stamp img{max-height:16mm}
 @media print{.report{-webkit-print-color-adjust:exact;print-color-adjust:exact}.stage,.evidence,.data,.signature-grid{page-break-inside:avoid}}
 </style>
 <div class="report">
@@ -59,5 +59,19 @@ html,body,.print-format{margin:0!important;padding:0!important;background:#fff!i
   <div class="section"><span class="num">7</span>الملاحظات والاعتمادات النهائية <small>NOTES & FINAL APPROVALS</small></div>
   {% for r in reports %}<div class="note"><b>{{ r.supervisor_name }}:</b> {{ r.supervisor_notes or 'لا توجد ملاحظات' }}{% if r.manager_notes %}<br><b>ملاحظات مدير الموقع:</b> {{ r.manager_notes }}{% endif %}</div>{% endfor %}
   {% if doc.administration_notes %}<div class="note"><b>ملاحظات الإدارة:</b> {{ doc.administration_notes }}</div>{% endif %}
-  <div class="signature-grid"><div class="signature-cell"><b>اعتماد مدير الموقع</b>{{ doc.site_report_approved_by or '—' }}<br><span class="muted">{{ frappe.utils.format_datetime(doc.site_report_approved_at,'dd-MM-yyyy HH:mm') if doc.site_report_approved_at else '' }}</span></div><div class="signature-cell"><b>اعتماد الإدارة</b>{{ doc.administration_report_approved_by or '—' }}<br><span class="muted">{{ frappe.utils.format_datetime(doc.administration_report_approved_at,'dd-MM-yyyy HH:mm') if doc.administration_report_approved_at else '' }}</span>{% if doc.administration_signature %}<br><img src="{{ doc.administration_signature }}">{% endif %}</div><div class="signature-cell stamp"><b>ختم الإدارة</b>{% if doc.administration_stamp %}<img src="{{ frappe.utils.get_url(doc.administration_stamp) }}">{% else %}<br><span class="muted">—</span>{% endif %}</div></div>
+  <div class="signature-grid">
+    <div class="signature-cell"><b>اعتماد مدير الموقع</b>
+      <div>{{ site_manager_display_name if doc.site_report_approved else '—' }}</div>
+      {% if doc.site_report_approved and doc.site_report_signature %}<img alt="توقيع مدير الموقع" src="{{ doc.site_report_signature }}">{% endif %}
+      {% if doc.site_report_approved_at %}<div class="muted">{{ frappe.utils.format_datetime(doc.site_report_approved_at,'dd-MM-yyyy HH:mm') }}</div>{% endif %}
+    </div>
+    <div class="signature-cell"><b>اعتماد الإدارة</b>
+      <div>{{ 'شركة وفد المدينة لخدمات الإعاشة' if doc.administration_report_approved else '—' }}</div>
+      {% if doc.administration_report_approved and official_administration_signature %}<img alt="التوقيع الرسمي للشركة" src="{{ official_administration_signature if official_administration_signature.startswith('data:') else frappe.utils.get_url(official_administration_signature) }}">{% endif %}
+      {% if doc.administration_report_approved_at %}<div class="muted">{{ frappe.utils.format_datetime(doc.administration_report_approved_at,'dd-MM-yyyy HH:mm') }}</div>{% endif %}
+    </div>
+    <div class="signature-cell stamp"><b>ختم الإدارة</b>
+      {% if doc.administration_report_approved and official_administration_stamp %}<img alt="الختم الرسمي للشركة" src="{{ official_administration_stamp if official_administration_stamp.startswith('data:') else frappe.utils.get_url(official_administration_stamp) }}">{% else %}<span class="muted">—</span>{% endif %}
+    </div>
+  </div>
 </div>

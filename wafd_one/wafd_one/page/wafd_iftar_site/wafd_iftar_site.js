@@ -25,11 +25,13 @@ frappe.pages['wafd-iftar-site'].on_page_load=function(wrapper){
      ${r.report_submitted&&!r.manager_approved?`<button class="ifs-approve-report">اعتماد تقرير المشرف</button>`:''}
    </div></div>`).join('')
  }
- function card(p){const o=p.site_operation;if(!o)return `<div class="ifs-card"><h3>${esc(p.project_title||p.name)}</h3><div class="ifs-empty">لا يوجد يوم تشغيل جاهز للموقع الآن.</div></div>`;
+ function signatureSetup(p){return p.site_signature_registered?'<div class="ifs-step done"><b>✓ توقيع مدير الموقع مسجل للمشروع</b><span>سيظهر تلقائياً في التقرير بعد اعتمادك، طوال مدة المشروع.</span></div>':`<button class="ifs-btn ifs-register-signature" data-project="${esc(p.name)}">تسجيل توقيعي الإلكتروني للمشروع (مرة واحدة)</button>`}
+ function card(p){const o=p.site_operation;if(!o)return `<div class="ifs-card"><h3>${esc(p.project_title||p.name)}</h3>${signatureSetup(p)}<div class="ifs-empty">لا يوجد يوم تشغيل جاهز للموقع الآن.</div></div>`;
    const arrived=Math.max(Number(o.delivery_verified_meals||0),Number(o.delivered_meals||0)),trips=o.trips||[];
    const total=key=>trips.reduce((sum,row)=>sum+Number(row[key]||0),0);
    const inbound=trips.length?`<div class="ifs-step done"><b>عهدة السيارات الواردة (${n(trips.length)})</b><span>${n(total('quantity'))} وجبة · ${n(total('iftar_cartons'))} كرتون · ${n(total('iftar_bread_quantity'))} خبز · ${n(total('iftar_carts'))} عربة · ${n(total('iftar_tablecloths'))} سفرة · ${n(total('iftar_gloves'))} قفاز · ${n(total('iftar_masks'))} كمامة · ${n(total('iftar_shoe_covers'))} غطاء أرجل</span></div>`:'';
    return `<div class="ifs-card" data-operation="${esc(o.name)}" data-project="${esc(p.name)}"><div class="ifs-muted">${esc(p.name)} · ${esc(o.operation_date||'')}</div><h3>${esc(p.project_title||p.distribution_site||p.name)}</h3><div class="ifs-muted">${esc(p.contracting_entity||'')} · ${esc(p.distribution_site||'')}</div><div class="ifs-grid"><div class="ifs-stat"><b>${n(o.planned_meals)}</b><span>المخطط</span></div><div class="ifs-stat"><b>${n(arrived)}</b><span>وصل ومثبت</span></div><div class="ifs-stat"><b>${n(o.site_received_meals)}</b><span>استلام الموقع</span></div><div class="ifs-stat"><b>${n((p.supervisor_reports||[]).length)}</b><span>المشرفون</span></div></div>${steps(o)}
+   ${signatureSetup(p)}
    ${inbound}
    ${!o.site_receipt_approved&&arrived>0?`<div class="ifs-step done"><b>وصل تسليم السائق إلى مدير الموقع</b><span>اعتمد الكمية المستلمة؛ ثم أكمل فحص الجهة قبل توزيع الوجبات.</span></div><button class="ifs-btn ifs-receive" data-max="${arrived}">تأكيد استلام الموقع</button>`:''}
    ${o.site_receipt_approved&&!o.authority_inspection_approved?`<button class="ifs-btn ifs-inspect">تسجيل موافقة وتوقيع مفتش الجودة والتغذية</button>`:''}
@@ -39,6 +41,17 @@ frappe.pages['wafd-iftar-site'].on_page_load=function(wrapper){
    </div>`}
  function render(w,d){w.__ifs.data=d;w.__ifs.$root.html(header(d)+`<div class="ifs-title"><h2>مهام الموقع</h2><span>${(d.projects||[]).length}</span></div>`+((d.projects||[]).map(card).join('')||'<div class="ifs-empty">لا توجد مشاريع مسندة لهذا الحساب.</div>'));bind(w)}
  function bind(w){const $r=w.__ifs.$root;$r.off('.ifs');
+   $r.on('click.ifs','.ifs-register-signature',function(){
+     const project=String($(this).data('project')||'');
+     const d=new frappe.ui.Dialog({title:'تسجيل توقيع مدير الموقع للمشروع',fields:[
+       {fieldname:'signature',fieldtype:'Signature',label:'توقيعي الإلكتروني',reqd:1},
+       {fieldname:'notice',fieldtype:'HTML',options:'<div class="ifs-step">يسجل توقيعك مرة واحدة ويُدرج تلقائياً عند اعتماد التقارير طوال مدة المشروع. تسجيل التوقيع لا يعتمد أي تقرير.</div>'}
+     ],primary_action_label:'حفظ توقيعي',primary_action:async v=>{
+       d.get_primary_btn().prop('disabled',true);
+       try{await team('register_site_manager_project_signature',{project_name:project,signature:v.signature});d.hide();frappe.show_alert({message:'تم حفظ توقيعك لهذا المشروع',indicator:'green'});await loadSite(w)}
+       catch(e){d.get_primary_btn().prop('disabled',false);throw e}
+     }});d.show();
+   });
    $r.on('click.ifs','.ifs-receive',function(){const op=$(this).closest('[data-operation]').data('operation'),max=Number($(this).data('max'));const d=new frappe.ui.Dialog({title:'تأكيد استلام الوجبات',fields:[{fieldname:'received_meals',fieldtype:'Int',label:'عدد الوجبات المستلمة',default:max,reqd:1},{fieldname:'info',fieldtype:'HTML',options:'<div class="ifs-step">بعد تأكيد الاستلام، يلزم اعتماد فحص الجهة بالصورة والتوقيع قبل تجهيز مهام المشرفين وتوزيع الوجبات.</div>'}],primary_action_label:'تأكيد الاستلام',primary_action:async v=>{const result=await team('approve_site_receipt',{operation_name:op,received_meals:v.received_meals});d.hide();frappe.show_alert({message:'تم تأكيد استلام الموقع. أكمل فحص الجهة بالصورة والتوقيع قبل تجهيز مهام المشرفين.',indicator:'green'});loadSite(w)}});d.show()});
    $r.on('click.ifs','.ifs-inspect',function(){const op=$(this).closest('[data-operation]').data('operation');const d=new frappe.ui.Dialog({title:'اعتماد مفتش الجودة والتغذية',fields:[{fieldname:'supervisor_name',fieldtype:'Data',label:'اسم مفتش الجودة والتغذية',reqd:1},cameraField('photo','صورة الفحص'),{fieldname:'signature',fieldtype:'Signature',label:'توقيع مفتش الجودة والتغذية',reqd:1},{fieldname:'yogurt_checked',fieldtype:'Check',label:'تم فحص الزبادي'},{fieldname:'bread_checked',fieldtype:'Check',label:'تم فحص الخبز'},{fieldname:'dates_checked',fieldtype:'Check',label:'تم فحص التّمر'},{fieldname:'expiry_checked',fieldtype:'Check',label:'تم فحص تواريخ الصلاحية'},{fieldname:'notes',fieldtype:'Small Text',label:'ملاحظات'}],primary_action_label:'اعتماد الفحص',primary_action:async v=>{const photo=await uploadCamera(d,'photo');await team('approve_authority_inspection',{operation_name:op,...v,photo});d.hide();frappe.show_alert({message:'تم اعتماد الفحص وتسجيل الوقت',indicator:'green'});loadSite(w)}});d.show();bindCamera(d,'photo')});
    $r.on('click.ifs','.ifs-create-reports',async function(){const op=$(this).closest('[data-operation]').data('operation');await team('ensure_supervisor_reports',{operation_name:op});frappe.show_alert({message:'تم إنشاء مهام المشرفين',indicator:'green'});loadSite(w)});

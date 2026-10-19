@@ -65,6 +65,8 @@
   "site_report_approved",
   "site_report_approved_by",
   "site_report_approved_at",
+  "site_report_approved_name",
+  "site_report_signature",
   "administration_report_approved",
   "administration_report_approved_by",
   "administration_report_approved_at",
@@ -291,7 +293,11 @@
    "fieldtype": "Attach Image",
    "label": "صورة الفحص / Inspection Photo"
   },
-  {"fieldname":"authority_inspector_signature","fieldtype":"Signature","label":"توقيع مفتش التغذية / Food Inspector Signature"},
+  {
+   "fieldname": "authority_inspector_signature",
+   "fieldtype": "Signature",
+   "label": "توقيع مفتش التغذية / Food Inspector Signature"
+  },
   {
    "fieldname": "authority_inspection_approved",
    "fieldtype": "Check",
@@ -458,6 +464,18 @@
    "read_only": 1
   },
   {
+   "fieldname": "site_report_approved_name",
+   "fieldtype": "Data",
+   "label": "اسم مدير الموقع وقت الاعتماد / Approved Site Manager Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_report_signature",
+   "fieldtype": "Signature",
+   "label": "توقيع مدير الموقع وقت الاعتماد / Site Manager Approval Signature",
+   "read_only": 1
+  },
+  {
    "fieldname": "administration_report_approved",
    "fieldtype": "Check",
    "label": "اعتماد الإدارة للتقرير / Administration Approval",
@@ -476,9 +494,21 @@
    "label": "وقت اعتماد الإدارة / Administration Approval Time",
    "read_only": 1
   },
-  {"fieldname":"administration_signature","fieldtype":"Signature","label":"توقيع الإدارة / Administration Signature"},
-  {"fieldname":"administration_stamp","fieldtype":"Attach Image","label":"ختم الإدارة / Administration Stamp"},
-  {"fieldname":"administration_notes","fieldtype":"Small Text","label":"ملاحظات الإدارة / Administration Notes"},
+  {
+   "fieldname": "administration_signature",
+   "fieldtype": "Signature",
+   "label": "توقيع الإدارة / Administration Signature"
+  },
+  {
+   "fieldname": "administration_stamp",
+   "fieldtype": "Attach Image",
+   "label": "ختم الإدارة / Administration Stamp"
+  },
+  {
+   "fieldname": "administration_notes",
+   "fieldtype": "Small Text",
+   "label": "ملاحظات الإدارة / Administration Notes"
+  },
   {
    "fieldname": "authority_report_recipient",
    "fieldtype": "Data",

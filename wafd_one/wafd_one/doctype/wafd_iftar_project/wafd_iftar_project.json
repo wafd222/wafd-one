@@ -26,6 +26,8 @@
   "column_break_team",
   "delivery_supervisor_user",
   "site_manager_user",
+  "site_manager_signature",
+  "site_manager_signature_user",
   "external_viewer_user",
   "schedule_section",
   "start_date",
@@ -229,6 +231,23 @@
    "options": "User",
    "allow_on_submit": 1,
    "hidden": 1
+  },
+  {
+   "fieldname": "site_manager_signature",
+   "fieldtype": "Signature",
+   "label": "توقيع مدير الموقع المعتمد للمشروع / Site Manager Project Signature",
+   "read_only": 1,
+   "hidden": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "site_manager_signature_user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "صاحب توقيع مدير الموقع / Signature Owner",
+   "read_only": 1,
+   "hidden": 1,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "external_viewer_user",

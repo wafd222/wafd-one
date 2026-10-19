@@ -303,8 +303,7 @@ frappe.pages["wafd-iftar-team"].on_page_show = function (wrapper) {
       const operation = String($(this).closest("[data-operation]").data("operation"));
       const d = new frappe.ui.Dialog({title:"اعتماد مدير المشروع والتقرير النهائي",fields:[
         {fieldname:"recipient",fieldtype:"Data",label:"الجهة المستلمة",default:"رئاسة شؤون الحرمين",reqd:1},
-        {fieldname:"administration_signature",fieldtype:"Signature",label:"توقيع مدير المشروع",reqd:1},
-        {fieldname:"administration_stamp",fieldtype:"Attach Image",label:"ختم الشركة",reqd:1},
+        {fieldname:"official_assets_info",fieldtype:"HTML",options:'<div class="ift-success">سيُدرج توقيع شركة وفد المدينة وختمها الرسميان المحفوظان في إعدادات التعهد تلقائياً عند الاعتماد.</div>'},
         {fieldname:"administration_notes",fieldtype:"Small Text",label:"ملاحظات مدير المشروع"}
       ],primary_action_label:"اعتماد وإرسال للرئاسة",primary_action:async values=>{
         d.get_primary_btn().prop("disabled",true);

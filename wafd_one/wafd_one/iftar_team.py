@@ -924,6 +924,45 @@ def submit_supervisor_report(report_name, distributed_meals, surplus_meals=0, pr
     return {"report": report.name, "submitted_at": report.submitted_at}
 
 
+def _approved_site_manager_identity(project):
+    """Return only the assigned manager's own signature, never another user's."""
+    user = (project.site_manager_user or "").strip()
+    owner = (project.get("site_manager_signature_user") or "").strip()
+    signature = project.get("site_manager_signature") or ""
+    if not user or owner != user or not signature:
+        frappe.throw(_("سجّل مدير الموقع توقيعه الإلكتروني مرة واحدة للمشروع قبل اعتماد التقرير / Site manager must register their project signature before approving the report"))
+    # Never present the User document ID (often an email) as the signer's name.
+    name = (frappe.db.get_value("User", user, "full_name") or "").strip()
+    if not name or "@" in name:
+        name = "مدير الموقع"
+    return name, signature
+
+
+@frappe.whitelist()
+def register_site_manager_project_signature(project_name, signature):
+    """The currently assigned site manager signs once for this project.
+
+    This is separate from an approval. It cannot approve any daily operation.
+    """
+    _require("WAFD Iftar Site Manager", "System Manager", "WAFD Operations Manager", "WAFD Project Manager")
+    project = frappe.get_doc("WAFD Iftar Project", project_name)
+    user = frappe.session.user
+    if not project.site_manager_user or project.site_manager_user != user:
+        frappe.throw(_("يجب أن يسجل مدير الموقع المعين توقيعه من حسابه / Assigned site manager must sign using their own account"), frappe.PermissionError)
+    if cint(project.docstatus) == 2:
+        frappe.throw(_("المشروع ملغي / Project is cancelled"))
+    value = (signature or "").strip()
+    # Frappe Signature controls produce PNG/SVG data URLs; do not accept remote URLs.
+    if not (value.startswith("data:image/png;base64,") or value.startswith("data:image/svg+xml;base64,")) or len(value) > 700000:
+        frappe.throw(_("توقيع إلكتروني غير صالح / Invalid electronic signature"))
+    if project.get("site_manager_signature") and project.get("site_manager_signature_user") == user:
+        frappe.throw(_("التوقيع مسجل بالفعل لهذا المشروع / Project signature is already registered"))
+    frappe.db.set_value("WAFD Iftar Project", project.name, {
+        "site_manager_signature": value, "site_manager_signature_user": user,
+    }, update_modified=True)
+    return {"project": project.name, "registered": True}
+
+
 @frappe.whitelist()
 def approve_supervisor_report(report_name, notes=None):
     _require("System Manager", "WAFD Operations Manager", "WAFD Project Manager", "WAFD Iftar Site Manager")
@@ -960,6 +999,9 @@ def finalize_daily_report(operation_name):
     pending = [report.supervisor_name for report in reports if not cint(report.manager_approved)]
     if pending:
         frappe.throw(_("لم تعتمد تقارير المشرفين: {0} / Supervisor reports are pending").format("، ".join(pending)))
+    if frappe.session.user != (project.site_manager_user or "").strip():
+        frappe.throw(_("الاعتماد النهائي يتطلب دخول مدير الموقع المعين / Assigned site manager must approve the final report"), frappe.PermissionError)
+    manager_name, manager_signature = _approved_site_manager_identity(project)
     distributed = sum(cint(report.distributed_meals) for report in reports)
     surplus = sum(cint(report.surplus_meals) for report in reports)
     preservation = sum(cint(report.preservation_meals) for report in reports)
@@ -1008,11 +1050,41 @@ def finalize_daily_report(operation_name):
         "waste_meals": waste, "tables_spread_completed": int(all(cint(r.tables_spread_completed) for r in reports)),
         "cleanup_completed": int(all(cint(r.cleanup_completed) for r in reports)),
         "site_report_approved": 1, "site_report_approved_by": frappe.session.user, "site_report_approved_at": now_datetime(),
+        "site_report_approved_name": manager_name, "site_report_signature": manager_signature,
         "completion_percent": min(100, received / cint(operation.planned_meals) * 100) if cint(operation.planned_meals) else 0,
         "status": "مستلم / Received",
         "notes": ((operation.notes or "") + f"\nالتوزيع الفعلي: {distributed}").strip(),
     }, update_modified=True)
     return {"operation": operation.name, "received": received, "distributed": distributed, "surplus": surplus, "preservation": preservation, "waste": waste}
+
+
+def _company_iftar_approval_assets():
+    """Read the official signature/stamp already used by the undertaking.
+
+    No changes to WAFD Hotel Undertaking, its templates, or its print settings.
+    """
+    signature = stamp = ""
+    if frappe.db.exists("DocType", "WAFD Print Settings"):
+        settings = frappe.get_single("WAFD Print Settings")
+        signature = settings.default_signature or ""
+        stamp = settings.default_stamp or ""
+    if (not signature or not stamp) and frappe.db.exists("DocType", "WAFD Document Template"):
+        filters = {"reference_doctype": "WAFD Hotel Undertaking", "enabled": 1}
+        name = frappe.db.get_value("WAFD Document Template", dict(filters, is_default=1), "name") or frappe.db.get_value("WAFD Document Template", filters, "name")
+        if name:
+            template = frappe.get_doc("WAFD Document Template", name)
+            signature = signature or (template.signature or "")
+            stamp = stamp or (template.stamp or "")
+        if not signature:
+            signature = frappe.db.get_value("WAFD Document Template", {"reference_doctype":"WAFD Hotel Undertaking", "signature":["!=", ""]}, "signature", order_by="modified desc") or ""
+        if not stamp:
+            stamp = frappe.db.get_value("WAFD Document Template", {"reference_doctype":"WAFD Hotel Undertaking", "stamp":["!=", ""]}, "stamp", order_by="modified desc") or ""
+    if (not signature or not stamp) and frappe.db.exists("DocType", "WAFD Hotel Undertaking"):
+        if not signature:
+            signature = frappe.db.get_value("WAFD Hotel Undertaking", {"signature_image":["!=", ""]}, "signature_image", order_by="modified desc") or ""
+        if not stamp:
+            stamp = frappe.db.get_value("WAFD Hotel Undertaking", {"company_stamp":["!=", ""]}, "company_stamp", order_by="modified desc") or ""
+    return signature, stamp
 
 
 @frappe.whitelist()
@@ -1027,8 +1099,11 @@ def send_authority_report(operation_name, recipient, administration_signature=No
         frappe.throw(_("سجّل موافقة مفتش الجودة والتغذية وتوقيعه قبل الإرسال النهائي للجهة / Record the quality inspector approval and signature before final dispatch"))
     if not (recipient or "").strip():
         frappe.throw(_("حدد رئاسة شؤون الحرمين أو الجهة المتعاقدة المستلمة / Select the report recipient"))
+    # RC390: The official company signature and stamp are fixed and trusted.
+    # Ignore any caller-supplied images; never alter the undertaking itself.
+    administration_signature, administration_stamp = _company_iftar_approval_assets()
     if not administration_signature or not administration_stamp:
-        frappe.throw(_("توقيع مدير المشروع وختم الشركة مطلوبان قبل إرسال التقرير / Project Manager signature and company stamp are required"))
+        frappe.throw(_("التوقيع أو الختم الرسمي غير متوفر في إعدادات طباعة التعهد. يرجى إعدادهما أولاً / Official undertaking signature and stamp are not configured"))
     timestamp = now_datetime()
     values = {
         "administration_report_approved": 1, "administration_report_approved_by": frappe.session.user,

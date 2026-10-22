@@ -486,10 +486,14 @@ def _team_options():
             ))
         if _is_global_manager():
             users.append(frappe.session.user)
-        # Project assignment lives in Employee Management, so every active
-        # managed employee is selectable here.  Saving prepares only the one
-        # Iftar task chosen for that employee and preserves all other tasks.
-        users.extend(all_employees)
+        # RC392: external monitoring is a deliberate project-level opt-in.
+        # Its selector lists registered employees only; it must not suggest
+        # that an unselected employee will be given viewer access automatically.
+        # Keep the existing operational-team selectors completely unchanged.
+        if fieldname == "external_viewer_user":
+            users = list(all_employees)
+        else:
+            users.extend(all_employees)
         users = sorted(set(users))
         rows = frappe.get_all(
             "User",
@@ -501,7 +505,10 @@ def _team_options():
         result[fieldname] = []
         for row in rows:
             prepared = role in _roles(row.name) or bool(_roles(row.name) & GLOBAL_MANAGEMENT_ROLES)
-            suffix = "" if prepared else " · ستُضاف المهمة تلقائياً"
+            # The viewer role may be prepared only AFTER management explicitly
+            # checks the employee and saves the project assignment.  A role
+            # alone never makes the external monitoring card visible.
+            suffix = "" if fieldname == "external_viewer_user" or prepared else " · ستُضاف المهمة تلقائياً"
             result[fieldname].append({
                 "value": row.name,
                 "label": f"{row.full_name or row.name} — {row.name}{suffix}",

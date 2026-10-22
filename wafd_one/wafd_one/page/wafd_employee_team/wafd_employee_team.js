@@ -185,7 +185,7 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       <input type="search" class="wafd-iftar-viewer-search" placeholder="${tr("ابحث عن موظف", "Search employees")}" style="margin-bottom:8px">
       <div class="wafd-iftar-viewer-picker" style="max-height:260px;overflow-y:auto;border:1px solid #ded8cb;border-radius:12px;padding:8px">
         ${options.map((option) => `<label class="wafd-task-option" style="margin-bottom:5px"><input type="checkbox" class="wafd-iftar-viewer-choice" value="${esc(option.value)}" ${current.has(option.value) ? "checked" : ""}><span>${esc(option.label || option.value)}</span></label>`).join("")}
-      </div><small class="wafd-task-help">${tr("حدد أي عدد من الموظفين؛ يرى كل منهم هذا المشروع فقط ضمن مشاريعه المسندة.", "Select any number of employees; each sees only their assigned projects.")}</small>
+      </div><small class="wafd-task-help">${tr("تظهر متابعة إفطار الصائم فقط لمن تختاره وتحفظ إسناده لهذا المشروع. من لم تختره لا تظهر له المتابعة، ويمكنك إزالة أي متابع لاحقاً.", "Only employees you explicitly select and save can monitor this Iftar project. Unselected employees cannot access its monitoring screen; you can remove viewers later.")}</small>
     </div>`;
   }
 

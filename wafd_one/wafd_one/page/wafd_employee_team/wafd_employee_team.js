@@ -140,15 +140,23 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       ["project_manager_user", tr("مدير المشروع", "Project Manager")],
       ["kitchen_supervisor_user", tr("مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)", "Kitchen Supervisor (production, packaging, loading and vehicles)")],
       ["site_manager_user", tr("مدير الموقع", "Site Manager")],
-      ["external_viewer_user", tr("المتابع الخارجي", "External Viewer")],
+      ["external_viewer_users", tr("المتابعون الخارجيون", "External Viewers")],
     ];
     $root.find("#wafd-iftar-project-list").html(projects.map((project) => {
       const assignedLabel = (field) => {
+        if (field === "external_viewer_users") {
+          const viewers = project.external_viewer_users || (project.external_viewer_user ? [project.external_viewer_user] : []);
+          const options = ((iftarAssignments.options || {}).external_viewer_user || []);
+          return viewers.map((value) => (options.find((item) => item.value === value) || {}).label || value).join("، ");
+        }
         const value = project[field] || "";
         const option = ((iftarAssignments.options || {})[field] || []).find((item) => item.value === value);
         return option ? option.label : value;
       };
-      const team = fields.map(([field, label]) => `<span class="${project[field] ? "is-assigned" : "is-missing"}"><b>${esc(label)}</b>${project[field] ? esc(assignedLabel(field)) : tr("غير مسند", "Not assigned")}</span>`).join("");
+      const team = fields.map(([field, label]) => {
+        const hasAssignment = field === "external_viewer_users" ? (project.external_viewer_users || []).length : project[field];
+        return `<span class="${hasAssignment ? "is-assigned" : "is-missing"}"><b>${esc(label)}</b>${hasAssignment ? esc(assignedLabel(field)) : tr("غير مسند", "Not assigned")}</span>`;
+      }).join("");
       const missingCore = !project.project_manager_user || !project.kitchen_supervisor_user;
       const buttonLabel = Number(project.docstatus) === 0
         ? tr("إسناد واعتماد المشروع", "Assign and approve")
@@ -168,13 +176,26 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
     return `<div class="wafd-employee-field" style="margin-bottom:12px"><label>${esc(label)}</label><select class="wafd-iftar-team-select" data-field="${esc(field)}"><option value="">${tr("غير مسند", "Not assigned")}</option>${options.map((item) => `<option value="${esc(item.value)}" ${item.value === current ? "selected" : ""}>${esc(item.label || item.value)}</option>`).join("")}</select></div>`;
   }
 
+  function viewerMultiSelect(project) {
+    const current = new Set(project.external_viewer_users || (project.external_viewer_user ? [project.external_viewer_user] : []));
+    const options = [...((iftarAssignments.options || {}).external_viewer_user || [])];
+    current.forEach((value) => { if (!options.some((option) => option.value === value)) options.unshift({value, label:value}); });
+    return `<div class="wafd-employee-field" style="margin-bottom:12px">
+      <label>${tr("المتابعون الخارجيون (بدون حد أقصى)", "External viewers (no maximum)")}</label>
+      <input type="search" class="wafd-iftar-viewer-search" placeholder="${tr("ابحث عن موظف", "Search employees")}" style="margin-bottom:8px">
+      <div class="wafd-iftar-viewer-picker" style="max-height:260px;overflow-y:auto;border:1px solid #ded8cb;border-radius:12px;padding:8px">
+        ${options.map((option) => `<label class="wafd-task-option" style="margin-bottom:5px"><input type="checkbox" class="wafd-iftar-viewer-choice" value="${esc(option.value)}" ${current.has(option.value) ? "checked" : ""}><span>${esc(option.label || option.value)}</span></label>`).join("")}
+      </div><small class="wafd-task-help">${tr("حدد أي عدد من الموظفين؛ يرى كل منهم هذا المشروع فقط ضمن مشاريعه المسندة.", "Select any number of employees; each sees only their assigned projects.")}</small>
+    </div>`;
+  }
+
   function openIftarAssignment(project) {
     const html = `<div dir="${arabic ? "rtl" : "ltr"}">
       <div style="margin-bottom:14px;padding:11px 13px;border-radius:12px;background:#f6f2e8;color:#765b23;font-weight:700">${tr("هذا الفريق ثابت طوال مدة المشروع، ويُنسخ تلقائياً لكل يوم تشغيل. يمكنك تعديله لاحقاً عند الحاجة فقط.", "This team stays assigned for the whole project and is copied automatically to each operating day. Edit it only when needed.")}</div>
       ${assignmentSelect("project_manager_user", tr("مدير المشروع", "Project Manager"), project)}
       ${assignmentSelect("kitchen_supervisor_user", tr("مشرف المطبخ (الإنتاج والتغليف والتحميل والسيارات)", "Kitchen Supervisor (production, packaging, loading and vehicles)"), project)}
       ${assignmentSelect("site_manager_user", tr("مدير الموقع", "Site Manager"), project)}
-      ${assignmentSelect("external_viewer_user", tr("المتابع الخارجي", "External Viewer"), project)}
+      ${viewerMultiSelect(project)}
     </div>`;
     const dialog = new frappe.ui.Dialog({
       title: `${tr("إسناد موظفي المشروع", "Assign project employees")} — ${project.project_title || project.name}`,
@@ -182,7 +203,9 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       primary_action_label: Number(project.docstatus) === 0 ? tr("حفظ واعتماد المشروع", "Save and approve project") : tr("حفظ الإسناد", "Save assignment"),
       primary_action: async () => {
         const args = {project_name: project.name};
-        $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-team-select").each(function () { args[$(this).attr("data-field")] = $(this).val() || ""; });
+        const $team = $(dialog.fields_dict.team.wrapper);
+        $team.find(".wafd-iftar-team-select").each(function () { args[$(this).attr("data-field")] = $(this).val() || ""; });
+        args.external_viewer_users = $team.find(".wafd-iftar-viewer-choice:checked").map((_, input) => input.value).get();
         if (!args.project_manager_user || !args.kitchen_supervisor_user) {
           frappe.msgprint(tr("اختر مدير المشروع ومشرف المطبخ قبل اعتماد المشروع.", "Select the Project Manager and Kitchen Supervisor before approval."));
           return;
@@ -203,6 +226,12 @@ frappe.pages["wafd-employee-team"].on_page_load = function (wrapper) {
       },
     });
     dialog.show();
+    $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-viewer-search").on("input", function () {
+      const query = String($(this).val() || "").toLowerCase();
+      $(dialog.fields_dict.team.wrapper).find(".wafd-iftar-viewer-picker label").each(function () {
+        $(this).toggle($(this).text().toLowerCase().includes(query));
+      });
+    });
   }
 
   function load() {

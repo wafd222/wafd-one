@@ -54,7 +54,7 @@ class TestIftarWorkflowContract(unittest.TestCase):
     def test_external_viewer_is_project_scoped_and_read_only(self):
         start = self.portal.index("def get_authority_monitoring_data")
         section = self.portal[start:start + 2500]
-        self.assertIn('filters["external_viewer_user"] = user', section)
+        self.assertIn('assigned_names = _viewer_project_names(user)', section)
         self.assertIn('filters["docstatus"] = 1', section)
         self.assertIn("EXTERNAL_VIEWER_ROLE", section)
 
@@ -150,7 +150,7 @@ class TestIftarWorkflowContract(unittest.TestCase):
         start = self.portal.index("def _get_authority_final_report_html")
         section = self.portal[start:self.portal.index("@frappe.whitelist()", start)]
         self.assertIn('templates/print_formats/wafd_iftar_official_daily_report.html', section)
-        self.assertIn('project.external_viewer_user == user', section)
+        self.assertIn('_is_iftar_viewer(project, user)', section)
         self.assertIn('daily_report_sent', section)
         self.assertNotIn('frappe.get_print(', section)
         self.assertIn('_embed_iftar_report_images(report_html)', section)

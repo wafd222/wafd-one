@@ -70,7 +70,7 @@ def _managed_employee_users():
         "Has Role",
         filters={"role": ["in", MANAGED_ROLES], "parenttype": "User"},
         pluck="parent",
-        limit_page_length=5000,
+        limit_page_length=1000000,
     )
     return sorted(set(users) - {"Administrator", "Guest"})
 
@@ -129,9 +129,40 @@ def _project_access(project, roles=None):
         duties.add("site")
     if frappe.db.exists("WAFD Iftar Supervisor Plan", {"project": project.name, "supervisor_user": user, "active": 1}):
         duties.add("supervisor")
-    if (project.get("external_viewer_user") or "").strip() == user:
+    if _is_iftar_viewer(project, user):
         duties.add("viewer")
     return duties
+
+
+def _iftar_viewer_users(project_name):
+    """Explicit viewers for a project, including its pre-RC391 single assignee."""
+    users = set()
+    legacy = frappe.db.get_value("WAFD Iftar Project", project_name, "external_viewer_user")
+    if legacy:
+        users.add(legacy)
+    if frappe.db.exists("DocType", "WAFD Iftar Viewer Assignment"):
+        users.update(frappe.get_all(
+            "WAFD Iftar Viewer Assignment", filters={"project": project_name},
+            pluck="viewer_user", limit_page_length=1000000,
+        ))
+    return sorted(users - {None, ""})
+
+
+def _is_iftar_viewer(project, user):
+    return bool(user and user in _iftar_viewer_users(project.name))
+
+
+def _viewer_project_names(user):
+    names = set(frappe.get_all(
+        "WAFD Iftar Project", filters={"external_viewer_user": user},
+        pluck="name", limit_page_length=1000000,
+    ))
+    if frappe.db.exists("DocType", "WAFD Iftar Viewer Assignment"):
+        names.update(frappe.get_all(
+            "WAFD Iftar Viewer Assignment", filters={"viewer_user": user},
+            pluck="project", limit_page_length=1000000,
+        ))
+    return sorted(names)
 
 
 def _require_project_duty(project, duty):
@@ -465,7 +496,7 @@ def _team_options():
             filters={"name": ["in", users], "enabled": 1, "user_type": "System User"},
             fields=["name", "full_name"],
             order_by="full_name asc",
-            limit_page_length=1000,
+            limit_page_length=1000000,
         ) if users else []
         result[fieldname] = []
         for row in rows:
@@ -495,6 +526,8 @@ def get_employee_project_assignments():
         order_by="start_date desc, modified desc",
         limit_page_length=250,
     )
+    for project in projects:
+        project["external_viewer_users"] = _iftar_viewer_users(project.name)
     return {"projects": projects, "options": _team_options()}
 
 
@@ -564,18 +597,16 @@ def has_iftar_viewer_access():
     if user in ("Guest", ""):
         return {"has_access": False}
 
-    project = frappe.db.get_value(
-        "WAFD Iftar Project",
-        {
-            "external_viewer_user": user,
-            "docstatus": 1,
-            "status": ["not in", ["ملغي / Cancelled"]],
-        },
-        "name",
-        order_by="modified desc",
-    )
-    if project:
-        return {"has_access": True, "project": project}
+    projects = _viewer_project_names(user)
+    if projects:
+        project = frappe.db.get_value(
+            "WAFD Iftar Project",
+            {"name": ["in", projects], "docstatus": 1,
+             "status": ["not in", ["ملغي / Cancelled"]]},
+            "name", order_by="modified desc",
+        )
+        if project:
+            return {"has_access": True, "project": project}
     return {"has_access": False}
 
 
@@ -634,7 +665,7 @@ def get_portal_data(requested_mode=None):
 
 @frappe.whitelist()
 def save_project_team(project_name, project_manager_user=None, kitchen_supervisor_user=None,
-                      delivery_supervisor_user=None, site_manager_user=None, external_viewer_user=None):
+                      delivery_supervisor_user=None, site_manager_user=None, external_viewer_user=None, external_viewer_users=None):
     if not _is_global_manager():
         frappe.throw(_("الإدارة فقط يمكنها إسناد فريق المشروع / Management only"), frappe.PermissionError)
     if not frappe.db.exists("WAFD Iftar Project", project_name):
@@ -654,8 +685,38 @@ def save_project_team(project_name, project_manager_user=None, kitchen_superviso
             continue
         values[fieldname] = _validate_team_user(fieldname, raw, prepare_task=True)
 
+    # RC391: the additional viewer list is optional so existing callers retain
+    # the exact single-viewer workflow. Only Employee Management supplies it.
+    former_viewers = set(_iftar_viewer_users(project_name)) if external_viewer_users is not None else set()
+    if external_viewer_users is not None:
+        if isinstance(external_viewer_users, str):
+            try:
+                external_viewer_users = json.loads(external_viewer_users)
+            except (TypeError, ValueError):
+                frappe.throw(_("قائمة المتابعين غير صحيحة / Invalid viewer list"))
+        if not isinstance(external_viewer_users, list):
+            frappe.throw(_("قائمة المتابعين غير صحيحة / Invalid viewer list"))
+        selected = []
+        for item in external_viewer_users:
+            if not isinstance(item, str):
+                frappe.throw(_("قائمة المتابعين غير صحيحة / Invalid viewer list"))
+            user = _validate_team_user("external_viewer_user", item, prepare_task=True)
+            if user and user not in selected:
+                selected.append(user)
+        # Preserve the original legacy field for existing readers, and use a
+        # dedicated assignment table for all additional viewers.
+        values["external_viewer_user"] = selected[0] if selected else ""
+        if not frappe.db.exists("DocType", "WAFD Iftar Viewer Assignment"):
+            frappe.throw(_("يرجى ترحيل الإصدار الجديد أولاً / Migrate the new release first"))
+        frappe.db.delete("WAFD Iftar Viewer Assignment", {"project": project_name})
+        for user in selected[1:]:
+            frappe.get_doc({
+                "doctype": "WAFD Iftar Viewer Assignment",
+                "project": project_name, "viewer_user": user,
+            }).insert(ignore_permissions=True)
+
     frappe.db.set_value("WAFD Iftar Project", project_name, values, update_modified=True)
-    for user in {value for value in values.values() if value}:
+    for user in former_viewers | {value for value in values.values() if value} | set(_iftar_viewer_users(project_name)):
         frappe.clear_cache(user=user)
         frappe.publish_realtime("wafd_iftar_stage_assignment", {"project": project_name}, user=user)
     return {"project": project_name, **values}
@@ -1486,7 +1547,7 @@ def _get_authority_final_report_html(operation_name):
     project = frappe.get_doc("WAFD Iftar Project", operation.project)
     roles = _roles(user)
     allowed = _is_global_manager(roles) or project.project_manager_user == user or (
-        (EXTERNAL_VIEWER_ROLE in roles or "WAFD Delivery Viewer" in roles) and project.external_viewer_user == user
+        (EXTERNAL_VIEWER_ROLE in roles or "WAFD Delivery Viewer" in roles) and _is_iftar_viewer(project, user)
     )
     if not allowed:
         frappe.throw(_("لا توجد صلاحية لمعاينة التقرير لهذا المشروع / No permission to preview this project's report"), frappe.PermissionError)
@@ -1558,7 +1619,10 @@ def get_authority_monitoring_data(date=None):
         filters["docstatus"] = ["<", 2]
     else:
         filters["docstatus"] = 1
-        filters["external_viewer_user"] = user
+        # Keep the legacy single-user field and new multi-user assignments
+        # equally scoped to this account; the role alone grants no projects.
+        assigned_names = _viewer_project_names(user)
+        filters["name"] = ["in", assigned_names] if assigned_names else "__none__"
     projects = frappe.get_all(
         "WAFD Iftar Project", filters=filters,
         fields=["name", "project_title", "distribution_site", "contracting_entity", "contract",

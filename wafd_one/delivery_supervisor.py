@@ -528,11 +528,23 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type=None,
             frappe.throw(_("اختر الفنادق أو الجهات / Choose hotels or destinations"))
         key = (kind, name)
         if key not in seen_destinations:
+            meal_quantities = row.get("meal_quantities") or {}
+            if not isinstance(meal_quantities, dict):
+                meal_quantities = {}
             cleaned_destinations.append({
                 "destination_type": kind,
                 "destination": name,
                 "safandash_count": max(cint(row.get("safandash_count")), 0),
                 "hot_cabinet_count": max(cint(row.get("hot_cabinet_count")), 0),
+                "meal_quantities": {
+                    meal["meal_type"]: max(
+                        cint(meal_quantities.get(meal["meal_type"]))
+                        if meal_quantities.get(meal["meal_type"]) not in (None, "")
+                        else meal["quantity"],
+                        0,
+                    )
+                    for meal in clean_meals
+                },
             })
             seen_destinations.add(key)
     if not cleaned_destinations or not driver:
@@ -568,7 +580,7 @@ def create_recurring_delivery_tasks(start_date, end_date, destination_type=None,
                     "delivery_time": meal["delivery_time"],
                     "driver": driver,
                     "vehicle": (vehicle or "").strip(),
-                    "quantity": meal["quantity"],
+                    "quantity": destination_row["meal_quantities"][meal["meal_type"]],
                     "delivery_schedule_id": schedule_id,
                     "schedule_customer": customer_name,
                     "contracting_entity": customer_name,

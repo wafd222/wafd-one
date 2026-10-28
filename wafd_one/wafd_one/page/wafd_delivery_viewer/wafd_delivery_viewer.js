@@ -106,9 +106,8 @@ frappe.pages["wafd-delivery-viewer"].on_page_load = function (wrapper) {
   }
 
   function optionalCount(label, value, equipment=false) {
-    return Number(value) > 0
-      ? `<div class="${equipment ? "is-equipment" : ""}"><small>${esc(label)}</small><b>${esc(value)}</b></div>`
-      : "";
+    const count = Number(value);
+    return `<div class="${equipment ? "is-equipment" : ""}"><small>${esc(label)}</small><b>${esc(Number.isFinite(count) ? count : 0)}</b></div>`;
   }
 
   function renderTrip(row) {

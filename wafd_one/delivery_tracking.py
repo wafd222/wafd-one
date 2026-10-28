@@ -274,7 +274,12 @@ def _delivery_data(trip_name):
         return None
     driver = frappe.db.get_value("WAFD Driver", trip.driver, ["driver_name", "mobile"], as_dict=True) if trip.driver else None
     vehicle = frappe.db.get_value("WAFD Vehicle", trip.vehicle, ["plate_number"], as_dict=True) if trip.vehicle else None
-    loading = frappe.db.get_value("WAFD Loading Record", trip.loading_record, ["loading_date", "quantity", "dispatch_time"], as_dict=True) if trip.loading_record else None
+    loading = frappe.db.get_value(
+        "WAFD Loading Record",
+        trip.loading_record,
+        ["loading_date", "quantity", "dispatch_time", "hot_cabinet_count"],
+        as_dict=True,
+    ) if trip.loading_record else None
     proof_rows = frappe.get_all(
         "WAFD Delivery Proof",
         filters={"delivery_trip": trip.name},
@@ -292,7 +297,7 @@ def _delivery_data(trip_name):
         "meal_type": trip.meal_type,
         "quantity": (loading.quantity if loading else None) or trip.quantity,
         "safandash_count": cint(trip.safandash_count),
-        "hot_cabinet_count": cint(trip.hot_cabinet_count),
+        "hot_cabinet_count": cint(trip.hot_cabinet_count) or cint(loading.hot_cabinet_count if loading else 0),
         "trip_date": trip.trip_date,
         "planned_arrival": trip.planned_arrival,
         "loading_time": loading.loading_date if loading else None,

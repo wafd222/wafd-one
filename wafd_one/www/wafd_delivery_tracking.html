@@ -14,6 +14,7 @@
  </section>
  <section class="wdt-panel"><h2>بيانات تحميل الوجبات</h2><div class="wdt-grid">
   <div class="wdt-info"><small>نوع الوجبة</small><b id="wdt-meal">—</b></div><div class="wdt-info"><small>عدد الوجبات</small><b id="wdt-quantity">—</b></div>
+  <div class="wdt-info"><small>عدد السفندشات</small><b id="wdt-safandash">—</b></div><div class="wdt-info"><small>عدد السخانات Hot Cabinet</small><b id="wdt-hot-cabinets">—</b></div>
   <div class="wdt-info"><small>وقت التحميل</small><b id="wdt-loading-time">—</b></div><div class="wdt-info"><small>حالة الرحلة</small><b><span class="wdt-status" id="wdt-status">—</span></b></div>
  </div></section>
  <section class="wdt-panel"><h2>السائق والمركبة</h2><div class="wdt-grid">
@@ -31,7 +32,7 @@
  const fmt=v=>{if(!v)return'بانتظار التنفيذ';const d=new Date(String(v).replace(' ','T'));return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat('ar-SA',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Riyadh'}).format(d)};
  const set=(id,value)=>{$(id).textContent=value??'—'};
  function fail(){root.classList.remove('wdt-loading');root.innerHTML='<section class="wdt-panel wdt-error"><b>تعذر فتح رابط المتابعة</b><span>الرابط غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً من المشرف.</span></section>'}
- function render(data){const t=data.trip||{};set('wdt-destination',t.destination_name||'—');set('wdt-viewer',data.viewer_name?`الرابط مخصص لـ: ${data.viewer_name}`:'');set('wdt-meal',local(t.meal_type));set('wdt-quantity',Number(t.quantity)>0?`${t.quantity} وجبة`:'غير محدد');set('wdt-loading-time',fmt(t.loading_time));set('wdt-status',local(t.status));set('wdt-driver',t.driver_name||'—');$('wdt-mobile').innerHTML=t.driver_mobile?`<a href="tel:${esc(t.driver_mobile)}">${esc(t.driver_mobile)}</a>`:'—';set('wdt-plate',t.plate_number||'—');
+ function render(data){const t=data.trip||{};set('wdt-destination',t.destination_name||'—');set('wdt-viewer',data.viewer_name?`الرابط مخصص لـ: ${data.viewer_name}`:'');set('wdt-meal',local(t.meal_type));set('wdt-quantity',Number(t.quantity)>0?`${t.quantity} وجبة`:'غير محدد');set('wdt-safandash',Number(t.safandash_count)||0);set('wdt-hot-cabinets',Number(t.hot_cabinet_count)||0);set('wdt-loading-time',fmt(t.loading_time));set('wdt-status',local(t.status));set('wdt-driver',t.driver_name||'—');$('wdt-mobile').innerHTML=t.driver_mobile?`<a href="tel:${esc(t.driver_mobile)}">${esc(t.driver_mobile)}</a>`:'—';set('wdt-plate',t.plate_number||'—');
   const steps=[['استلام السائق للمهمة',t.driver_accepted_on],['وقت الخروج',t.departure_time],['وقت الوصول',t.arrival_time],['التسليم',t.delivery_time]];let reachedPending=false;$('wdt-progress').innerHTML=steps.map(([label,time])=>{const done=!!time,cur=!done&&!reachedPending;if(cur)reachedPending=true;return `<div class="wdt-step ${done?'done':cur?'current':''}"><span class="wdt-dot">${done?'✓':'•'}</span><div><b>${esc(label)}</b><small>${esc(fmt(time))}</small></div></div>`}).join('');
   if(t.has_delivery_photo){$('wdt-proof').classList.add('show');set('wdt-receiver',t.receiver_name||'—');set('wdt-delivery-time',fmt(t.delivery_time));$('wdt-photo').src=`/api/method/wafd_one.delivery_tracking.get_shared_delivery_photo?token=${encodeURIComponent(token)}`}
   root.classList.remove('wdt-loading');

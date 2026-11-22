@@ -269,3 +269,20 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
     font-size:13px;
   }
 }
+
+/* RC396 — hide the unintended Frappe mobile bottom navigation only on the WAFD role-home shell.
+   Scoped to the existing mobile role-home body class; does not affect other pages or roles. */
+@media (max-width: 900px), (pointer: coarse) {
+  body.wafd-pwa-home-shell .mobile-bottom-nav,
+  body.wafd-pwa-home-shell .mobile-nav-bar,
+  body.wafd-pwa-home-shell .bottom-nav,
+  body.wafd-pwa-home-shell .bottom-navigation,
+  body.wafd-pwa-home-shell .mobile-tab-bar,
+  body.wafd-pwa-home-shell .mobile-tabs,
+  body.wafd-pwa-home-shell .mobile-footer-nav,
+  body.wafd-pwa-home-shell .navbar-fixed-bottom,
+  body.wafd-pwa-home-shell footer.navbar {
+    display:none !important;
+    visibility:hidden !important;
+  }
+}

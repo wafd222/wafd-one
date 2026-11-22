@@ -413,10 +413,15 @@ def list_my_trips(iftar_only=0, exclude_iftar=0):
         filters["meal_type"] = ["!=", "إفطار صائم / Iftar Saim"]
     if not is_manager:
         repair_trip_assignments(frappe.session.user)
-    reconciliation = ({"counts": {"blocked": 0}, "results": []} if iftar_only else reconcile_missing_delivery_trips(
-        user=None if is_manager else frappe.session.user,
-        all_drivers=is_manager,
-    ))
+    # RC395: Do not resurrect deleted trips from retained approved loading records
+    # on a driver's own portal request. Managers retain the reconciliation path
+    # to recover legitimate missing trips from the loading board. This avoids
+    # stale deleted trip/run records reappearing and blocking the driver's next meal.
+    reconciliation = (
+        {"counts": {"blocked": 0}, "results": []}
+        if (iftar_only or not is_manager)
+        else reconcile_missing_delivery_trips(all_drivers=True)
+    )
     trips = frappe.get_all(
         "WAFD Delivery Trip",
         filters=filters,

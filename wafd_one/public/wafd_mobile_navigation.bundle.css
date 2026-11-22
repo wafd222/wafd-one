@@ -269,3 +269,27 @@ body.wafd-at-employee-team #wafd-mobile-back-v219 { display:none !important; }
     font-size:13px;
   }
 }
+
+
+/* RC397: hide the unwanted bottom tab/navigation bar on WAFD role-home; CSS bundle is the loaded asset. */
+@media (max-width: 900px), (pointer: coarse) {
+  body.wafd-pwa-home-shell .mobile-bottom-nav,
+  body.wafd-pwa-home-shell .mobile-nav-bar,
+  body.wafd-pwa-home-shell .bottom-nav,
+  body.wafd-pwa-home-shell .bottom-navigation,
+  body.wafd-pwa-home-shell .mobile-tab-bar,
+  body.wafd-pwa-home-shell .mobile-tabs,
+  body.wafd-pwa-home-shell .mobile-footer-nav,
+  body.wafd-pwa-home-shell .navbar-fixed-bottom,
+  body.wafd-pwa-home-shell footer.navbar,
+  body.wafd-pwa-home-shell .mobile-bottom-bar,
+  body.wafd-pwa-home-shell .mobile-app-bottom-nav,
+  body.wafd-pwa-home-shell .mobile-tab-navigation,
+  body.wafd-pwa-home-shell .bottom-navbar,
+  body.wafd-pwa-home-shell .fixed-bottom {
+    display:none !important;
+    visibility:hidden !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+  }
+}
